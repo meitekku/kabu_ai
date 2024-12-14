@@ -25,7 +25,10 @@ const ArticleDetail = () => {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
-        const response = await fetch(`/api/${code}/news/article/${id}`);
+        // method: 'POST' を追加
+        const response = await fetch(`/api/${code}/news/article/${id}`, {
+          method: 'POST'
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch article');
         }
