@@ -11,14 +11,15 @@ interface ArticleRow extends RowDataPacket {
   company_name: string;
 }
 
+// The route segment config tells Next.js this is a dynamic route
+export const dynamic = 'force-dynamic';
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { code: string; id: string } }
 ) {
   try {
-    params = await params;
     const db = Database.getInstance();
-    const id = params.id;
+    const { id } = params;
 
     const query = `
       SELECT 
@@ -45,7 +46,7 @@ export async function GET(
       );
     }
 
-    // データベースから取得したコンテンツの改行を復元
+    // Restore newlines in the content
     const article = articles[0];
     article.content = article.content.replace(/\\n/g, '\n');
 
