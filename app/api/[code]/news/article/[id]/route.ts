@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(
   request: NextRequest,
   { params }: { params: { code: string; id: string } }
-) {
+) : Promise<NextResponse> {
   try {
     const db = Database.getInstance();
     const { id } = await params; // POSTでもparamsは同様に利用可能

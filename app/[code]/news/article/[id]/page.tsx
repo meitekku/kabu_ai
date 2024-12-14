@@ -25,7 +25,6 @@ const ArticleDetail = () => {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
-        // method: 'POST' を追加
         const response = await fetch(`/api/${code}/news/article/${id}`, {
           method: 'POST'
         });
