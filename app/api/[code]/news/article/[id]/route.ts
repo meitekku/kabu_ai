@@ -20,7 +20,7 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const db = Database.getInstance();
-    const id = (await params).id;
+    const { id } = await params;
 
     const query = `
       SELECT 

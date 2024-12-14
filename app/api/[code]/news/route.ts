@@ -11,10 +11,10 @@ interface NewsRecord extends RowDataPacket {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
-    const code = params.code;
+    const {code} = await params;
 
     if (!code) {
       return NextResponse.json(
