@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
 
@@ -15,12 +15,12 @@ interface ArticleRow extends RowDataPacket {
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  request: Request,
-  context: { params: { code: string; id: string } }
+  request: NextRequest,
+  { params }: { params: { code: string; id: string } }
 ) {
   try {
     const db = Database.getInstance();
-    const { id } = context.params; // Adjusted to match correct argument structure
+    const { id } = params; // 引数が { params } に変更されている
 
     const query = `
       SELECT 
