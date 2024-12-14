@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy to Conoha
 on:
   push:
     branches:
@@ -20,7 +20,7 @@ jobs:
           Host *
             IdentityFile ~/.ssh/id_rsa
 
-    - name: Deploy to EC2
+    - name: Deploy to Conoha
       env:
         HOST: root@133.130.102.77
         TARGET: /var/www/kabu_ai
