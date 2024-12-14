@@ -16,11 +16,11 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ code: string; id: string }> }
-) : Promise<NextResponse> {
+  { params }: { params: { code: string; id: string } }
+): Promise<NextResponse> {
   try {
     const db = Database.getInstance();
-    const { id } = await params;
+    const { id } = params;
 
     const query = `
       SELECT 
