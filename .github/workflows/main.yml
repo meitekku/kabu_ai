@@ -35,8 +35,6 @@ jobs:
           public \
           utils \
           .github \
-          .htaccess \
-          middleware.ts \
           $HOST:$TARGET
         echo "rsync command completed"
         echo "Executing deployment commands"
