@@ -1,4 +1,3 @@
-// src/lib/database.ts
 import mysql from 'mysql2/promise';
 import { RowDataPacket, ResultSetHeader, FieldPacket } from 'mysql2';
 
@@ -7,8 +6,12 @@ export class Database {
   private pool: mysql.Pool;
 
   private constructor() {
+    const dbHost = process.env.NODE_ENV === 'production' 
+      ? process.env.PROD_DB_HOST
+      : process.env.LOCAL_DB_HOST || 'localhost';
+  
     this.pool = mysql.createPool({
-      host: process.env.DB_HOST,
+      host: dbHost,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
