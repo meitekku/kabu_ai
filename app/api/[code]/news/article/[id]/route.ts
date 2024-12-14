@@ -13,13 +13,14 @@ interface ArticleRow extends RowDataPacket {
 
 // The route segment config tells Next.js this is a dynamic route
 export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: Request,
-  { params }: { params: { code: string; id: string } }
+  context: { params: { code: string; id: string } }
 ) {
   try {
     const db = Database.getInstance();
-    const { id } = params;
+    const { id } = context.params; // Adjusted to match correct argument structure
 
     const query = `
       SELECT 
