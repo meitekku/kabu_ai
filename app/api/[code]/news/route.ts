@@ -12,7 +12,7 @@ interface NewsRecord extends RowDataPacket {
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const {code} = await params;
 
