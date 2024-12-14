@@ -1,12 +1,8 @@
-import CompanySearch from "@/components/parts/common/CompanySearch";
-import { headers } from "next/headers";
-import Link from "next/link";
+'use client';
 
-async function getHeaderData() {
-  const headersList = await headers();
-  const pathname = headersList.get("x-invoke-path") || "";
-  return { pathname };
-}
+import CompanySearch from "@/components/parts/common/CompanySearch";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
   const commonClasses = "logo justify-self-start pl-4 text-center w-full text-2xl";
@@ -27,8 +23,8 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
   );
 };
 
-const Header = async () => {
-  const { pathname } = await getHeaderData();
+const Header = () => {
+  const pathname = usePathname();
   const isRoot = pathname === "/";
   return <HeaderContent isRoot={isRoot} />;
 };
