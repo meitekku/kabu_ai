@@ -1,0 +1,49 @@
+name: Deploy to EC2
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install SSH Key
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.CONOHA_SSH_KEY }}
+        config: |
+          Host *
+            IdentityFile ~/.ssh/id_rsa
+
+    - name: Deploy to EC2
+      env:
+        HOST: root@133.130.102.77
+        TARGET: /var/www/kabu_ai
+      run: |
+        echo "Syncing files to server"
+        rsync -avz --delete \
+          *.* \
+          app \
+          components \
+          lib \
+          public \
+          utils \
+          .github \
+          .htaccess \
+          middleware.ts \
+          $HOST:$TARGET
+        echo "rsync command completed"
+        echo "Executing deployment commands"
+        ssh $HOST << EOF
+          set -e
+          cd $TARGET
+          npm install
+          npm run build
+          pm2 restart kabu_ai || pm2 start npm --name "kabu_ai" -- start
+          echo "Production deployment completed"
+        EOF
