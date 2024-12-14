@@ -16,7 +16,7 @@ interface NewsItem {
 const NewsList = () => {
   const params = useParams();
   const code = params.code as string;
-  
+
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,14 @@ const NewsList = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch(`/api/${code}/news`);
+        const response = await fetch(`/api/${code}/news`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ code }),
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch news');
         }

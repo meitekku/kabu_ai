@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
 
@@ -9,12 +9,11 @@ interface NewsRecord extends RowDataPacket {
   code: string;
 }
 
-export async function GET(
-  request: Request,
+export async function POST(
+  request: NextRequest,
   { params }: { params: { code: string } }
 ) {
   try {
-    params = await params;
     const code = params.code;
 
     if (!code) {
