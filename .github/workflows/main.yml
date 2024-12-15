@@ -10,26 +10,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-    - name: Setup SSH directory
-      run: |
-        mkdir -p /home/runner/.ssh
-        touch /home/runner/.ssh/known_hosts
-        chmod 700 /home/runner/.ssh
-        chmod 600 /home/runner/.ssh/known_hosts
-        echo "StrictHostKeyChecking no" >> /home/runner/.ssh/config
-    - name: Execute command
-      run: |
-        ssh-keygen -f "/home/runner/.ssh/known_hosts" -R "133.130.102.77"
     - uses: actions/checkout@v4
 
     - name: Install SSH Key
       uses: shimataro/ssh-key-action@v2
       with:
         key: ${{ secrets.CONOHA_SSH_KEY }}
-        known_hosts: ${{ secrets.KNOWN_HOSTS }}
-        config: |
-          Host *
-            IdentityFile ~/.ssh/id_rsa
+        known_hosts: unnecessary
+        if_key_exists: replace
+
+    - name: Add known hosts
+      run: ssh-keyscan -H 133.130.102.77 >> ~/.ssh/known_hosts
 
     - name: Deploy to Conoha
       env:
