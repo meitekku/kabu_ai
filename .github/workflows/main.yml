@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+    - name: Execute command
+      run: |
+        ssh-keygen -f "/home/runner/.ssh/known_hosts" -R "133.130.102.77"
     - uses: actions/checkout@v4
 
     - name: Install SSH Key
