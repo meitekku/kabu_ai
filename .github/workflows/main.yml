@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+    - name: Setup SSH directory
+      run: |
+        mkdir -p /home/runner/.ssh
+        touch /home/runner/.ssh/known_hosts
+        chmod 700 /home/runner/.ssh
+        chmod 600 /home/runner/.ssh/known_hosts
+        echo "StrictHostKeyChecking no" >> /home/runner/.ssh/config
     - name: Execute command
       run: |
         ssh-keygen -f "/home/runner/.ssh/known_hosts" -R "133.130.102.77"
