@@ -1,18 +1,13 @@
-module.exports = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   async rewrites() {
-    return {
-      beforeFiles: [
-        {
-          source: '/:path*',
-          has: [
-            {
-              type: 'host',
-              value: 'http://kabu-ai.jp/',
-            },
-          ],
-          destination: '/:path*',
-        },
-      ],
-    }
+    return [
+      {
+        source: '/:path*',
+        destination: '/:path*',
+      },
+    ];
   },
 }
+
+module.exports = nextConfig
