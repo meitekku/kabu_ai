@@ -30,7 +30,7 @@ export async function POST(
         code,
         title,
         created_at
-      FROM news_ai 
+      FROM post 
       WHERE code = ?
       AND accept = 1
       ORDER BY created_at DESC

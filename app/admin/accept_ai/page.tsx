@@ -46,7 +46,7 @@ export default function Home() {
     try {
       const operation: DatabaseOperation = {
         type: 'select',
-        table: 'news_ai',
+        table: 'post',
         data: ['id', 'title' , 'content', 'accept', 'created_at'],
         conditions: {
           accept: 0

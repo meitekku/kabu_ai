@@ -30,7 +30,7 @@ export async function POST(
         REPLACE(n.content, '\n', '\\n') as content,
         n.created_at,
         c.name as company_name
-      FROM news_ai n
+      FROM post n
       LEFT JOIN company c ON n.code = c.code
       WHERE n.id = ?
     `;

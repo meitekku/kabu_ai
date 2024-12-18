@@ -1,5 +1,3 @@
-// src/app/api/approval/route.ts
-
 import { Database } from '@/lib/database/Mysql';
 import { NextRequest } from 'next/server';
 
@@ -18,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // 承認処理（accept=1に更新）と内容の更新を実行
     const query = `
-      UPDATE news_ai 
+      UPDATE post 
       SET accept = 1, 
           title = ?,
           content = ?,
@@ -58,7 +56,7 @@ export async function PATCH(request: NextRequest) {
     const db = Database.getInstance();
 
     const query = `
-      UPDATE news_ai 
+      UPDATE post
       SET title = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
