@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     
     // Database インスタンスの取得
     const db = Database.getInstance();
+    console.log([username, password]);
     
     // ユーザー認証のクエリ実行
     const users = await db.select<UserRow>(
