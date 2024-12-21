@@ -1,3 +1,4 @@
+"use client"
 import MenuNavigator from '@/components/layout/MenuNavigator';
 import { usePathname } from 'next/navigation';
 
@@ -14,7 +15,7 @@ const links: NavUrl[] = [
 // ナビゲーションを非表示にするパスのリスト
 const hideNavigationPaths = [
     '/admin/login',
-    // 必要に応じて他のパスを追加
+    '/admin/post/new',
 ];
 
 export default function DashboardLayout({
