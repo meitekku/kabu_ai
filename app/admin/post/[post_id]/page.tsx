@@ -8,7 +8,7 @@ export default function PostForm() {
     title: '',
     content: '',
     code: '',
-    accept: 0
+    accept: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -80,7 +80,7 @@ export default function PostForm() {
               type="text"
               value={formData.title}
               onChange={handleTitleChange}
-              placeholder="タイトルを入力（4桁の数字または3桁+1文字を含めてください）"
+              placeholder="タイトルを入力"
               className="w-full p-2 border rounded"
             />
           </div>
