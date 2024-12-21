@@ -13,14 +13,21 @@ export default function PostForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
-  const extractCode = (title: string) => {
-    const fourDigits = title.match(/\d{4}/);
+  const extractCode = (text: string) => {
+    const fourDigits = text.match(/\d{4}/);
     if (fourDigits) return fourDigits[0];
 
-    const threeDigitsOneLetter = title.match(/\d{3}[A-Za-z0-9]/);
+    const threeDigitsOneLetter = text.match(/\d{3}[A-Za-z0-9]/);
     if (threeDigitsOneLetter) return threeDigitsOneLetter[0];
 
     return null;
+  };
+
+  const processContent = (content: string) => {
+    const lines = content.split('\n');
+    const firstLine = lines[0] || '';
+    const remainingLines = lines.slice(1).join('\n');
+    return { firstLine, remainingLines };
   };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,8 +36,30 @@ export default function PostForm() {
     setFormData({
       ...formData,
       title: newTitle,
-      code: code || ''
+      code: code || formData.code // タイトルからコードが抽出できない場合は既存のコードを保持
     });
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+
+    if (!formData.title.trim()) {
+      // タイトルが空の場合、1行目をタイトルとして扱う
+      const { firstLine, remainingLines } = processContent(newContent);
+      const code = extractCode(firstLine);
+      setFormData({
+        ...formData,
+        title: firstLine,
+        content: remainingLines,
+        code: code || ''
+      });
+    } else {
+      // タイトルがある場合は通常通り処理
+      setFormData({
+        ...formData,
+        content: newContent
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -40,7 +69,7 @@ export default function PostForm() {
     }
 
     if (!formData.code) {
-      alert('titleにコードを入れてください（4桁の数字、または3桁の数字+1文字）');
+      alert('タイトルにコードを入れてください（4桁の数字、または3桁の数字+1文字）');
       return;
     }
 
@@ -58,7 +87,6 @@ export default function PostForm() {
       
       if (data.success) {
         setMessage('投稿が完了しました');
-        // App Routerの新しいナビゲーションAPIを使用
         router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
       } else {
         setMessage('投稿に失敗しました: ' + data.message);
@@ -80,13 +108,13 @@ export default function PostForm() {
               type="text"
               value={formData.title}
               onChange={handleTitleChange}
-              placeholder="タイトルを入力"
+              placeholder="タイトルを入力（空の場合は内容の1行目がタイトルになります）"
               className="w-full p-2 border rounded"
             />
           </div>
           <textarea
             value={formData.content}
-            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+            onChange={handleContentChange}
             placeholder="内容を入力"
             className="w-full h-64 p-2 border rounded resize-none"
           />
