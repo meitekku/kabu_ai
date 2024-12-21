@@ -108,7 +108,7 @@ export default function PostForm() {
               type="text"
               value={formData.title}
               onChange={handleTitleChange}
-              placeholder="タイトルを入力（空の場合は内容の1行目がタイトルになります）"
+              placeholder="タイトルを入力"
               className="w-full p-2 border rounded"
             />
           </div>
