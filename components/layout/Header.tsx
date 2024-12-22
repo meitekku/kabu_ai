@@ -16,7 +16,9 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
         ) : (
           <div className={commonClasses}>{logoLink}</div>
         )}
-        <CompanySearch/>
+        <div className="p-4">
+          <CompanySearch/>
+        </div>
         <div className="iiarea justify-self-end pr-4"></div>
       </div>
     </header>

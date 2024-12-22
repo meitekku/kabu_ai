@@ -14,10 +14,18 @@ interface SearchHistory {
   company: Company;
 }
 
+interface CompanySearchProps {
+  enableNavigation?: boolean;
+  onCompanySelect?: (company: Company) => void;
+}
+
 const HISTORY_KEY = 'company-search-history';
 const MAX_HISTORY_ITEMS = 5;
 
-const CompanySearch: React.FC = () => {
+const CompanySearch: React.FC<CompanySearchProps> = ({ 
+  enableNavigation = true,
+  onCompanySelect 
+}) => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<Company[]>([]);
@@ -25,6 +33,7 @@ const CompanySearch: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [selectedFromSuggestion, setSelectedFromSuggestion] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -96,6 +105,7 @@ const CompanySearch: React.FC = () => {
   const handleSearch = (value: string): void => {
     setSearchTerm(value);
     setSelectedIndex(-1);
+    setSelectedFromSuggestion(false);
     
     if (!value.trim()) {
       setSuggestions([]);
@@ -116,10 +126,19 @@ const CompanySearch: React.FC = () => {
 
   const navigateToNews = (company: Company) => {
     saveToHistory(company);
-    setSearchTerm('');
     setSuggestions([]);
     setShowHistory(false);
-    router.push(`/${company.id}/news`);
+    setSelectedFromSuggestion(true);
+
+    // Call onCompanySelect callback if provided
+    if (onCompanySelect) {
+      onCompanySelect(company);
+    }
+
+    // Only navigate if enableNavigation is true
+    if (enableNavigation) {
+      router.push(`/${company.id}/news`);
+    }
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -155,21 +174,27 @@ const CompanySearch: React.FC = () => {
   };
 
   const selectCompany = (company: Company) => {
+    setSearchTerm(company.name);
     navigateToNews(company);
   };
 
   const handleInputFocus = () => {
+    if (selectedFromSuggestion) {
+      setSearchTerm('');
+      setSelectedFromSuggestion(false);
+      setShowHistory(true);
+      return;
+    }
+
     if (searchTerm.trim()) {
-      // 文字が入力されている場合は検索を実行
       handleSearch(searchTerm);
     } else {
-      // 空の場合は履歴を表示
       setShowHistory(true);
     }
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4" ref={containerRef}>
+    <div className="w-full max-w-4xl mx-auto" ref={containerRef}>
       <div className="relative">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -185,7 +210,7 @@ const CompanySearch: React.FC = () => {
         </div>
 
         {(suggestions.length > 0 || (showHistory && searchHistory.length > 0)) && (
-          <div className="absolute w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+          <div className="absolute w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-10">
             <ul>
               {showHistory ? (
                 searchHistory.map((history, index) => (

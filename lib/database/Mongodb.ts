@@ -1,4 +1,3 @@
-// src/lib/mongoDatabase.ts
 import {
     MongoClient,
     Db,
@@ -44,7 +43,7 @@ import {
       try {
         if (!this.db) {
           await this.client.connect();
-          this.db = this.client.db(process.env.DB_NAME);
+          this.db = this.client.db(process.env.MONGODB_NAME);
           console.log('MongoDB connected');
         }
       } catch (error) {

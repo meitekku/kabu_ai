@@ -9,6 +9,7 @@ interface NavUrl {
 
 const links: NavUrl[] = [
     { href: '/admin/accept_ai', label: '承認リスト' },
+    { href: '/admin/comment', label: 'コメントコピー' },
     { href: '/admin/post/new', label: '投稿ページ' },
 ];
 
