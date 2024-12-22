@@ -1,11 +1,13 @@
-'use client';
+"use client"
 
 import { useState } from 'react';
+import { format, subDays } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import CompanySearch from '@/components/parts/common/CompanySearch';
 import AutoSaveTextarea from '@/components/parts/common/AutoSaveTextarea';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import DateRangeSelector from '@/components/parts/admin/DateRangeSelector';
 
 interface Comment {
   id: string;
@@ -24,12 +26,22 @@ interface Company {
 }
 
 export default function Home() {
+  const now = new Date();
+  const twoDaysAgo = subDays(now, 2);
+
   const [selectedLimit, setSelectedLimit] = useState<number>(300);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isTextareaOpen, setIsTextareaOpen] = useState<boolean>(false);
+  
+  const [startDateTime, setStartDateTime] = useState<string>(
+    format(twoDaysAgo, "yyyy-MM-dd HH:mm:ss")
+  );
+  const [endDateTime, setEndDateTime] = useState<string>(
+    format(now, "yyyy-MM-dd HH:mm:ss")
+  );
 
   const limitOptions = Array.from({ length: 5 }, (_, i) => (i + 3) * 100);
 
@@ -40,11 +52,18 @@ export default function Home() {
       name: company.name
     };
     setSelectedCompany(newCompany);
-    fetchComments(code, newCompany);
+    fetchComments(code, newCompany, startDateTime, endDateTime);
+  };
+
+  const handleDateRangeSelect = (start: string, end: string) => {
+    setStartDateTime(start);
+    setEndDateTime(end);
+    if (selectedCompany) {
+      fetchComments(selectedCompany.id, selectedCompany, start, end);
+    }
   };
 
   const copyToClipboard = async (comments: Comment[], company: Company) => {
-    console.log('クリップボードにコピーします');
     try {
       const promptText = localStorage.getItem('autoSaveText_news_prompt')+'\n' || '';
       const combinedText = promptText + '\n' + comments.map(comment => comment.comment).join('\n');
@@ -56,11 +75,18 @@ export default function Home() {
     }
   };
 
-  const fetchComments = async (code: string, company: Company) => {
+  const fetchComments = async (
+    code: string, 
+    company: Company, 
+    start: string = startDateTime, 
+    end: string = endDateTime
+  ) => {
     setLoading(true);
     setError('');
 
     try {
+      console.log(start, end);
+
       const response = await fetch('/api/admin/yahoo', {
         method: 'POST',
         headers: {
@@ -68,7 +94,9 @@ export default function Home() {
         },
         body: JSON.stringify({
           code: code,
-          limit: selectedLimit
+          limit: selectedLimit,
+          startDateTime: start,
+          endDateTime: end
         })
       });
 
@@ -91,7 +119,7 @@ export default function Home() {
   const handleLimitChange = (newLimit: number) => {
     setSelectedLimit(newLimit);
     if (selectedCompany) {
-      fetchComments(selectedCompany.id, selectedCompany);
+      fetchComments(selectedCompany.id, selectedCompany, startDateTime, endDateTime);
     }
   };
 
@@ -113,28 +141,28 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
+        <div className="flex items-center gap-4">
+          <div className="w-96">
             <CompanySearch 
               enableNavigation={false}
               onCompanySelect={handleCompanySelect}
             />
           </div>
 
-          <div className="w-48">
-            <select
-              id="limit"
-              className="w-full p-2 border rounded-md"
-              value={selectedLimit}
-              onChange={(e) => handleLimitChange(Number(e.target.value))}
-            >
-              {limitOptions.map((limit) => (
-                <option key={limit} value={limit}>
-                  {limit}件
-                </option>
-              ))}
-            </select>
-          </div>
+          <DateRangeSelector onTimeRangeSelect={handleDateRangeSelect} />
+
+          <select
+            id="limit"
+            className="w-24 p-2 border rounded-md"
+            value={selectedLimit}
+            onChange={(e) => handleLimitChange(Number(e.target.value))}
+          >
+            {limitOptions.map((limit) => (
+              <option key={limit} value={limit}>
+                {limit}件
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
