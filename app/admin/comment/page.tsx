@@ -66,7 +66,7 @@ export default function Home() {
   const copyToClipboard = async (comments: Comment[], company: Company) => {
     try {
       const promptText = localStorage.getItem('autoSaveText_news_prompt')+'\n' || '';
-      const combinedText = promptText + '\n' + comments.map(comment => comment.comment).join('\n');
+      const combinedText = promptText + '\n' + comments.map(comment => `${comment.comment_date}\n${comment.comment}\n\n`).join('');
       await navigator.clipboard.writeText(combinedText);
       alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
     } catch (err) {
