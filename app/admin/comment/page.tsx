@@ -43,7 +43,7 @@ export default function Home() {
     format(now, "yyyy-MM-dd HH:mm:ss")
   );
 
-  const limitOptions = Array.from({ length: 5 }, (_, i) => (i + 3) * 100);
+  const limitOptions = Array.from({ length: 5 }, (_, i) => (i + 1) * 100);
 
   const handleCompanySelect = (company: Company) => {
     const code = company.id.split(' ')[0];
@@ -79,7 +79,8 @@ export default function Home() {
     code: string, 
     company: Company, 
     start: string = startDateTime, 
-    end: string = endDateTime
+    end: string = endDateTime,
+    limit: number = selectedLimit
   ) => {
     setLoading(true);
     setError('');
@@ -94,7 +95,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           code: code,
-          limit: selectedLimit,
+          limit: limit,
           startDateTime: start,
           endDateTime: end
         })
@@ -116,11 +117,11 @@ export default function Home() {
     }
   };
 
-  const handleLimitChange = (newLimit: number) => {
-    setSelectedLimit(newLimit);
+  const handleLimitChange = async (newLimit: number) => {
     if (selectedCompany) {
-      fetchComments(selectedCompany.id, selectedCompany, startDateTime, endDateTime);
+      await fetchComments(selectedCompany.id, selectedCompany, startDateTime, endDateTime, newLimit);
     }
+    setSelectedLimit(newLimit);
   };
 
   return (

@@ -9,7 +9,6 @@ import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
 const NewsPage = () => {
   const params = useParams();
   const code = typeof params.code === 'string' ? params.code : '';
-
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

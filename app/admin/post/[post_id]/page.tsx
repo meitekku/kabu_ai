@@ -1,9 +1,13 @@
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 
 export default function PostForm() {
   const router = useRouter();
+  const params = useParams();
+  const postId = params?.post_id as string;
+
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -12,6 +16,53 @@ export default function PostForm() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(!!postId);
+
+  // 既存データの取得
+  useEffect(() => {
+    const fetchPost = async () => {
+      if (!postId || postId === 'new') {
+        setIsLoading(false);
+        return;
+      }
+
+      if (isNaN(Number(postId))) {
+        setIsLoading(false);
+        setMessage('無効なIDです');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/post/get_post', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ post_id: Number(postId) })
+        });
+        
+        const data = await response.json();
+
+        if (data.status === 'success') {
+          setFormData({
+            title: data.data.title,
+            content: data.data.content,
+            code: data.data.code || '',
+            accept: 1
+          });
+        } else {
+          setMessage(data.message || 'データの取得に失敗しました');
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        setMessage('データの取得中にエラーが発生しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [postId]);
 
   const extractCode = (text: string) => {
     const fourDigits = text.match(/\d{4}/);
@@ -36,7 +87,7 @@ export default function PostForm() {
     setFormData({
       ...formData,
       title: newTitle,
-      code: code || formData.code // タイトルからコードが抽出できない場合は既存のコードを保持
+      code: code || formData.code
     });
   };
 
@@ -44,7 +95,6 @@ export default function PostForm() {
     const newContent = e.target.value;
 
     if (!formData.title.trim()) {
-      // タイトルが空の場合、1行目をタイトルとして扱う
       const { firstLine, remainingLines } = processContent(newContent);
       const code = extractCode(firstLine);
       setFormData({
@@ -54,7 +104,6 @@ export default function PostForm() {
         code: code || ''
       });
     } else {
-      // タイトルがある場合は通常通り処理
       setFormData({
         ...formData,
         content: newContent
@@ -76,20 +125,24 @@ export default function PostForm() {
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/post', {
-        method: 'POST',
+        method: postId && postId !== 'new' ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          id: postId && postId !== 'new' ? Number(postId) : undefined
+        }),
       });
 
       const data = await response.json();
+      console.log('Submit response:', data);
       
       if (data.success) {
-        setMessage('投稿が完了しました');
+        setMessage(postId && postId !== 'new' ? '更新が完了しました' : '投稿が完了しました');
         router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
       } else {
-        setMessage('投稿に失敗しました: ' + data.message);
+        setMessage((postId && postId !== 'new' ? '更新に失敗しました: ' : '投稿に失敗しました: ') + data.message);
       }
     } catch (error) {
       setMessage('エラーが発生しました');
@@ -98,6 +151,10 @@ export default function PostForm() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="w-full text-center p-4">読み込み中...</div>;
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4">
@@ -120,14 +177,25 @@ export default function PostForm() {
           />
         </div>
 
-        <div className="w-32 flex flex-col items-center">
+        <div className="w-32 flex flex-col items-center gap-2">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.code}
             className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? '投稿中...' : '投稿する'}
+            {isSubmitting 
+              ? (postId && postId !== 'new' ? '更新中...' : '投稿中...') 
+              : (postId && postId !== 'new' ? '更新する' : '投稿する')}
           </button>
+          
+          {postId && postId !== 'new' && (
+            <a 
+              href={`/${formData.code}/news/article/${postId}`}
+              className="text-blue-500 hover:text-blue-600 text-sm mt-2"
+            >
+              記事を見る
+            </a>
+          )}
         </div>
       </div>
 

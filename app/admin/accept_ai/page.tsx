@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import ApprovalList from '@/components/comment/admin/ApprovalList';
-//import LogoutButton from '@/components/parts/common/LogoutButton';
 
 // データ型の定義
 interface ApprovalItem {

@@ -20,12 +20,67 @@ interface ApiResponse {
   error?: string;
 }
 
+// POST handler for creating new posts
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+  try {
+    const body = await request.json() as PostRequest;
+    const { code, title, content, site = 0, accept = 0 } = body;
+
+    if (!code || !title || !content) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Code, title and content are required',
+        },
+        { status: 400 }
+      );
+    }
+
+    const db = Database.getInstance();
+    const insertId = await db.insert(
+      'INSERT INTO post (code, title, content, site, accept) VALUES (?, ?, ?, ?, ?)',
+      [code, title, content, site, accept]
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Post created successfully',
+        data: {
+          id: insertId
+        }
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error creating post:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT handler for updating existing posts
+export async function PUT(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const body = await request.json() as PostRequest;
     const { id, code, title, content, site = 0, accept = 0 } = body;
 
-    // 必須フィールドの検証
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'ID is required for updating a post',
+        },
+        { status: 400 }
+      );
+    }
+
     if (!code || !title || !content) {
       return NextResponse.json(
         {
@@ -38,43 +93,33 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const db = Database.getInstance();
 
-    if (id) {
-      // Update existing record
-      await db.update(
-        'UPDATE post SET code = ?, title = ?, content = ?, site = ?, accept = ? WHERE id = ?',
-        [code, title, content, site, accept, id]
-      );
+    const affectedRows = await db.update(
+      'UPDATE post SET code = ?, title = ?, content = ?, site = ?, accept = ? WHERE id = ?',
+      [code, title, content, site, accept, id]
+    );
 
+    if (affectedRows === 0) {
       return NextResponse.json(
         {
-          success: true,
-          message: 'Post updated successfully',
-          data: {
-            id: id
-          }
+          success: false,
+          message: 'Post not found or no changes made',
         },
-        { status: 200 }
-      );
-    } else {
-      // Insert new record
-      const insertId = await db.insert(
-        'INSERT INTO post (code, title, content, site, accept) VALUES (?, ?, ?, ?, ?)',
-        [code, title, content, site, accept]
-      );
-
-      return NextResponse.json(
-        {
-          success: true,
-          message: 'Post created successfully',
-          data: {
-            id: insertId
-          }
-        },
-        { status: 201 }
+        { status: 404 }
       );
     }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Post updated successfully',
+        data: {
+          id: id
+        }
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error('Error saving post:', error);
+    console.error('Error updating post:', error);
     return NextResponse.json(
       {
         success: false,

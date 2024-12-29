@@ -20,7 +20,6 @@ interface ShareButtonProps {
   text?: string;
 }
 
-// X (Twitter) Share Button Component
 const TwitterShareButton = ({ url, text = '' }: ShareButtonProps) => {
   const handleShare = () => {
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
@@ -38,7 +37,6 @@ const TwitterShareButton = ({ url, text = '' }: ShareButtonProps) => {
   );
 };
 
-// Facebook Share Button Component
 const FacebookShareButton = ({ url }: ShareButtonProps) => {
   const handleShare = () => {
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
@@ -61,7 +59,6 @@ const FacebookShareButton = ({ url }: ShareButtonProps) => {
   );
 };
 
-// LINE Share Button Component
 const LineShareButton = ({ url }: ShareButtonProps) => {
   const handleShare = () => {
     const shareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
@@ -143,7 +140,7 @@ const ArticleDetail = () => {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   return (
-    <div className="container mx-auto">
+    <div className="mx-auto">
       <div className="mb-4">
         <Link 
           href={`/${code}/news`}
