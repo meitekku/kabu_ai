@@ -75,7 +75,7 @@ const YahooBBSRanking: React.FC<YahooBBSRankingProps> = ({
       onChange={handleChange}
       className="w-40 p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
     >
-      <option value="">選択してください</option>
+      <option value="">yahooランキング</option>
       {companies.map((company) => (
         <option key={company.code} value={company.code}>
           {company.code} {company.company_name}
