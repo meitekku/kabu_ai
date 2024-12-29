@@ -1,6 +1,6 @@
 "use client"
-
-import { useState } from 'react';
+import PostForm from '@/components/comment/admin/PostForm';
+import { useState, useEffect } from 'react';
 import { format, subDays } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -35,6 +35,7 @@ export default function Home() {
   const [error, setError] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isTextareaOpen, setIsTextareaOpen] = useState<boolean>(false);
+  const [isPostFormOpen, setIsPostFormOpen] = useState<boolean>(false);
   
   const [startDateTime, setStartDateTime] = useState<string>(
     format(twoDaysAgo, "yyyy-MM-dd HH:mm:ss")
@@ -44,6 +45,26 @@ export default function Home() {
   );
 
   const limitOptions = Array.from({ length: 5 }, (_, i) => (i + 1) * 100);
+
+  useEffect(() => {
+    const savedTextareaOpen = localStorage.getItem('isTextareaOpen');
+    const savedPostFormOpen = localStorage.getItem('isPostFormOpen');
+    
+    if (savedTextareaOpen) {
+      setIsTextareaOpen(JSON.parse(savedTextareaOpen));
+    }
+    if (savedPostFormOpen) {
+      setIsPostFormOpen(JSON.parse(savedPostFormOpen));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('isTextareaOpen', JSON.stringify(isTextareaOpen));
+  }, [isTextareaOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('isPostFormOpen', JSON.stringify(isPostFormOpen));
+  }, [isPostFormOpen]);
 
   const handleCompanySelect = (company: Company) => {
     const code = company.id.split(' ')[0];
@@ -86,8 +107,6 @@ export default function Home() {
     setError('');
 
     try {
-      console.log(start, end);
-
       const response = await fetch('/api/admin/yahoo', {
         method: 'POST',
         headers: {
@@ -127,6 +146,17 @@ export default function Home() {
   return (
     <main className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
+        <Button
+          onClick={() => setIsPostFormOpen(!isPostFormOpen)}
+          variant="outline"
+          className="mb-4 w-full flex items-center justify-between"
+        >
+          投稿フォーム
+          {isPostFormOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </Button>
+        
+        {isPostFormOpen && <PostForm />}
+        
         <Button
           onClick={() => setIsTextareaOpen(!isTextareaOpen)}
           variant="outline"

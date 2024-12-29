@@ -12,32 +12,27 @@ interface DateRangeSelectorProps {
 
 const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({ onTimeRangeSelect }) => {
   const now = new Date();
-  const oneDaysAgo = subDays(now, 1);
-  
-  const [range, setRange] = useState([0, 48]); // [開始時刻, 終了時刻]
-  const [previewStartDate, setPreviewStartDate] = useState<Date>(oneDaysAgo);
+  const [range, setRange] = useState([0, 48]);
+  const [previewStartDate, setPreviewStartDate] = useState<Date>(() => subDays(now, 1));
   const [previewEndDate, setPreviewEndDate] = useState<Date>(now);
   const [buttonText, setButtonText] = useState("期間選択");
   const [isOpen, setIsOpen] = useState(false);
 
   const handleRangeChange = (newRange: number[]) => {
     setRange(newRange);
-    
+    const currentTime = new Date();
     const hoursFromStart = 48 - newRange[0];
     const hoursFromEnd = 48 - newRange[1];
     
-    const newStartDate = new Date(now.getTime() - (hoursFromStart * 60 * 60 * 1000));
-    const newEndDate = new Date(now.getTime() - (hoursFromEnd * 60 * 60 * 1000));
+    const newStartDate = new Date(currentTime.getTime() - (hoursFromStart * 60 * 60 * 1000));
+    const newEndDate = new Date(currentTime.getTime() - (hoursFromEnd * 60 * 60 * 1000));
     
     setPreviewStartDate(newStartDate);
     setPreviewEndDate(newEndDate);
-    
-    // ボタンテキストの更新
     updateButtonText(newStartDate, newEndDate);
   };
 
   const updateButtonText = (start: Date, end: Date) => {
-    // 時間範囲に応じてテキストを設定
     const diffInHours = Math.abs(end.getTime() - start.getTime()) / (1000 * 60 * 60);
     
     if (diffInHours === 24) {
@@ -50,10 +45,18 @@ const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({ onTimeRangeSelect
   };
 
   const handleApply = () => {
-    const formattedStartDate = format(previewStartDate, "yyyy-MM-dd HH:mm:ss");
-    const formattedEndDate = format(previewEndDate, "yyyy-MM-dd HH:mm:ss");
+    const currentTime = new Date();
+    const hoursFromStart = 48 - range[0];
+    const hoursFromEnd = 48 - range[1];
+    
+    const finalStartDate = new Date(currentTime.getTime() - (hoursFromStart * 60 * 60 * 1000));
+    const finalEndDate = new Date(currentTime.getTime() - (hoursFromEnd * 60 * 60 * 1000));
+
+    const formattedStartDate = format(finalStartDate, "yyyy-MM-dd HH:mm:ss");
+    const formattedEndDate = format(finalEndDate, "yyyy-MM-dd HH:mm:ss");
+    
     onTimeRangeSelect(formattedStartDate, formattedEndDate);
-    setIsOpen(false); // ポップアップを閉じる
+    setIsOpen(false);
   };
 
   const formatDateTime = (date: Date) => {
