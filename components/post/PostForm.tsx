@@ -1,11 +1,91 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 
+// PostTitleList コンポーネント
+interface PostTitle {
+  id: number;
+  title: string;
+}
+
+interface PostTitleListProps {
+  numPosts: number;
+  fontSize?: number;
+}
+
+const PostTitleList: React.FC<PostTitleListProps> = ({ 
+  numPosts = 5,
+  fontSize = 16
+}) => {
+  const [posts, setPosts] = useState<PostTitle[]>([]);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch('/api/post/get_list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ num: numPosts }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch posts');
+        }
+
+        const data = await response.json();
+        if (data.status === 'success') {
+          setPosts(data.data);
+        } else {
+          setError(data.message || 'Failed to fetch posts');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, [numPosts]);
+
+  if (loading) {
+    return <div className="w-full p-4">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="w-full p-4 text-red-500">{error}</div>;
+  }
+
+  return (
+    <ul className="w-full space-y-2">
+      {posts.map((post) => (
+        <li
+          key={post.id}
+          className="overflow-hidden"
+          style={{
+            fontSize: `${fontSize}px`,
+            WebkitLineClamp: 1,
+            display: '-webkit-box',
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {post.title}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+// メインのPostFormコンポーネント
 export default function PostForm({ initialPostId = 'new' }) {
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const postId = params?.post_id as string || initialPostId;
 
   const [formData, setFormData] = useState({
@@ -175,7 +255,7 @@ export default function PostForm({ initialPostId = 'new' }) {
             className="w-full h-64 p-2 border rounded resize-none"
           />
         </div>
-
+  
         <div className="w-32 flex flex-col items-center gap-2">
           <button
             onClick={handleSubmit}
@@ -195,9 +275,19 @@ export default function PostForm({ initialPostId = 'new' }) {
               記事を見る
             </a>
           )}
+  
+          {/* 空の要素を追加してスペースを確保 */}
+          <div className="h-2" />
+  
+          {/* /admin/commentの場合のみPostTitleListを表示 */}
+          {pathname === '/admin/comment' && (
+            <div className="w-full">
+              <PostTitleList numPosts={8} fontSize={14} />
+            </div>
+          )}
         </div>
       </div>
-
+  
       {message && (
         <div className="mt-4 p-2 text-center rounded bg-gray-100">
           {message}
