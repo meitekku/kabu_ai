@@ -39,14 +39,11 @@ export default function Home() {
   const now = new Date();
   const twoDaysAgo = subDays(now, 2);
 
-  const [selectedLimit, setSelectedLimit] = useState<number>(300);
+  const [selectedLimit, setSelectedLimit] = useState<number>(500);
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-
-  // ※ companyInfo を state に持たせず、都度パラメータとしてやり取りする方法に変えてもOK
-  // const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
 
   const [isTextareaOpen, setIsTextareaOpen] = useState<boolean>(false);
   const [isPostFormOpen, setIsPostFormOpen] = useState<boolean>(false);
@@ -58,7 +55,7 @@ export default function Home() {
     format(now, "yyyy-MM-dd HH:mm:ss")
   );
 
-  const limitOptions = Array.from({ length: 5 }, (_, i) => (i + 1) * 100);
+  const limitOptions = Array.from({ length: 6 }, (_, i) => (i + 3) * 100);
 
   useEffect(() => {
     const savedTextareaOpen = localStorage.getItem('isTextareaOpen');
@@ -309,7 +306,7 @@ export default function Home() {
           投稿フォーム
           {isPostFormOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </Button>
-        {isPostFormOpen && <PostForm />}
+        {isPostFormOpen && <PostForm redirectAfterPost={false} />}
 
         <Button
           onClick={() => setIsTextareaOpen(!isTextareaOpen)}

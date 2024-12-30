@@ -82,7 +82,15 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
 };
 
 // メインのPostFormコンポーネント
-export default function PostForm({ initialPostId = 'new' }) {
+interface PostFormProps {
+  initialPostId?: string;
+  redirectAfterPost?: boolean;
+}
+
+export default function PostForm({ 
+  initialPostId = 'new',
+  redirectAfterPost = true 
+}: PostFormProps) {
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -96,7 +104,29 @@ export default function PostForm({ initialPostId = 'new' }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageOpacity, setMessageOpacity] = useState(1);
   const [isLoading, setIsLoading] = useState(!!postId);
+
+  useEffect(() => {
+    let fadeTimeout: NodeJS.Timeout;
+    let hideTimeout: NodeJS.Timeout;
+
+    if (message && !redirectAfterPost) {
+      fadeTimeout = setTimeout(() => {
+        setMessageOpacity(0);
+      }, 3000);
+
+      hideTimeout = setTimeout(() => {
+        setMessage('');
+        setMessageOpacity(1);
+      }, 3300); // Additional 300ms for fade animation to complete
+    }
+
+    return () => {
+      if (fadeTimeout) clearTimeout(fadeTimeout);
+      if (hideTimeout) clearTimeout(hideTimeout);
+    };
+  }, [message, redirectAfterPost]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -219,7 +249,16 @@ export default function PostForm({ initialPostId = 'new' }) {
       
       if (data.success) {
         setMessage(postId && postId !== 'new' ? '更新が完了しました' : '投稿が完了しました');
-        router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
+        if (redirectAfterPost) {
+          router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
+        } else {
+          // Reset form data when not redirecting
+          setFormData(prev => ({
+            ...prev,
+            title: '',
+            content: ''
+          }));
+        }
       } else {
         setMessage((postId && postId !== 'new' ? '更新に失敗しました: ' : '投稿に失敗しました: ') + data.message);
       }
@@ -276,10 +315,8 @@ export default function PostForm({ initialPostId = 'new' }) {
             </a>
           )}
   
-          {/* 空の要素を追加してスペースを確保 */}
           <div className="h-2" />
   
-          {/* /admin/commentの場合のみPostTitleListを表示 */}
           {pathname === '/admin/comment' && (
             <div className="w-full">
               <PostTitleList numPosts={8} fontSize={14} />
@@ -289,7 +326,10 @@ export default function PostForm({ initialPostId = 'new' }) {
       </div>
   
       {message && (
-        <div className="mt-4 p-2 text-center rounded bg-gray-100">
+        <div 
+          className="mt-4 p-2 text-center rounded bg-gray-100 transition-opacity duration-300"
+          style={{ opacity: messageOpacity }}
+        >
           {message}
         </div>
       )}
