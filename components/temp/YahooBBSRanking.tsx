@@ -23,7 +23,6 @@ const YahooBBSRanking: React.FC<YahooBBSRankingProps> = ({
   const [selectedCode, setSelectedCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchData = async () => {
     try {
@@ -39,7 +38,6 @@ const YahooBBSRanking: React.FC<YahooBBSRankingProps> = ({
 
       if (result.success) {
         setCompanies(result.data);
-        setLastUpdated(new Date());
       } else {
         setError('Failed to fetch data');
       }
