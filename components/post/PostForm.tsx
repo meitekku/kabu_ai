@@ -12,11 +12,13 @@ interface PostTitle {
 interface PostTitleListProps {
   numPosts: number;
   fontSize?: number;
+  refreshTrigger?: number;
 }
 
 const PostTitleList: React.FC<PostTitleListProps> = ({ 
   numPosts = 5,
-  fontSize = 16
+  fontSize = 16,
+  refreshTrigger = 0
 }) => {
   const [posts, setPosts] = useState<PostTitle[]>([]);
   const [error, setError] = useState<string>('');
@@ -25,6 +27,7 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        setLoading(true);
         const response = await fetch('/api/post/get_list', {
           method: 'POST',
           headers: {
@@ -51,7 +54,7 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
     };
 
     fetchPosts();
-  }, [numPosts]);
+  }, [numPosts, refreshTrigger]);
 
   if (loading) {
     return <div className="w-full p-4">Loading...</div>;
@@ -95,6 +98,7 @@ export default function PostForm({
   const params = useParams();
   const pathname = usePathname();
   const postId = params?.post_id as string || initialPostId;
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -119,7 +123,7 @@ export default function PostForm({
       hideTimeout = setTimeout(() => {
         setMessage('');
         setMessageOpacity(1);
-      }, 3300); // Additional 300ms for fade animation to complete
+      }, 3300);
     }
 
     return () => {
@@ -249,10 +253,11 @@ export default function PostForm({
       
       if (data.success) {
         setMessage(postId && postId !== 'new' ? '更新が完了しました' : '投稿が完了しました');
+        setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
+        
         if (redirectAfterPost) {
           router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
         } else {
-          // Reset form data when not redirecting
           setFormData(prev => ({
             ...prev,
             title: '',
@@ -319,7 +324,11 @@ export default function PostForm({
   
           {pathname === '/admin/comment' && (
             <div className="w-full">
-              <PostTitleList numPosts={8} fontSize={14} />
+              <PostTitleList 
+                numPosts={8} 
+                fontSize={14}
+                refreshTrigger={refreshTrigger}
+              />
             </div>
           )}
         </div>

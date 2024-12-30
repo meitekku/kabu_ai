@@ -96,9 +96,6 @@ const YahooBBSRanking: React.FC<YahooBBSRankingProps> = ({
           </option>
         ))}
       </select>
-      <div className="text-xs text-gray-500">
-        最終更新: {lastUpdated.toLocaleString()}
-      </div>
     </div>
   );
 };
