@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { X } from 'lucide-react';
+import './post.css';
 
 interface Article {
   id: number;
@@ -182,7 +183,7 @@ const ArticleDetail = () => {
                 <FacebookShareButton url={currentUrl} />
               </div>
             </div>
-            <div className="prose max-w-none leading-relaxed text-gray-800">
+            <div className="post max-w-none leading-relaxed text-gray-800">
               {formatContent(article.content)}
             </div>
           </div>
