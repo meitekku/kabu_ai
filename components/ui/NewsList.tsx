@@ -13,9 +13,14 @@ interface NewsItem {
   company_name: string;
 }
 
-const NewsList = () => {
+interface NewsListProps {
+  num?: string;
+}
+
+const NewsList = ({ num = '10' }: NewsListProps) => {
   const params = useParams();
   const code = params.code as string;
+  const limit = parseInt(num);
 
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +34,7 @@ const NewsList = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, limit }),
         });
 
         if (!response.ok) {
@@ -47,7 +52,7 @@ const NewsList = () => {
     if (code) {
       fetchNews();
     }
-  }, [code]);
+  }, [code, limit]);
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading news...</div>;
@@ -62,26 +67,26 @@ const NewsList = () => {
   }
 
   return (
-      <div className="space-y-4">
-        {news.map((item) => (
-          <Link 
-            href={`/${code}/news/article/${item.id}`}
-            key={item.id}
-            className="block"
-          >
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold text-lg">{item.title}</div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(item.created_at).toLocaleString('ja-JP')}
-                  </div>
+    <div className="space-y-4">
+      {news.map((item) => (
+        <Link 
+          href={`/${code}/news/article/${item.id}`}
+          key={item.id}
+          className="block"
+        >
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-lg">{item.title}</div>
+                <div className="text-sm text-gray-500">
+                  {new Date(item.created_at).toLocaleString('ja-JP')}
                 </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      ))}
+    </div>
   );
 };
 

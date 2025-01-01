@@ -14,7 +14,9 @@ export async function POST(
   { params }: { params: Promise<{ code: string }> }
 ): Promise<NextResponse> {
   try {
-    const {code} = await params;
+    const { code } = await params;
+    const body = await request.json();
+    const limit = body.limit || 10;
 
     if (!code) {
       return NextResponse.json(
@@ -24,21 +26,21 @@ export async function POST(
     }
 
     const db = Database.getInstance();
-    const news = await db.select<NewsRecord>(
-      `SELECT 
-        id,
-        code,
-        title,
-        created_at
-      FROM post 
-      WHERE code = ?
-      AND accept = 1
-      ORDER BY created_at DESC
-      LIMIT 50`,
-      [code]
-    );
-
-    console.log('News:', news);
+    const query = code === 'all'
+      ? `SELECT id, code, title, created_at
+         FROM post 
+         WHERE accept = 1
+         ORDER BY created_at DESC
+         LIMIT 50`
+      : `SELECT id, code, title, created_at
+         FROM post 
+         WHERE code = ?
+         AND accept = 1
+         ORDER BY created_at DESC
+         LIMIT ?`;
+         
+    const queryParams = code === 'all' ? [limit] : [code, limit];
+    const news = await db.select<NewsRecord>(query, queryParams);
 
     return NextResponse.json({ success: true, data: news });
   } catch (error) {

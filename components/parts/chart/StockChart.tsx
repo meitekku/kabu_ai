@@ -16,7 +16,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChartData, PriceRecord, ApiResponse } from '@/types/parts/chart/MainChart';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
-// ExtendedChartData に ma5, ma25, ma75 を追加します
 interface ExtendedChartData extends ChartData {
   highLowBar: [number, number];
   candlestick: [number, number];
@@ -36,22 +35,18 @@ interface StockChartProps {
   code: string;
 }
 
-// 数値をフォーマットする関数
 const formatNumber = (value: number | undefined): string => {
   if (typeof value === 'undefined' || Number.isNaN(value)) return '-';
   return value.toLocaleString();
 };
 
-// 移動平均(MA)を計算する関数
 const calculateMA = (data: PriceRecord[], days: number): number[] => {
   const result: number[] = [];
   for (let i = 0; i < data.length; i++) {
-    // 対象期間に足りない部分は NaN などで埋める
     if (i < days - 1) {
       result.push(NaN);
       continue;
     }
-    // close の合計を days で割って平均を算出
     const sum = data.slice(i - days + 1, i + 1).reduce((acc, curr) => acc + curr.close, 0);
     result.push(sum / days);
   }
@@ -75,20 +70,19 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         if (!response.ok) throw new Error('Data fetch failed');
 
         const result = (await response.json()) as ApiResponse<PriceRecord[]>;
-        if (!result.success || !result.data) {
-          throw new Error(result.error || 'Failed to fetch data');
+        if (!result.success || !result.data || result.data.length === 0) {
+          setData([]);
+          return;
         }
 
         const sortedData = result.data.sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
-        // 1) 移動平均線を計算 (5日, 25日, 75日)
         const ma5 = calculateMA(sortedData, 5);
         const ma25 = calculateMA(sortedData, 25);
         const ma75 = calculateMA(sortedData, 75);
 
-        // 2) フォーマット済みデータに移動平均値を含める
         const formattedData: ExtendedChartData[] = result.data.map((item, index) => {
           const isPositive = item.close >= item.open;
           return {
@@ -107,13 +101,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           };
         });
 
-        console.log('formattedData:', formattedData);
-
-        // 日付順にソート
-        formattedData.sort((a, b) => {
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        });
-
+        formattedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         setData(formattedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -127,8 +115,8 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
   if (loading) return <div className="text-center p-4">Loading...</div>;
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+  if (data.length === 0) return null;
 
-  // カスタムツールチップにも移動平均を表示させる
   const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload }) => {
     if (!active || !payload || payload.length === 0) return null;
     const chartData = payload[0]?.payload;
@@ -156,86 +144,29 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           <ResponsiveContainer width="100%" height="70%">
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
-                hide
-              />
-              <YAxis
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 12 }}
-              />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" hide />
+              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-
-              {/* 値幅を示す棒(上下ヒゲ) */}
-              <Bar
-                dataKey="highLowBar"
-                fill="none"
-                stroke="#000000"
-                strokeWidth={1}
-                name="値幅"
-              />
-
-              {/* 実体を示すバー(ローソク本体) */}
-              <Bar
-                dataKey="candlestick"
-                name="株価"
-                maxBarSize={8}
-              >
+              <Bar dataKey="highLowBar" fill="none" stroke="#000000" strokeWidth={1} name="値幅" />
+              <Bar dataKey="candlestick" name="株価" maxBarSize={8}>
                 {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    stroke={entry.color}
-                  />
+                  <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />
                 ))}
               </Bar>
-
-              {/* 3) 移動平均線を描画 */}
-              <Line
-                type="monotone"
-                dataKey="ma5"
-                stroke="#00ff00"
-                dot={false}
-                name="MA(5)"
-              />
-              <Line
-                type="monotone"
-                dataKey="ma25"
-                stroke="#ff0000"
-                dot={false}
-                name="MA(25)"
-              />
-              <Line
-                type="monotone"
-                dataKey="ma75"
-                stroke="#0000ff"
-                dot={false}
-                name="MA(75)"
-              />
+              <Line type="monotone" dataKey="ma5" stroke="#00ff00" dot={false} name="MA(5)" />
+              <Line type="monotone" dataKey="ma25" stroke="#ff0000" dot={false} name="MA(25)" />
+              <Line type="monotone" dataKey="ma75" stroke="#0000ff" dot={false} name="MA(75)" />
             </ComposedChart>
           </ResponsiveContainer>
 
           <ResponsiveContainer width="100%" height="30%">
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                tick={{ fontSize: 12 }}
-              />
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip content={<CustomTooltip />} />
-
-              {/* 出来高を示すバー */}
-              <Bar
-                dataKey="volume"
-                name="出来高"
-              >
+              <Bar dataKey="volume" name="出来高">
                 {data.map((entry, index) => (
                   <Cell
                     key={`volume-cell-${index}`}

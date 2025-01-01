@@ -17,6 +17,7 @@ interface CompanyInfo {
 
 const CompanyBasicInfo = ({ code }: { code: string }) => {
   const [info, setInfo] = useState<CompanyInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
@@ -27,18 +28,21 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           body: JSON.stringify({ code }),
         });
         const data = await response.json();
-        if (data.success) {
+        if (data.success && data.data?.[0]) {
           setInfo(data.data[0]);
         }
       } catch (error) {
         console.error('Error fetching company info:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchCompanyInfo();
   }, [code]);
 
-  if (!info) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (!info) return null;
 
   const formatNumber = (value: string | null | undefined, decimals: number = 2, suffix: string = '') => {
     if (value === null || value === undefined || value === '') {
