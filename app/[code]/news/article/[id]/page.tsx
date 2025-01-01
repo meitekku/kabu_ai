@@ -112,7 +112,21 @@ const ArticleDetail = () => {
     }
   }, [id, code]);
 
+  const containsHTML = (str: string) => {
+    const htmlRegex = /<[a-z][\s\S]*>/i;
+    return htmlRegex.test(str);
+  };
+
   const formatContent = (content: string) => {
+    if (containsHTML(content)) {
+      return (
+        <div 
+          className="prose max-w-none leading-relaxed text-gray-800"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      );
+    }
+
     return content.split('\n\n').map((paragraph, index) => (
       <p key={index} className="mb-4 last:mb-0">
         {paragraph.split('\n').map((line, lineIndex) => (
