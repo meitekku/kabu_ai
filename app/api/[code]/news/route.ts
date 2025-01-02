@@ -31,7 +31,7 @@ export async function POST(
          FROM post 
          WHERE accept = 1
          ORDER BY created_at DESC
-         LIMIT 50`
+         LIMIT 150`
       : `SELECT id, code, title, created_at
          FROM post 
          WHERE code = ?
