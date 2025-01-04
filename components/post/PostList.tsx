@@ -119,7 +119,7 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
           {post.title}
           {post.created_at && (
             <span className="text-sm text-gray-500 ml-2">
-              {new Date(post.created_at)}
+              {new Date(post.created_at).toLocaleDateString()}
             </span>
           )}
         </li>
