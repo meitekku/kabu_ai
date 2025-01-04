@@ -5,7 +5,7 @@ import { RowDataPacket } from 'mysql2';
 interface NewsRecord extends RowDataPacket {
   id: number;
   title: string;
-  created_at: Date;
+  created_at: string;
   code: string;
 }
 

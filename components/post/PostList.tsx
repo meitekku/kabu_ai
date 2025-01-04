@@ -52,7 +52,6 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
         }
 
         const data: ApiResponse = await response.json();
-        console.log(data);
         
         if (!isMounted) return;
 
@@ -120,7 +119,7 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
           {post.title}
           {post.created_at && (
             <span className="text-sm text-gray-500 ml-2">
-              {new Date(post.created_at).toLocaleDateString()}
+              {new Date(post.created_at)}
             </span>
           )}
         </li>
