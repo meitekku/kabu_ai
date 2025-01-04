@@ -79,7 +79,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
               <div className="flex items-center justify-between">
                 <div className="font-semibold text-lg">{item.title}</div>
                 <div className="text-sm text-gray-500">
-                  {new Date(item.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
+                  {item.created_at}
                 </div>
               </div>
             </CardContent>
