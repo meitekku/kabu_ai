@@ -1,4 +1,10 @@
 import DefaultTemplate from "@/components/template/DefaultTemplate";
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: '株AIトップページ',
+  description: '株AIは現在開発中のWebサイトです。',
+}
 
 export default function Home() {
   return (
