@@ -45,7 +45,8 @@ export class DatabaseService {
       port: config.port || 3306,
       waitForConnections: true,
       connectionLimit: config.connectionLimit || 10,
-      queueLimit: 0
+      queueLimit: 0,
+      timezone: 'Asia/Tokyo'
     });
   }
 

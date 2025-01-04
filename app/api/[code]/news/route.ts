@@ -41,6 +41,7 @@ export async function POST(
          
     const queryParams = code === 'all' ? [limit] : [code, limit];
     const news = await db.select<NewsRecord>(query, queryParams);
+    console.log(news);
 
     return NextResponse.json({ success: true, data: news });
   } catch (error) {

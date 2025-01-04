@@ -42,6 +42,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
           throw new Error('Failed to fetch news');
         }
         const data = await response.json();
+        console.log(data);
         setNews(data.data || []);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
