@@ -37,7 +37,7 @@ interface Company {
 
 export default function Home() {
   const now = new Date();
-  const twoDaysAgo = subDays(now, 2);
+  const twoDaysAgo = subDays(now, 7);
 
   const [selectedLimit, setSelectedLimit] = useState<number>(500);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -241,6 +241,14 @@ export default function Home() {
   ) => {
     setLoading(true);
     setError('');
+    console.log(
+      JSON.stringify({
+        code: code,
+        limit: limit,
+        startDateTime: start,
+        endDateTime: end
+      })      
+    );
 
     try {
       const response = await fetch('/api/admin/yahoo', {
