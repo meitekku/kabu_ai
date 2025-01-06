@@ -83,7 +83,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         const ma25 = calculateMA(sortedData, 25);
         const ma75 = calculateMA(sortedData, 75);
 
-        const formattedData: ExtendedChartData[] = result.data.map((item, index) => {
+        const formattedData: ExtendedChartData[] = sortedData.map((item, index) => {
           const isPositive = item.close >= item.open;
           return {
             date: new Date(item.date).toLocaleDateString(),
@@ -92,8 +92,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             low: item.low,
             close: item.close,
             volume: item.volume,
+            // [最小値, 最大値] → ヒゲ
             highLowBar: [item.low, item.high],
+            // [始値, 終値] → 実体
             candlestick: [item.open, item.close],
+            // 終値 >= 始値 なら上昇なので赤、そうでなければ青
             color: isPositive ? '#ff0000' : '#0000ff',
             ma5: ma5[index],
             ma25: ma25[index],
@@ -101,7 +104,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           };
         });
 
-        formattedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         setData(formattedData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -142,16 +144,31 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       <CardContent>
         <div className="h-96">
           <ResponsiveContainer width="100%" height="70%">
-            <ComposedChart data={data}>
+            {/* barCategoryGap, barGap を 0 にしてバーが横にズレないようにする */}
+            <ComposedChart data={data} barCategoryGap={0} barGap={0}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" hide />
               <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="highLowBar" fill="none" stroke="#000000" strokeWidth={1} name="値幅" />
-              <Bar dataKey="candlestick" name="株価" maxBarSize={8}>
+              {/* ヒゲ用バー */}
+              <Bar
+                dataKey="highLowBar"
+                fill="none"
+                stroke="#000000"
+                strokeWidth={1}
+                name="値幅"
+                // 細くして、ヒゲっぽい見た目にする
+                barSize={1}
+              />
+              {/* 実体用バー */}
+              <Bar dataKey="candlestick" name="株価" barSize={8}>
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke={entry.color} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    stroke={entry.color}
+                  />
                 ))}
               </Bar>
               <Line type="monotone" dataKey="ma5" stroke="#00ff00" dot={false} name="MA(5)" />
