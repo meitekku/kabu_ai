@@ -158,7 +158,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 stroke="#000000"
                 strokeWidth={1}
                 name="値幅"
-                // 細くして、ヒゲっぽい見た目にする
                 barSize={1}
               />
               {/* 実体用バー */}
