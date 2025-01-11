@@ -40,7 +40,6 @@ jobs:
           *.* \
           app \
           components \
-          hooks \
           lib \
           public \
           types \
