@@ -106,3 +106,19 @@ INFO:     Application shutdown complete.
 
 2025-01-11T14:49:26.035Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:58845 - "GET /stock/1518 HTTP/1.1" 200 OK
 
+2025-01-11T14:56:30.080Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:60592 - "OPTIONS /stock/1518 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T14:56:30.344Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:60594 - "GET /stock/1518 HTTP/1.1" 200 OK
+
+2025-01-11T15:02:39.931Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:62135 - "OPTIONS /stock/1822 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T15:02:40.196Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:62137 - "GET /stock/1822 HTTP/1.1" 200 OK
+
+2025-01-11T15:25:22.935Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:51462 - "OPTIONS /stock/1822 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T15:25:23.184Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:51464 - "GET /stock/1822 HTTP/1.1" 200 OK
+
+2025-01-11T15:25:28.442Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:51491 - "OPTIONS /stock/1518 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T15:25:28.622Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:51493 - "GET /stock/1518 HTTP/1.1" 200 OK
+

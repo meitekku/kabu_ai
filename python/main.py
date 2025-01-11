@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
@@ -15,7 +16,10 @@ app = FastAPI(
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 本番環境では適切なオリジンに制限してください
+    allow_origins=[
+        "https://kabu-ai.jp",
+        "http://localhost:3000",  # 開発環境用
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -74,4 +78,15 @@ async def get_stock_price(code: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    # mkcert で生成したファイルパスを指定 (例: 同じディレクトリに置いた場合)
+    ssl_certfile_path = "localhost+1.pem"      # 証明書ファイル名
+    ssl_keyfile_path = "localhost+1-key.pem"   # 秘密鍵ファイル名
+
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        ssl_certfile=ssl_certfile_path,
+        ssl_keyfile=ssl_keyfile_path
+    )

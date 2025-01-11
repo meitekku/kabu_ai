@@ -107,7 +107,7 @@ export default function Home() {
     console.log('[fetchCompanyInfo] Fetching company info for code:', code);
     try {
       // 株価情報を FastAPI から取得
-      const stockResponse = await fetch(`http://localhost:8000/stock/${code}`);
+      const stockResponse = await fetch(`https://localhost:8000/stock/${code}`);
       const stockData = await stockResponse.json();
       console.log('[fetchCompanyInfo] Stock API response:', stockData);
   
