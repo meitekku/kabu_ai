@@ -44,6 +44,7 @@ jobs:
           public \
           types \
           utils \
+          python \
           .github \
           $SSH_USER@$SSH_HOST:$TARGET
 
