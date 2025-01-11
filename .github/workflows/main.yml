@@ -40,11 +40,12 @@ jobs:
           *.* \
           app \
           components \
+          hooks \
           lib \
           public \
+          types \
           utils \
           .github \
-          types \
           $SSH_USER@$SSH_HOST:$TARGET
 
         echo "rsync command completed"

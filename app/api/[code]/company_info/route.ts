@@ -27,6 +27,7 @@ interface DailyData {
 // プロジェクトのルートディレクトリからの相対パスを計算
 const projectRoot = process.cwd();
 const scriptPath = path.join(projectRoot, 'app/api/[code]/company_info/daily_data.py');
+console.log('Script path:', scriptPath);
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
     `;
 
     const results = (await db.select(query, [code])) as CompanyFullInfo[];
+    console.log('Results:', results);
     try {
       console.log('Executing Python script at:', scriptPath); // パスの確認用
 
