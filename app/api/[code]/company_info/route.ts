@@ -3,9 +3,17 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import https from 'https';
-import fetch from 'node-fetch'; // node-fetch を使用
+import fetch from 'node-fetch';
+import winston from 'winston';
 
-// 型定義
+const logger = winston.createLogger({
+  level: 'error',
+  transports: [
+    new winston.transports.File({ filename: 'error.log' }),
+    new winston.transports.Console(),
+  ],
+});
+
 interface StockData {
   code: string;
   current_price: number;
@@ -23,12 +31,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!apiRes.ok) {
+      logger.error(`API error: status=${apiRes.status}`);
       return NextResponse.json({ success: false, error: 'API error' }, { status: apiRes.status });
     }
 
-    // 明示的に型を指定
     const stockData = (await apiRes.json()) as StockData;
-
     const db = Database.getInstance();
     const selectQuery = `SELECT * FROM company c JOIN company_info ci ON c.code = ci.code WHERE c.code = ?`;
     const results = await db.select(selectQuery, [code]);
@@ -49,7 +56,13 @@ export async function POST(request: NextRequest) {
 
     const updatedResults = await db.select(selectQuery, [code]);
     return NextResponse.json({ success: true, data: updatedResults });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      logger.error(`Error in POST: ${error.message}\nStack trace: ${error.stack}`);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    } else {
+      logger.error(`Unknown error in POST: ${JSON.stringify(error)}`);
+      return NextResponse.json({ success: false, error: 'Unknown error occurred' }, { status: 500 });
+    }
   }
 }
