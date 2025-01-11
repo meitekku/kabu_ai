@@ -88,6 +88,7 @@ export default function Home() {
       });
       const data = await response.json();
       if (data.success && data.data && data.data.length > 0) {
+        console.log('Company info:', data.data[0]);
         return data.data[0] as CompanyInfo;
       }
       return null;
@@ -264,6 +265,7 @@ export default function Home() {
         })
       });
 
+      console.log('Response:', response);
       const data: CommentsResponse = await response.json();
 
       if (!response.ok) {
