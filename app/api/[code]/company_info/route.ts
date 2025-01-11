@@ -1,3 +1,5 @@
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { spawn } from 'child_process';
@@ -29,7 +31,7 @@ interface CompanyFullInfo extends CompanyRecord {
   industry: string;
   market: string;
   current_price?: number;
-  price_change?: string; // 追加
+  price_change?: string;
   price_change_percent?: number;
 }
 
@@ -40,9 +42,9 @@ interface DailyData {
   price_change_percent: number;
 }
 
-// プロジェクトのルートディレクトリからの相対パスを計算
 const projectRoot = process.cwd();
 const scriptPath = path.join(projectRoot, 'python/daily_data.py');
+
 logger.info(`Script path: ${scriptPath}`);
 
 export async function POST(request: NextRequest) {
@@ -69,12 +71,13 @@ export async function POST(request: NextRequest) {
     try {
       logger.info(`--- [6] Start executing Python script --- Script Path: ${scriptPath}`);
 
+      // Edge Runtime では使用不可だが、Node.js Runtime ならOK
       const pythonProcess = spawn('python', [scriptPath, code]);
       logger.info('--- [7] Python process spawned ---');
 
       let pythonData = '';
 
-      // Pythonスクリプトのstdout
+      // Pythonスクリプトの stdout
       for await (const chunk of pythonProcess.stdout) {
         logger.info(`--- [8] Receiving chunk from Python stdout --- ${chunk.toString()}`);
         pythonData += chunk;
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
 
       logger.info(`--- [9] Accumulated Python output --- ${pythonData}`);
 
-      // Pythonスクリプトのstderr
+      // Pythonスクリプトの stderr
       let errorOutput = '';
       for await (const chunk of pythonProcess.stderr) {
         logger.error(`--- [10] Receiving chunk from Python stderr --- ${chunk.toString()}`);

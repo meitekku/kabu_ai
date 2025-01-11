@@ -1,0 +1,96 @@
+2025-01-11T13:31:06.152Z [INFO]: Script path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:06.159Z [INFO]: --- [1] POST function start ---
+2025-01-11T13:31:06.161Z [INFO]: --- [2] Request JSON parsed --- Code: 7203
+2025-01-11T13:31:06.162Z [INFO]: --- [3] DB instance acquired ---
+2025-01-11T13:31:06.162Z [INFO]: --- [4] Query ready to execute --- Query: 
+      SELECT *
+      FROM company c
+      JOIN company_info ci ON c.code = ci.code
+      WHERE c.code = ?
+    
+2025-01-11T13:31:06.292Z [INFO]: --- [5] Results from DB --- Results: [{"code":"7203","name":"トヨタ自動車","market":1,"last_update":null,"website":"https://global.toyota/en","industry":"Auto Manufacturers","sector":"Consumer Cyclical","current_price":"2945.00","price_change":"-60.00","forward_pe":"9.83","trailing_pe":"10.06","price_to_book":"1.22","market_cap":41801058615296,"dividend_rate":"100.00","dividend_yield":"0.04","updated_at":"2024-12-28T06:40:48.000Z"}]
+2025-01-11T13:31:06.293Z [INFO]: --- [6] Start executing Python script --- Script Path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:06.296Z [INFO]: --- [7] Python process spawned ---
+2025-01-11T13:31:07.209Z [INFO]: Script path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:15.628Z [INFO]: --- [1] POST function start ---
+2025-01-11T13:31:15.629Z [INFO]: --- [2] Request JSON parsed --- Code: 1301
+2025-01-11T13:31:15.629Z [INFO]: --- [3] DB instance acquired ---
+2025-01-11T13:31:15.629Z [INFO]: --- [4] Query ready to execute --- Query: 
+      SELECT *
+      FROM company c
+      JOIN company_info ci ON c.code = ci.code
+      WHERE c.code = ?
+    
+2025-01-11T13:31:15.653Z [INFO]: --- [5] Results from DB --- Results: [{"code":"1301","name":"極洋","market":1,"last_update":null,"website":"https://www.kyokuyo.co.jp","industry":"Packaged Foods","sector":"Consumer Defensive","current_price":"3955.00","price_change":"-20.00","forward_pe":"14.32","trailing_pe":"7.51","price_to_book":"0.80","market_cap":48875499520,"dividend_rate":"110.00","dividend_yield":"0.03","updated_at":"2024-12-28T06:00:58.000Z"}]
+2025-01-11T13:31:15.653Z [INFO]: --- [6] Start executing Python script --- Script Path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:15.655Z [INFO]: --- [7] Python process spawned ---
+2025-01-11T13:31:16.605Z [INFO]: Script path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:17.842Z [INFO]: --- [9] Accumulated Python output --- 
+2025-01-11T13:31:17.843Z [ERROR]: --- [10] Receiving chunk from Python stderr --- INFO:     Started server process [97877]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+2025-01-11T13:31:17.843Z [ERROR]: --- [11] Accumulated Python errorOutput --- INFO:     Started server process [97877]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+2025-01-11T13:31:17.843Z [ERROR]: --- [16] Error executing Python script --- Error: Python script execution failed
+2025-01-11T13:31:17.843Z [INFO]: --- [17] Return response ---
+2025-01-11T13:31:21.143Z [INFO]: --- [1] POST function start ---
+2025-01-11T13:31:21.143Z [INFO]: --- [2] Request JSON parsed --- Code: 7203
+2025-01-11T13:31:21.144Z [INFO]: --- [3] DB instance acquired ---
+2025-01-11T13:31:21.144Z [INFO]: --- [4] Query ready to execute --- Query: 
+      SELECT *
+      FROM company c
+      JOIN company_info ci ON c.code = ci.code
+      WHERE c.code = ?
+    
+2025-01-11T13:31:21.170Z [INFO]: --- [5] Results from DB --- Results: [{"code":"7203","name":"トヨタ自動車","market":1,"last_update":null,"website":"https://global.toyota/en","industry":"Auto Manufacturers","sector":"Consumer Cyclical","current_price":"2945.00","price_change":"-60.00","forward_pe":"9.83","trailing_pe":"10.06","price_to_book":"1.22","market_cap":41801058615296,"dividend_rate":"100.00","dividend_yield":"0.04","updated_at":"2024-12-28T06:40:48.000Z"}]
+2025-01-11T13:31:21.171Z [INFO]: --- [6] Start executing Python script --- Script Path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:21.173Z [INFO]: --- [7] Python process spawned ---
+2025-01-11T13:31:22.027Z [INFO]: Script path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:31:23.144Z [INFO]: --- [9] Accumulated Python output --- 
+2025-01-11T13:31:23.144Z [ERROR]: --- [10] Receiving chunk from Python stderr --- INFO:     Started server process [97924]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+2025-01-11T13:31:23.144Z [ERROR]: --- [11] Accumulated Python errorOutput --- INFO:     Started server process [97924]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): [errno 48] address already in use
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+
+2025-01-11T13:31:23.144Z [ERROR]: --- [16] Error executing Python script --- Error: Python script execution failed
+2025-01-11T13:31:23.144Z [INFO]: --- [17] Return response ---
+2025-01-11T13:34:04.792Z [INFO]: --- [1] POST function start ---
+2025-01-11T13:34:04.793Z [INFO]: --- [2] Request JSON parsed --- Code: 7203
+2025-01-11T13:34:04.793Z [INFO]: --- [3] DB instance acquired ---
+2025-01-11T13:34:04.793Z [INFO]: --- [4] Query ready to execute --- Query: 
+      SELECT *
+      FROM company c
+      JOIN company_info ci ON c.code = ci.code
+      WHERE c.code = ?
+    
+2025-01-11T13:34:04.827Z [INFO]: --- [5] Results from DB --- Results: [{"code":"7203","name":"トヨタ自動車","market":1,"last_update":null,"website":"https://global.toyota/en","industry":"Auto Manufacturers","sector":"Consumer Cyclical","current_price":"2945.00","price_change":"-60.00","forward_pe":"9.83","trailing_pe":"10.06","price_to_book":"1.22","market_cap":41801058615296,"dividend_rate":"100.00","dividend_yield":"0.04","updated_at":"2024-12-28T06:40:48.000Z"}]
+2025-01-11T13:34:04.828Z [INFO]: --- [6] Start executing Python script --- Script Path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:34:04.830Z [INFO]: --- [7] Python process spawned ---
+2025-01-11T13:34:05.896Z [INFO]: Script path: /Users/takahashimika/Dropbox/kabu_ai/python/daily_data.py
+2025-01-11T13:34:06.795Z [INFO]: --- [8] Receiving chunk from Python stdout --- {"code": "7203", "current_price": 2932.0, "price_change": -73.0, "price_change_percent": -2.43}
+
+2025-01-11T13:34:06.897Z [INFO]: --- [9] Accumulated Python output --- {"code": "7203", "current_price": 2932.0, "price_change": -73.0, "price_change_percent": -2.43}
+
+2025-01-11T13:34:06.897Z [ERROR]: --- [11] Accumulated Python errorOutput --- 
+2025-01-11T13:34:06.897Z [INFO]: --- [13] dailyData parsed --- {"code":"7203","current_price":2932,"price_change":-73,"price_change_percent":-2.43}
+2025-01-11T13:34:06.897Z [INFO]: --- [14] Updating results ---
+2025-01-11T13:34:06.898Z [INFO]: --- [15] Updated results --- {"code":"7203","name":"トヨタ自動車","market":1,"last_update":null,"website":"https://global.toyota/en","industry":"Auto Manufacturers","sector":"Consumer Cyclical","current_price":2932,"price_change":"-73","forward_pe":"9.83","trailing_pe":"10.06","price_to_book":"1.22","market_cap":41801058615296,"dividend_rate":"100.00","dividend_yield":"0.04","updated_at":"2024-12-28T06:40:48.000Z","price_change_percent":-2.43}
+2025-01-11T13:34:06.898Z [INFO]: --- [17] Return response ---
