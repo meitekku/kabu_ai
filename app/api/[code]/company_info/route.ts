@@ -26,7 +26,7 @@ interface DailyData {
 
 // プロジェクトのルートディレクトリからの相対パスを計算
 const projectRoot = process.cwd();
-const scriptPath = path.join(projectRoot, 'app/python/daily_data.py');
+const scriptPath = path.join(projectRoot, 'python/daily_data.py');
 console.log('Script path:', scriptPath);
 
 export async function POST(request: NextRequest) {
