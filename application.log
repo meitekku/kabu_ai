@@ -94,3 +94,15 @@ INFO:     Application shutdown complete.
 2025-01-11T13:34:06.897Z [INFO]: --- [14] Updating results ---
 2025-01-11T13:34:06.898Z [INFO]: --- [15] Updated results --- {"code":"7203","name":"トヨタ自動車","market":1,"last_update":null,"website":"https://global.toyota/en","industry":"Auto Manufacturers","sector":"Consumer Cyclical","current_price":2932,"price_change":"-73","forward_pe":"9.83","trailing_pe":"10.06","price_to_book":"1.22","market_cap":41801058615296,"dividend_rate":"100.00","dividend_yield":"0.04","updated_at":"2024-12-28T06:40:48.000Z","price_change_percent":-2.43}
 2025-01-11T13:34:06.898Z [INFO]: --- [17] Return response ---
+2025-01-11T14:36:07.339Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:55507 - "OPTIONS /stock/1518 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T14:36:07.979Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:55509 - "GET /stock/1518 HTTP/1.1" 200 OK
+
+2025-01-11T14:49:01.040Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:58736 - "OPTIONS /stock/1518 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T14:49:01.359Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:58738 - "GET /stock/1518 HTTP/1.1" 200 OK
+
+2025-01-11T14:49:25.845Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:58843 - "OPTIONS /stock/1518 HTTP/1.1" 405 Method Not Allowed
+
+2025-01-11T14:49:26.035Z [INFO]: --- [8] Receiving chunk from Python stdout --- INFO:     127.0.0.1:58845 - "GET /stock/1518 HTTP/1.1" 200 OK
+

@@ -1,8 +1,10 @@
-# main.py
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 import yfinance as yf
-import json
+import pandas as pd
+from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI(
     title="Stock Price API",
@@ -10,12 +12,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# CORS設定
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 本番環境では適切なオリジンに制限してください
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class StockPrice(BaseModel):
+    code: str
+    current_price: float
+    price_change: float
+    price_change_percent: float
+
 @app.get("/health")
 async def health_check():
     """ヘルスチェックエンドポイント"""
     return {"status": "ok"}
 
-@app.get("/stock/{code}")
+@app.get("/stock/{code}", response_model=StockPrice)
 async def get_stock_price(code: str):
     """
     指定された証券コードの株価情報を取得します
@@ -23,57 +40,37 @@ async def get_stock_price(code: str):
     Parameters:
         code (str): 証券コード（4桁の数字）
     """
-    today = datetime.now().date()
-    week_ago = today - timedelta(days=10)
-    
     try:
+        today = datetime.now().date()
+        week_ago = today - timedelta(days=10)
+        
         ticker_symbol = f"{code}.T"
         stock_data = yf.download(ticker_symbol, start=week_ago, end=today + timedelta(days=1), progress=False)
         
-        if not stock_data.empty:
-            latest_data = stock_data.iloc[-1]
-            previous_data = stock_data.iloc[-2] if len(stock_data) > 1 else latest_data
+        if stock_data.empty:
+            raise HTTPException(status_code=404, detail="No data available for this stock code")
             
-            current_price = float(latest_data['Close'])
-            prev_price = float(previous_data['Close'])
-            price_change = current_price - prev_price
-            price_change_percent = ((current_price - prev_price) / prev_price) * 100
+        latest_data = stock_data.iloc[-1]
+        previous_data = stock_data.iloc[-2] if len(stock_data) > 1 else latest_data
+        
+        # 警告を解消するため、.iloc[0]を使用
+        current_price = float(latest_data['Close'].iloc[0]) if isinstance(latest_data['Close'], pd.Series) else float(latest_data['Close'])
+        prev_price = float(previous_data['Close'].iloc[0]) if isinstance(previous_data['Close'], pd.Series) else float(previous_data['Close'])
+        
+        price_change = current_price - prev_price
+        price_change_percent = (price_change / prev_price) * 100
+        
+        return StockPrice(
+            code=code,
+            current_price=round(current_price, 2),
+            price_change=round(price_change, 2),
+            price_change_percent=round(price_change_percent, 2)
+        )
             
-            return {
-                'code': code,
-                'current_price': current_price,
-                'price_change': round(price_change, 2),
-                'price_change_percent': round(price_change_percent, 2)
-            }
-            
-        else:
-            return {
-                'code': code,
-                'error': 'No data available'
-            }
-            
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/stocks")
-async def get_multiple_stocks(codes: list[str]):
-    """
-    複数の証券コードの株価情報を一括取得します
-    
-    Parameters:
-        codes (list[str]): 証券コードのリスト
-    """
-    results = []
-    for code in codes:
-        try:
-            result = await get_stock_price(code)
-            results.append(result)
-        except HTTPException as e:
-            results.append({
-                'code': code,
-                'error': e.detail
-            })
-    return {'results': results}
+        raise HTTPException(status_code=500, detail=f"Error fetching stock data: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
