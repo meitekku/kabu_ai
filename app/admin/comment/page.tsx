@@ -1,4 +1,5 @@
 "use client"
+
 import PostForm from '@/components/post/PostForm';
 import { useState, useEffect } from 'react';
 import { format, subDays } from "date-fns";
@@ -36,14 +37,22 @@ interface Company {
 }
 
 export default function Home() {
+  console.log('[Home Component] Rendering Home component');
+
   const now = new Date();
   const twoDaysAgo = subDays(now, 7);
 
   const [selectedLimit, setSelectedLimit] = useState<number>(500);
+  console.log('[Home Component] selectedLimit:', selectedLimit);
+
   const [comments, setComments] = useState<Comment[]>([]);
+  console.log('[Home Component] comments state:', comments);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+
+  console.log('[Home Component] selectedCompany:', selectedCompany);
 
   const [isTextareaOpen, setIsTextareaOpen] = useState<boolean>(false);
   const [isPostFormOpen, setIsPostFormOpen] = useState<boolean>(false);
@@ -54,12 +63,19 @@ export default function Home() {
   const [endDateTime, setEndDateTime] = useState<string>(
     format(now, "yyyy-MM-dd HH:mm:ss")
   );
+  console.log('[Home Component] Date range:', { startDateTime, endDateTime });
 
   const limitOptions = Array.from({ length: 6 }, (_, i) => (i + 3) * 100);
 
+  // --------------------------------------------------------------------------------
+  // useEffect: ローカルストレージから isTextareaOpen と isPostFormOpen の状態復元
+  // --------------------------------------------------------------------------------
   useEffect(() => {
+    console.log('[useEffect: load from localStorage] Mounting...');
     const savedTextareaOpen = localStorage.getItem('isTextareaOpen');
     const savedPostFormOpen = localStorage.getItem('isPostFormOpen');
+    console.log('[useEffect: load from localStorage] isTextareaOpen:', savedTextareaOpen, 'isPostFormOpen:', savedPostFormOpen);
+
     if (savedTextareaOpen) {
       setIsTextareaOpen(JSON.parse(savedTextareaOpen));
     }
@@ -68,18 +84,27 @@ export default function Home() {
     }
   }, []);
 
+  // --------------------------------------------------------------------------------
+  // useEffect: isTextareaOpen の変更時に localStorage へ保存
+  // --------------------------------------------------------------------------------
   useEffect(() => {
+    console.log('[useEffect: save isTextareaOpen] isTextareaOpen changed ->', isTextareaOpen);
     localStorage.setItem('isTextareaOpen', JSON.stringify(isTextareaOpen));
   }, [isTextareaOpen]);
 
+  // --------------------------------------------------------------------------------
+  // useEffect: isPostFormOpen の変更時に localStorage へ保存
+  // --------------------------------------------------------------------------------
   useEffect(() => {
+    console.log('[useEffect: save isPostFormOpen] isPostFormOpen changed ->', isPostFormOpen);
     localStorage.setItem('isPostFormOpen', JSON.stringify(isPostFormOpen));
   }, [isPostFormOpen]);
 
-  /**
-   * company_info APIを叩いて会社情報を取得
-   */
+  // --------------------------------------------------------------------------------
+  // company_info APIを叩いて会社情報を取得
+  // --------------------------------------------------------------------------------
   const fetchCompanyInfo = async (code: string): Promise<CompanyInfo | null> => {
+    console.log('[fetchCompanyInfo] Fetching company info for code:', code);
     try {
       const response = await fetch(`/api/${code}/company_info`, {
         method: 'POST',
@@ -87,36 +112,44 @@ export default function Home() {
         body: JSON.stringify({ code }),
       });
       const data = await response.json();
+      console.log('[fetchCompanyInfo] Response data:', data);
+
       if (data.success && data.data && data.data.length > 0) {
-        console.log('Company info:', data.data[0]);
+        console.log('[fetchCompanyInfo] Company info found:', data.data[0]);
         return data.data[0] as CompanyInfo;
       }
+      console.warn('[fetchCompanyInfo] No company info found for code:', code);
       return null;
     } catch (error) {
-      console.error('Error fetching company info:', error);
+      console.error('[fetchCompanyInfo] Error fetching company info:', error);
       return null;
     }
   };
 
-  /**
-   * 前日比(%) = (price_change / 前日終値) * 100
-   * 前日終値 = current_price - price_change
-   * 例: current_price=3450, price_change=-5 -> 前日終値=3455
-   */
+  // --------------------------------------------------------------------------------
+  // 前日比(%) = (price_change / 前日終値) * 100
+  // 前日終値 = current_price - price_change
+  // --------------------------------------------------------------------------------
   const calculatePriceChangePercent = (info: CompanyInfo) => {
+    console.log('[calculatePriceChangePercent] info:', info);
     const currentPriceNum = parseFloat(info.current_price || '0');
     const priceChangeNum = parseFloat(info.price_change || '0');
     const previousClose = currentPriceNum - priceChangeNum;
+
     if (!previousClose || isNaN(previousClose)) {
+      console.warn('[calculatePriceChangePercent] previousClose is invalid:', previousClose);
       return 0;
     }
-    return (priceChangeNum / previousClose) * 100;
+    const result = (priceChangeNum / previousClose) * 100;
+    console.log('[calculatePriceChangePercent] result:', result);
+    return result;
   };
 
-  /**
-   * 会社選択 (CompanySearch)
-   */
+  // --------------------------------------------------------------------------------
+  // CompanySearch で会社選択
+  // --------------------------------------------------------------------------------
   const handleCompanySelect = async (company: Company) => {
+    console.log('[handleCompanySelect] Selected company from search:', company);
     const code = company.id.split(' ')[0];
     // 最新の companyInfo を取得
     const info = await fetchCompanyInfo(code);
@@ -125,47 +158,52 @@ export default function Home() {
     const resolvedName = info?.name || company.name;
     const newCompany = { id: code, name: resolvedName };
     setSelectedCompany(newCompany);
+    console.log('[handleCompanySelect] setSelectedCompany ->', newCompany);
 
     // コメントを取得 & すぐコピー
-    // 今回、最新のinfo を引数で渡す
     await fetchComments(code, newCompany, info, startDateTime, endDateTime, selectedLimit);
   };
 
-  /**
-   * ランキングで会社選択
-   */
+  // --------------------------------------------------------------------------------
+  // ランキングで会社選択
+  // --------------------------------------------------------------------------------
   const handleCodeSelect = async (code: string) => {
+    console.log('[handleCodeSelect] Selected code from ranking:', code);
     // 最新の companyInfo を取得
     const info = await fetchCompanyInfo(code);
 
-    // 会社名
     const resolvedName = info?.name || '(不明な会社名)';
     const newCompany = { id: code, name: resolvedName };
     setSelectedCompany(newCompany);
+    console.log('[handleCodeSelect] setSelectedCompany ->', newCompany);
 
     // コメントを取得 & すぐコピー
     await fetchComments(code, newCompany, info, startDateTime, endDateTime, selectedLimit);
   };
 
-  /**
-   * 日付範囲選択
-   */
+  // --------------------------------------------------------------------------------
+  // 日付範囲選択
+  // --------------------------------------------------------------------------------
   const handleDateRangeSelect = (start: string, end: string) => {
+    console.log('[handleDateRangeSelect] New range:', { start, end });
     setStartDateTime(start);
     setEndDateTime(end);
+
     if (selectedCompany) {
-      // すでに選択されている会社の code と company_info を改めて取り直すか、
-      // もし state に company_info を保持しているならそれを使うなどの方法がある
-      // ここではシンプルに fetchCompanyInfo -> fetchComments でもOK
+      console.log('[handleDateRangeSelect] Re-fetching comments for selectedCompany:', selectedCompany);
       handleReFetchSelectedCompanyComments(start, end);
     }
   };
 
-  /**
-   * 選択中の会社を改めて再取得してコメント取得
-   */
+  // --------------------------------------------------------------------------------
+  // 選択中の会社を改めて再取得してコメント取得
+  // --------------------------------------------------------------------------------
   const handleReFetchSelectedCompanyComments = async (start: string, end: string) => {
-    if (!selectedCompany) return;
+    console.log('[handleReFetchSelectedCompanyComments] start, end:', { start, end });
+    if (!selectedCompany) {
+      console.warn('[handleReFetchSelectedCompanyComments] No selectedCompany. Skip fetching.');
+      return;
+    }
     const code = selectedCompany.id;
     // 最新の companyInfo を再取得
     const info = await fetchCompanyInfo(code);
@@ -174,64 +212,51 @@ export default function Home() {
     await fetchComments(code, selectedCompany, info, start, end, selectedLimit);
   };
 
-  /**
-   * クリップボードへコピー
-   * 今回は "info" を引数で受け取る
-   */
+  // --------------------------------------------------------------------------------
+  // クリップボードへコピー
+  // --------------------------------------------------------------------------------
   const copyToClipboard = async (
     comments: Comment[],
     company: Company,
     info: CompanyInfo | null
   ) => {
+    console.log('[copyToClipboard] Copying to clipboard for company:', company, 'info:', info);
     if (!info) {
-      console.warn('companyInfo が null のため、前日比計算できません');
+      console.warn('[copyToClipboard] companyInfo が null のため、前日比計算できません');
       return;
     }
     try {
-      // 今日の日付
       const todayString = format(new Date(), "yyyy-MM-dd");
-
-      // 前日比(%) 計算
-      const priceChangePercent = calculatePriceChangePercent(info); // ±0.XX...
-      // priceChange 数値
+      const priceChangePercent = calculatePriceChangePercent(info); 
       const priceChangeNum = parseFloat(info.price_change || '0');
 
-      // ±表示の整形
-      // price_change がプラス値の場合だけ先頭に "+", マイナスなら - が既に付いている
       const signForChange = priceChangeNum > 0 ? "+" : "";
       const displayChange = `${signForChange}${priceChangeNum.toFixed(2)}`;
-      
-      // パーセント表記 (+ or -)
+
       const signForPercent = priceChangePercent > 0 ? "+" : "";
       const displayPercent = `${signForPercent}${priceChangePercent.toFixed(2)}%`;
 
-      // ヘッダ
-      const header = `${company.name}【${company.id}】の掲示板 ${todayString} ` +
-                     `前日比${displayChange} (${displayPercent})\n`;
-
-      // ユーザーが保存している「プロンプト文」
+      const header = `${company.name}【${company.id}】の掲示板 ${todayString} 前日比${displayChange} (${displayPercent})\n`;
       const promptText = (localStorage.getItem('autoSaveText_news_prompt') ?? '') + '\n';
 
-      // コメント部分
       const commentText = comments
         .map(comment => `${comment.comment_date}\n${comment.comment}\n\n`)
         .join('');
 
-      // 結合
       const combinedText = header + promptText + commentText;
 
       await navigator.clipboard.writeText(combinedText);
+      console.log('[copyToClipboard] Clipboard write success. Combined text length:', combinedText.length);
       alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
     } catch (err) {
-      console.error('クリップボードへのコピーに失敗しました:', err);
+      console.error('[copyToClipboard] クリップボードへのコピーに失敗:', err);
       setError('クリップボードへのコピーに失敗しました');
     }
   };
 
-  /**
-   * コメントを取得 → 取得後すぐコピー
-   * ここで info をパラメータで受け取り、copyToClipboard にも渡す
-   */
+  // --------------------------------------------------------------------------------
+  // コメントを取得 → 取得後すぐコピー
+  // --------------------------------------------------------------------------------
   const fetchComments = async (
     code: string,
     company: Company,
@@ -240,16 +265,11 @@ export default function Home() {
     end: string,
     limit: number
   ) => {
+    console.log('[fetchComments] Start fetching comments with:', {
+      code, company, info, start, end, limit
+    });
     setLoading(true);
     setError('');
-    console.log(
-      JSON.stringify({
-        code: code,
-        limit: limit,
-        startDateTime: start,
-        endDateTime: end
-      })      
-    );
 
     try {
       const response = await fetch('/api/admin/yahoo', {
@@ -258,40 +278,49 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          code: code,
-          limit: limit,
+          code,
+          limit,
           startDateTime: start,
           endDateTime: end
         })
       });
 
-      console.log('Response:', response);
+      console.log('[fetchComments] Raw response object:', response);
       const data: CommentsResponse = await response.json();
+      console.log('[fetchComments] Parsed JSON:', data);
 
       if (!response.ok) {
-        throw new Error(data.success ? '不明なエラーが発生しました' : 'データの取得に失敗しました');
+        throw new Error(
+          data.success ? '不明なエラーが発生しました' : 'データの取得に失敗しました'
+        );
       }
 
       setComments(data.data);
+      console.log('[fetchComments] Comments set. Count:', data.data.length);
 
       // 取得後にコピー
       await copyToClipboard(data.data, company, info);
-
     } catch (err) {
+      console.error('[fetchComments] Error:', err);
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
       setComments([]);
     } finally {
       setLoading(false);
+      console.log('[fetchComments] Fetching comments done.');
     }
   };
 
-  /**
-   * Limit(件数)変更
-   */
+  // --------------------------------------------------------------------------------
+  // Limit(件数)変更
+  // --------------------------------------------------------------------------------
   const handleLimitChange = async (newLimit: number) => {
+    console.log('[handleLimitChange] newLimit ->', newLimit);
     setSelectedLimit(newLimit);
-    if (!selectedCompany) return;
 
+    if (!selectedCompany) {
+      console.warn('[handleLimitChange] No company selected. Skip refetch.');
+      return;
+    }
     // 会社情報を再取得したいなら fetchCompanyInfo する
     const info = await fetchCompanyInfo(selectedCompany.id);
     // 取得した新しい info を使って再度コメント取得
@@ -305,11 +334,17 @@ export default function Home() {
     );
   };
 
+  // --------------------------------------------------------------------------------
+  // JSXの返却
+  // --------------------------------------------------------------------------------
   return (
     <main className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
         <Button
-          onClick={() => setIsPostFormOpen(!isPostFormOpen)}
+          onClick={() => {
+            console.log('[Button: 投稿フォーム] Toggling isPostFormOpen from', isPostFormOpen, 'to', !isPostFormOpen);
+            setIsPostFormOpen(!isPostFormOpen);
+          }}
           variant="outline"
           className="mb-4 w-full flex items-center justify-between"
         >
@@ -319,7 +354,10 @@ export default function Home() {
         {isPostFormOpen && <PostForm redirectAfterPost={false} />}
 
         <Button
-          onClick={() => setIsTextareaOpen(!isTextareaOpen)}
+          onClick={() => {
+            console.log('[Button: プロンプト設定] Toggling isTextareaOpen from', isTextareaOpen, 'to', !isTextareaOpen);
+            setIsTextareaOpen(!isTextareaOpen);
+          }}
           variant="outline"
           className="mb-4 w-full flex items-center justify-between"
         >
