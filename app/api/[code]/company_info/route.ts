@@ -1,4 +1,5 @@
 export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import path from 'path';
@@ -15,7 +16,7 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console(),
-    new winston.transports.File({ filename: 'application.log' }),
+    new winston.transports.File({ filename: 'application.log' }), // ログファイルにも保存
   ],
 });
 
@@ -38,19 +39,6 @@ const scriptPath = path.join(projectRoot, 'python/daily_data.py');
 
 logger.info(`Script path: ${scriptPath}`);
 
-async function fetchStockPrice(code: string) {
-  try {
-    const response = await fetch(`http://localhost:8000/stock/${code}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch stock price');
-    }
-    return await response.json();
-  } catch (error) {
-    logger.error(`Failed to fetch stock price for code ${code}: ${error}`);
-    return null;
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json();
@@ -64,20 +52,6 @@ export async function POST(request: NextRequest) {
     `;
 
     const results = (await db.select(query, [code])) as CompanyFullInfo[];
-    
-    // 株価APIからデータを取得
-    const stockPrice = await fetchStockPrice(code);
-    
-    if (stockPrice && results.length > 0) {
-      // 結果の最初のレコードを更新
-      results[0] = {
-        ...results[0],
-        current_price: stockPrice.current_price,
-        price_change: stockPrice.price_change.toString(),
-        price_change_percent: stockPrice.price_change_percent
-      };
-    }
-
     return NextResponse.json({
       success: true,
       data: results,

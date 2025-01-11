@@ -106,17 +106,29 @@ export default function Home() {
   const fetchCompanyInfo = async (code: string): Promise<CompanyInfo | null> => {
     console.log('[fetchCompanyInfo] Fetching company info for code:', code);
     try {
-      const response = await fetch(`/api/${code}/company_info`, {
+      // 株価情報を FastAPI から取得
+      const stockResponse = await fetch(`http://localhost:8000/stock/${code}`);
+      const stockData = await stockResponse.json();
+      console.log('[fetchCompanyInfo] Stock API response:', stockData);
+  
+      // データベースから会社情報を取得
+      const dbResponse = await fetch(`/api/${code}/company_info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
       });
-      const data = await response.json();
-      console.log('[fetchCompanyInfo] Response data:', data);
-
-      if (data.success && data.data && data.data.length > 0) {
-        console.log('[fetchCompanyInfo] Company info found:', data.data[0]);
-        return data.data[0] as CompanyInfo;
+      const dbData = await dbResponse.json();
+      console.log('[fetchCompanyInfo] DB response:', dbData);
+  
+      if (dbData.success && dbData.data && dbData.data.length > 0) {
+        // データベースの情報と株価情報を統合
+        const companyInfo: CompanyInfo = {
+          ...dbData.data[0],
+          current_price: stockData.current_price?.toString() || '0',
+          price_change: stockData.price_change?.toString() || '0',
+        };
+        console.log('[fetchCompanyInfo] Combined company info:', companyInfo);
+        return companyInfo;
       }
       console.warn('[fetchCompanyInfo] No company info found for code:', code);
       return null;
