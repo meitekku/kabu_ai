@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
     // codeが空なら全データを取得
     const query = code
       ? `SELECT y.*, c.name as company_name 
-         FROM yahoo_bbs_post_ranking y 
+         FROM ranking_yahoo_post y 
          LEFT JOIN company c ON y.code = c.code 
          WHERE y.code = ?`
       : `SELECT y.*, c.name as company_name 
-         FROM yahoo_bbs_post_ranking y 
+         FROM ranking_yahoo_post y 
          LEFT JOIN company c ON y.code = c.code`;
 
     const params = code ? [code] : [];
