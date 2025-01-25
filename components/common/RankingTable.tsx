@@ -98,7 +98,7 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
 
     return (
       <div className="w-full max-w-2xl bg-white rounded-lg border border-gray-100 shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-2 border-b border-gray-100">
           <div className="text-lg font-bold">{title}</div>
         </div>
         <div className="divide-y divide-gray-100">
@@ -116,19 +116,19 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
             data.map((item, index) => (
               <div 
                 key={`${tableName}-${item.code}-${index}`}
-                className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-start"
+                className="px-6 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center"
               >
-                <span className="text-2xl text-blue-600 font-serif min-w-8 mr-4">
+                <span className="text-2xl text-blue-600 min-w-12 mr-4 text-center flex justify-center items-center">
                   {index + 1}
                 </span>
                 <div className="flex-1 flex items-start justify-between">
                   <div className="flex flex-col">
                     <div className="text-gray-900">
-                      {item.code} <span className={`${getDiffPercentColor(item.diff_percent)}`}>
+                        <span className={`${getDiffPercentColor(item.diff_percent)}`}>
                         {formatDiffPercent(item.diff_percent)}
                       </span>
                     </div>
-                    <div className="text-gray-600 text-sm mt-1">
+                    <div className="font-bold text-gray-600 text-sm mt-1">
                       {item.name}
                     </div>
                   </div>

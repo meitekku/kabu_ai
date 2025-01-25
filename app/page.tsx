@@ -45,10 +45,7 @@ export default function Home() {
     <DefaultTemplate>
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">株式市場の最新動向</h1>
-          <p className="text-gray-600">
-            各種ランキングから、市場の動きをリアルタイムで把握できます。
-          </p>
+          <h2 className="text-2xl font-bold">株式ランキング</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
