@@ -57,7 +57,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     if (value === null || value === undefined || typeof value !== 'number' || isNaN(value)) {
       return '-';
     }
-    return `${(value / 100000000).toFixed(0)}億円`;
+    return `${(value / 100000000).toFixed(1)}億円`;
   };
 
   const getMarketName = (market: number) => {
@@ -108,7 +108,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
         <div className="grid grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-gray-600">PER</div>
-            <div>{formatNumber(info.forward_pe, 2, '倍')}</div>
+            <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>
           </div>
           <div>
             <div className="text-gray-600">PBR</div>
