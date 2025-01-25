@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DateFormat from '@/utils/format/DateFormat';
+import { ServerToDate } from '@/utils/format/ServerToDate';
 
 interface NewsItem {
   id: number;
@@ -80,10 +80,9 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="font-semibold text-lg">{item.title}</div>
-                <DateFormat 
-                  date={item.created_at}
-                  className="text-sm text-gray-500"
-                />
+                <div className="text-sm text-gray-500">
+                  {ServerToDate(item.created_at)}
+                </div>
               </div>
             </CardContent>
           </Card>
