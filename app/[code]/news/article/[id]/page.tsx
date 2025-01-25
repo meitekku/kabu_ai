@@ -197,7 +197,7 @@ const ArticleDetail = () => {
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">{article.title}</h1>
               <div className="text-sm text-gray-500">
-                {new Date(article.created_at).toLocaleString('ja-JP')}
+                {article.created_at}
               </div>
             </div>
             <div className="flex justify-between items-center">
