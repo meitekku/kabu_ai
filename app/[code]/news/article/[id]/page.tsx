@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import './post.css';
+import { ServerToDate } from '@/utils/format/ServerToDate';
 
 interface Article {
   id: number;
@@ -197,7 +198,7 @@ const ArticleDetail = () => {
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">{article.title}</h1>
               <div className="text-sm text-gray-500">
-                {article.created_at}
+                {ServerToDate(article.created_at)}
               </div>
             </div>
             <div className="flex justify-between items-center">
