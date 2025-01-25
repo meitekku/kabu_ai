@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useRouter } from 'next/navigation';
 
 interface BaseRankingData {
   code: string;
@@ -27,6 +28,7 @@ type RankingTableProps = {
 const DEFAULT_LIMIT = 10;
 
 const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableProps) => {
+  const router = useRouter();
   const [data, setData] = useState<BaseRankingData[]>([]);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -80,6 +82,10 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
     return `${sign}${value}%`;
   };
 
+  const handleItemClick = (code: string) => {
+    router.push(`/${code}/news`);
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -117,6 +123,14 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
               <div 
                 key={`${tableName}-${item.code}-${index}`}
                 className="px-6 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center"
+                onClick={() => handleItemClick(item.code)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleItemClick(item.code);
+                  }
+                }}
               >
                 <span className="text-2xl text-blue-600 min-w-12 mr-4 text-center flex justify-center items-center">
                   {index + 1}
