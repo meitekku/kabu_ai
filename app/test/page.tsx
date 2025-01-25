@@ -1,34 +1,14 @@
-'use client';
+import TimeDisplay from '@/app/test/TimeDisplay'; // 「use client」がついているコンポーネント
 
-import { useEffect, useState } from 'react';
-
-export default function TimeDisplay({ serverTime }: { serverTime?: string }) {
-  const [clientTime, setClientTime] = useState<string>('');
-
-  useEffect(() => {
-    if (!serverTime) return;
-
-    const updateTime = () => {
-      const formattedTime = new Intl.DateTimeFormat('ja-JP', {
-        timeZone: 'Asia/Tokyo',
-        dateStyle: 'full',
-        timeStyle: 'long',
-      }).format(new Date(serverTime));
-
-      setClientTime(formattedTime);
-    };
-
-    updateTime();
-  }, [serverTime]);
-
-  if (!serverTime) {
-    return <p>Loading...</p>;
-  }
+export default function TestPage() {
+  // このページにアクセスされた時点でサーバー側で時間を取得するイメージ
+  const serverTime = new Date().toISOString();
 
   return (
-    <div>
-      <p>📅 <strong>サーバー時間（UTCベース）:</strong> {serverTime}</p>
-      <p>⏰ <strong>クライアント時間（日本時間）:</strong> {clientTime}</p>
-    </div>
+    <main>
+      <h1>テストページ</h1>
+      {/* 子コンポーネントに props で渡す */}
+      <TimeDisplay serverTime={serverTime} />
+    </main>
   );
 }
