@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { ServerToDate } from '@/utils/format/ServerToDate';
 
 interface ApprovalItem {
   id: number;
@@ -181,7 +182,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   onChange={(e) => handleContentChange(item.id, e.target.value)}
                 />
                 <p className="text-sm text-gray-500 mt-2">
-                  作成日時: {new Date(item.created_at).toLocaleString()}
+                  作成日時: {ServerToDate(item.created_at)}
                 </p>
               </div>
               {/* ボタン部分を sticky にして、スクロールに追従させる */}
