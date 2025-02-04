@@ -126,3 +126,9 @@ INFO:     Application shutdown complete.
 2025-01-25T05:38:13.200Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-01-25T06:46:27.953Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-01-25T07:28:13.831Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-01-26T01:40:41.623Z [ERROR]: --- [18] Error in main block --- SyntaxError: Unexpected end of JSON input
+2025-01-26T01:40:42.024Z [ERROR]: --- [18] Error in main block --- SyntaxError: Unexpected end of JSON input
+2025-01-26T01:41:02.347Z [ERROR]: --- [18] Error in main block --- SyntaxError: Unexpected end of JSON input
+2025-01-26T01:41:02.683Z [ERROR]: --- [18] Error in main block --- SyntaxError: Unexpected end of JSON input
+2025-01-26T01:48:38.968Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-01-26T01:49:19.028Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT

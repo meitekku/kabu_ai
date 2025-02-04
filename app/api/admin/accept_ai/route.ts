@@ -38,14 +38,23 @@ export async function POST(request: NextRequest) {
           const fields = operation.data.join(', ');
           let query = `SELECT ${fields} FROM ${operation.table}`;
           const params: (string | number | boolean | null)[] = [];
+          
+          // 複数条件を格納する配列を用意
+          const conditionParts: string[] = [];
 
+          // ユーザーからの条件があれば追加
           if (operation.conditions) {
-            const conditions = Object.entries(operation.conditions);
-            if (conditions.length > 0) {
-              query += ' WHERE ' + conditions.map(([key]) => `${key} = ?`).join(' AND ');
-              params.push(...Object.values(operation.conditions));
+            for (const [key, value] of Object.entries(operation.conditions)) {
+              conditionParts.push(`${key} = ?`);
+              params.push(value);
             }
           }
+
+          // 本日のデータのみ取得する条件を追加（created_at の日付が本日）
+          conditionParts.push(`DATE(created_at) = CURDATE()`);
+
+          // WHERE 節を付与
+          query += ' WHERE ' + conditionParts.join(' AND ');
 
           const results = await db.select<NewsItem>(query, params);
           return Response.json({ 
