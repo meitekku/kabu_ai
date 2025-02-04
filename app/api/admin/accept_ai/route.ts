@@ -50,8 +50,24 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // 本日のデータのみ取得する条件を追加（created_at の日付が本日）
-          conditionParts.push(`DATE(created_at) = CURDATE()`);
+          // 現在時刻を取得して、15:30以降かどうかで条件を切り替え
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          
+          if (currentHour > 15 || (currentHour === 15 && currentMinute >= 30)) {
+            // 15:30以降の場合：本日の15:30:00 の記事だけを取得
+            // 日付部分を "YYYY-MM-DD" 形式に整形
+            const year = now.getFullYear();
+            const month = ('0' + (now.getMonth() + 1)).slice(-2);
+            const day = ('0' + now.getDate()).slice(-2);
+            const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
+            conditionParts.push(`created_at = ?`);
+            params.push(targetTimestamp);
+          } else {
+            // 15:30より前の場合：本日の全記事を取得（created_atの日付が本日）
+            conditionParts.push(`DATE(created_at) = CURDATE()`);
+          }
 
           // WHERE 節を付与
           query += ' WHERE ' + conditionParts.join(' AND ');
