@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 
 interface CompanyInfo {
   code: string;
@@ -44,31 +43,71 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   if (loading) return <div>Loading...</div>;
   if (!info) return null;
 
-  const formatNumber = (value: string | null | undefined, decimals: number = 2, suffix: string = '') => {
-    if (value === null || value === undefined || value === '') {
-      return '-';
-    }
+  /**
+   * 数値文字列を適度に整形する汎用関数
+   * @param value 数値文字列
+   * @param decimals 小数点桁数
+   * @param suffix 後ろにつける文字列(例: '倍', '%')
+   */
+  const formatNumber = (
+    value: string | null | undefined,
+    decimals: number = 2,
+    suffix: string = ''
+  ): string => {
+    if (value == null || value === '') return '-';
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
     return `${num.toFixed(decimals)}${suffix}`;
   };
 
-  const formatMarketCap = (value: number | null | undefined) => {
-    if (value === null || value === undefined || typeof value !== 'number' || isNaN(value)) {
+  /**
+   * 時価総額を「○兆○○○○億円」の形で表示（兆に満たない場合は億など）
+   *  - 1兆 = 1e12
+   *  - 1億 = 1e8
+   *  - 1万 = 1e4
+   */
+  const formatMarketCap = (value: number | null | undefined): string => {
+    if (value == null || isNaN(value)) {
       return '-';
     }
-    return `${(value / 100000000).toFixed(1)}億円`;
+
+    // 1) 1兆円以上 → 「○兆○○○○億円」
+    if (value >= 1e12) {
+      const cho = Math.floor(value / 1e12);          // 兆の部分
+      const remainder = Math.floor((value % 1e12) / 1e8);  // 残りを億単位に
+      // remainder が 0 でなければ「○兆○○○○億円」、0 なら「○兆円」
+      return remainder > 0 ? `${cho}兆${remainder}億円` : `${cho}兆円`;
+    }
+    // 2) 1兆未満かつ1億以上 → 「○億円」
+    else if (value >= 1e8) {
+      return `${Math.floor(value / 1e8)}億円`;
+    }
+    // 3) 1億未満かつ1万以上 → 「○万円」
+    else if (value >= 1e4) {
+      return `${Math.floor(value / 1e4)}万円`;
+    }
+    // 4) 1万未満 → 「○円」
+    else {
+      return `${value}円`;
+    }
   };
 
+  /**
+   * 市場名を返す例
+   */
   const getMarketName = (market: number) => {
     switch (market) {
       case 1:
         return '東証P';
+      // 必要に応じて他のケースも追加
       default:
         return '市場不明';
     }
   };
 
+  /**
+   * 値上がり幅のパーセンテージを計算
+   */
   const calculatePriceChangePercent = () => {
     const currentPrice = parseFloat(info.current_price);
     const priceChange = parseFloat(info.price_change);
@@ -76,6 +115,9 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     return (priceChange / (currentPrice - priceChange)) * 100;
   };
 
+  /**
+   * 株価などを 1,234 形式に整形する関数
+   */
   const formatPrice = (value: string) => {
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
@@ -83,48 +125,52 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   };
 
   return (
-    <Card className="w-full bg-white">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <div className="text-gray-500">{code}</div>
-            <div className="text-lg font-bold">{info.name}</div>
-          </div>
-          <div className="text-sm text-gray-600">
-            {getMarketName(info.market)}
-          </div>
-        </div>
+    <div className="w-full bg-white px-2">
+      {/* 企業コード + 企業名 + 市場名 */}
+      <div className="flex items-center justify-between">
+        <h1 className="flex items-center space-x-2">
+          <div className="text-gray-500">{code}</div>
+          <div className="text-lg font-bold">{info.name}</div>
+        </h1>
+        <div className="text-sm text-gray-600">{getMarketName(info.market)}</div>
+      </div>
 
-        <div className="flex items-baseline space-x-4 mb-4">
-          <div className="text-2xl font-bold">
-            {formatPrice(info.current_price)}円
-          </div>
-          <div className={`text-lg ${parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'}`}>
-            {parseFloat(info.price_change) >= 0 ? '+' : ''}{formatPrice(info.price_change)} 
-            ({formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
-          </div>
+      {/* 現在株価と値幅の表示 */}
+      <div className="flex items-baseline space-x-4 mt-1">
+        <div className="text-2xl font-bold">
+          {formatPrice(info.current_price)}円
         </div>
+        <div
+          className={`text-lg ${
+            parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'
+          }`}
+        >
+          {parseFloat(info.price_change) >= 0 ? '+' : ''}
+          {formatPrice(info.price_change)} (
+          {formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
+        </div>
+      </div>
 
-        <div className="grid grid-cols-4 gap-4 text-sm">
-          <div>
-            <div className="text-gray-600">PER</div>
-            <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>
-          </div>
-          <div>
-            <div className="text-gray-600">PBR</div>
-            <div>{formatNumber(info.price_to_book, 2, '倍')}</div>
-          </div>
-          <div>
-            <div className="text-gray-600">利回り</div>
-            <div>{formatNumber(info.dividend_yield, 2, '%')}</div>
-          </div>
-          <div>
-            <div className="text-gray-600">時価総額</div>
-            <div>{formatMarketCap(info.market_cap)}</div>
-          </div>
+      {/* 各種指標を4列で表示 */}
+      <div className="grid grid-cols-4 text-sm mt-2">
+        <div>
+          <div className="text-gray-600">PER</div>
+          <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <div className="text-gray-600">PBR</div>
+          <div>{formatNumber(info.price_to_book, 2, '倍')}</div>
+        </div>
+        <div>
+          <div className="text-gray-600">利回り</div>
+          <div>{formatNumber(info.dividend_yield, 2, '%')}</div>
+        </div>
+        <div>
+          <div className="text-gray-600">時価総額</div>
+          <div>{formatMarketCap(info.market_cap)}</div>
+        </div>
+      </div>
+    </div>
   );
 };
 

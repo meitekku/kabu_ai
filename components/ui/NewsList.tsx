@@ -69,20 +69,20 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0 divide-y divide-gray-100">
       {news.map((item) => (
         <Link 
           href={`/${code}/news/article/${item.id}`}
           key={item.id}
           className="block"
         >
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-lg">{item.title}</div>
+          <Card className="hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
+            <CardContent className="py-2 px-2">
+              <div className="flex flex-col">
                 <div className="text-sm text-gray-500">
                   {ServerToDate(item.created_at)}
                 </div>
+                <div className="text-base text-gray-900 mt-0.5">{item.title}</div>
               </div>
             </CardContent>
           </Card>

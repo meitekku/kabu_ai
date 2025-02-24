@@ -164,7 +164,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <ul className="space-y-4">
         {items.map((item) => (
-          // 親要素に relative を付与して、sticky が親要素内で有効になるようにする
           <li key={item.id} className="relative rounded-lg border p-4">
             <div className="flex items-start gap-4">
               <div className="flex-1">

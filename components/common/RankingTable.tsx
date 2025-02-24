@@ -70,8 +70,8 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
 
   const getDiffPercentColor = (diffPercent: number | null) => {
     if (!diffPercent) return 'text-gray-600';
-    if (diffPercent > 0) return 'text-red-600';
-    if (diffPercent < 0) return 'text-blue-600';
+    if (diffPercent > 0) return 'text-red-500';
+    if (diffPercent < 0) return 'text-blue-500';
     return 'text-gray-600';
   };
 
@@ -86,15 +86,22 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
     router.push(`/${code}/news`);
   };
 
+  const getRankingStyle = (index: number) => {
+    if (index < 3) { // 1-3位
+      return 'bg-red-600 text-white';
+    }
+    return 'bg-gray-700 text-white'; // 4位以降
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="w-full max-w-2xl p-6 bg-white rounded-lg border border-gray-100 shadow-sm">
+        <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-sm">
           <div className="animate-pulse space-y-4">
             <div className="h-4 bg-gray-200 rounded w-1/4"></div>
             <div className="space-y-3">
               {[...Array(limit)].map((_, index) => (
-                <div key={`skeleton-${tableName}-${index}`} className="h-8 bg-gray-200 rounded"></div>
+                <div key={`skeleton-${tableName}-${index}`} className="h-12 bg-gray-200 rounded"></div>
               ))}
             </div>
           </div>
@@ -103,11 +110,14 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
     }
 
     return (
-      <div className="w-full max-w-2xl bg-white rounded-lg border border-gray-100 shadow-sm">
-        <div className="px-6 py-2 border-b border-gray-100">
-          <div className="text-lg font-bold">{title}</div>
+      <div className="w-full max-w-2xl bg-white rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center">
+            <h3 className="text-xl font-bold">{title}</h3>
+            <div className="ml-2 text-sm text-gray-500">前日比</div>
+          </div>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div>
           {error ? (
             <div key="error" className="px-6 py-8">
               <Alert>
@@ -122,7 +132,7 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
             data.map((item, index) => (
               <div 
                 key={`${tableName}-${item.code}-${index}`}
-                className="px-6 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center"
+                className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
                 onClick={() => handleItemClick(item.code)}
                 role="button"
                 tabIndex={0}
@@ -132,20 +142,19 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
                   }
                 }}
               >
-                <span className="text-2xl text-blue-600 min-w-12 mr-4 text-center flex justify-center items-center">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-4 font-bold text-sm ${getRankingStyle(index)}`}>
                   {index + 1}
-                </span>
-                <div className="flex-1 flex items-start justify-between">
-                  <div className="flex flex-col">
-                    <div className="text-gray-900">
-                        <span className={`${getDiffPercentColor(item.diff_percent)}`}>
-                        {formatDiffPercent(item.diff_percent)}
-                      </span>
-                    </div>
-                    <div className="font-bold text-gray-600 text-sm mt-1">
-                      {item.name}
-                    </div>
+                </div>
+                <div className="text-gray-600 mr-4">
+                  {item.code}
+                </div>
+                <div className="flex-1">
+                  <div className="text-blue-600 font-medium">
+                    {item.name}
                   </div>
+                </div>
+                <div className={`text-right text-lg font-bold ${getDiffPercentColor(item.diff_percent)}`}>
+                  {formatDiffPercent(item.diff_percent)}
                 </div>
               </div>
             ))

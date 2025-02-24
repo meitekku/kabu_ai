@@ -26,7 +26,7 @@ const NewsPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       <CompanyBasicInfo code={code} />
       <StockChart code={code} />
       <NewsList />
