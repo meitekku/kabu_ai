@@ -196,8 +196,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         // グラフ描画用に整形
         const formattedData: ExtendedChartData[] = sortedData.map((item, index) => {
           const isPositive = item.close >= item.open;
+          const date = new Date(item.date);
           return {
-            date: new Date(item.date).toLocaleDateString(),
+            // MM/DD形式で日付を表示するように修正（年を削除）
+            date: `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`,
             open: item.open,
             high: item.high,
             low: item.low,
@@ -231,75 +233,93 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   if (data.length === 0) return null;
 
   return (
-    <div className="w-full">
-      <div className="p-2">
-        {/* 上段チャート（ロウソク足 + 移動平均）: 高さはそのまま */}
-        <div className="h-32 md:h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} barCategoryGap={0} barGap={0}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" hide />
-              <YAxis domain={['auto', 'auto']} tick={{ fontSize: 12 }} />
-              <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 9999 }} />
-  
-              {/* ヒゲ */}
-              <Bar
-                dataKey="highLowBar"
-                fill="none"
-                stroke="#000000"
-                strokeWidth={1}
-                name="値幅"
-                shape={(props: unknown) => <CandleWickShape {...(props as RectangleProps)} />}
-              />
-  
-              {/* 実体 */}
-              <Bar
-                dataKey="candlestick"
-                name="株価"
-                shape={(props: unknown) => <CandleBodyShape {...(props as RectangleProps)} />}
-              >
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    stroke={entry.color}
-                  />
-                ))}
-              </Bar>
-  
-              {/* 移動平均線 */}
-              <Line type="monotone" dataKey="ma5" stroke="#00ff00" dot={false} name="MA(5)" />
-              <Line type="monotone" dataKey="ma25" stroke="#ff0000" dot={false} name="MA(25)" />
-              <Line type="monotone" dataKey="ma75" stroke="#0000ff" dot={false} name="MA(75)" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-  
-        {/* 下段チャート（出来高）の高さを大きく設定 */}
-        <div className="h-20 md:h-24 mt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value: number) => formatNumber(value / 10000)}
-                label={{ value: '(万株)', position: 'insideLeft', offset: 0, fontSize: 12 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-  
-              <Bar dataKey="volume" name="出来高">
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`volume-cell-${index}`}
-                    fill={entry.color === '#ff0000' ? '#ffcccc' : '#ccccff'}
-                    stroke={entry.color === '#ff0000' ? '#ff0000' : '#0000ff'}
-                  />
-                ))}
-              </Bar>
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="w-full mt-2">
+      {/* 上段チャート（ロウソク足 + 移動平均） */}
+      <div className="h-32 md:h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart 
+            data={data} 
+            barCategoryGap={0} 
+            barGap={0}
+            margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" hide />
+            <YAxis 
+              domain={['auto', 'auto']} 
+              tick={{ fontSize: 12 }} 
+              width={35}
+            />
+            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+
+            {/* ヒゲ */}
+            <Bar
+              dataKey="highLowBar"
+              fill="none"
+              stroke="#000000"
+              strokeWidth={1}
+              name="値幅"
+              shape={(props: unknown) => <CandleWickShape {...(props as RectangleProps)} />}
+            />
+
+            {/* 実体 */}
+            <Bar
+              dataKey="candlestick"
+              name="株価"
+              shape={(props: unknown) => <CandleBodyShape {...(props as RectangleProps)} />}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.color}
+                  stroke={entry.color}
+                />
+              ))}
+            </Bar>
+
+            {/* 移動平均線 */}
+            <Line type="monotone" dataKey="ma5" stroke="#00ff00" dot={false} name="MA(5)" />
+            <Line type="monotone" dataKey="ma25" stroke="#ff0000" dot={false} name="MA(25)" />
+            <Line type="monotone" dataKey="ma75" stroke="#0000ff" dot={false} name="MA(75)" />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* 下段チャート（出来高） */}
+      <div className="h-20 md:h-24">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart 
+            data={data}
+            margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              tickFormatter={(value: number) => formatNumber(value / 10000)}
+              label={{ 
+                value: '(万株)', 
+                position: 'top',
+                offset: -10,
+                dx: -5,
+                dy: 10,
+                fontSize: 12 
+              }}
+              width={35}
+            />
+            <Tooltip content={<CustomTooltip />} />
+
+            <Bar dataKey="volume" name="出来高">
+              {data.map((entry, index) => (
+                <Cell
+                  key={`volume-cell-${index}`}
+                  fill={entry.color === '#ff0000' ? '#ffcccc' : '#ccccff'}
+                  stroke={entry.color === '#ff0000' ? '#ff0000' : '#0000ff'}
+                />
+              ))}
+            </Bar>
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
