@@ -14,7 +14,7 @@ export default function RootLayout({
         <div className="min-h-screen flex flex-col">
           <GlobalNavigation />
           <Header />
-          <main className="flex-grow max-w-1200 mx-2 my-6 sm:m-6">
+          <main className="flex-grow max-w-[1020px] w-full mx-auto px-2 my-6 sm:px-6">
             {children}
           </main>
           <Footer />

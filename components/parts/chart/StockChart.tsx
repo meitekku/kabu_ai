@@ -236,7 +236,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     <Card className="w-full">
       <CardContent className="p-2">
         {/* 上段チャート（ロウソク足 + 移動平均）: 高さはそのまま */}
-        <div className="h-32 md:h-72">
+        <div className="h-32 md:h-48">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} barCategoryGap={0} barGap={0}>
               <CartesianGrid strokeDasharray="3 3" />
