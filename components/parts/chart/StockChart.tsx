@@ -11,8 +11,6 @@ import {
   Cell
 } from 'recharts';
 import { RectangleProps, TooltipProps } from 'recharts';
-import { Card, CardContent } from '@/components/ui/card';
-// 以下はあなたの環境に合わせてインポートしてください
 import { ChartData, PriceRecord, ApiResponse } from '@/types/parts/chart/MainChart';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
@@ -233,8 +231,8 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   if (data.length === 0) return null;
 
   return (
-    <Card className="w-full">
-      <CardContent className="p-2">
+    <div className="w-full">
+      <div className="p-2">
         {/* 上段チャート（ロウソク足 + 移動平均）: 高さはそのまま */}
         <div className="h-32 md:h-48">
           <ResponsiveContainer width="100%" height="100%">
@@ -302,8 +300,8 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

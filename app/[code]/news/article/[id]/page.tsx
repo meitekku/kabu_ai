@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import './post.css';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 
 interface Article {
@@ -147,20 +145,23 @@ const ArticleDetail = () => {
   };
 
   const formatContent = (content: string) => {
-    if (containsHTML(content)) {
+    // 前後の空白や改行を取り除く
+    const trimmedContent = content.trim();
+    
+    if (containsHTML(trimmedContent)) {
       return (
         <div 
           className="prose max-w-none leading-relaxed text-gray-800"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: trimmedContent }}
         />
       );
     }
 
-    return content.split('\n\n').map((paragraph, index) => (
+    return trimmedContent.split('\n\n').map((paragraph, index) => (
       <p key={index} className="mb-4 last:mb-0">
         {paragraph.split('\n').map((line, lineIndex) => (
           <span key={lineIndex}>
-            {line}
+            {line.trim()}
             {lineIndex < paragraph.split('\n').length - 1 && <br />}
           </span>
         ))}
@@ -192,31 +193,27 @@ const ArticleDetail = () => {
           ← ニュース一覧に戻る
         </Link>
       </div>
-      <Card className="mb-8">
-        <CardContent className="p-6">
-          <div className="">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">{article.title}</h1>
-              <div className="text-sm text-gray-500">
-                {ServerToDate(article.created_at)}
-              </div>
+      <div className="mb-8">
+        <div className="pb-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{article.title}</h1>
+          </div>
+          <div className="flex justify-between items-center mt-2">
+            <div className="text-sm text-gray-600">
+              {article.company_name} <br/>
+              {ServerToDate(article.created_at)}
             </div>
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                {article.company_name}
-              </div>
-              <div className="flex space-x-3">
-                <TwitterShareButton url={currentUrl} text={article.title} />
-                <LineShareButton url={currentUrl} />
-                <FacebookShareButton url={currentUrl} />
-              </div>
-            </div>
-            <div className="post max-w-none leading-relaxed text-gray-800">
-              {formatContent(article.content)}
+            <div className="flex space-x-3">
+              <TwitterShareButton url={currentUrl} text={article.title} />
+              <LineShareButton url={currentUrl} />
+              <FacebookShareButton url={currentUrl} />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="prose prose-sm sm:prose lg:prose-lg max-w-none mt-6">
+          {formatContent(article.content)}
+        </div>
+      </div>
     </div>
   );
 };
