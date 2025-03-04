@@ -275,6 +275,20 @@ export default function PostForm({
     }
   };
 
+  // タイトルと内容をコピーする関数を追加
+  const handleCopy = () => {
+    const textToCopy = `${formData.title}\n\n${formData.content}`;
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => {
+        setMessage('タイトルと内容をコピーしました');
+        setMessageOpacity(1);
+      })
+      .catch(err => {
+        setMessage('コピーに失敗しました');
+        console.error('Copy failed: ', err);
+      });
+  };
+
   if (isLoading) {
     return <div className="w-full text-center p-4">読み込み中...</div>;
   }
@@ -309,6 +323,15 @@ export default function PostForm({
             {isSubmitting 
               ? (postId && postId !== 'new' ? '更新中...' : '投稿中...') 
               : (postId && postId !== 'new' ? '更新する' : '投稿する')}
+          </button>
+          
+          {/* コピーするボタンを追加 */}
+          <button
+            onClick={handleCopy}
+            className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={!formData.title && !formData.content}
+          >
+            コピーする
           </button>
           
           {postId && postId !== 'new' && (
