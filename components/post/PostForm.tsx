@@ -235,6 +235,15 @@ export default function PostForm({
       return;
     }
 
+    // クリップボードにコピー
+    const textToCopy = `${formData.title}\n\n${formData.content}`;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      console.log('コンテンツをコピーしました');
+    } catch (err) {
+      console.error('コピーに失敗しました:', err);
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/post', {
@@ -252,7 +261,7 @@ export default function PostForm({
       console.log('Submit response:', data);
       
       if (data.success) {
-        setMessage(postId && postId !== 'new' ? '更新が完了しました' : '投稿が完了しました');
+        setMessage(postId && postId !== 'new' ? '更新が完了しました（コピー済み）' : '投稿が完了しました（コピー済み）');
         setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
         
         if (redirectAfterPost) {
