@@ -130,3 +130,59 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     );
   }
 }
+
+// DELETE handler for deleting posts
+export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+  try {
+    const body = await request.json() as PostRequest;
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'ID is required for deleting a post',
+        },
+        { status: 400 }
+      );
+    }
+
+    const db = Database.getInstance();
+
+    const affectedRows = await db.delete(
+      'DELETE FROM post WHERE id = ?',
+      [id]
+    );
+
+    if (affectedRows === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Post not found or already deleted',
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Post deleted successfully',
+        data: {
+          id: id
+        }
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
+      },
+      { status: 500 }
+    );
+  }
+}

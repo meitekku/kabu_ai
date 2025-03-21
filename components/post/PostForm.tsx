@@ -238,6 +238,7 @@ export default function PostForm({
     // クリップボードにコピー
     const textToCopy = `${formData.title}\n\n${formData.content}`;
     try {
+
       await navigator.clipboard.writeText(textToCopy);
       console.log('コンテンツをコピーしました');
     } catch (err) {
@@ -279,6 +280,56 @@ export default function PostForm({
     } catch (error) {
       setMessage('エラーが発生しました');
       console.error('Submit error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 削除機能を追加
+  const handleDelete = async () => {
+    if (!postId || postId === 'new') {
+      setMessage('削除する記事がありません');
+      return;
+    }
+
+    if (!confirm('本当にこの記事を削除しますか？この操作は元に戻せません。')) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/post', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: Number(postId)
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage('記事を削除しました');
+        setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
+        
+        if (redirectAfterPost) {
+          router.push('/admin/comment');
+        } else {
+          setFormData({
+            title: '',
+            content: '',
+            code: '',
+            accept: 1
+          });
+        }
+      } else {
+        setMessage('削除に失敗しました: ' + data.message);
+      }
+    } catch (error) {
+      setMessage('エラーが発生しました');
+      console.error('Delete error:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -334,7 +385,7 @@ export default function PostForm({
               : (postId && postId !== 'new' ? '更新する' : '投稿する')}
           </button>
           
-          {/* コピーするボタンを追加 */}
+          {/* コピーするボタン */}
           <button
             onClick={handleCopy}
             className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -342,6 +393,17 @@ export default function PostForm({
           >
             コピーする
           </button>
+          
+          {/* 削除ボタンを追加 */}
+          {postId && postId !== 'new' && (
+            <button
+              onClick={handleDelete}
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              削除する
+            </button>
+          )}
           
           {postId && postId !== 'new' && (
             <a 
