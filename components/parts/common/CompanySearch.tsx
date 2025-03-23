@@ -52,6 +52,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         }
         
         const parsedCompanies = await response.json();
+        console.log(parsedCompanies);
         setCompanies(parsedCompanies);
       } catch (error) {
         console.error('Failed to load companies:', error);
