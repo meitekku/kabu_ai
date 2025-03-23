@@ -39,8 +39,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   useEffect(() => {
     const loadCompanies = async () => {
       try {
-        const timestamp = new Date().getTime();
-        const response = await fetch(`/company.csv?t=${timestamp}`);
+        const response = await fetch('/company.csv', { cache: 'no-store' });
         const csvText = await response.text();
         const rows = csvText.split('\n').slice(1);
         const parsedCompanies = rows
