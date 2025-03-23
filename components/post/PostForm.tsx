@@ -7,7 +7,7 @@ import { useRouter, useParams, usePathname } from 'next/navigation';
 interface PostTitle {
   id: number;
   title: string;
-  code: string;
+  code?: string;
 }
 
 interface PostTitleListProps {
@@ -79,8 +79,10 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
           }}
         >
           <a 
-            href={`/${post.code}/news/article/${post.id}`}
+            href={`https://kabu-ai.jp/${post.code || '0000'}/news/article/${post.id}`}
             className="hover:text-blue-500 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
           >
             {post.title}
           </a>
@@ -419,21 +421,21 @@ export default function PostForm({
               記事を見る
             </a>
           )}
+  
+          <div className="h-2" />
+  
+          {pathname === '/admin/comment' && (
+            <div className="w-full">
+              <PostTitleList 
+                numPosts={8} 
+                fontSize={14}
+                refreshTrigger={refreshTrigger}
+              />
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="h-2" />
-
-      {pathname === '/admin/comment' && (
-        <div className="w-full">
-          <PostTitleList 
-            numPosts={8} 
-            fontSize={14}
-            refreshTrigger={refreshTrigger}
-          />
-        </div>
-      )}
-
+  
       {message && (
         <div 
           className="mt-4 p-2 text-center rounded bg-gray-100 transition-opacity duration-300"
