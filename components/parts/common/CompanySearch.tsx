@@ -39,20 +39,16 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   useEffect(() => {
     const loadCompanies = async () => {
       try {
-        const response = await fetch('/api/common/company', {
-          cache: 'no-store',
-          headers: {
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache'
-          }
-        });
+        const response = await fetch('/company20250323.csv');
+        const csvText = await response.text();
+        const rows = csvText.split('\n').slice(1);
+        const parsedCompanies = rows
+          .filter(row => row.trim())
+          .map(row => {
+            const [id, name] = row.split(',');
+            return { id: id.trim(), name: name.trim() };
+          });
         
-        if (!response.ok) {
-          throw new Error('Failed to fetch companies');
-        }
-        
-        const parsedCompanies = await response.json();
-        console.log(parsedCompanies);
         setCompanies(parsedCompanies);
       } catch (error) {
         console.error('Failed to load companies:', error);
