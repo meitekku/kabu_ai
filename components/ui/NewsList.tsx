@@ -5,11 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ServerToDate } from '@/utils/format/ServerToDate';
+import TodayArticleCopyButton from '@/components/parts/admin/TodayArticleCopyButton';
 
 interface NewsItem {
   id: number;
   code: string;
   title: string;
+  content: string;
   created_at: string;
   company_name: string;
 }
@@ -69,25 +71,33 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
   }
 
   return (
-    <div className="space-y-0 divide-y divide-gray-100">
-      {news.map((item) => (
-        <Link 
-          href={`/${code}/news/article/${item.id}`}
-          key={item.id}
-          className="block"
-        >
-          <Card className="hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-            <CardContent className="py-2 px-2">
-              <div className="flex flex-col">
-                <div className="text-sm text-gray-500">
-                  {ServerToDate(item.created_at)}
+    <div className="space-y-4">
+      {code === 'all' && (
+        <div className="flex justify-end mb-4">
+          <TodayArticleCopyButton articles={news} />
+        </div>
+      )}
+      
+      <div className="space-y-0 divide-y divide-gray-100">
+        {news.map((item) => (
+          <Link 
+            href={`/${code}/news/article/${item.id}`}
+            key={item.id}
+            className="block"
+          >
+            <Card className="hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
+              <CardContent className="py-2 px-2">
+                <div className="flex flex-col">
+                  <div className="text-sm text-gray-500">
+                    {ServerToDate(item.created_at)}
+                  </div>
+                  <div className="text-base text-gray-900 mt-0.5">{item.title}</div>
                 </div>
-                <div className="text-base text-gray-900 mt-0.5">{item.title}</div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };

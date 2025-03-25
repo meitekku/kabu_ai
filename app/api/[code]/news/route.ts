@@ -5,6 +5,7 @@ import { RowDataPacket } from 'mysql2';
 interface NewsRecord extends RowDataPacket {
   id: number;
   title: string;
+  content: string;
   created_at: string;
   code: string;
 }
@@ -26,12 +27,17 @@ export async function POST(
     }
 
     const db = Database.getInstance();
+    const today = new Date().toISOString().split('T')[0];
+    
     const query = code === 'all'
-      ? `SELECT id, code, title, created_at
+      ? `SELECT id, code, title, content, created_at
          FROM post 
-         WHERE accept = 1
+         WHERE 
+          accept = 1
+          AND site = 0
+          AND DATE(created_at) = ?
          ORDER BY created_at DESC
-         LIMIT 150`
+         LIMIT 100`
       : `SELECT id, code, title, created_at
          FROM post 
          WHERE code = ?
@@ -39,7 +45,7 @@ export async function POST(
          ORDER BY created_at DESC
          LIMIT ?`;
          
-    const queryParams = code === 'all' ? [limit] : [code, limit];
+    const queryParams = code === 'all' ? [today] : [code, limit];
     const news = await db.select<NewsRecord>(query, queryParams);
     console.log(news);
 
