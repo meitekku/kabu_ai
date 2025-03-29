@@ -8,6 +8,7 @@ interface NewsRecord extends RowDataPacket {
   content: string;
   created_at: string;
   code: string;
+  status?: string;
 }
 
 export async function POST(
@@ -30,19 +31,21 @@ export async function POST(
     const today = new Date().toISOString().split('T')[0];
     
     const query = code === 'all'
-      ? `SELECT id, code, title, content, created_at
-         FROM post 
+      ? `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
+         FROM post p
+         LEFT JOIN post_status ps ON p.id = ps.post_id
          WHERE 
-          accept = 1
-          AND site = 0
-          AND DATE(created_at) = ?
-         ORDER BY created_at DESC
+          p.accept = 1
+          AND p.site = 0
+          AND DATE(p.created_at) = ?
+         ORDER BY p.created_at DESC
          LIMIT 100`
-      : `SELECT id, code, title, created_at
-         FROM post 
-         WHERE code = ?
-         AND accept = 1
-         ORDER BY created_at DESC
+      : `SELECT p.id, p.code, p.title, p.created_at, ps.status
+         FROM post p
+         LEFT JOIN post_status ps ON p.id = ps.post_id
+         WHERE p.code = ?
+         AND p.accept = 1
+         ORDER BY p.created_at DESC
          LIMIT ?`;
          
     const queryParams = code === 'all' ? [today] : [code, limit];

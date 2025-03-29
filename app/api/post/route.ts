@@ -51,7 +51,72 @@ function isRaisingVolume(averageVolume: number, currentVolume: number): boolean 
   }
 }
 
-// 決算日からの日数を計算する関数
+// 祝日リスト
+const HOLIDAYS_2025 = [
+  '2025-01-01', // 元日
+  '2025-01-13', // 成人の日
+  '2025-02-11', // 建国記念の日
+  '2025-02-23', // 天皇誕生日
+  '2025-02-24', // 休日
+  '2025-03-20', // 春分の日
+  '2025-04-29', // 昭和の日
+  '2025-05-03', // 憲法記念日
+  '2025-05-04', // みどりの日
+  '2025-05-05', // こどもの日
+  '2025-05-06', // 休日
+  '2025-07-21', // 海の日
+  '2025-08-11', // 山の日
+  '2025-09-15', // 敬老の日
+  '2025-09-23', // 秋分の日
+  '2025-10-13', // スポーツの日
+  '2025-11-03', // 文化の日
+  '2025-11-23', // 勤労感謝の日
+  '2025-11-24', // 休日
+];
+
+const HOLIDAYS_2026 = [
+  '2026-01-01', // 元日
+  '2026-01-12', // 成人の日
+  '2026-02-11', // 建国記念の日
+  '2026-02-23', // 天皇誕生日
+  '2026-03-20', // 春分の日
+  '2026-04-29', // 昭和の日
+  '2026-05-03', // 憲法記念日
+  '2026-05-04', // みどりの日
+  '2026-05-05', // こどもの日
+  '2026-05-06', // 休日
+  '2026-07-20', // 海の日
+  '2026-08-11', // 山の日
+  '2026-09-21', // 敬老の日
+  '2026-09-22', // 休日
+  '2026-09-23', // 秋分の日
+  '2026-10-12', // スポーツの日
+  '2026-11-03', // 文化の日
+  '2026-11-23', // 勤労感謝の日
+];
+
+// 日付が祝日かどうかを判定する関数
+function isHoliday(date: Date): boolean {
+  const year = date.getFullYear();
+  const formattedDate = date.toISOString().split('T')[0];
+  
+  if (year === 2025) {
+    return HOLIDAYS_2025.includes(formattedDate);
+  } else if (year === 2026) {
+    return HOLIDAYS_2026.includes(formattedDate);
+  }
+  
+  return false;
+}
+
+// 日付が営業日かどうかを判定する関数
+function isBusinessDay(date: Date): boolean {
+  const dayOfWeek = date.getDay();
+  // 土曜日(6)または日曜日(0)、または祝日の場合は営業日ではない
+  return dayOfWeek !== 0 && dayOfWeek !== 6 && !isHoliday(date);
+}
+
+// 決算日からの営業日数を計算する関数
 async function getSettlementStatus(code: string): Promise<number | null> {
   const db = Database.getInstance();
   
@@ -67,16 +132,39 @@ async function getSettlementStatus(code: string): Promise<number | null> {
   const settlementDate = new Date(result[0].settlement_date);
   const now = new Date();
   
-  // 日付の差を計算（簡易版 - 実際の営業日計算はより複雑）
-  const diffTime = Math.abs(now.getTime() - settlementDate.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // 決算日と現在日が同じ場合は0を返す
+  if (settlementDate.toISOString().split('T')[0] === now.toISOString().split('T')[0]) {
+    return 0;
+  }
   
-  if (diffDays > 3) {
+  // 決算日が未来か過去かを判定
+  const isFuture = settlementDate > now;
+  
+  // 開始日と終了日を設定
+  const startDate = isFuture ? new Date(now) : new Date(settlementDate);
+  const endDate = isFuture ? new Date(settlementDate) : new Date(now);
+  
+  // 営業日数をカウント
+  let businessDays = 0;
+  const currentDate = new Date(startDate);
+  
+  // 開始日の翌日から終了日まで1日ずつ進めて営業日をカウント
+  currentDate.setDate(currentDate.getDate() + 1);
+  
+  while (currentDate <= endDate) {
+    if (isBusinessDay(currentDate)) {
+      businessDays++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  // 3営業日を超える場合はnullを返す
+  if (businessDays > 3) {
     return null;
   }
   
   // 決算日が未来の場合はマイナス値、過去の場合はプラス値
-  return settlementDate > now ? -diffDays : diffDays;
+  return isFuture ? -businessDays : businessDays;
 }
 
 // 記事のステータス情報を生成する関数
@@ -134,16 +222,6 @@ async function generatePostStatus(code: string): Promise<Record<string, number |
   
   if (newsCount && newsCount[0].count > 0) {
     statusDict.news = 1;
-  }
-  
-  // Yahoo掲示板のコメント増加（簡易版）
-  const commentCount = await db.select(
-    `SELECT COUNT(*) as count FROM yahoo_comment WHERE code = ? AND DATE(post_date) = CURRENT_DATE`,
-    [code]
-  );
-  
-  if (commentCount && commentCount[0].count > 200) {
-    statusDict.yahoo_increase = 1;
   }
   
   return statusDict;
