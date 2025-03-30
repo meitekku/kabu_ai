@@ -37,6 +37,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [days, setDays] = useState(1);
 
   // ステータスラベルの定義
   const statusLabels: StatusLabels = {
@@ -56,7 +57,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ code, limit }),
+          body: JSON.stringify({ code, limit, days }),
         });
 
         if (!response.ok) {
@@ -75,7 +76,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
     if (code) {
       fetchNews();
     }
-  }, [code, limit]);
+  }, [code, limit, days]);
 
   // ステータスからラベルを生成する関数
   const renderStatusLabels = (statusJson?: string) => {
@@ -119,6 +120,12 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
     }
   };
 
+  // 日数変更ハンドラー
+  const handleDaysChange = (selectedDays: number) => {
+    setDays(selectedDays);
+    setLoading(true);
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading news...</div>;
   }
@@ -135,7 +142,10 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
     <div className="space-y-4">
       {code === 'all' && (
         <div className="flex justify-end mb-4">
-          <TodayArticleCopyButton articles={news} />
+          <TodayArticleCopyButton 
+            articles={news} 
+            onDaysChange={handleDaysChange} 
+          />
         </div>
       )}
       

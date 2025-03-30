@@ -19,6 +19,7 @@ export async function POST(
     const { code } = await params;
     const body = await request.json();
     const limit = body.limit || 10;
+    const days = body.days || 1;
 
     if (!code) {
       return NextResponse.json(
@@ -28,7 +29,13 @@ export async function POST(
     }
 
     const db = Database.getInstance();
-    const today = new Date().toISOString().split('T')[0];
+    
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - (days - 1));
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const startDateStr = startDate.toISOString().split('T')[0];
     
     const query = code === 'all'
       ? `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
@@ -37,7 +44,8 @@ export async function POST(
          WHERE 
           p.accept = 1
           AND p.site = 0
-          AND DATE(p.created_at) = ?
+          AND DATE(p.created_at) >= ?
+          AND DATE(p.created_at) <= ?
          ORDER BY p.created_at DESC
          LIMIT 100`
       : `SELECT p.id, p.code, p.title, p.created_at, ps.status
@@ -48,7 +56,7 @@ export async function POST(
          ORDER BY p.created_at DESC
          LIMIT ?`;
          
-    const queryParams = code === 'all' ? [today] : [code, limit];
+    const queryParams = code === 'all' ? [startDateStr, todayStr] : [code, limit];
     const news = await db.select<NewsRecord>(query, queryParams);
     console.log(news);
 

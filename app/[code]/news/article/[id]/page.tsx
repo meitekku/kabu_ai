@@ -139,16 +139,17 @@ const ArticleDetail = () => {
     }
   }, [id, code]);
 
-  const containsHTML = (str: string) => {
-    const htmlRegex = /<[a-z][\s\S]*>/i;
-    return htmlRegex.test(str);
+  const containsNonImageHTML = (str: string) => {
+    // imgタグ以外のHTMLタグを検出する正規表現
+    const nonImageHtmlRegex = /<(?!img\s)[a-z][\s\S]*>/i;
+    return nonImageHtmlRegex.test(str);
   };
 
   const formatContent = (content: string) => {
     // 前後の空白や改行を取り除く
     const trimmedContent = content.trim();
     
-    if (containsHTML(trimmedContent)) {
+    if (containsNonImageHTML(trimmedContent)) {
       return (
         <div 
           className="prose max-w-none leading-relaxed text-gray-800"
@@ -157,16 +158,43 @@ const ArticleDetail = () => {
       );
     }
 
-    return trimmedContent.split('\n\n').map((paragraph, index) => (
-      <p key={index} className="mb-4 last:mb-0">
-        {paragraph.split('\n').map((line, lineIndex) => (
-          <span key={lineIndex}>
-            {line.trim()}
-            {lineIndex < paragraph.split('\n').length - 1 && <br />}
-          </span>
-        ))}
-      </p>
-    ));
+    // imgタグを安全に処理するための関数
+    const processImgTags = (text: string) => {
+      // imgタグを一時的なプレースホルダーに置き換え
+      const placeholders: { [key: string]: string } = {};
+      let counter = 0;
+      
+      const textWithPlaceholders = text.replace(/<img[^>]*>/gi, (match) => {
+        const placeholder = `__IMG_PLACEHOLDER_${counter}__`;
+        placeholders[placeholder] = match;
+        counter++;
+        return placeholder;
+      });
+      
+      // 段落に分割して処理
+      return textWithPlaceholders.split('\n\n').map((paragraph, index) => (
+        <p key={index} className="mb-4 last:mb-0">
+          {paragraph.split('\n').map((line, lineIndex) => {
+            // プレースホルダーをimgタグに戻す
+            const processedLine = Object.entries(placeholders).reduce(
+              (acc, [placeholder, imgTag]) => 
+                acc.replace(placeholder, imgTag),
+              line.trim()
+            );
+            
+            return (
+              <span key={lineIndex} dangerouslySetInnerHTML={{ __html: processedLine }} />
+            );
+          }).reduce((acc: React.ReactNode[], item, i) => {
+            return acc.length === 0 
+              ? [item] 
+              : [...acc, <br key={`br-${i}`} />, item];
+          }, [])}
+        </p>
+      ));
+    };
+
+    return processImgTags(trimmedContent);
   };
 
   if (loading) {

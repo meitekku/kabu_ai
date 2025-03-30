@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ClipboardCopy, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface TodayArticleCopyButtonProps {
   articles: {
     title: string;
     content: string;
   }[];
+  onDaysChange?: (days: number) => void;
 }
 
-const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({ articles }) => {
+const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({ 
+  articles, 
+  onDaysChange 
+}) => {
   const [copied, setCopied] = useState(false);
+  const [selectedDays, setSelectedDays] = useState('1');
+
+  // localStorageから保存された日数を取得
+  useEffect(() => {
+    const savedDays = localStorage.getItem('selectedDays');
+    if (savedDays) {
+      setSelectedDays(savedDays);
+      // 保存された日数で初期化
+      if (onDaysChange) {
+        onDaysChange(parseInt(savedDays));
+      }
+    }
+  }, [onDaysChange]);
 
   const handleCopy = () => {
     if (articles.length === 0) {
@@ -38,8 +56,36 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({ article
       });
   };
 
+  const handleDaysChange = (value: string) => {
+    setSelectedDays(value);
+    // localStorageに選択値を保存
+    localStorage.setItem('selectedDays', value);
+    
+    if (onDaysChange) {
+      onDaysChange(parseInt(value));
+    }
+  };
+
   return (
-    <div className="flex justify-center my-4">
+    <div className="flex items-center gap-3 my-4">
+      <Select
+        value={selectedDays}
+        onValueChange={handleDaysChange}
+      >
+        <SelectTrigger className="w-[120px]">
+          <SelectValue placeholder="期間選択" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="1">1日</SelectItem>
+          <SelectItem value="2">2日</SelectItem>
+          <SelectItem value="3">3日</SelectItem>
+          <SelectItem value="4">4日</SelectItem>
+          <SelectItem value="5">5日</SelectItem>
+          <SelectItem value="6">6日</SelectItem>
+          <SelectItem value="7">7日</SelectItem>
+        </SelectContent>
+      </Select>
+      
       <Button 
         onClick={handleCopy} 
         variant="outline" 
