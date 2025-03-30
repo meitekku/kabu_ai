@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 
 // PostTitleList コンポーネント
+// 
 interface PostTitle {
   id: number;
   title: string;
@@ -119,6 +120,8 @@ export default function PostForm({
   const [messageOpacity, setMessageOpacity] = useState(1);
   const [isLoading, setIsLoading] = useState(!!postId);
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     let fadeTimeout: NodeJS.Timeout;
     let hideTimeout: NodeJS.Timeout;
@@ -229,6 +232,74 @@ export default function PostForm({
         ...formData,
         content: newContent
       });
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDragLeave = () => {
+    // setDropPosition(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+
+    const file = e.dataTransfer.files[0];
+    if (!file.type.startsWith('image/')) {
+      setMessage('画像ファイルのみアップロードできます');
+      return;
+    }
+
+    setMessage('画像をアップロード中...');
+    setIsSubmitting(true);
+
+    const textarea = e.currentTarget;
+    const cursorPosition = textarea.selectionStart;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const imgTag = `<img src='${data.filePath}' alt='${file.name}' />`;
+        const currentContent = textarea.value;
+        const newContent =
+          currentContent.substring(0, cursorPosition) +
+          imgTag +
+          currentContent.substring(cursorPosition);
+
+        setFormData(prev => ({
+          ...prev,
+          content: newContent
+        }));
+
+        textarea.focus();
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = cursorPosition + imgTag.length;
+        }, 0);
+
+        setMessage('画像をアップロードしました');
+      } else {
+        setMessage(`アップロードに失敗しました: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setMessage('アップロード中にエラーが発生しました');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -375,10 +446,14 @@ export default function PostForm({
             />
           </div>
           <textarea
+            ref={textareaRef}
             value={formData.content}
             onChange={handleContentChange}
-            placeholder="内容を入力"
+            placeholder="内容を入力（画像をドラッグ&ドロップして挿入できます）"
             className="w-full h-64 p-2 border rounded resize-none"
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
           />
         </div>
   
