@@ -115,6 +115,9 @@ const ArticleDetail = () => {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [currentImage, setCurrentImage] = useState<string>('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -176,11 +179,35 @@ const ArticleDetail = () => {
         <p key={index} className="mb-4 last:mb-0">
           {paragraph.split('\n').map((line, lineIndex) => {
             // プレースホルダーをimgタグに戻す
-            const processedLine = Object.entries(placeholders).reduce(
-              (acc, [placeholder, imgTag]) => 
-                acc.replace(placeholder, imgTag),
-              line.trim()
-            );
+            let processedLine = line.trim();
+            
+            Object.entries(placeholders).forEach(([placeholder, imgTag]) => {
+              if (processedLine.includes(placeholder)) {
+                // src属性を抽出
+                const srcMatch = imgTag.match(/src=["']([^"']*)["']/);
+                const imgSrc = srcMatch ? srcMatch[1] : '';
+                
+                // imgタグをラップしたものに置き換え
+                const wrappedImgTag = `
+                  <div class="relative text-center w-full my-4">
+                    <div class="cursor-pointer inline-block relative" onclick="document.dispatchEvent(new CustomEvent('openImageModal', { detail: '${imgSrc}' }))">
+                      ${imgTag}
+                      <button 
+                        class="absolute bottom-2 right-2 bg-white bg-opacity-70 p-1 rounded-full shadow-md hover:bg-opacity-100 transition-all pointer-events-none" 
+                        aria-label="拡大表示"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <br />
+                `;
+                
+                processedLine = processedLine.replace(placeholder, wrappedImgTag);
+              }
+            });
             
             return (
               <span key={lineIndex} dangerouslySetInnerHTML={{ __html: processedLine }} />
@@ -195,6 +222,34 @@ const ArticleDetail = () => {
     };
 
     return processImgTags(trimmedContent);
+  };
+
+  // コンポーネントがマウントされた後に実行される処理
+  useEffect(() => {
+    // カスタムイベントリスナーを設定
+    const handleOpenImage = (event: CustomEvent) => {
+      const imgSrc = event.detail;
+      setCurrentImage(imgSrc);
+      setImageModalOpen(true);
+      // フェードイン効果のためにちょっと遅らせてvisibleにする
+      setTimeout(() => setIsModalVisible(true), 10);
+    };
+
+    // イベントリスナーを追加
+    document.addEventListener('openImageModal', handleOpenImage as EventListener);
+
+    // クリーンアップ関数
+    return () => {
+      document.removeEventListener('openImageModal', handleOpenImage as EventListener);
+    };
+  }, [loading, article]);
+
+  // モーダルを閉じる関数を追加
+  const closeModal = () => {
+    // まずフェードアウト
+    setIsModalVisible(false);
+    // アニメーション完了後にモーダルを非表示に
+    setTimeout(() => setImageModalOpen(false), 300);
   };
 
   if (loading) {
@@ -242,6 +297,34 @@ const ArticleDetail = () => {
           {formatContent(article.content)}
         </div>
       </div>
+
+      {/* 画像表示モーダル */}
+      {imageModalOpen && (
+        <div 
+          className={`fixed inset-0 bg-black flex items-center justify-center z-50 p-4 transition-all duration-300 ease-in-out ${
+            isModalVisible ? 'bg-opacity-75' : 'bg-opacity-0'
+          }`}
+          onClick={closeModal}
+        >
+          <div 
+            className={`relative max-w-4xl max-h-[90vh] overflow-auto transition-all duration-300 ease-in-out transform ${
+              isModalVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()} // 内側をクリックしてもモーダルが閉じないようにする
+          >
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 bg-white rounded-full p-2 text-gray-800 hover:bg-gray-200 transition-colors"
+              aria-label="閉じる"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img src={currentImage} alt="拡大画像" className="max-w-full max-h-[85vh] object-contain" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
