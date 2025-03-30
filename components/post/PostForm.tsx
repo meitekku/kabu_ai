@@ -274,7 +274,7 @@ export default function PostForm({
       const data = await response.json();
 
       if (data.success) {
-        const imgTag = `<img src='${data.filePath}' alt='${file.name}' />`;
+        const imgTag = `<img src='${data.filePath}' alt='${file.name}' class='block mx-auto mt-2 max-h-[400px]' />`;
         const currentContent = textarea.value;
         const newContent =
           currentContent.substring(0, cursorPosition) +
