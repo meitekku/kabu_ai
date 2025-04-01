@@ -7,10 +7,10 @@ import Image from 'next/image';
 
 const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
   const commonClasses = "logo pl-4 text-center w-full text-xl";
-  const icon = <Image className="mr-2" src='/logo.webp' alt='' width={36} height={36} />;
+  const icon = <Image src='/logo.png' alt='' width={92} height={40} />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center">
-      {icon}株AI
+      {icon}
     </Link>
   );
  
