@@ -185,7 +185,7 @@ const ArticleDetail = () => {
             Object.entries(placeholders).forEach(([placeholder, imgTag]) => {
               if (processedLine.includes(placeholder)) {
                 // src属性を抽出
-                const srcMatch = imgTag.match(/src=["']([^"']*)["']/);
+                const srcMatch = imgTag.match(/src=['"]([^'"]*?)['"]/);
                 const imgSrc = srcMatch ? srcMatch[1] : '';
                 
                 // imgタグをラップしたものに置き換え

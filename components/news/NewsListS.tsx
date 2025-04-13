@@ -90,6 +90,7 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
 
   return (
     <div className="space-y-4">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">最新ニュース</h2>
       <div className="space-y-4">
         {news.map((item) => (
           <div key={item.id} className="border-b border-gray-100 pb-4">

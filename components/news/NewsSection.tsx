@@ -18,7 +18,6 @@ interface Post {
 export default function NewsSection() {
   const [pickupNews, setPickupNews] = useState<Post[]>([]);
   const [marketNews, setMarketNews] = useState<Post[]>([]);
-  const [companyNews, setCompanyNews] = useState<Post[]>([]);
 
   useEffect(() => {
     const fetchNews = async (pickup: number) => {
@@ -42,26 +41,23 @@ export default function NewsSection() {
     };
 
     const loadAllNews = async () => {
-      const [pickup, market, company] = await Promise.all([
+      const [pickup, market] = await Promise.all([
         fetchNews(1),
-        fetchNews(2),
-        fetchNews(3),
+        fetchNews(2)
       ]);
       setPickupNews(pickup);
       setMarketNews(market);
-      setCompanyNews(company);
     };
 
     loadAllNews();
   }, []);
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
-    <div className="mb-12">
-      <h2 className="text-xl font-bold mb-6">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+    <div className="mb-8">
+      <h2 className="text-xl font-bold mb-2">{title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.map((item) => {
-          // コンテンツから最初の画像URLを抽出
-          const imageMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
+          const imageMatch = item.content.match(/<img[^>]+src=['"]([^'">]+)['"]/);
           const imageUrl = imageMatch ? imageMatch[1] : null;
 
           return (
@@ -73,7 +69,7 @@ export default function NewsSection() {
                       src={imageUrl}
                       alt={item.title}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -101,10 +97,9 @@ export default function NewsSection() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-2 py-8">
+    <div className="max-w-7xl mx-auto">
       <NewsBlock title="ピックアップニュース" news={pickupNews} />
       <NewsBlock title="市場ニュース" news={marketNews} />
-      <NewsBlock title="企業ニュース" news={companyNews} />
     </div>
   );
 } 
