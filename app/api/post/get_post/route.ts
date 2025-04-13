@@ -7,6 +7,8 @@ interface PostRow extends RowDataPacket {
   title: string;
   content: string;
   created_at: string;
+  code: string;
+  pickup: number;
 }
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +35,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         code,
         title,
         content,
-        created_at
+        created_at,
+        pickup
       FROM post
       WHERE id = ?
     `;

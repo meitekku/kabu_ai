@@ -27,7 +27,7 @@ type RankingTableProps = {
 
 const DEFAULT_LIMIT = 10;
 
-const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableProps) => {
+const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableProps) => {
   const router = useRouter();
   const [data, setData] = useState<BaseRankingData[]>([]);
   const [error, setError] = useState<string>('');
@@ -79,18 +79,11 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
     if (diffPercent === null) return '-';
     const value: number = parseFloat(String(diffPercent));
     const sign = value > 0 ? '+' : '';
-    return `${sign}${value}%`;
+    return `${sign}${value}円`;
   };
 
   const handleItemClick = (code: string) => {
     router.push(`/${code}/news`);
-  };
-
-  const getRankingStyle = (index: number) => {
-    if (index < 3) { // 1-3位
-      return 'bg-red-600 text-white';
-    }
-    return 'bg-gray-700 text-white'; // 4位以降
   };
 
   const renderContent = () => {
@@ -110,29 +103,28 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
     }
 
     return (
-      <div className="w-full bg-white rounded-lg shadow-sm">
-        <div className="px-4 py-2 border-b border-gray-100">
+      <div className="w-full max-w-2xl bg-white rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center">
-            <div className="text-sm font-bold">{title}</div>
-            <div className="ml-2 text-xs text-gray-500">前日比</div>
+            <h3 className="text-xl font-bold">{title}</h3>
           </div>
         </div>
         <div>
           {error ? (
-            <div key="error" className="px-4 py-4">
+            <div key="error" className="px-6 py-8">
               <Alert>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             </div>
           ) : data.length === 0 ? (
-            <div key="no-data" className="px-4 py-4 text-center text-xs text-gray-500">
+            <div key="no-data" className="px-6 py-8 text-center text-gray-500">
               本日のデータはありません
             </div>
           ) : (
             data.map((item, index) => (
               <div 
                 key={`${tableName}-${item.code}-${index}`}
-                className={`px-4 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
+                className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
                 onClick={() => handleItemClick(item.code)}
                 role="button"
                 tabIndex={0}
@@ -142,18 +134,21 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
                   }
                 }}
               >
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 font-bold text-xs ${getRankingStyle(index)}`}>
+                <div className="w-8 text-center font-bold">
                   {index + 1}
                 </div>
-                <div className="text-xs text-gray-600 mr-2">
-                  {item.code}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-blue-600 font-medium truncate">
+                <div className="flex-1">
+                  <div className="text-gray-600">
                     {item.name}
                   </div>
+                  <div className="text-sm text-gray-500">
+                    {item.code}
+                  </div>
                 </div>
-                <div className={`text-right text-sm font-bold ${getDiffPercentColor(item.diff_percent)}`}>
+                <div className="text-right text-lg font-bold text-gray-800">
+                  {item.current_price ? `${item.current_price}円` : '-'}
+                </div>
+                <div className={`text-right text-lg font-bold ${getDiffPercentColor(item.diff_percent)}`}>
                   {formatDiffPercent(item.diff_percent)}
                 </div>
               </div>
@@ -167,4 +162,4 @@ const RankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: RankingTableP
   return renderContent();
 };
 
-export default RankingTable;
+export default StyledRankingTable; 

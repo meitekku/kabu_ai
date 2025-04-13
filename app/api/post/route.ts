@@ -9,6 +9,7 @@ interface PostRequest {
   content: string;
   site?: number;
   accept?: number;
+  pickup?: number;
 }
 
 interface ApiResponse {
@@ -231,7 +232,7 @@ async function generatePostStatus(code: string): Promise<Record<string, number |
 export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const body = await request.json() as PostRequest;
-    const { code, title, content, site = 0, accept = 0 } = body;
+    const { code, title, content, site = 0, accept = 0, pickup = 0 } = body;
 
     if (!code || !title || !content) {
       return NextResponse.json(
@@ -245,8 +246,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const db = Database.getInstance();
     const insertId = await db.insert(
-      'INSERT INTO post (code, title, content, site, accept) VALUES (?, ?, ?, ?, ?)',
-      [code, title, content, site, accept]
+      'INSERT INTO post (code, title, content, site, accept, pickup) VALUES (?, ?, ?, ?, ?, ?)',
+      [code, title, content, site, accept, pickup]
     );
 
     // post_status テーブルにステータス情報を挿入
@@ -284,7 +285,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 export async function PUT(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     const body = await request.json() as PostRequest;
-    const { id, code, title, content, site = 0, accept = 0 } = body;
+    const { id, code, title, content, site = 0, accept = 0, pickup = 0 } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -309,8 +310,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     const db = Database.getInstance();
 
     const affectedRows = await db.update(
-      'UPDATE post SET code = ?, title = ?, content = ?, site = ?, accept = ? WHERE id = ?',
-      [code, title, content, site, accept, id]
+      'UPDATE post SET code = ?, title = ?, content = ?, site = ?, accept = ?, pickup = ? WHERE id = ?',
+      [code, title, content, site, accept, pickup, id]
     );
 
     if (affectedRows === 0) {

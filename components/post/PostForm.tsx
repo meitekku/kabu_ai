@@ -113,7 +113,8 @@ export default function PostForm({
     title: '',
     content: '',
     code: '',
-    accept: 1
+    accept: 1,
+    pickup: 0
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -172,7 +173,8 @@ export default function PostForm({
             title: data.data.title,
             content: data.data.content,
             code: data.data.code || '',
-            accept: 1
+            accept: 1,
+            pickup: data.data.pickup || 0
           });
         } else {
           setMessage(data.message || 'データの取得に失敗しました');
@@ -317,7 +319,6 @@ export default function PostForm({
     // クリップボードにコピー
     const textToCopy = `${formData.title}\n\n${formData.content}`;
     try {
-
       await navigator.clipboard.writeText(textToCopy);
       console.log('コンテンツをコピーしました');
     } catch (err) {
@@ -333,7 +334,8 @@ export default function PostForm({
         },
         body: JSON.stringify({
           ...formData,
-          id: postId && postId !== 'new' ? Number(postId) : undefined
+          id: postId && postId !== 'new' ? Number(postId) : undefined,
+          pickup: formData.pickup
         }),
       });
 
@@ -345,12 +347,13 @@ export default function PostForm({
         setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
         
         if (redirectAfterPost) {
-          router.push(`https://www.kabu-ai.jp/${formData.code}/news/article/${data.data.id}`);
+          router.push(`/${formData.code}/news/article/${data.data.id}`);
         } else {
           setFormData(prev => ({
             ...prev,
             title: '',
-            content: ''
+            content: '',
+            pickup: 0
           }));
         }
       } else {
@@ -400,7 +403,8 @@ export default function PostForm({
             title: '',
             content: '',
             code: '',
-            accept: 1
+            accept: 1,
+            pickup: 0
           });
         }
       } else {
@@ -457,7 +461,7 @@ export default function PostForm({
           />
         </div>
   
-        <div className="w-32 flex flex-col items-center gap-2">
+        <div className="w-48 flex flex-col items-center gap-2">
           <button
             onClick={handleSubmit}
             disabled={isSubmitting || !formData.code}
@@ -468,7 +472,6 @@ export default function PostForm({
               : (postId && postId !== 'new' ? '更新する' : '投稿する')}
           </button>
           
-          {/* コピーするボタン */}
           <button
             onClick={handleCopy}
             className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -487,6 +490,17 @@ export default function PostForm({
               削除する
             </button>
           )}
+
+          <select
+            value={formData.pickup}
+            onChange={(e) => setFormData({...formData, pickup: Number(e.target.value)})}
+            className="w-full p-2 border rounded"
+          >
+            <option value={0}>ピックアップなし</option>
+            <option value={1}>トップ上部</option>
+            <option value={2}>トップ中部</option>
+            <option value={3}>トップ下部</option>
+          </select>
           
           {postId && postId !== 'new' && (
             <a 
