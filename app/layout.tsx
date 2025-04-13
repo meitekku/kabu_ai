@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname()
   const isAdminPage = pathname?.startsWith('/admin')
-  const mainClassName = isAdminPage ? 'w-full' : 'w-[670px]'
+  const mainClassName = isAdminPage ? 'w-full' : 'w-full md:w-[670px]'
 
   return (
     <html>
@@ -23,12 +23,12 @@ export default function RootLayout({
           <GlobalNavigation />
           <Header />
           <div className="flex-grow max-w-[1000px] w-full mx-auto px-2 my-6 sm:px-6">
-            <div className="flex gap-8">
+            <div className="flex flex-col md:flex-row gap-8">
               <main className={mainClassName}>
                 {children}
               </main>
               {!isAdminPage && (
-                <aside className="w-[300px] space-y-6">
+                <aside className="w-full md:w-[300px] space-y-6">
                   <RankingTable 
                     title="アクセスランキング"
                     tableName="ranking_access"
