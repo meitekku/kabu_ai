@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ServerToDate } from '@/utils/format/ServerToDate';
+import Image from 'next/image';
 
 interface Article {
   id: number;
@@ -321,7 +322,13 @@ const ArticleDetail = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <img src={currentImage} alt="拡大画像" className="max-w-full max-h-[85vh] object-contain" />
+            <Image
+              src={currentImage}
+              alt="拡大画像"
+              width={1200}
+              height={800}
+              className="max-w-full max-h-[85vh] object-contain"
+            />
           </div>
         </div>
       )}
