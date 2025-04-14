@@ -498,8 +498,7 @@ export default function PostForm({
           >
             <option value={0}>ピックアップなし</option>
             <option value={1}>トップ上部</option>
-            <option value={2}>トップ中部</option>
-            <option value={3}>トップ下部</option>
+            <option value={2}>トップ下部</option>
           </select>
           
           {postId && postId !== 'new' && (
