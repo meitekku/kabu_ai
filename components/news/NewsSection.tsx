@@ -29,7 +29,7 @@ export default function NewsSection() {
           },
           body: JSON.stringify({
             pickup: pickup,
-            limit: 3
+            limit: 2
           }),
         });
         const data = await response.json();
@@ -61,8 +61,8 @@ export default function NewsSection() {
           const imageUrl = imageMatch ? imageMatch[1] : null;
 
           return (
-            <Link href={`/${item.code}/news/article/${item.id}`} key={item.id} className="block">
-              <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden">
+            <Link href={`/${item.code}/news/article/${item.id}`} key={item.id} className="block h-full">
+              <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
                 <div className="relative w-full aspect-[2/1]">
                   {imageUrl ? (
                     <Image
@@ -77,12 +77,9 @@ export default function NewsSection() {
                     </div>
                   )}
                 </div>
-                <div className="p-2">
-                  <h3 className="font-medium text-gray-900 line-clamp-3">{item.title}</h3>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                      {new Date(item.created_at).toLocaleDateString('ja-JP')}
-                    </span>
+                <div className="p-2 flex flex-col flex-grow">
+                  <h3 className="font-medium text-gray-900 line-clamp-3 flex-grow">{item.title}</h3>
+                  <div className="mt-2 flex items-center justify-end">
                     {item.company_name && (
                       <span className="text-sm text-gray-600">{item.company_name}</span>
                     )}
