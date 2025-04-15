@@ -14,7 +14,7 @@ export default function Home() {
       <div className="space-y-6">
         <h2 className="text-xl font-bold mb-4">ニュース</h2>
         <NewsSection />
-        <NewsListS />
+        <NewsListS more={true} />
       </div>
     </DefaultTemplate>
   );

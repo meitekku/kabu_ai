@@ -18,15 +18,18 @@ interface NewsItem {
 interface NewsListSProps {
   limit?: number;
   site?: number;
+  more?: boolean;
 }
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1秒
 
-const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
+const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchNews = async (retryCount = 0) => {
@@ -37,8 +40,9 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
-            site_type: Number(site),  // 明示的に数値型に変換
-            limit: Number(limit)      // 明示的に数値型に変換
+            site_type: Number(site),
+            limit: Number(limit),
+            page: currentPage
           }),
         });
 
@@ -48,11 +52,11 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
         }
         const data = await response.json();
         setNews(data.data || []);
+        setTotalPages(Math.ceil(data.total / limit));
         setError(null);
         setLoading(false);
       } catch (err) {
         if (retryCount < MAX_RETRIES) {
-          // リトライ
           setTimeout(() => fetchNews(retryCount + 1), RETRY_DELAY);
           return;
         }
@@ -62,7 +66,7 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
     };
 
     fetchNews();
-  }, [limit, site]);
+  }, [limit, site, currentPage]);
 
   if (loading) {
     return (
@@ -90,7 +94,6 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">最新ニュース</h2>
       <div className="space-y-4">
         {news.map((item) => (
           <div key={item.id} className="border-b border-gray-100 pb-4">
@@ -109,14 +112,76 @@ const NewsListS = ({ limit = 4, site = 0 }: NewsListSProps) => {
           </div>
         ))}
       </div>
-      <div className="text-right">
-        <Link 
-          href="/news"
-          className="text-red-600 hover:text-red-700 text-sm font-medium"
-        >
-          もっと見る ›
-        </Link>
-      </div>
+      {more ? (
+        <div className="text-right">
+          <Link 
+            href="/news/list/latest"
+            className="font-bold hover:text-red-700 text-sm"
+          >
+            もっと見る ›
+          </Link>
+        </div>
+      ) : totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-2 mt-4">
+          <button
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-2 py-1 rounded disabled:opacity-50"
+          >
+            &lt;
+          </button>
+          
+          {currentPage > 2 && (
+            <button
+              onClick={() => setCurrentPage(1)}
+              className="px-3 py-1 rounded"
+            >
+              1
+            </button>
+          )}
+          
+          {currentPage > 3 && <span className="px-1">...</span>}
+          
+          {Array.from(
+            { length: Math.min(3, totalPages) },
+            (_, i) => {
+              const page = Math.max(1, Math.min(currentPage - 1, totalPages - 2)) + i;
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1 rounded ${
+                    currentPage === page
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            }
+          )}
+          
+          {currentPage < totalPages - 2 && <span className="px-1">...</span>}
+          
+          {currentPage < totalPages - 1 && (
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              className="px-3 py-1 rounded"
+            >
+              {totalPages}
+            </button>
+          )}
+          
+          <button
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-2 py-1 rounded disabled:opacity-50"
+          >
+            &gt;
+          </button>
+        </div>
+      )}
     </div>
   );
 };

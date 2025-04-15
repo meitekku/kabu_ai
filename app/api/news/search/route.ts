@@ -14,6 +14,10 @@ interface PostRow extends RowDataPacket {
   updated_at: Date;
 }
 
+interface CountResult extends RowDataPacket {
+  total: number;
+}
+
 export async function POST(req: Request) {
   try {
     const {
@@ -23,11 +27,21 @@ export async function POST(req: Request) {
       from_date,      // 開始日
       to_date,        // 終了日
       limit = 10,     // 取得件数
-      offset = 0      // オフセット
+      page = 1,       // ページ番号
+      site_type = 0   // サイトタイプ
     } = await req.json();
 
     const db = Database.getInstance();
     
+    // 総件数を取得するクエリ
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM post p
+      LEFT JOIN company c ON p.code = c.code
+      WHERE p.accept = 1
+    `;
+
+    // データを取得するクエリ
     let query = `
       SELECT 
         p.id,
@@ -46,6 +60,11 @@ export async function POST(req: Request) {
 
     const conditions = [];
     const values: (string | number | boolean | null)[] = [];
+
+    if (site_type !== undefined) {
+      conditions.push('p.site = ?');
+      values.push(site_type);
+    }
 
     if (pickup) {
       conditions.push('p.pickup = ?');
@@ -75,20 +94,33 @@ export async function POST(req: Request) {
 
     // 条件を結合
     if (conditions.length > 0) {
-      query += ` AND ${conditions.join(' AND ')}`;
+      const whereClause = ` AND ${conditions.join(' AND ')}`;
+      query += whereClause;
+      countQuery += whereClause;
     }
 
-    // ソート順と取得件数の制限を追加
-    query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+    // ソート順を追加
+    query += ` ORDER BY p.created_at DESC`;
+
+    // ページネーションのためのLIMITとOFFSETを追加
+    const offset = (page - 1) * limit;
+    query += ` LIMIT ? OFFSET ?`;
     values.push(limit);
     values.push(offset);
 
+    // 総件数を取得
+    const [totalResult] = await db.select<CountResult>(countQuery, values.slice(0, -2));
+    const total = totalResult.total;
+
+    // データを取得
     const posts = await db.select<PostRow>(query, values);
 
     return NextResponse.json({
       success: true,
       data: posts,
-      total: posts.length,
+      total: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page
     });
 
   } catch (error) {

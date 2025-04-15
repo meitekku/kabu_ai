@@ -496,7 +496,7 @@ export default function PostForm({
             onChange={(e) => setFormData({...formData, pickup: Number(e.target.value)})}
             className="w-full p-2 border rounded"
           >
-            <option value={0}>ピックアップなし</option>
+            <option value={0}>通常</option>
             <option value={1}>トップ上部</option>
             <option value={2}>トップ下部</option>
           </select>
