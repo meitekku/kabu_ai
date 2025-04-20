@@ -1,6 +1,7 @@
 'use client';
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
+import { StockPrice } from "@/components/common/CurrentPriceInfo";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
@@ -22,10 +23,16 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
         ) : (
           <div className={commonClasses}>{logoLink}</div>
         )}
-        <div className="p-4">
+        <div className="p-2">
           <CompanySearch/>
         </div>
         <div className="iiarea pr-4"></div>
+      </div>
+      <div className="flex justify-center items-center space-x-4">
+        <StockPrice code="0" />
+        <StockPrice code="1" />
+        <StockPrice code="2" />
+        <StockPrice code="3" />
       </div>
     </header>
   );

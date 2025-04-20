@@ -11,11 +11,9 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <DefaultTemplate>
-      <div className="space-y-6">
-        <h2 className="text-xl font-bold mb-4">ニュース</h2>
-        <NewsSection />
-        <NewsListS more={true} />
-      </div>
+      <NewsSection />
+      <h2 className="text-xl font-bold mb-2">新着ニュース</h2>
+      <NewsListS more={true} />
     </DefaultTemplate>
   );
 }
