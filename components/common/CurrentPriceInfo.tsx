@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-interface StockPriceProps {
+interface CurrentPriceInfoProps {
   code: string;
 }
 
@@ -8,11 +8,11 @@ interface CompanyData {
   code: string;
   name: string;
   current_price: number | null;
-  price_change: string | null;
-  price_change_percent: number | null;
+  price_change: number | null;
+  diff_percent: number | null;
 }
 
-export const StockPrice: React.FC<StockPriceProps> = ({ code }) => {
+export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
   const [data, setData] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,22 +62,23 @@ export const StockPrice: React.FC<StockPriceProps> = ({ code }) => {
   let isPriceUp = false;
   let priceColor = 'text-gray-500';
 
-  if (data.price_change) {
-    isPriceUp = data.price_change.startsWith('+');
+  if (data.diff_percent) {
+    isPriceUp = data.diff_percent < 0;
     priceColor = isPriceUp ? 'text-red-500' : 'text-blue-500';
   }
+  console.log(data);
 
   return (
     <div className="flex items-center space-x-4 p-2">
       <div className="text-sm">{data.name}</div>
       <div className="text-sm">
         {data.current_price 
-          ? `¥${data.current_price.toLocaleString()}`
+          ? `${data.current_price.toLocaleString()}`
           : '---'}
       </div>
-      {data.price_change_percent ? (
+      {data.diff_percent ? (
         <div className={`${priceColor} text-sm`}>
-          {data.price_change_percent}%
+          {data.diff_percent}%
         </div>
       ) : (
         <div className="text-sm text-gray-400">-</div>
