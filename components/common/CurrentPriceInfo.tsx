@@ -64,7 +64,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
 
   if (data.diff_percent) {
     isPriceUp = data.diff_percent < 0;
-    priceColor = isPriceUp ? 'text-red-500' : 'text-blue-500';
+    priceColor = isPriceUp ? 'text-blue-500' : 'text-red-500';
   }
   console.log(data);
 
@@ -78,7 +78,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
       </div>
       {data.diff_percent ? (
         <div className={`${priceColor} text-sm`}>
-          {data.diff_percent}%
+          {data.diff_percent > 0 ? '+' : ''}{data.diff_percent}%
         </div>
       ) : (
         <div className="text-sm text-gray-400">-</div>
