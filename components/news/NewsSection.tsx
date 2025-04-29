@@ -18,6 +18,7 @@ interface Post {
 export default function NewsSection() {
   const [pickupNews, setPickupNews] = useState<Post[]>([]);
   const [marketNews, setMarketNews] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchNews = async (pickup: number) => {
@@ -47,6 +48,7 @@ export default function NewsSection() {
       ]);
       setPickupNews(pickup);
       setMarketNews(market);
+      setLoading(false);
     };
 
     loadAllNews();
@@ -92,6 +94,41 @@ export default function NewsSection() {
       </div>
     </div>
   );
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>
+                <div className="p-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mb-8">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[...Array(2)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>
+                <div className="p-2">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
