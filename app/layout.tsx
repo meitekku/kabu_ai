@@ -4,7 +4,7 @@ import '@/app/globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import GlobalNavigation from '@/components/navigation/GlobalNavigation'
-import RankingTable from '@/components/common/RankingTable'
+import RankingTableClient from '@/components/common/RankingTableClient'
 import { usePathname } from 'next/navigation'
 
 export default function RootLayout({
@@ -29,32 +29,32 @@ export default function RootLayout({
               </main>
               {!isAdminPage && (
                 <aside className="w-full md:w-[300px] space-y-6">
-                  <RankingTable 
+                  <RankingTableClient 
                     title="アクセスランキング"
                     tableName="ranking_access"
                     limit={5}
                   />
-                  <RankingTable 
+                  <RankingTableClient 
                     title="値上がり率ランキング"
                     tableName="ranking_up"
                     limit={5}
                   />
-                  <RankingTable 
+                  <RankingTableClient 
                     title="値下がり率ランキング"
                     tableName="ranking_low"
                     limit={5}
                   />
-                  <RankingTable 
+                  <RankingTableClient 
                     title="ストップ高ランキング"
                     tableName="ranking_stop_high"
                     limit={5}
                   />
-                  <RankingTable 
+                  <RankingTableClient 
                     title="ストップ安ランキング"
                     tableName="ranking_stop_low"
                     limit={5}
                   />
-                  <RankingTable 
+                  <RankingTableClient 
                     title="出来高ランキング"
                     tableName="ranking_trading_value"
                     limit={5}
