@@ -284,7 +284,9 @@ const ArticleDetail = () => {
           </div>
           <div className="flex justify-between items-center mt-2">
             <div className="text-sm text-gray-600">
-              {article.company_name} <br/>
+              <Link href={`/${code}/news`} className="hover:text-blue-600 transition-colors">
+                {article.company_name}
+              </Link> <br/>
               {ServerToDate(article.created_at)}
             </div>
             <div className="flex space-x-3">
