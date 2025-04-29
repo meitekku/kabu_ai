@@ -40,7 +40,33 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     fetchCompanyInfo();
   }, [code]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="w-full bg-white px-2">
+        <div className="animate-pulse">
+          {/* 企業コード + 企業名 + 市場名のローディング */}
+          <div className="flex items-center justify-between">
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-4 bg-gray-200 rounded w-16"></div>
+          </div>
+          {/* 現在株価と値幅のローディング */}
+          <div className="flex items-baseline space-x-4 mt-1">
+            <div className="h-6 bg-gray-200 rounded w-24"></div>
+            <div className="h-5 bg-gray-200 rounded w-20"></div>
+          </div>
+          {/* 各種指標のローディング */}
+          <div className="grid grid-cols-4 text-sm mt-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i}>
+                <div className="h-4 bg-gray-200 rounded w-12 mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!info) return null;
 
   /**

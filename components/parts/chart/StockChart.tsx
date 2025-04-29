@@ -228,7 +228,59 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     fetchData();
   }, [code]);
 
-  if (loading) return <div className="text-center p-4">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="w-full mt-2">
+        {/* 上段チャート（ロウソク足 + 移動平均）のローディング */}
+        <div className="h-32 md:h-48 bg-white p-4">
+          <div className="animate-pulse">
+            <div className="h-full flex flex-col">
+              {/* チャート部分 */}
+              <div className="flex-1 flex items-center justify-between">
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+              </div>
+              {/* グリッド線 */}
+              <div className="flex-1 flex items-center justify-between">
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 下段チャート（出来高）のローディング */}
+        <div className="h-20 md:h-24 bg-white p-4">
+          <div className="animate-pulse">
+            <div className="h-full flex flex-col">
+              {/* 出来高バー */}
+              <div className="flex-1 flex items-end justify-between">
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+              </div>
+              {/* 日付ラベル */}
+              <div className="flex justify-between mt-2">
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+                <div className="h-4 bg-gray-200 rounded w-8"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
   if (data.length === 0) return null;
 
