@@ -37,15 +37,10 @@ jobs:
         echo "Syncing files to server"
         export SSHPASS=$SSH_PASSWORD
         sshpass -e rsync -avz --delete \
-          *.* \
-          app \
-          components \
-          lib \
-          public \
-          types \
-          utils \
-          python \
-          .github \
+          . \
+          --exclude '.git' \
+          --exclude 'node_modules' \
+          --exclude '.next' \
           $SSH_USER@$SSH_HOST:$TARGET
 
         echo "rsync command completed"
