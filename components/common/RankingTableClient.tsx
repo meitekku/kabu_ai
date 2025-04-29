@@ -14,13 +14,20 @@ type RankingTableClientProps = {
   title: string;
   tableName: string;
   limit?: number;
+  initialData?: BaseRankingData[];
 };
 
-export default function RankingTableClient({ title, tableName, limit = 10 }: RankingTableClientProps) {
-  const [data, setData] = useState<BaseRankingData[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function RankingTableClient({ title, tableName, limit = 10, initialData = [] }: RankingTableClientProps) {
+  const [data, setData] = useState<BaseRankingData[]>(initialData);
+  const [loading, setLoading] = useState(!initialData.length);
 
   useEffect(() => {
+    if (initialData.length > 0) {
+      setData(initialData);
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const response = await fetch('/api/common/get-all', {
@@ -46,7 +53,7 @@ export default function RankingTableClient({ title, tableName, limit = 10 }: Ran
     };
 
     fetchData();
-  }, [tableName, limit]);
+  }, [tableName, limit, initialData]);
 
   if (loading) {
     return (

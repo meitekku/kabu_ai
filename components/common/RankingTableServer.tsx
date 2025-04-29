@@ -1,4 +1,5 @@
-import RankingTable from './RankingTable';
+import { unstable_cache } from 'next/cache';
+import RankingTableClient from './RankingTableClient';
 
 interface BaseRankingData {
   code: string;
@@ -13,31 +14,36 @@ type RankingTableServerProps = {
   limit?: number;
 };
 
-async function getRankingData(tableName: string, limit: number): Promise<{ data: BaseRankingData[] }> {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/common/get-all`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ tableName, limit }),
-    next: { revalidate: 300 },
-  });
+const getCachedData = unstable_cache(
+  async (tableName: string, limit: number) => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/common/get-all`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tableName, limit }),
+      next: { revalidate: 1800 }, // 30分ごとに更新
+    });
 
-  if (!response.ok) {
-    throw new Error('データの取得に失敗しました');
-  }
+    if (!response.ok) {
+      throw new Error('データの取得に失敗しました');
+    }
 
-  return response.json();
-}
+    const result = await response.json();
+    return result.data as BaseRankingData[];
+  },
+  ['ranking-data'],
+  { revalidate: 1800 } // 30分ごとに更新
+);
 
 export default async function RankingTableServer({ title, tableName, limit = 10 }: RankingTableServerProps) {
-  const { data } = await getRankingData(tableName, limit);
+  const data = await getCachedData(tableName, limit);
 
   return (
-    <RankingTable
+    <RankingTableClient
       title={title}
       tableName={tableName}
-      data={data}
+      initialData={data}
       limit={limit}
     />
   );
