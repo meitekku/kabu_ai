@@ -177,6 +177,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   const [error, setError] = useState<string | null>(null);
   const [hoveredData, setHoveredData] = useState<ExtendedChartData | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<number>(0);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
   // 常時表示するツールチップのインデックスを計算
   const getDefaultTooltipIndices = () => {
@@ -213,9 +214,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   };
 
   // ツールチップの位置を計算する関数
-  const calculateTooltipPosition = (index: number, width: number) => {
+  const calculateTooltipPosition = (index: number) => {
     const totalPoints = data.length;
-    const pointWidth = width / totalPoints;
+    const pointWidth = containerWidth / totalPoints;
     const tooltipWidth = 80; // ツールチップの固定幅
     return pointWidth * index - (tooltipWidth / 2);
   };
@@ -347,7 +348,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               key={`article-${index}`}
               className="absolute z-10 flex pointer-events-none"
               style={{ 
-                left: `${hoveredData ? tooltipPosition : calculateTooltipPosition(index, window.innerWidth)}px`
+                left: `${hoveredData ? tooltipPosition : calculateTooltipPosition(index)}px`
               }}
             >
               <div className="speech-bubble bg-white border border-black p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto">
@@ -421,6 +422,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           );
         })}
         <ResponsiveContainer width="100%" height="100%" onResize={(width) => {
+          setContainerWidth(width);
           setTooltipPosition(width / 2);
         }}>
           <ComposedChart 
