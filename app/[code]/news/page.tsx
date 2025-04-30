@@ -12,13 +12,9 @@ const NewsPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const validateParams = () => {
-      if (!code) {
-        setError('Invalid code parameter.');
-      }
-    };
-
-    validateParams();
+    if (!code) {
+      setError('Invalid code parameter.');
+    }
   }, [code]);
 
   if (error) {
@@ -29,7 +25,7 @@ const NewsPage = () => {
     <div>
       <CompanyBasicInfo code={code} />
       <StockChart code={code} />
-      <NewsList />
+      <NewsList title="最新ニュース" />
     </div>
   );
 };

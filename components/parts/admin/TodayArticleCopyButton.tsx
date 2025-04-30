@@ -12,7 +12,7 @@ interface TodayArticleCopyButtonProps {
   onDaysChange?: (days: number) => void;
 }
 
-const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({ 
+const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = React.memo(({ 
   articles, 
   onDaysChange 
 }) => {
@@ -24,14 +24,10 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({
     const savedDays = localStorage.getItem('selectedDays');
     if (savedDays) {
       setSelectedDays(savedDays);
-      // 保存された日数で初期化
-      if (onDaysChange) {
-        onDaysChange(parseInt(savedDays));
-      }
     }
-  }, [onDaysChange]);
+  }, []);
 
-  const handleCopy = () => {
+  const handleCopy = React.useCallback(() => {
     if (articles.length === 0) {
       toast.error('コピーする記事がありません');
       return;
@@ -54,9 +50,9 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({
         console.error('クリップボードへのコピーに失敗しました:', err);
         toast.error('コピーに失敗しました');
       });
-  };
+  }, [articles]);
 
-  const handleDaysChange = (value: string) => {
+  const handleDaysChange = React.useCallback((value: string) => {
     setSelectedDays(value);
     // localStorageに選択値を保存
     localStorage.setItem('selectedDays', value);
@@ -64,7 +60,7 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({
     if (onDaysChange) {
       onDaysChange(parseInt(value));
     }
-  };
+  }, [onDaysChange]);
 
   return (
     <div className="flex items-center gap-3 my-4">
@@ -105,6 +101,8 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = ({
       </Button>
     </div>
   );
-};
+});
+
+TodayArticleCopyButton.displayName = 'TodayArticleCopyButton';
 
 export default TodayArticleCopyButton; 

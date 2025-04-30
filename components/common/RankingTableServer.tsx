@@ -24,6 +24,7 @@ const getCachedData = unstable_cache(
       body: JSON.stringify({ tableName, limit }),
       next: { revalidate: 1800 }, // 30分ごとに更新
     });
+    console.log('rankingTableServer');
 
     if (!response.ok) {
       throw new Error('データの取得に失敗しました');

@@ -73,7 +73,7 @@ export async function POST(req: Request) {
 
     if (company_code) {
       conditions.push('p.code = ?');
-      values.push(company_code);
+      values.push(String(company_code));
     }
 
     if (keyword) {

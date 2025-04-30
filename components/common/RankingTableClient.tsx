@@ -36,7 +36,9 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ tableName, limit }),
+          next: { revalidate: 1800 }, // 30分ごとに更新
         });
+        console.log('rankingTableClient');
 
         if (!response.ok) {
           throw new Error('データの取得に失敗しました');

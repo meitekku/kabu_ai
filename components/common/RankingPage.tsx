@@ -1,6 +1,6 @@
 import RankingTable from './RankingTable';
 
-export const revalidate = 300; // 5分ごとに再検証
+export const revalidate = 1800; // 30分ごとに再検証
 
 async function getRankingData(tableName: string) {
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/common/get-all`, {
@@ -9,8 +9,9 @@ async function getRankingData(tableName: string) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ tableName, limit: 10 }),
-    next: { revalidate: 300 },
+    next: { revalidate: 1800 }, // 30分ごとに更新
   });
+  console.log('rankingPage');
 
   if (!response.ok) {
     throw new Error('データの取得に失敗しました');

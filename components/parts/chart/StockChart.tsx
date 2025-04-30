@@ -8,15 +8,22 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Cell
+  Cell,
+  RectangleProps
 } from 'recharts';
-import { RectangleProps, TooltipProps } from 'recharts';
 import { ChartData, PriceRecord, ApiResponse } from '@/types/parts/chart/MainChart';
-import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 /* --------------------------------------------------
  * 型定義
  * -------------------------------------------------- */
+interface NewsArticle {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  code: string;
+}
+
 interface ExtendedChartData extends ChartData {
   // ヒゲ用: [low, high]
   highLowBar: [number, number];
@@ -28,16 +35,20 @@ interface ExtendedChartData extends ChartData {
   ma5: number;
   ma25: number;
   ma75: number;
+  // 記事データ
+  articles?: NewsArticle[];
+  // 企業コード
+  code: string;
 }
-
-type CustomTooltipProps = TooltipProps<ValueType, NameType> & {
-  payload?: Array<{
-    payload: ExtendedChartData;
-  }>;
-};
 
 interface StockChartProps {
   code: string;
+}
+
+interface CandleBodyProps extends RectangleProps {
+  payload?: {
+    index: number;
+  };
 }
 
 /* --------------------------------------------------
@@ -103,7 +114,7 @@ const CandleWickShape: React.FC<RectangleProps> = (props) => {
 /* --------------------------------------------------
  * 実体（始値終値）描画用カスタムシェイプ
  * -------------------------------------------------- */
-const CandleBodyShape: React.FC<RectangleProps> = (props) => {
+const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
   const { x, y, width, height, fill, stroke } = props;
 
   if (x == null || y == null || width == null || height == null) {
@@ -134,25 +145,25 @@ const CandleBodyShape: React.FC<RectangleProps> = (props) => {
 };
 
 /* --------------------------------------------------
- * カスタムツールチップ
+ * 株価情報表示コンポーネント
  * -------------------------------------------------- */
-const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload }) => {
-  if (!active || !payload || payload.length === 0) return null;
-  const chartData = payload[0]?.payload;
-  if (!chartData) return null;
+const PriceInfo: React.FC<{
+  data: ExtendedChartData[];
+  hoveredData: ExtendedChartData | null;
+}> = ({ data, hoveredData }) => {
+  const displayData = hoveredData || (data.length > 0 ? data[data.length - 1] : null);
+  
+  if (!displayData) return null;
 
   return (
-    <div className="bg-white p-4 border rounded shadow">
-      <p className="font-bold text-sm">{chartData.date}</p>
-      <p className="text-sm">始値: {formatNumber(chartData.open)}</p>
-      <p className="text-sm">高値: {formatNumber(chartData.high)}</p>
-      <p className="text-sm">安値: {formatNumber(chartData.low)}</p>
-      <p className="text-sm">終値: {formatNumber(chartData.close)}</p>
-      {/* 出来高を1万株単位に変換 */}
-      <p className="text-sm">出来高: {formatNumber(chartData.volume / 10000)}</p>
-      <p className="text-sm">MA(5): {formatNumber(chartData.ma5)}</p>
-      <p className="text-sm">MA(25): {formatNumber(chartData.ma25)}</p>
-      <p className="text-sm">MA(75): {formatNumber(chartData.ma75)}</p>
+    <div className="flex justify-between items-center px-2 bg-gray-100 rounded-lg text-sm font-mono">
+      <div className="flex gap-4">
+        <span>始値: {formatNumber(displayData.open)}</span>
+        <span>高値: {formatNumber(displayData.high)}</span>
+        <span>安値: {formatNumber(displayData.low)}</span>
+        <span>終値: {formatNumber(displayData.close)}</span>
+      </div>
+      <div>{displayData.date}</div>
     </div>
   );
 };
@@ -164,27 +175,88 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hoveredData, setHoveredData] = useState<ExtendedChartData | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<number>(0);
+
+  // 常時表示するツールチップのインデックスを計算
+  const getDefaultTooltipIndices = () => {
+    // 前日との変化率を計算
+    const priceChanges = data.map((item, index) => {
+      if (index === 0) return { index, changeRate: 0, hasNews: item.articles && item.articles.length > 0 };
+      const prevClose = data[index - 1].close;
+      const currentClose = item.close;
+      const changeRate = Math.abs((currentClose - prevClose) / prevClose * 100);
+      return { index, changeRate, hasNews: item.articles && item.articles.length > 0 };
+    });
+
+    // 記事がある日付を取得
+    const daysWithNews = priceChanges.filter(item => item.hasNews);
+    
+    // 記事がある日付が3つ未満の場合は、変化率の大きい順に追加
+    if (daysWithNews.length < 3) {
+      const remainingDays = priceChanges
+        .filter(item => !item.hasNews)
+        .sort((a, b) => b.changeRate - a.changeRate)
+        .slice(0, 3 - daysWithNews.length);
+      
+      return [...daysWithNews, ...remainingDays]
+        .sort((a, b) => b.changeRate - a.changeRate)
+        .slice(0, 3)
+        .map(item => item.index);
+    }
+
+    // 記事がある日付が3つ以上の場合は、変化率の大きい順に3つを選択
+    return daysWithNews
+      .sort((a, b) => b.changeRate - a.changeRate)
+      .slice(0, 3)
+      .map(item => item.index);
+  };
+
+  // ツールチップの位置を計算する関数
+  const calculateTooltipPosition = (index: number, width: number) => {
+    const totalPoints = data.length;
+    const pointWidth = width / totalPoints;
+    const tooltipWidth = 80; // ツールチップの固定幅
+    return pointWidth * index - (tooltipWidth / 2);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 実際のエンドポイントに合わせて修正してください
-        const response = await fetch(`/api/${code}/chart`, {
+        // 株価データの取得
+        const chartResponse = await fetch(`/api/${code}/chart`, {
           method: 'POST',
           body: JSON.stringify({ code, num: 60 }),
           headers: { 'Content-Type': 'application/json' }
         });
 
-        if (!response.ok) throw new Error('Data fetch failed');
+        if (!chartResponse.ok) throw new Error('Chart data fetch failed');
 
-        const result = (await response.json()) as ApiResponse<PriceRecord[]>;
-        if (!result.success || !result.data || result.data.length === 0) {
+        const chartResult = (await chartResponse.json()) as ApiResponse<PriceRecord[]>;
+        if (!chartResult.success || !chartResult.data || chartResult.data.length === 0) {
           setData([]);
           return;
         }
 
+        // 記事データの取得
+        const newsResponse = await fetch(`/api/${code}/news`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            limit: 60,
+            page: 1
+          })
+        });
+
+        if (!newsResponse.ok) throw new Error('News data fetch failed');
+
+        const newsResult = await newsResponse.json();
+        const articles: NewsArticle[] = newsResult.data || [];
+
         // 日付でソート
-        const sortedData = result.data.sort(
+        const sortedData = chartResult.data.sort(
           (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
         );
 
@@ -197,24 +269,35 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         const formattedData: ExtendedChartData[] = sortedData.map((item, index) => {
           const isPositive = item.close >= item.open;
           const date = new Date(item.date);
+          const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+          
+          // その日の記事をフィルタリング
+          const dayArticles = articles.filter((article: NewsArticle) => {
+            const articleDate = new Date(article.created_at);
+            const chartDate = new Date(item.date);
+            return (
+              articleDate.getFullYear() === chartDate.getFullYear() &&
+              articleDate.getMonth() === chartDate.getMonth() &&
+              articleDate.getDate() === chartDate.getDate()
+            );
+          });
+
           return {
-            // MM/DD形式で日付を表示するように修正（年を削除）
-            date: `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`,
+            date: dateStr,
             open: item.open,
             high: item.high,
             low: item.low,
             close: item.close,
             volume: item.volume,
-            // ヒゲ [low, high]
             highLowBar: [item.low, item.high],
-            // 実体 [open, close]
             candlestick: [item.open, item.close],
-            // 上昇なら赤、下落なら青
             color: isPositive ? '#ff0000' : '#0000ff',
             ma5: ma5[index],
             ma25: ma25[index],
-            ma75: ma75[index]
-          };
+            ma75: ma75[index],
+            articles: dayArticles,
+            code: code
+          } as ExtendedChartData;
         });
 
         setData(formattedData);
@@ -231,78 +314,156 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   if (loading) {
     return (
       <div className="w-full mt-2">
-        {/* 上段チャート（ロウソク足 + 移動平均）のローディング */}
-        <div className="h-32 md:h-48 bg-white p-4">
-          <div className="animate-pulse">
-            <div className="h-full flex flex-col">
-              {/* チャート部分 */}
-              <div className="flex-1 flex items-center justify-between">
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-              </div>
-              {/* グリッド線 */}
-              <div className="flex-1 flex items-center justify-between">
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 下段チャート（出来高）のローディング */}
-        <div className="h-20 md:h-24 bg-white p-4">
-          <div className="animate-pulse">
-            <div className="h-full flex flex-col">
-              {/* 出来高バー */}
-              <div className="flex-1 flex items-end justify-between">
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-              </div>
-              {/* 日付ラベル */}
-              <div className="flex justify-between mt-2">
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-                <div className="h-4 bg-gray-200 rounded w-8"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 株価情報のローディング */}
+        <div className="h-10 bg-gray-200 animate-pulse mb-2 rounded-lg"></div>
+        {/* 上段チャートのローディング */}
+        <div className="h-32 md:h-48 bg-gray-200 animate-pulse"></div>
+        {/* 下段チャートのローディング */}
+        <div className="h-20 md:h-24 bg-gray-200 animate-pulse"></div>
       </div>
     );
   }
+
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
   if (data.length === 0) return null;
 
   return (
     <div className="w-full mt-2">
+      {/* 株価情報表示 */}
+      <div className="mb-2">
+        <PriceInfo data={data} hoveredData={hoveredData} />
+      </div>
+
       {/* 上段チャート（ロウソク足 + 移動平均） */}
-      <div className="h-32 md:h-48">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="h-32 md:h-48 relative">
+        {/* 関連記事の吹き出しをチャート上に絶対配置 */}
+        {data.map((item, index) => {
+          const isDefaultTooltip = getDefaultTooltipIndices().includes(index);
+          const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
+                                  (hoveredData && hoveredData.date === item.date && item.articles && item.articles.length > 0);
+
+          return item.articles && item.articles.length > 0 && shouldShowTooltip && (
+            <div 
+              key={`article-${index}`}
+              className="absolute z-10 flex pointer-events-none"
+              style={{ 
+                left: `${hoveredData ? tooltipPosition : calculateTooltipPosition(index, window.innerWidth)}px`
+              }}
+            >
+              <div className="speech-bubble bg-white border border-black p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto">
+                {(() => {
+                  // 最新の記事を取得
+                  const latestArticle = item.articles[item.articles.length - 1];
+                  return (
+                    <div
+                      key={latestArticle.id}
+                      className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer p-0.5 hover:bg-gray-100 line-clamp-2"
+                      onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
+                      role="button"
+                      tabIndex={0}
+                      title={(() => {
+                        const title = latestArticle.title;
+                        const index1 = title.indexOf('%）');
+                        const index2 = title.indexOf('%)');
+                        if (index1 !== -1) {
+                          return title.substring(index1 + 2);
+                        } else if (index2 !== -1) {
+                          return title.substring(index2 + 2);
+                        }
+                        return title;
+                      })()}
+                    >
+                      {(() => {
+                        const title = latestArticle.title;
+                        const index1 = title.indexOf('%）');
+                        const index2 = title.indexOf('%)');
+                        if (index1 !== -1) {
+                          return title.substring(index1 + 2);
+                        } else if (index2 !== -1) {
+                          return title.substring(index2 + 2);
+                        }
+                        return title;
+                      })()}
+                    </div>
+                  );
+                })()}
+              </div>
+              <style jsx>{`
+                .speech-bubble {
+                  position: relative;
+                }
+                .speech-bubble:after {
+                  content: '';
+                  position: absolute;
+                  left: 50%;
+                  bottom: -8px;
+                  transform: translateX(-50%);
+                  border-width: 4px 4px 0 4px;
+                  border-style: solid;
+                  border-color: #000 transparent transparent transparent;
+                  display: block;
+                  width: 0;
+                }
+                .speech-bubble:before {
+                  content: '';
+                  position: absolute;
+                  left: 50%;
+                  bottom: -7px;
+                  transform: translateX(-50%);
+                  border-width: 3px 3px 0 3px;
+                  border-style: solid;
+                  border-color: #fff transparent transparent transparent;
+                  display: block;
+                  width: 0;
+                }
+              `}</style>
+            </div>
+          );
+        })}
+        <ResponsiveContainer width="100%" height="100%" onResize={(width) => {
+          setTooltipPosition(width / 2);
+        }}>
           <ComposedChart 
             data={data} 
             barCategoryGap={0} 
             barGap={0}
             margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+            onMouseMove={(e) => {
+              if (e.activePayload?.[0]?.payload) {
+                const payload = e.activePayload[0].payload;
+                setHoveredData(payload);
+                if (e.activeCoordinate) {
+                  const tooltipWidth = 80; // ツールチップの固定幅
+                  setTooltipPosition(e.activeCoordinate.x - (tooltipWidth / 2));
+                }
+              }
+            }}
+            onMouseLeave={() => {
+              setHoveredData(null);
+            }}
+            onClick={(e) => {
+              if (e.activePayload?.[0]?.payload?.articles?.[0]) {
+                const article = e.activePayload[0].payload.articles[0];
+                window.location.href = `/${e.activePayload[0].payload.code}/news/article/${article.id}`;
+              }
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" hide />
+            <XAxis 
+              dataKey="date" 
+              tick={{ fontSize: 12 }} 
+              interval="preserveStartEnd" 
+              hide
+            />
             <YAxis 
               domain={['auto', 'auto']} 
               tick={{ fontSize: 12 }} 
               width={35}
             />
-            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 9999 }} />
+            <Tooltip 
+              content={() => null}
+              cursor={false}
+            />
 
             {/* ヒゲ */}
             <Bar
@@ -318,7 +479,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             <Bar
               dataKey="candlestick"
               name="株価"
-              shape={(props: unknown) => <CandleBodyShape {...(props as RectangleProps)} />}
+              shape={(props: unknown) => <CandleBodyShape {...(props as CandleBodyProps)} />}
             >
               {data.map((entry, index) => (
                 <Cell
@@ -343,6 +504,24 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           <ComposedChart 
             data={data}
             margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+            onMouseMove={(e) => {
+              if (e.activePayload?.[0]?.payload) {
+                const payload = e.activePayload[0].payload;
+                setHoveredData(payload);
+                if (e.activeCoordinate) {
+                  setTooltipPosition(e.activeCoordinate.x);
+                }
+              }
+            }}
+            onMouseLeave={() => {
+              setHoveredData(null);
+            }}
+            onClick={(e) => {
+              if (e.activePayload?.[0]?.payload?.articles?.[0]) {
+                const article = e.activePayload[0].payload.articles[0];
+                window.location.href = `/${e.activePayload[0].payload.code}/news/article/${article.id}`;
+              }
+            }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
@@ -359,7 +538,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }}
               width={35}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={() => null}
+              cursor={false}
+            />
 
             <Bar dataKey="volume" name="出来高">
               {data.map((entry, index) => (

@@ -38,6 +38,7 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
       try {
         setLoading(true);
         setError('');
+        console.log('sidebar');
         
         const response = await fetch('/api/common/get-all', {
           method: 'POST',
@@ -49,6 +50,7 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
             limit 
           }),
         });
+        console.log('sidebar2');
 
         const result: ApiResponse = await response.json();
 

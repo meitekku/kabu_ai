@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TodayArticleCopyButton from '@/components/parts/admin/TodayArticleCopyButton';
 import { Badge } from "@/components/ui/badge";
+import React from 'react';
 
 interface NewsItem {
   id: number;
@@ -27,9 +28,10 @@ interface StatusLabels {
 
 interface NewsListProps {
   num?: string;
+  title?: string;
 }
 
-const NewsList = ({ num = '10' }: NewsListProps) => {
+const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
   const params = useParams();
   const code = params.code as string;
   const limit = parseInt(num);
@@ -38,48 +40,63 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(1);
+  const daysRef = React.useRef(days);
 
   // ステータスラベルの定義
-  const statusLabels: StatusLabels = {
+  const statusLabels = React.useMemo<StatusLabels>(() => ({
     price_up: { label: '株価上昇', color: 'bg-red-500 text-white' },
     price_down: { label: '株価下落', color: 'bg-blue-500 text-white' },
     volume_up: { label: '出来高増加', color: 'bg-red-500 text-white' },
     news: { label: 'ニュース', color: 'bg-purple-500 text-white' },
     human: { label: 'ピックアップ', color: 'bg-yellow-500 text-black' },
     settlement: { label: '決算', color: 'bg-orange-500 text-white' }
-  };
+  }), []);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        const response = await fetch(`/api/${code}/news`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code, limit, days }),
-        });
+  const fetchNews = React.useCallback(async () => {
+    if (!code) return;
+    
+    console.log('fetchNews called with:', { code, limit, days: daysRef.current });
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/${code}/news`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code, limit, days: daysRef.current }),
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch news');
-        }
-        const data = await response.json();
-        console.log(data);
-        setNews(data.data || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch news');
       }
-    };
-
-    if (code) {
-      fetchNews();
+      const data = await response.json();
+      setNews(data.data || []);
+      setError(null);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
-  }, [code, limit, days]);
+  }, [code, limit]);
+
+  // 初回マウント時とcode/limitが変更された時のみ実行
+  useEffect(() => {
+    console.log('useEffect triggered with:', { code, limit });
+    fetchNews();
+  }, [fetchNews]);
+
+  // 日数変更ハンドラー
+  const handleDaysChange = React.useCallback((selectedDays: number) => {
+    console.log('handleDaysChange called with:', selectedDays);
+    if (selectedDays === daysRef.current) return;
+    daysRef.current = selectedDays;
+    setDays(selectedDays);
+    fetchNews();
+  }, [fetchNews]);
 
   // ステータスからラベルを生成する関数
-  const renderStatusLabels = (statusJson?: string) => {
+  const renderStatusLabels = React.useCallback((statusJson?: string) => {
     if (!statusJson) return null;
     
     try {
@@ -118,13 +135,7 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
       console.error('Error parsing status JSON:', e);
       return null;
     }
-  };
-
-  // 日数変更ハンドラー
-  const handleDaysChange = (selectedDays: number) => {
-    setDays(selectedDays);
-    setLoading(true);
-  };
+  }, [statusLabels]);
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading news...</div>;
@@ -139,7 +150,10 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div>
+      {title && (
+        <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{title}</h2>
+      )}
       {code === 'all' && (
         <div className="flex justify-end mb-4">
           <TodayArticleCopyButton 
@@ -149,15 +163,15 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
         </div>
       )}
       
-      <div className="space-y-0 divide-y divide-gray-100">
+      <div className="divide-y divide-gray-100">
         {news.map((item) => (
           <Link 
             href={`/${code}/news/article/${item.id}`}
             key={item.id}
             className="block"
           >
-            <Card className="hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-              <CardContent className="py-2 px-2">
+            <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
+              <CardContent className="py-3 px-2">
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-gray-500">
@@ -174,6 +188,8 @@ const NewsList = ({ num = '10' }: NewsListProps) => {
       </div>
     </div>
   );
-};
+});
+
+NewsList.displayName = 'NewsList';
 
 export default NewsList;
