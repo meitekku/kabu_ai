@@ -33,6 +33,18 @@ function formatToDbString(date: Date): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // CORSヘッダーを設定
+    const headers = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
+    // OPTIONSリクエストの処理
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, { headers });
+    }
+
     // リクエストボディを取得
     const body: RequestBody = await request.json();
     console.log('Request body:', body);
@@ -40,14 +52,22 @@ export async function POST(request: NextRequest) {
     // バリデーション
     if (!body.code || !body.limit || typeof body.limit !== 'number' || body.limit <= 0) {
       return NextResponse.json(
-        { error: 'Invalid request parameters' },
-        { status: 400 }
+        { success: false, error: 'Invalid request parameters' },
+        { status: 400, headers }
       );
     }
 
     // MongoDBへ接続
     const mongoDb = MongoDatabase.getInstance();
-    await mongoDb.connect();
+    try {
+      await mongoDb.connect();
+    } catch (dbError) {
+      console.error('Database connection error:', dbError);
+      return NextResponse.json(
+        { success: false, error: 'Database connection failed' },
+        { status: 500, headers }
+      );
+    }
 
     // フィルタ初期化
     const filter: CommentFilter = { code: body.code };
@@ -84,13 +104,17 @@ export async function POST(request: NextRequest) {
         comment: doc.comment,
         comment_date: doc.comment_date,
       })),
-    });
+    }, { headers });
     
   } catch (error) {
     console.error('API Error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: 'Internal server error' },
+      { status: 500, headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      } }
     );
   }
 }

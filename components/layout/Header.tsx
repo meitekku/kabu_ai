@@ -28,14 +28,16 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
         </div>
         <div className="iiarea pr-4"></div>
       </div>
-      <div className="flex justify-center items-center space-x-4 whitespace-nowrap">
-        <div className="flex space-x-4">
-          <CurrentPriceInfo code="0" />
-          <CurrentPriceInfo code="3" />
-        </div>
-        <div className="hidden md:flex space-x-4">
-          <CurrentPriceInfo code="1" />
-          <CurrentPriceInfo code="2" />
+      <div className="md:flex md:justify-center">
+        <div className="overflow-x-auto">
+          <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
+            <div className="flex space-x-4">
+              <CurrentPriceInfo code="0" />
+              <CurrentPriceInfo code="3" />
+              <CurrentPriceInfo code="1" />
+              <CurrentPriceInfo code="2" />
+            </div>
+          </div>
         </div>
       </div>
     </header>

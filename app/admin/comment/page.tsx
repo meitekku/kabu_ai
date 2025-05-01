@@ -27,6 +27,7 @@ interface Comment {
 interface CommentsResponse {
   success: boolean;
   data: Comment[];
+  error?: string;
 }
 
 interface Company {
@@ -185,13 +186,25 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code, limit, startDateTime: start, endDateTime: end }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `APIエラー: ${response.status}`);
+      }
+
       const data: CommentsResponse = await response.json();
-      if (!response.ok) throw new Error(data.success ? "不明なエラーが発生しました" : "データの取得に失敗しました");
+      if (!data.success) {
+        throw new Error(data.error || "データの取得に失敗しました");
+      }
 
       setComments(data.data);
       await copyToClipboard(data.data, company, info);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "予期せぬエラーが発生しました");
+      console.error("コメント取得エラー:", err);
+      setError(err instanceof Error ? 
+        `コメントの取得に失敗しました: ${err.message}` : 
+        "予期せぬエラーが発生しました。しばらく時間をおいて再度お試しください。"
+      );
       setComments([]);
     } finally {
       setLoading(false);
@@ -224,7 +237,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <div className="w-96">
             <CompanySearch enableNavigation={false} onCompanySelect={handleCompanySelect}
             />
