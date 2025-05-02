@@ -237,7 +237,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-4 md:whitespace-nowrap">
           <div className="w-96">
             <CompanySearch enableNavigation={false} onCompanySelect={handleCompanySelect}
             />
