@@ -84,7 +84,7 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
   useEffect(() => {
     console.log('useEffect triggered with:', { code, limit });
     fetchNews();
-  }, [fetchNews]);
+  }, [fetchNews, code, limit]);
 
   // 日数変更ハンドラー
   const handleDaysChange = React.useCallback((selectedDays: number) => {
