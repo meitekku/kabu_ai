@@ -343,6 +343,28 @@ export default function PostForm({
       console.log('Submit response:', data);
       
       if (data.success) {
+        // Twitterにも投稿
+        try {
+          const tweetResponse = await fetch('/api/twitter/post', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: formData.title,
+              content: formData.content,
+              url: `https://kabu-ai.jp/${formData.code}/news/article/${data.data.id}`
+            }),
+          });
+          
+          const tweetData = await tweetResponse.json();
+          if (!tweetData.success) {
+            console.error('Twitter投稿に失敗:', tweetData.message);
+          }
+        } catch (error) {
+          console.error('Twitter投稿中にエラーが発生:', error);
+        }
+
         setMessage(postId && postId !== 'new' ? '更新が完了しました（コピー済み）' : '投稿が完了しました（コピー済み）');
         setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
         

@@ -121,7 +121,7 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
               return (
                 <Badge 
                   key={key} 
-                  className={`text-xs px-2 ${statusLabels[key].color}`}
+                  className={`text-[10px] px-0.5 py-0 rounded-none ${statusLabels[key].color}`}
                 >
                   {label}
                 </Badge>

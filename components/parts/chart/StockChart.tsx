@@ -39,6 +39,8 @@ interface ExtendedChartData extends ChartData {
   articles?: NewsArticle[];
   // 企業コード
   code: string;
+  // 決算フラグ
+  settlement?: number;
 }
 
 interface StockChartProps {
@@ -181,44 +183,107 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
   // 常時表示するツールチップのインデックスを計算
   const getDefaultTooltipIndices = () => {
-    // 前日との変化率を計算
-    const priceChanges = data.map((item, index) => {
-      if (index === 0) return { index, changeRate: 0, hasNews: item.articles && item.articles.length > 0 };
-      const prevClose = data[index - 1].close;
-      const currentClose = item.close;
-      const changeRate = Math.abs((currentClose - prevClose) / prevClose * 100);
-      return { index, changeRate, hasNews: item.articles && item.articles.length > 0 };
-    });
+    const indices: number[] = [];
+    const reasons: { [key: number]: string[] } = {};
 
-    // 記事がある日付を取得
-    const daysWithNews = priceChanges.filter(item => item.hasNews);
-    
-    // 記事がある日付が3つ未満の場合は、変化率の大きい順に追加
-    if (daysWithNews.length < 3) {
-      const remainingDays = priceChanges
-        .filter(item => !item.hasNews)
-        .sort((a, b) => b.changeRate - a.changeRate)
-        .slice(0, 3 - daysWithNews.length);
-      
-      return [...daysWithNews, ...remainingDays]
-        .sort((a, b) => b.changeRate - a.changeRate)
-        .slice(0, 3)
-        .map(item => item.index);
+    // 1. 最新日のニュースがある場合は必ず表示
+    const latestDayIndex = data.length - 1;
+    if (data[latestDayIndex]?.articles && data[latestDayIndex].articles.length > 0) {
+      indices.push(latestDayIndex);
+      reasons[latestDayIndex] = ['最新日のニュースあり'];
     }
 
-    // 記事がある日付が3つ以上の場合は、変化率の大きい順に3つを選択
-    return daysWithNews
-      .sort((a, b) => b.changeRate - a.changeRate)
-      .slice(0, 3)
-      .map(item => item.index);
+    // 2. 変動率の計算と上位3つの抽出
+    const changeRates: { index: number; closeChangeRate: number; highLowChangeRate: number }[] = [];
+    
+    data.forEach((item, index) => {
+      if (index === 0) return; // 最初の日は前日データがないのでスキップ
+
+      const prevClose = data[index - 1].close;
+      const currentClose = item.close;
+      const currentHigh = item.high;
+      const currentLow = item.low;
+
+      // 前日比の計算
+      const closeChangeRate = Math.abs((currentClose - prevClose) / prevClose * 100);
+      // 高値安値の変動率計算
+      const highLowChangeRate = Math.abs((currentHigh - currentLow) / prevClose * 100);
+
+      if (item.articles && item.articles.length > 0) {
+        changeRates.push({
+          index,
+          closeChangeRate,
+          highLowChangeRate
+        });
+      }
+    });
+
+    // 変動率の合計でソートして上位3つを取得
+    const topChanges = changeRates
+      .sort((a, b) => {
+        const aTotal = a.closeChangeRate + a.highLowChangeRate;
+        const bTotal = b.closeChangeRate + b.highLowChangeRate;
+        return bTotal - aTotal;
+      })
+      .slice(0, 3);
+
+    // 上位3つをインデックスに追加
+    topChanges.forEach(change => {
+      indices.push(change.index);
+      reasons[change.index] = [
+        `前日比変動率: ${change.closeChangeRate.toFixed(2)}%`,
+        `高値安値変動率: ${change.highLowChangeRate.toFixed(2)}%`,
+        `合計変動率: ${(change.closeChangeRate + change.highLowChangeRate).toFixed(2)}%`
+      ];
+    });
+
+    // 3. settlement: 0の日を抽出
+    data.forEach((item, index) => {
+      if (item.settlement === 0 && item.articles && item.articles.length > 0 && !indices.includes(index)) {
+        indices.push(index);
+        reasons[index] = ['決算日'];
+      }
+    });
+
+    // デバッグログ出力
+    console.log('抽出されたインデックスと理由:', indices.map(index => ({
+      date: data[index].date,
+      index,
+      reasons: reasons[index]
+    })));
+
+    // 重複を除去して返す
+    return [...new Set(indices)];
   };
 
   // ツールチップの位置を計算する関数
   const calculateTooltipPosition = (index: number) => {
+    if (containerWidth === 0) return 0;
     const totalPoints = data.length;
-    const pointWidth = containerWidth / totalPoints;
+    const yAxisWidth = 20; // YAxisの幅
+    const availableWidth = containerWidth - yAxisWidth;
+    const pointWidth = availableWidth / (totalPoints - 1); // ポイント間の距離を計算
     const tooltipWidth = 80; // ツールチップの固定幅
-    return pointWidth * index - (tooltipWidth / 2);
+    const position = (pointWidth * index) + yAxisWidth - (tooltipWidth / 2);
+    console.log('初期表示位置計算:', {
+      index,
+      containerWidth,
+      yAxisWidth,
+      availableWidth,
+      totalPoints,
+      pointWidth,
+      calculatedPosition: position
+    });
+    return position;
+  };
+
+  // コンテナの幅が変更された時の処理
+  const handleResize = (width: number) => {
+    setContainerWidth(width);
+    // 初期表示時は中央に配置
+    if (!hoveredData) {
+      setTooltipPosition(width / 2);
+    }
   };
 
   useEffect(() => {
@@ -255,6 +320,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
         const newsResult = await newsResponse.json();
         const articles: NewsArticle[] = newsResult.data || [];
+        console.log('記事データ:', articles);
 
         // 日付でソート
         const sortedData = chartResult.data.sort(
@@ -343,7 +409,22 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
                                   (hoveredData && hoveredData.date === item.date && item.articles && item.articles.length > 0);
 
-          return item.articles && item.articles.length > 0 && shouldShowTooltip && (
+          if (!item.articles || item.articles.length === 0 || !shouldShowTooltip) return null;
+
+          const latestArticle = item.articles[item.articles.length - 1];
+          const title = latestArticle.title;
+          const displayTitle = (() => {
+            const index1 = title.indexOf('%）');
+            const index2 = title.indexOf('%)');
+            if (index1 !== -1) {
+              return title.substring(index1 + 2);
+            } else if (index2 !== -1) {
+              return title.substring(index2 + 2);
+            }
+            return title;
+          })();
+
+          return (
             <div 
               key={`article-${index}`}
               className="absolute z-10 flex pointer-events-none"
@@ -352,42 +433,16 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }}
             >
               <div className="speech-bubble bg-white border border-black p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto">
-                {(() => {
-                  // 最新の記事を取得
-                  const latestArticle = item.articles[item.articles.length - 1];
-                  return (
-                    <div
-                      key={latestArticle.id}
-                      className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer p-0.5 hover:bg-gray-100 line-clamp-2"
-                      onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
-                      role="button"
-                      tabIndex={0}
-                      title={(() => {
-                        const title = latestArticle.title;
-                        const index1 = title.indexOf('%）');
-                        const index2 = title.indexOf('%)');
-                        if (index1 !== -1) {
-                          return title.substring(index1 + 2);
-                        } else if (index2 !== -1) {
-                          return title.substring(index2 + 2);
-                        }
-                        return title;
-                      })()}
-                    >
-                      {(() => {
-                        const title = latestArticle.title;
-                        const index1 = title.indexOf('%）');
-                        const index2 = title.indexOf('%)');
-                        if (index1 !== -1) {
-                          return title.substring(index1 + 2);
-                        } else if (index2 !== -1) {
-                          return title.substring(index2 + 2);
-                        }
-                        return title;
-                      })()}
-                    </div>
-                  );
-                })()}
+                <div
+                  key={latestArticle.id}
+                  className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer p-0.5 hover:bg-gray-100 line-clamp-2"
+                  onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
+                  role="button"
+                  tabIndex={0}
+                  title={displayTitle}
+                >
+                  {displayTitle}
+                </div>
               </div>
               <style jsx>{`
                 .speech-bubble {
@@ -421,22 +476,25 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             </div>
           );
         })}
-        <ResponsiveContainer width="100%" height="100%" onResize={(width) => {
-          setContainerWidth(width);
-          setTooltipPosition(width / 2);
-        }}>
+        <ResponsiveContainer width="100%" height="100%" onResize={handleResize}>
           <ComposedChart 
             data={data} 
             barCategoryGap={0} 
             barGap={0}
-            margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
                 setHoveredData(payload);
                 if (e.activeCoordinate) {
                   const tooltipWidth = 80; // ツールチップの固定幅
-                  setTooltipPosition(e.activeCoordinate.x - (tooltipWidth / 2));
+                  const position = e.activeCoordinate.x - (tooltipWidth / 2);
+                  console.log('ホバー位置計算:', {
+                    date: payload.date,
+                    activeCoordinate: e.activeCoordinate.x,
+                    calculatedPosition: position
+                  });
+                  setTooltipPosition(position);
                 }
               }
             }}
