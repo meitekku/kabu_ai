@@ -3,9 +3,8 @@
 import PostForm from "@/components/post/PostForm";
 import { useState, useEffect } from "react";
 import { format, subDays } from "date-fns";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy } from "lucide-react";
 import CompanySearch from "@/components/parts/common/CompanySearch";
 import AutoSaveTextarea from "@/components/parts/common/AutoSaveTextarea";
 import DateRangeSelector from "@/components/parts/admin/DateRangeSelector";
@@ -52,6 +51,8 @@ export default function Home() {
   const [endDateTime, setEndDateTime] = useState<string>(
     format(now, "yyyy-MM-dd HH:mm:ss")
   );
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [combinedCommentText, setCombinedCommentText] = useState<string>("");
 
   const limitOptions = Array.from({ length: 6 }, (_, i) => (i + 3) * 100);
 
@@ -74,6 +75,15 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("isPostFormOpen", JSON.stringify(isPostFormOpen));
   }, [isPostFormOpen]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchCompanyInfo = async (code: string): Promise<CompanyInfo | null> => {
     try {
@@ -164,9 +174,26 @@ export default function Home() {
     const commentText = comments.map((comment) => `${comment.comment_date}\n${comment.comment}\n\n`).join("");
 
     const combinedText = header + promptText + commentText;
+    setCombinedCommentText(combinedText);
 
-    await navigator.clipboard.writeText(combinedText);
-    alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
+    if (!isMobile) {
+      try {
+        await navigator.clipboard.writeText(combinedText);
+        alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
+      } catch (err) {
+        console.error("コピーに失敗しました:", err);
+      }
+    }
+  };
+
+  const handleCopyClick = async () => {
+    try {
+      await navigator.clipboard.writeText(combinedCommentText);
+      alert("コメントをコピーしました");
+    } catch (err) {
+      console.error("コピーに失敗しました:", err);
+      alert("コピーに失敗しました。もう一度お試しください。");
+    }
   };
 
   const fetchComments = async (
@@ -274,15 +301,26 @@ export default function Home() {
         </div>
       )}
 
+      {comments.length > 0 && isMobile && (
+        <div className="mb-4 flex justify-center">
+          <Button
+            onClick={handleCopyClick}
+            className="w-full max-w-xs flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <Copy className="w-4 h-4" />
+            コメントをコピー
+          </Button>
+        </div>
+      )}
+
       <div className="space-y-4">
-        {comments.map((comment) => (
-          <Card key={comment.id}>
-            <CardContent className="p-4 relative min-h-[100px]">
-              <div className="pr-4">{comment.comment}</div>
-              <div className="absolute bottom-2 right-4 text-sm text-gray-500">{comment.comment_date}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {comments.length > 0 && (
+          <div className="mb-4">
+            <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
+              {combinedCommentText}
+            </div>
+          </div>
+        )}
       </div>
 
       {comments.length > 0 && (
