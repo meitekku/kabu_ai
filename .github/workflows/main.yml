@@ -36,16 +36,13 @@ jobs:
       run: |
         echo "Syncing files to server"
         export SSHPASS=$SSH_PASSWORD
-        sshpass -e rsync -avz --delete \
-          *.* \
-          app \
-          components \
-          lib \
-          public \
-          types \
-          utils \
-          python \
-          .github \
+        sshpass -e rsync -avz --delete-after \
+          . \
+          --exclude '.git' \
+          --exclude 'node_modules' \
+          --exclude '.next' \
+          --exclude '.env' \
+          --exclude '.env.*' \
           $SSH_USER@$SSH_HOST:$TARGET
 
         echo "rsync command completed"
@@ -55,6 +52,11 @@ jobs:
           cd $TARGET
           npm install
           npm run build
-          pm2 restart kabu_ai || pm2 start npm --name "kabu_ai" -- start
+          pm2 delete kabu_ai || true
+          pm2 start npm --name "kabu_ai" -- start
+          pm2 save
           echo "Production deployment completed"
+          echo "Verifying deployment..."
+          pm2 list
+          ls -la $TARGET/app/admin/comment/
         EOF
