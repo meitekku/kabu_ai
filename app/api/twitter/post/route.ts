@@ -9,12 +9,18 @@ console.log('Twitter API Configuration:', {
   accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
+// 環境変数の検証
+if (!process.env.TWITTER_API_KEY || !process.env.TWITTER_API_SECRET || 
+    !process.env.TWITTER_ACCESS_TOKEN || !process.env.TWITTER_ACCESS_TOKEN_SECRET) {
+  throw new Error('Twitter API credentials are not properly configured');
+}
+
 // Twitter APIクライアントの初期化
 const client = new TwitterApi({
-  appKey: process.env.TWITTER_API_KEY || '',
-  appSecret: process.env.TWITTER_API_SECRET || '',
-  accessToken: process.env.TWITTER_ACCESS_TOKEN || '',
-  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET || '',
+  appKey: process.env.TWITTER_API_KEY,
+  appSecret: process.env.TWITTER_API_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
 export async function POST(request: Request) {
