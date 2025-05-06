@@ -3,10 +3,10 @@ import { TwitterApi } from 'twitter-api-v2';
 
 // デバッグ用：環境変数の確認
 console.log('Twitter API Configuration:', {
-  appKey: process.env.TWITTER_API_KEY ? 'Set' : 'Not Set',
-  appSecret: process.env.TWITTER_API_SECRET ? 'Set' : 'Not Set',
-  accessToken: process.env.TWITTER_ACCESS_TOKEN ? 'Set' : 'Not Set',
-  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET ? 'Set' : 'Not Set',
+  appKey: process.env.TWITTER_API_KEY,
+  appSecret: process.env.TWITTER_API_SECRET,
+  accessToken: process.env.TWITTER_ACCESS_TOKEN,
+  accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
 });
 
 // Twitter APIクライアントの初期化

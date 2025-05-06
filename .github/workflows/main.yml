@@ -36,7 +36,7 @@ jobs:
       run: |
         echo "Syncing files to server"
         export SSHPASS=$SSH_PASSWORD
-        sshpass -e rsync -avz --delete \
+        sshpass -e rsync -avz --delete-after \
           . \
           --exclude '.git' \
           --exclude 'node_modules' \
