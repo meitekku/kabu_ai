@@ -205,7 +205,7 @@ const PriceInfo: React.FC<{
 
   return (
     <div className="flex justify-between items-center px-2 bg-gray-100 rounded-lg text-sm font-mono">
-      <div className="flex gap-4">
+      <div className="flex gap-1">
         <span>始値: {formatNumber(displayData.open)}</span>
         <span>高値: {formatNumber(displayData.high)}</span>
         <span>安値: {formatNumber(displayData.low)}</span>
