@@ -54,6 +54,7 @@ jobs:
           npm run build
           pm2 delete kabu_ai || true
           rm -rf .next/cache
+          rm -rf .next/static
           pm2 flush
           NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
           pm2 save
