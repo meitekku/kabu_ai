@@ -54,8 +54,10 @@ jobs:
           npm run build
           pm2 delete kabu_ai || true
           rm -rf .next/cache
+          pm2 flush
           NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
           pm2 save
+          pm2 reload kabu_ai
           echo "Production deployment completed"
           echo "Verifying deployment..."
           pm2 list
