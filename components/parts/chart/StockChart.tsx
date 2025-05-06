@@ -50,6 +50,7 @@ interface StockChartProps {
 interface CandleBodyProps extends RectangleProps {
   payload?: {
     index: number;
+    articles?: NewsArticle[];
   };
 }
 
@@ -117,7 +118,7 @@ const CandleWickShape: React.FC<RectangleProps> = (props) => {
  * 実体（始値終値）描画用カスタムシェイプ
  * -------------------------------------------------- */
 const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
-  const { x, y, width, height, fill, stroke } = props;
+  const { x, y, width, height, fill, stroke, payload } = props;
 
   if (x == null || y == null || width == null || height == null) {
     return null;
@@ -134,12 +135,57 @@ const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
   const top = height < 0 ? y + height : y;
   const bodyHeight = Math.abs(height);
 
+  // ニュースがあるかどうかを確認
+  const hasNews = payload?.articles && payload.articles.length > 0;
+
+  return (
+    <>
+      <rect
+        x={adjustedX}
+        y={top}
+        width={candleWidth}
+        height={bodyHeight}
+        fill={fill}
+        stroke={stroke}
+        className={hasNews ? 'blinking-candle' : ''}
+      />
+      <style jsx>{`
+        @keyframes blink {
+          0% { opacity: 1; }
+          50% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
+        .blinking-candle {
+          animation: blink 2s infinite;
+        }
+      `}</style>
+    </>
+  );
+};
+
+/* --------------------------------------------------
+ * 出来高バー描画用カスタムシェイプ
+ * -------------------------------------------------- */
+const VolumeBarShape: React.FC<RectangleProps> = (props) => {
+  const { x, y, width, height, fill, stroke } = props;
+
+  if (x == null || y == null || width == null || height == null) {
+    return null;
+  }
+
+  // 実体バーの固定幅 (CandleBodyShapeと同じ)
+  const barWidth = Math.min(width * 1.2, 8);
+  
+  // x座標を左にオフセット（CandleBodyShapeと同じ）
+  const offset = width / 2;
+  const adjustedX = x - offset;
+
   return (
     <rect
       x={adjustedX}
-      y={top}
-      width={candleWidth}
-      height={bodyHeight}
+      y={y}
+      width={barWidth}
+      height={height}
       fill={fill}
       stroke={stroke}
     />
@@ -318,7 +364,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         // 株価データの取得
         const chartResponse = await fetch(`/api/${code}/chart`, {
           method: 'POST',
-          body: JSON.stringify({ code, num: 60 }),
+          body: JSON.stringify({ code, num: 40 }),
           headers: { 'Content-Type': 'application/json' }
         });
 
@@ -634,7 +680,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               cursor={false}
             />
 
-            <Bar dataKey="volume" name="出来高">
+            <Bar dataKey="volume" name="出来高" shape={(props: unknown) => <VolumeBarShape {...(props as RectangleProps)} />}>
               {data.map((entry, index) => (
                 <Cell
                   key={`volume-cell-${index}`}
