@@ -53,6 +53,7 @@ jobs:
           npm install
           npm run build
           pm2 delete kabu_ai || true
+          rm -rf .next/cache
           pm2 start npm --name "kabu_ai" -- start
           pm2 save
           echo "Production deployment completed"
