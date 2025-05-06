@@ -180,6 +180,61 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   const [hoveredData, setHoveredData] = useState<ExtendedChartData | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<number>(0);
   const [containerWidth, setContainerWidth] = useState<number>(0);
+  const [barPositions, setBarPositions] = useState<{ [key: string]: number }>({});
+
+  // バーの位置を計算する関数
+  const calculateBarPosition = (index: number, totalPoints: number, availableWidth: number, yAxisWidth: number) => {
+    const pointWidth = availableWidth / (totalPoints - 1);
+    // Y軸の幅を加算して、ホバー時の位置と合わせる
+    return (pointWidth * index) + yAxisWidth;
+  };
+
+  // バーの位置を更新する関数
+  const updateBarPositions = (width: number) => {
+    // Y軸の幅（35px）を考慮
+    const yAxisWidth = 35;
+    const availableWidth = width - yAxisWidth;
+    const totalPoints = data.length;
+
+    const positions: { [key: string]: number } = {};
+    data.forEach((item, index) => {
+      const position = calculateBarPosition(index, totalPoints, availableWidth, yAxisWidth);
+      positions[item.date] = position;
+      // 記事データがある場合のみログを出力
+      if (item.articles && item.articles.length > 0) {
+        const pointWidth = availableWidth / (totalPoints - 1);
+        console.log('常時表示ツールチップ位置計算:', {
+          date: item.date,
+          index,
+          position,
+          tooltipPosition: position - 40, // ツールチップの幅の半分を引いた位置
+          pointWidth,
+          containerWidth: width,
+          availableWidth,
+          yAxisWidth,
+          // デバッグ用に計算の詳細を表示
+          calculation: {
+            pointWidth,
+            index,
+            yAxisWidth,
+            result: (pointWidth * index) + yAxisWidth
+          }
+        });
+      }
+    });
+
+    setBarPositions(positions);
+  };
+
+  // コンテナの幅が変更された時の処理
+  const handleResize = (width: number) => {
+    setContainerWidth(width);
+    updateBarPositions(width);
+    // 初期表示時は中央に配置
+    if (!hoveredData) {
+      setTooltipPosition(width / 2);
+    }
+  };
 
   // 常時表示するツールチップのインデックスを計算
   const getDefaultTooltipIndices = () => {
@@ -245,45 +300,16 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       }
     });
 
-    // デバッグログ出力
-    console.log('抽出されたインデックスと理由:', indices.map(index => ({
-      date: data[index].date,
-      index,
-      reasons: reasons[index]
-    })));
-
     // 重複を除去して返す
     return [...new Set(indices)];
   };
 
   // ツールチップの位置を計算する関数
-  const calculateTooltipPosition = (index: number) => {
-    if (containerWidth === 0) return 0;
-    const totalPoints = data.length;
-    const yAxisWidth = 20; // YAxisの幅
-    const availableWidth = containerWidth - yAxisWidth;
-    const pointWidth = availableWidth / (totalPoints - 1); // ポイント間の距離を計算
+  const calculateTooltipPosition = (date: string) => {
     const tooltipWidth = 80; // ツールチップの固定幅
-    const position = (pointWidth * index) + yAxisWidth - (tooltipWidth / 2);
-    console.log('初期表示位置計算:', {
-      index,
-      containerWidth,
-      yAxisWidth,
-      availableWidth,
-      totalPoints,
-      pointWidth,
-      calculatedPosition: position
-    });
-    return position;
-  };
-
-  // コンテナの幅が変更された時の処理
-  const handleResize = (width: number) => {
-    setContainerWidth(width);
-    // 初期表示時は中央に配置
-    if (!hoveredData) {
-      setTooltipPosition(width / 2);
-    }
+    const position = barPositions[date];
+    if (typeof position === 'undefined') return 0;
+    return position - (tooltipWidth / 2);
   };
 
   useEffect(() => {
@@ -368,6 +394,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         });
 
         setData(formattedData);
+        // データが更新されたらバーの位置も更新
+        if (containerWidth > 0) {
+          updateBarPositions(containerWidth);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -429,7 +459,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               key={`article-${index}`}
               className="absolute z-10 flex pointer-events-none"
               style={{ 
-                left: `${hoveredData ? tooltipPosition : calculateTooltipPosition(index)}px`
+                left: `${hoveredData ? tooltipPosition : calculateTooltipPosition(item.date)}px`
               }}
             >
               <div className="speech-bubble bg-white border border-black p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto">
@@ -486,13 +516,14 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
                 setHoveredData(payload);
-                if (e.activeCoordinate) {
-                  const tooltipWidth = 80; // ツールチップの固定幅
+                if (e.activeCoordinate && payload.articles && payload.articles.length > 0) {
+                  const tooltipWidth = 80;
                   const position = e.activeCoordinate.x - (tooltipWidth / 2);
-                  console.log('ホバー位置計算:', {
+                  console.log('ホバーツールチップ位置計算:', {
                     date: payload.date,
                     activeCoordinate: e.activeCoordinate.x,
-                    calculatedPosition: position
+                    tooltipPosition: position,
+                    containerWidth
                   });
                   setTooltipPosition(position);
                 }
