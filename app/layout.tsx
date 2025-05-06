@@ -19,6 +19,7 @@ export default function RootLayout({
   return (
     <html>
       <body>
+        あああああああああああ
         <div className="min-h-screen flex flex-col">
           <GlobalNavigation />
           <Header />
