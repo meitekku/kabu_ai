@@ -9,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
     - uses: actions/checkout@v4
 
@@ -37,13 +37,6 @@ jobs:
         echo "Syncing files to server"
         export SSHPASS=$SSH_PASSWORD
         sshpass -e rsync -avz --delete \
-          --exclude '.env' \
-          --exclude '.env.*' \
-          --exclude '.git' \
-          --exclude 'node_modules' \
-          --exclude '.next' \
-          --exclude '.DS_Store' \
-          --exclude '*.log' \
           *.* \
           app \
           components \
@@ -51,6 +44,7 @@ jobs:
           public \
           types \
           utils \
+          python \
           .github \
           $SSH_USER@$SSH_HOST:$TARGET
 
