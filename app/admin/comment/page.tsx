@@ -249,7 +249,7 @@ export default function Home() {
     <main className="p-4 max-w-4xl mx-auto">
       <div className="mb-6">
         <Button onClick={() => setIsPostFormOpen(!isPostFormOpen)} variant="outline" className="mb-4 w-full flex items-center justify-between">
-          投稿フォームむ
+          投稿フォーム
           {isPostFormOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </Button>
         {isPostFormOpen && <PostForm redirectAfterPost={false} />}
