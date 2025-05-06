@@ -30,7 +30,7 @@ export default function RootLayout({
               {!isAdminPage && (
                 <aside className="w-full md:w-[300px] space-y-6">
                   <RankingTableClient 
-                    title="アクセスランキングああ"
+                    title="アクセスランキング"
                     tableName="ranking_access"
                     limit={5}
                   />
