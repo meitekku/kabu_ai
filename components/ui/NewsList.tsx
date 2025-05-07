@@ -171,7 +171,7 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
             className="block"
           >
             <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-              <CardContent className="py-3 px-2">
+              <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-gray-500">
