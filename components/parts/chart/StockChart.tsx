@@ -118,7 +118,7 @@ const CandleWickShape: React.FC<RectangleProps> = (props) => {
  * 実体（始値終値）描画用カスタムシェイプ
  * -------------------------------------------------- */
 const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
-  const { x, y, width, height, fill, stroke, payload } = props;
+  const { x, y, width, height, fill, stroke } = props;
 
   if (x == null || y == null || width == null || height == null) {
     return null;
@@ -135,31 +135,15 @@ const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
   const top = height < 0 ? y + height : y;
   const bodyHeight = Math.abs(height);
 
-  // ニュースがあるかどうかを確認
-  const hasNews = payload?.articles && payload.articles.length > 0;
-
   return (
-    <>
-      <rect
-        x={adjustedX}
-        y={top}
-        width={candleWidth}
-        height={bodyHeight}
-        fill={fill}
-        stroke={stroke}
-        className={hasNews ? 'blinking-candle' : ''}
-      />
-      <style jsx>{`
-        @keyframes blink {
-          0% { opacity: 1; }
-          50% { opacity: 0.3; }
-          100% { opacity: 1; }
-        }
-        .blinking-candle {
-          animation: blink 2s infinite;
-        }
-      `}</style>
-    </>
+    <rect
+      x={adjustedX}
+      y={top}
+      width={candleWidth}
+      height={bodyHeight}
+      fill={fill}
+      stroke={stroke}
+    />
   );
 };
 
