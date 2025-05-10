@@ -425,39 +425,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
               chartJST.setHours(0, 0, 0, 0);
 
-              // デバッグ: 日付の比較詳細を出力
-              console.log('日付比較デバッグ:', {
-                original: {
-                  articleDate: article.created_at,
-                  chartDate: item.date
-                },
-                parsed: {
-                  articleDate: articleDate.toISOString(),
-                  chartDate: chartDate.toISOString()
-                },
-                jst: {
-                  articleJST: articleJST.toISOString(),
-                  chartJST: chartJST.toISOString(),
-                  articleLocal: articleJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-                  chartLocal: chartJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
-                },
-                comparison: {
-                  year: articleJST.getFullYear() === chartJST.getFullYear(),
-                  month: articleJST.getMonth() === chartJST.getMonth(),
-                  day: articleJST.getDate() === chartJST.getDate(),
-                  articleYear: articleJST.getFullYear(),
-                  articleMonth: articleJST.getMonth() + 1,
-                  articleDay: articleJST.getDate(),
-                  chartYear: chartJST.getFullYear(),
-                  chartMonth: chartJST.getMonth() + 1,
-                  chartDay: chartJST.getDate()
-                },
-                article: {
-                  id: article.id,
-                  title: article.title
-                }
-              });
-
               // 日付の比較（時間は無視）
               const isMatch = (
                 articleJST.getFullYear() === chartJST.getFullYear() &&
@@ -465,13 +432,32 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 articleJST.getDate() === chartJST.getDate()
               );
 
-              // マッチング結果を出力
-              if (isMatch) {
-                console.log('記事マッチング成功:', {
-                  date: dateStr,
-                  articleTitle: article.title,
-                  articleDate: articleJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-                  chartDate: chartJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+              // 記事データがある場合のみデバッグ情報を出力
+              if (article) {
+                console.log('日付比較デバッグ:', {
+                  article: {
+                    original: article.created_at,
+                    parsed: articleDate.toISOString(),
+                    jst: articleJST.toISOString(),
+                    year: articleJST.getFullYear(),
+                    month: articleJST.getMonth() + 1,
+                    day: articleJST.getDate()
+                  },
+                  chart: {
+                    original: item.date,
+                    parsed: chartDate.toISOString(),
+                    jst: chartJST.toISOString(),
+                    year: chartJST.getFullYear(),
+                    month: chartJST.getMonth() + 1,
+                    day: chartJST.getDate()
+                  },
+                  comparison: {
+                    isMatch,
+                    yearMatch: articleJST.getFullYear() === chartJST.getFullYear(),
+                    monthMatch: articleJST.getMonth() === chartJST.getMonth(),
+                    dayMatch: articleJST.getDate() === chartJST.getDate()
+                  },
+                  articleTitle: article.title
                 });
               }
 
@@ -488,7 +474,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
           // デバッグ用に記事のマッチング結果をログ出力（マッチした場合のみ）
           if (dayArticles.length > 0) {
-            console.log('記事マッチング結果:', {
+            console.log('記事マッチング成功:', {
               date: dateStr,
               rawDate: item.date,
               articleCount: dayArticles.length,
