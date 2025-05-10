@@ -415,48 +415,24 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           // その日の記事をフィルタリング
           const dayArticles = articles.filter((article: NewsArticle) => {
             try {
-              const articleDate = new Date(article.created_at);
-              const chartDate = new Date(item.date);
+              // 日付文字列を YYYY-MM-DD 形式に変換
+              const formatDate = (date: Date | string) => {
+                const d = new Date(date);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              };
 
-              // 日本時間での日付を取得（時間部分を0に設定）
-              const articleJST = new Date(articleDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-              articleJST.setHours(0, 0, 0, 0);
-              
-              const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-              chartJST.setHours(0, 0, 0, 0);
+              const articleDateStr = formatDate(article.created_at);
+              const chartDateStr = formatDate(item.date);
 
-              // 日付の比較（時間は無視）
-              const isMatch = (
-                articleJST.getFullYear() === chartJST.getFullYear() &&
-                articleJST.getMonth() === chartJST.getMonth() &&
-                articleJST.getDate() === chartJST.getDate()
-              );
+              // 日付文字列を直接比較
+              const isMatch = articleDateStr === chartDateStr;
 
-              // 記事データがある場合のみデバッグ情報を出力
-              if (article) {
-                console.log('日付比較デバッグ:', {
-                  article: {
-                    original: article.created_at,
-                    parsed: articleDate.toISOString(),
-                    jst: articleJST.toISOString(),
-                    year: articleJST.getFullYear(),
-                    month: articleJST.getMonth() + 1,
-                    day: articleJST.getDate()
-                  },
-                  chart: {
-                    original: item.date,
-                    parsed: chartDate.toISOString(),
-                    jst: chartJST.toISOString(),
-                    year: chartJST.getFullYear(),
-                    month: chartJST.getMonth() + 1,
-                    day: chartJST.getDate()
-                  },
-                  comparison: {
-                    isMatch,
-                    yearMatch: articleJST.getFullYear() === chartJST.getFullYear(),
-                    monthMatch: articleJST.getMonth() === chartJST.getMonth(),
-                    dayMatch: articleJST.getDate() === chartJST.getDate()
-                  },
+              // デバッグ用に日付比較の詳細を出力
+              if (process.env.NODE_ENV === 'development') {
+                console.log('日付比較:', {
+                  articleDate: articleDateStr,
+                  chartDate: chartDateStr,
+                  isMatch,
                   articleTitle: article.title
                 });
               }
