@@ -408,6 +408,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               // 日付文字列を YYYY-MM-DD 形式に変換
               const formatDate = (date: Date | string) => {
                 const d = new Date(date);
+                // localhost環境の場合のみ+9時間の処理を適用
+                if (process.env.NODE_ENV === 'development') {
+                  const jpDate = new Date(d.getTime() + (9 * 60 * 60 * 1000));
+                  return jpDate.toISOString().split('T')[0];
+                }
                 return d.toISOString().split('T')[0];
               };
 
@@ -428,7 +433,8 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                   chartDateOriginal: item.date,
                   // デバッグ用に日付オブジェクトの詳細も表示
                   articleDateObj: new Date(article.created_at),
-                  chartDateObj: new Date(item.date)
+                  chartDateObj: new Date(item.date),
+                  isDevelopment: process.env.NODE_ENV === 'development'
                 });
               }
 
