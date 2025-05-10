@@ -419,7 +419,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             
             // デバッグ: 日付の比較詳細を出力（最初の1回のみ）
             if (index === 0) {
-              console.log('日付比較デバッグ（サンプル）:', {
+              console.log('日付比較デバッグ（詳細）:', {
                 itemDate: item.date,
                 articleCreatedAt: article.created_at,
                 parsedArticleDate: articleDate.toISOString(),
@@ -428,6 +428,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                   year: articleDate.getFullYear() === chartDate.getFullYear(),
                   month: articleDate.getMonth() === chartDate.getMonth(),
                   day: articleDate.getDate() === chartDate.getDate()
+                },
+                timezone: {
+                  articleTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  articleLocalTime: articleDate.toLocaleString(),
+                  chartLocalTime: chartDate.toLocaleString()
                 }
               });
             }
