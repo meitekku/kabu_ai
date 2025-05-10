@@ -488,10 +488,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               parsedArticleDate: articleDate.toISOString(),
               parsedChartDate: chartDate.toISOString(),
               comparison: {
+                year: articleDate.getFullYear() === chartDate.getFullYear(),
                 month: articleDate.getMonth() === chartDate.getMonth(),
                 day: articleDate.getDate() === chartDate.getDate()
               },
               rawValues: {
+                articleYear: articleDate.getFullYear(),
+                chartYear: chartDate.getFullYear(),
                 articleMonth: articleDate.getMonth(),
                 chartMonth: chartDate.getMonth(),
                 articleDay: articleDate.getDate(),
@@ -499,8 +502,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }
             });
 
-            // 日付の比較を緩和（年と時間を無視）
+            // 日付の比較（年、月、日を完全に一致させる）
             return (
+              articleDate.getFullYear() === chartDate.getFullYear() &&
               articleDate.getMonth() === chartDate.getMonth() &&
               articleDate.getDate() === chartDate.getDate()
             );
