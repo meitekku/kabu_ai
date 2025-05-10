@@ -502,12 +502,25 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }
             });
 
-            // 日付の比較（年、月、日を完全に一致させる）
-            return (
+            // 日付の比較（年と月が一致し、日付が近い場合にマッチング）
+            const isSameYearMonth = 
               articleDate.getFullYear() === chartDate.getFullYear() &&
-              articleDate.getMonth() === chartDate.getMonth() &&
-              articleDate.getDate() === chartDate.getDate()
-            );
+              articleDate.getMonth() === chartDate.getMonth();
+            
+            const dayDiff = Math.abs(articleDate.getDate() - chartDate.getDate());
+            const isNearDay = dayDiff <= 3; // 3日以内の差を許容
+
+            // デバッグ: マッチング結果を出力
+            if (isSameYearMonth && isNearDay) {
+              console.log('記事マッチング成功:', {
+                articleDate: articleDate.toISOString(),
+                chartDate: chartDate.toISOString(),
+                dayDiff,
+                title: article.title
+              });
+            }
+
+            return isSameYearMonth && isNearDay;
           });
 
           // デバッグ用に記事のマッチング結果をログ出力
