@@ -517,12 +517,27 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
                                   (hoveredData && hoveredData.date === item.date && item.articles && item.articles.length > 0);
 
-          // デバッグ情報の出力
-          if (item.articles && item.articles.length > 0) {
-            console.log('ツールチップ表示判断:', {
+          // デバッグ情報の出力（生成した場合）
+          if (item.articles && item.articles.length > 0 && shouldShowTooltip) {
+            console.log('【ツールチップ生成】', {
               date: item.date,
               index,
-              hasArticles: true,
+              articleCount: item.articles.length,
+              isDefaultTooltip,
+              isHovered: hoveredData?.date === item.date,
+              shouldShowTooltip,
+              reasons: {
+                isDefaultTooltip,
+                isHovered: hoveredData?.date === item.date,
+                hasArticles: item.articles && item.articles.length > 0
+              }
+            });
+          }
+          // デバッグ情報の出力（生成しなかった場合）
+          if (item.articles && item.articles.length > 0 && !shouldShowTooltip) {
+            console.log('【ツールチップ非生成】', {
+              date: item.date,
+              index,
               articleCount: item.articles.length,
               isDefaultTooltip,
               isHovered: hoveredData?.date === item.date,
