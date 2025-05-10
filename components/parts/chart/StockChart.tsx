@@ -395,9 +395,17 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           })
         });
 
-        if (!newsResponse.ok) throw new Error('News data fetch failed');
+        if (!newsResponse.ok) {
+          console.error('News data fetch failed:', await newsResponse.text());
+          throw new Error('News data fetch failed');
+        }
 
         const newsResult = await newsResponse.json();
+        if (!newsResult.success) {
+          console.error('News API returned error:', newsResult);
+          throw new Error('News API returned error');
+        }
+
         const articles: NewsArticle[] = newsResult.data || [];
         console.log('記事データ:', articles);
 
@@ -417,16 +425,30 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const date = new Date(item.date);
           const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
           
-          // その日の記事をフィルタリング
+          // その日の記事をフィルタリング（日付の比較を緩和）
           const dayArticles = articles.filter((article: NewsArticle) => {
             const articleDate = new Date(article.created_at);
             const chartDate = new Date(item.date);
+            // 日付の比較を緩和（時間を無視）
             return (
               articleDate.getFullYear() === chartDate.getFullYear() &&
               articleDate.getMonth() === chartDate.getMonth() &&
               articleDate.getDate() === chartDate.getDate()
             );
           });
+
+          // デバッグ用に記事のマッチング結果をログ出力
+          if (dayArticles.length > 0) {
+            console.log('記事マッチング:', {
+              date: dateStr,
+              articleCount: dayArticles.length,
+              articles: dayArticles.map(a => ({
+                id: a.id,
+                title: a.title,
+                created_at: a.created_at
+              }))
+            });
+          }
 
           return {
             date: dateStr,
