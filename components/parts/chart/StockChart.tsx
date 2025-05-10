@@ -276,6 +276,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     if (data[latestDayIndex]?.articles && data[latestDayIndex].articles.length > 0) {
       indices.push(latestDayIndex);
       reasons[latestDayIndex] = ['最新日のニュースあり'];
+      console.log('最新日のツールチップ追加:', {
+        date: data[latestDayIndex].date,
+        index: latestDayIndex,
+        reason: '最新日のニュースあり'
+      });
     }
 
     // 2. 変動率の計算と上位3つの抽出
@@ -320,6 +325,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         `高値安値変動率: ${change.highLowChangeRate.toFixed(2)}%`,
         `合計変動率: ${(change.closeChangeRate + change.highLowChangeRate).toFixed(2)}%`
       ];
+      console.log('変動率上位のツールチップ追加:', {
+        date: data[change.index].date,
+        index: change.index,
+        reasons: reasons[change.index]
+      });
     });
 
     // 3. settlement: 0の日を抽出
@@ -327,7 +337,20 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       if (item.settlement === 0 && item.articles && item.articles.length > 0 && !indices.includes(index)) {
         indices.push(index);
         reasons[index] = ['決算日'];
+        console.log('決算日のツールチップ追加:', {
+          date: item.date,
+          index,
+          reason: '決算日'
+        });
       }
+    });
+
+    // 最終的な選択結果をログ出力
+    console.log('ツールチップ選択結果:', {
+      selectedIndices: indices,
+      reasons: reasons,
+      totalArticles: data.filter(item => item.articles && item.articles.length > 0).length,
+      selectedCount: indices.length
     });
 
     // 重複を除去して返す
@@ -471,6 +494,24 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const isDefaultTooltip = getDefaultTooltipIndices().includes(index);
           const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
                                   (hoveredData && hoveredData.date === item.date && item.articles && item.articles.length > 0);
+
+          // デバッグ情報の出力
+          if (item.articles && item.articles.length > 0) {
+            console.log('ツールチップ表示判断:', {
+              date: item.date,
+              index,
+              hasArticles: true,
+              articleCount: item.articles.length,
+              isDefaultTooltip,
+              isHovered: hoveredData?.date === item.date,
+              shouldShowTooltip,
+              reasons: {
+                isDefaultTooltip,
+                isHovered: hoveredData?.date === item.date,
+                hasArticles: item.articles && item.articles.length > 0
+              }
+            });
+          }
 
           if (!item.articles || item.articles.length === 0 || !shouldShowTooltip) return null;
 
