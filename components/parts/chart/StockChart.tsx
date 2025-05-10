@@ -424,6 +424,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             
             const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
             chartJST.setHours(0, 0, 0, 0);
+
+            // 前日と翌日の日付を取得
+            const prevDay = new Date(chartJST);
+            prevDay.setDate(prevDay.getDate() - 1);
+            
+            const nextDay = new Date(chartJST);
+            nextDay.setDate(nextDay.getDate() + 1);
             
             // デバッグ: 日付の比較詳細を出力（最初の1回のみ）
             if (index === 0) {
@@ -439,32 +446,36 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 jst: {
                   articleJST: articleJST.toISOString(),
                   chartJST: chartJST.toISOString(),
+                  prevDay: prevDay.toISOString(),
+                  nextDay: nextDay.toISOString(),
                   articleLocal: articleJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
                   chartLocal: chartJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
                 },
                 comparison: {
-                  year: articleJST.getFullYear() === chartJST.getFullYear(),
-                  month: articleJST.getMonth() === chartJST.getMonth(),
-                  day: articleJST.getDate() === chartJST.getDate(),
-                  timestamp: articleJST.getTime() === chartJST.getTime()
+                  isSameDay: articleJST.getTime() === chartJST.getTime(),
+                  isPrevDay: articleJST.getTime() === prevDay.getTime(),
+                  isNextDay: articleJST.getTime() === nextDay.getTime(),
+                  isInRange: articleJST >= prevDay && articleJST <= nextDay
                 }
               });
             }
 
-            // 日付の比較（時間は無視）
-            const isSameDay = articleJST.getTime() === chartJST.getTime();
+            // 日付の比較（前日、当日、翌日を許容）
+            const isInRange = articleJST >= prevDay && articleJST <= nextDay;
 
             // デバッグ: マッチング結果を出力（最初の1回のみ）
             if (index === 0) {
               console.log('記事マッチング結果:', {
                 articleDate: articleJST.toISOString(),
                 chartDate: chartJST.toISOString(),
-                isSameDay,
+                prevDay: prevDay.toISOString(),
+                nextDay: nextDay.toISOString(),
+                isInRange,
                 articleTitle: article.title
               });
             }
 
-            return isSameDay;
+            return isInRange;
           });
 
           // デバッグ用に記事のマッチング結果をログ出力（マッチした場合のみ）
