@@ -418,9 +418,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               // 日付文字列を YYYY-MM-DD 形式に変換
               const formatDate = (date: Date | string) => {
                 const d = new Date(date);
-                // 日本時間に変換
+                // 日本時間に変換（UTC+9）
                 const jpDate = new Date(d.getTime() + (9 * 60 * 60 * 1000));
-                return `${jpDate.getFullYear()}-${String(jpDate.getMonth() + 1).padStart(2, '0')}-${String(jpDate.getDate()).padStart(2, '0')}`;
+                return jpDate.toISOString().split('T')[0];
               };
 
               const articleDateStr = formatDate(article.created_at);
@@ -437,9 +437,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 articleTitle: article.title,
                 articleCreatedAt: article.created_at,
                 chartDateOriginal: item.date,
-                // タイムゾーン情報を追加
-                articleTimezone: new Date(article.created_at).getTimezoneOffset(),
-                chartTimezone: new Date(item.date).getTimezoneOffset()
+                // デバッグ用に日付オブジェクトの詳細も表示
+                articleDateObj: new Date(article.created_at),
+                chartDateObj: new Date(item.date)
               });
 
               return isMatch;
