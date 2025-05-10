@@ -268,6 +268,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
   // 常時表示するツールチップのインデックスを計算
   const getDefaultTooltipIndices = () => {
+    console.log('getDefaultTooltipIndices開始:', {
+      dataLength: data.length,
+      hasData: data.length > 0,
+      firstDate: data[0]?.date,
+      lastDate: data[data.length - 1]?.date
+    });
+
     const indices: number[] = [];
     const reasons: { [key: number]: string[] } = {};
 
@@ -279,7 +286,18 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       console.log('最新日のツールチップ追加:', {
         date: data[latestDayIndex].date,
         index: latestDayIndex,
-        reason: '最新日のニュースあり'
+        reason: '最新日のニュースあり',
+        articles: data[latestDayIndex].articles.map(a => ({
+          id: a.id,
+          title: a.title,
+          created_at: a.created_at
+        }))
+      });
+    } else {
+      console.log('最新日のツールチップ追加なし:', {
+        date: data[latestDayIndex]?.date,
+        hasArticles: Boolean(data[latestDayIndex]?.articles?.length),
+        articles: data[latestDayIndex]?.articles
       });
     }
 
@@ -300,6 +318,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       const highLowChangeRate = Math.abs((currentHigh - currentLow) / prevClose * 100);
 
       if (item.articles && item.articles.length > 0) {
+        console.log('変動率計算:', {
+          date: item.date,
+          index,
+          closeChangeRate,
+          highLowChangeRate,
+          hasArticles: true,
+          articleCount: item.articles.length
+        });
+
         changeRates.push({
           index,
           closeChangeRate,
@@ -317,6 +344,14 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       })
       .slice(0, 3);
 
+    console.log('変動率上位3件:', topChanges.map(change => ({
+      date: data[change.index].date,
+      index: change.index,
+      closeChangeRate: change.closeChangeRate,
+      highLowChangeRate: change.highLowChangeRate,
+      totalChangeRate: change.closeChangeRate + change.highLowChangeRate
+    })));
+
     // 上位3つをインデックスに追加
     topChanges.forEach(change => {
       indices.push(change.index);
@@ -328,7 +363,12 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       console.log('変動率上位のツールチップ追加:', {
         date: data[change.index].date,
         index: change.index,
-        reasons: reasons[change.index]
+        reasons: reasons[change.index],
+        articles: data[change.index].articles?.map(a => ({
+          id: a.id,
+          title: a.title,
+          created_at: a.created_at
+        }))
       });
     });
 
@@ -340,7 +380,12 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         console.log('決算日のツールチップ追加:', {
           date: item.date,
           index,
-          reason: '決算日'
+          reason: '決算日',
+          articles: item.articles.map(a => ({
+            id: a.id,
+            title: a.title,
+            created_at: a.created_at
+          }))
         });
       }
     });
@@ -350,7 +395,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       selectedIndices: indices,
       reasons: reasons,
       totalArticles: data.filter(item => item.articles && item.articles.length > 0).length,
-      selectedCount: indices.length
+      selectedCount: indices.length,
+      dataSummary: data.map(item => ({
+        date: item.date,
+        hasArticles: Boolean(item.articles?.length),
+        articleCount: item.articles?.length ?? 0,
+        isSelected: indices.includes(data.indexOf(item))
+      }))
     });
 
     // 重複を除去して返す
@@ -429,6 +480,28 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const dayArticles = articles.filter((article: NewsArticle) => {
             const articleDate = new Date(article.created_at);
             const chartDate = new Date(item.date);
+            
+            // デバッグ: 日付の比較詳細を出力
+            console.log('日付比較デバッグ:', {
+              itemDate: item.date,
+              articleCreatedAt: article.created_at,
+              parsedArticleDate: articleDate.toISOString(),
+              parsedChartDate: chartDate.toISOString(),
+              comparison: {
+                year: articleDate.getFullYear() === chartDate.getFullYear(),
+                month: articleDate.getMonth() === chartDate.getMonth(),
+                day: articleDate.getDate() === chartDate.getDate()
+              },
+              rawValues: {
+                articleYear: articleDate.getFullYear(),
+                chartYear: chartDate.getFullYear(),
+                articleMonth: articleDate.getMonth(),
+                chartMonth: chartDate.getMonth(),
+                articleDay: articleDate.getDate(),
+                chartDay: chartDate.getDate()
+              }
+            });
+
             // 日付の比較を緩和（時間を無視）
             return (
               articleDate.getFullYear() === chartDate.getFullYear() &&
@@ -441,11 +514,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           if (dayArticles.length > 0) {
             console.log('記事マッチング:', {
               date: dateStr,
+              rawDate: item.date,
               articleCount: dayArticles.length,
               articles: dayArticles.map(a => ({
                 id: a.id,
                 title: a.title,
-                created_at: a.created_at
+                created_at: a.created_at,
+                parsedDate: new Date(a.created_at).toISOString()
               }))
             });
           }
