@@ -408,9 +408,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               // 日付文字列を YYYY-MM-DD 形式に変換
               const formatDate = (date: Date | string) => {
                 const d = new Date(date);
-                // 日本時間に変換（UTC+9）
-                const jpDate = new Date(d.getTime() + (9 * 60 * 60 * 1000));
-                return jpDate.toISOString().split('T')[0];
+                return d.toISOString().split('T')[0];
               };
 
               const articleDateStr = formatDate(article.created_at);
