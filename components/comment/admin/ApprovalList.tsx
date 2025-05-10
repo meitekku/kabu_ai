@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
+import TwitterPostButton from './TwitterPostButton';
 
 interface ApprovalItem {
   id: number;
@@ -114,15 +115,16 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       setIsUpdating(prev => ({ ...prev, [id]: true }));
       setError(null);
 
-      const response = await fetch('/api/admin/accept_ai/approval', {
+      const response = await fetch('/api/admin/accept_ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id,
-          content: editedContents[id],
-          title: editedTitles[id]
+          type: 'update',
+          table: 'post',
+          data: { accept: 1 },
+          conditions: { id }
         }),
       });
 
@@ -131,16 +133,39 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       if (result.success) {
         await fetchData();
       } else {
-        throw new Error(result.error || '承認処理に失敗しました');
+        console.error('承認に失敗しました:', result.error);
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('承認処理に失敗しました');
-      }
+      console.error('エラーが発生しました:', error);
     } finally {
       setIsUpdating(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleReject = async (id: number): Promise<void> => {
+    try {
+      const response = await fetch('/api/admin/accept_ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'update',
+          table: 'post',
+          data: { accept: 2 },
+          conditions: { id }
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await fetchData();
+      } else {
+        console.error('却下に失敗しました:', result.error);
+      }
+    } catch (error) {
+      console.error('エラーが発生しました:', error);
     }
   };
 
@@ -196,11 +221,25 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   {isUpdating[item.id] ? '処理中...' : '承認'}
                 </button>
                 <button
+                  onClick={() => handleReject(item.id)}
+                  className={`px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 ${
+                    isUpdating[item.id] ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  disabled={isUpdating[item.id]}
+                >
+                  {isUpdating[item.id] ? '処理中...' : '却下'}
+                </button>
+                <button
                   onClick={() => handleCopy(item.id)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                 >
                   コピー
                 </button>
+                <TwitterPostButton
+                  title={item.title}
+                  url={`${window.location.origin}/post/${item.id}`}
+                  onSuccess={() => handleAccept(item.id)}
+                />
               </div>
             </div>
           </li>

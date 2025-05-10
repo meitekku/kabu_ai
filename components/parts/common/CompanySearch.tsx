@@ -205,12 +205,12 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
             placeholder="コードまたは会社名"
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-lg text-gray-900 placeholder-gray-500 text-base focus:outline-none"
+            className="w-full pl-12 pr-4 py-2 sm:py-3 bg-gray-50 rounded-lg text-gray-900 placeholder-gray-500 text-sm sm:text-base focus:outline-none"
           />
         </div>
 
         {(suggestions.length > 0 || (showHistory && searchHistory.length > 0)) && (
-          <div className="absolute w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-10">
+          <div className="absolute w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden z-50">
             <ul>
               {showHistory ? (
                 searchHistory.map((history, index) => (
@@ -224,8 +224,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   >
                     <div className="flex items-center px-2 py-1">
                       <Clock className="text-gray-400 w-4 h-4 mr-2" />
-                      <span className="text-gray-500 font-medium text-sm mr-3 min-w-[3rem]">{history.company.id}</span>
-                      <span className="text-gray-900">{history.company.name}</span>
+                      <span className="text-gray-500 font-medium text-xs sm:text-sm mr-3 min-w-[3rem]">{history.company.id}</span>
+                      <span className="text-gray-900 text-xs sm:text-sm">{history.company.name}</span>
                     </div>
                   </li>
                 ))
@@ -240,8 +240,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="flex items-center px-2 py-1">
-                      <span className="text-gray-500 font-medium text-sm mr-3 min-w-[3rem]">{company.id}</span>
-                      <span className="text-gray-900">{company.name}</span>
+                      <span className="text-gray-500 font-medium text-xs sm:text-sm mr-3 min-w-[3rem]">{company.id}</span>
+                      <span className="text-gray-900 text-xs sm:text-sm">{company.name}</span>
                     </div>
                   </li>
                 ))

@@ -25,13 +25,27 @@ const client = new TwitterApi({
 
 export async function POST(request: Request) {
   try {
-    const { title, url } = await request.json();
+    const { title, url, imageUrl } = await request.json();
 
     // ツイート本文を作成（タイトル + URL）
     const tweetText = `${title}\n\n${url}`;
 
-    // Twitterに投稿
-    const tweet = await client.v2.tweet(tweetText);
+    let tweet;
+    
+    // 画像がある場合は画像をアップロードしてからツイート
+    if (imageUrl) {
+      // 画像をアップロード
+      const mediaId = await client.v1.uploadMedia(imageUrl);
+      
+      // 画像付きでツイート
+      tweet = await client.v2.tweet({
+        text: tweetText,
+        media: { media_ids: [mediaId] }
+      });
+    } else {
+      // 画像なしでツイート
+      tweet = await client.v2.tweet(tweetText);
+    }
 
     return NextResponse.json({
       success: true,

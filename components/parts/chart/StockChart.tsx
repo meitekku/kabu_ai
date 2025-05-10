@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -220,7 +220,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   };
 
   // バーの位置を更新する関数
-  const updateBarPositions = (width: number) => {
+  const updateBarPositions = useCallback((width: number) => {
     // Y軸の幅（35px）を考慮
     const yAxisWidth = 35;
     const availableWidth = width - yAxisWidth;
@@ -254,7 +254,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     });
 
     setBarPositions(positions);
-  };
+  }, [data]);
 
   // コンテナの幅が変更された時の処理
   const handleResize = (width: number) => {
@@ -436,7 +436,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     };
 
     fetchData();
-  }, [code]);
+  }, [code, containerWidth, updateBarPositions]);
 
   if (loading) {
     return (
@@ -476,12 +476,16 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const displayTitle = (() => {
             const index1 = title.indexOf('%）');
             const index2 = title.indexOf('%)');
+            let result = '';
             if (index1 !== -1) {
-              return title.substring(index1 + 2);
+              result = title.substring(index1 + 2);
             } else if (index2 !== -1) {
-              return title.substring(index2 + 2);
+              result = title.substring(index2 + 2);
+            } else {
+              result = title;
             }
-            return title;
+            // 結果が空文字列や【】のみの場合は元のタイトルを返す
+            return result.trim() === '' || result === '【】' ? title : result;
           })();
 
           return (
@@ -624,7 +628,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart 
             data={data}
-            margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+            margin={{ top: 0, right: 0, bottom: 0, left: 35 }}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
