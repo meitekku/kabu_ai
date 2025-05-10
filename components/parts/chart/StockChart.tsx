@@ -424,10 +424,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         });
 
         setData(formattedData);
-        // データが更新されたらバーの位置も更新
-        if (containerWidth > 0) {
-          updateBarPositions(containerWidth);
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -436,7 +432,14 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     };
 
     fetchData();
-  }, [code, containerWidth, updateBarPositions]);
+  }, [code]);
+
+  // コンテナの幅が変更された時の処理を別のuseEffectで管理
+  useEffect(() => {
+    if (containerWidth > 0 && data.length > 0) {
+      updateBarPositions(containerWidth);
+    }
+  }, [containerWidth, data, updateBarPositions]);
 
   if (loading) {
     return (

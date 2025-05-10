@@ -55,7 +55,7 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
     };
 
     fetchData();
-  }, [tableName, limit, initialData]);
+  }, [tableName, limit]);
 
   if (loading) {
     return (
