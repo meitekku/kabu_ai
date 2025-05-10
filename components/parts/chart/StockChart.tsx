@@ -414,51 +414,53 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           
           // その日の記事をフィルタリング（日付の比較を緩和）
           const dayArticles = articles.filter((article: NewsArticle) => {
+            // 日付を日本時間に変換
             const articleDate = new Date(article.created_at);
             const chartDate = new Date(item.date);
+
+            // 日本時間での日付を取得（時間部分を0に設定）
+            const articleJST = new Date(articleDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+            articleJST.setHours(0, 0, 0, 0);
+            
+            const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+            chartJST.setHours(0, 0, 0, 0);
             
             // デバッグ: 日付の比較詳細を出力（最初の1回のみ）
             if (index === 0) {
-              const articleJST = new Date(articleDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-              const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-
               console.log('日付比較デバッグ（詳細）:', {
-                itemDate: item.date,
-                articleCreatedAt: article.created_at,
-                parsedArticleDate: articleDate.toISOString(),
-                parsedChartDate: chartDate.toISOString(),
+                original: {
+                  itemDate: item.date,
+                  articleCreatedAt: article.created_at
+                },
+                parsed: {
+                  articleDate: articleDate.toISOString(),
+                  chartDate: chartDate.toISOString()
+                },
+                jst: {
+                  articleJST: articleJST.toISOString(),
+                  chartJST: chartJST.toISOString(),
+                  articleLocal: articleJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
+                  chartLocal: chartJST.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+                },
                 comparison: {
                   year: articleJST.getFullYear() === chartJST.getFullYear(),
                   month: articleJST.getMonth() === chartJST.getMonth(),
-                  day: articleJST.getDate() === chartJST.getDate()
-                },
-                timezone: {
-                  articleTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                  articleLocalTime: articleDate.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-                  chartLocalTime: chartDate.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
-                  articleJST: articleJST.toISOString(),
-                  chartJST: chartJST.toISOString()
+                  day: articleJST.getDate() === chartJST.getDate(),
+                  timestamp: articleJST.getTime() === chartJST.getTime()
                 }
               });
             }
 
-            // 日本時間で同じ日であればマッチング
-            const articleJST = new Date(articleDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-            const chartJST = new Date(chartDate.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-
             // 日付の比較（時間は無視）
-            const isSameDay = (
-              articleJST.getFullYear() === chartJST.getFullYear() &&
-              articleJST.getMonth() === chartJST.getMonth() &&
-              articleJST.getDate() === chartJST.getDate()
-            );
+            const isSameDay = articleJST.getTime() === chartJST.getTime();
 
             // デバッグ: マッチング結果を出力（最初の1回のみ）
-            if (index === 0 && isSameDay) {
-              console.log('記事マッチング成功:', {
+            if (index === 0) {
+              console.log('記事マッチング結果:', {
                 articleDate: articleJST.toISOString(),
                 chartDate: chartJST.toISOString(),
-                isSameDay
+                isSameDay,
+                articleTitle: article.title
               });
             }
 
