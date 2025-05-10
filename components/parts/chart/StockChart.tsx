@@ -476,7 +476,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const date = new Date(item.date);
           const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
           
-          // その日の記事をフィルタリング（日付の比較を緩和）
+          // その日の記事をフィルタリング（日付の比較を厳密に）
           const dayArticles = articles.filter((article: NewsArticle) => {
             const articleDate = new Date(article.created_at);
             const chartDate = new Date(item.date);
@@ -491,36 +491,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 year: articleDate.getFullYear() === chartDate.getFullYear(),
                 month: articleDate.getMonth() === chartDate.getMonth(),
                 day: articleDate.getDate() === chartDate.getDate()
-              },
-              rawValues: {
-                articleYear: articleDate.getFullYear(),
-                chartYear: chartDate.getFullYear(),
-                articleMonth: articleDate.getMonth(),
-                chartMonth: chartDate.getMonth(),
-                articleDay: articleDate.getDate(),
-                chartDay: chartDate.getDate()
               }
             });
 
-            // 日付の比較（年と月が一致し、日付が近い場合にマッチング）
-            const isSameYearMonth = 
+            // 完全に同じ日付の場合のみマッチング
+            return (
               articleDate.getFullYear() === chartDate.getFullYear() &&
-              articleDate.getMonth() === chartDate.getMonth();
-            
-            const dayDiff = Math.abs(articleDate.getDate() - chartDate.getDate());
-            const isNearDay = dayDiff <= 3; // 3日以内の差を許容
-
-            // デバッグ: マッチング結果を出力
-            if (isSameYearMonth && isNearDay) {
-              console.log('記事マッチング成功:', {
-                articleDate: articleDate.toISOString(),
-                chartDate: chartDate.toISOString(),
-                dayDiff,
-                title: article.title
-              });
-            }
-
-            return isSameYearMonth && isNearDay;
+              articleDate.getMonth() === chartDate.getMonth() &&
+              articleDate.getDate() === chartDate.getDate()
+            );
           });
 
           // デバッグ用に記事のマッチング結果をログ出力
@@ -603,21 +582,25 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         {data.map((item, index) => {
           const isDefaultTooltip = getDefaultTooltipIndices().includes(index);
           const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
-                                  (hoveredData && hoveredData.date === item.date && item.articles && item.articles.length > 0);
+                                  (hoveredData && 
+                                   new Date(hoveredData.date).getTime() === new Date(item.date).getTime() && 
+                                   item.articles && 
+                                   item.articles.length > 0);
 
           // デバッグ情報の出力（生成した場合）
           if (item.articles && item.articles.length > 0 && shouldShowTooltip) {
             console.log('【ツールチップ生成】', {
               date: item.date,
+              hoveredDate: hoveredData?.date,
               index,
               articleCount: item.articles.length,
               isDefaultTooltip,
               isHovered: hoveredData?.date === item.date,
               shouldShowTooltip,
-              reasons: {
-                isDefaultTooltip,
-                isHovered: hoveredData?.date === item.date,
-                hasArticles: item.articles && item.articles.length > 0
+              dateComparison: {
+                hoveredTime: hoveredData?.date ? new Date(hoveredData.date).getTime() : 0,
+                itemTime: new Date(item.date).getTime(),
+                isEqual: hoveredData?.date ? new Date(hoveredData.date).getTime() === new Date(item.date).getTime() : false
               }
             });
           }
@@ -770,7 +753,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             />
             <YAxis 
               domain={['auto', 'auto']} 
-              tick={{ fontSize: 12 }} 
+              tick={{ fontSize: 12, dx: 2 }} 
               width={35}
             />
             <Tooltip 
@@ -816,7 +799,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart 
             data={data}
-            margin={{ top: 0, right: 0, bottom: 0, left: 35 }}
+            margin={{ top: 0, right: -7, bottom: 0, left: 0 }}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
@@ -839,15 +822,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, dx: 2 }}
               tickFormatter={(value: number) => formatNumber(value / 10000)}
               label={{ 
-                value: '(万株)', 
+                value: '万株', 
                 position: 'top',
                 offset: -10,
-                dx: -5,
-                dy: 10,
-                fontSize: 12 
+                dx: 0,
+                dy: 48,
+                fontSize: 11 
               }}
               width={35}
             />
