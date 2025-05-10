@@ -643,16 +643,35 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const latestArticle = item.articles[item.articles.length - 1];
           const title = latestArticle.title;
           const displayTitle = (() => {
+            // 1. %）または%)のパターン
             const index1 = title.indexOf('%）');
             const index2 = title.indexOf('%)');
+            // 2. %のパターン
+            const index3 = title.indexOf('%');
+            // 3. 】のパターン
+            const index4 = title.indexOf('】');
+            // 4. 半角/全角)のパターン
+            const index5 = title.indexOf(')');
+            const index6 = title.indexOf('）');
+
             let result = '';
+            // 優先順位に従って処理
             if (index1 !== -1) {
               result = title.substring(index1 + 2);
             } else if (index2 !== -1) {
               result = title.substring(index2 + 2);
+            } else if (index3 !== -1) {
+              result = title.substring(index3 + 1);
+            } else if (index4 !== -1) {
+              result = title.substring(index4 + 1);
+            } else if (index5 !== -1) {
+              result = title.substring(index5 + 1);
+            } else if (index6 !== -1) {
+              result = title.substring(index6 + 1);
             } else {
               result = title;
             }
+
             // 結果が空文字列や【】のみの場合は元のタイトルを返す
             return result.trim() === '' || result === '【】' ? title : result;
           })();
