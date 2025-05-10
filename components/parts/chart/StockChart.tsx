@@ -429,18 +429,20 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               // 日付文字列を直接比較
               const isMatch = articleDateStr === chartDateStr;
 
-              // デバッグ情報を出力（本番環境でも表示）
-              console.log('日付比較:', {
-                articleDate: articleDateStr,
-                chartDate: chartDateStr,
-                isMatch,
-                articleTitle: article.title,
-                articleCreatedAt: article.created_at,
-                chartDateOriginal: item.date,
-                // デバッグ用に日付オブジェクトの詳細も表示
-                articleDateObj: new Date(article.created_at),
-                chartDateObj: new Date(item.date)
-              });
+              // デバッグ情報を出力（初日のみ）
+              if (index === 0) {
+                console.log('日付比較:', {
+                  articleDate: articleDateStr,
+                  chartDate: chartDateStr,
+                  isMatch,
+                  articleTitle: article.title,
+                  articleCreatedAt: article.created_at,
+                  chartDateOriginal: item.date,
+                  // デバッグ用に日付オブジェクトの詳細も表示
+                  articleDateObj: new Date(article.created_at),
+                  chartDateObj: new Date(item.date)
+                });
+              }
 
               return isMatch;
             } catch (error) {
