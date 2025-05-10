@@ -330,16 +330,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       }
     });
 
-    // 最終的な選択結果をログ出力（開発環境のみ）
-    if (process.env.NODE_ENV === 'development') {
-      console.log('ツールチップ選択結果:', {
-        selectedIndices: indices,
-        reasons: reasons,
-        totalArticles: data.filter(item => item.articles && item.articles.length > 0).length,
-        selectedCount: indices.length
-      });
-    }
-
     // 重複を除去して返す
     return [...new Set(indices)];
   };
