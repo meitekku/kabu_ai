@@ -31,7 +31,7 @@ export default function RootLayout({
                 <aside className="w-full md:w-[300px] space-y-6">
                   <RankingTableClient 
                     title="アクセスランキング"
-                    tableName="ranking_access"
+                    tableName="ranking_yahoo_post"
                     limit={5}
                   />
                   <RankingTableClient 
