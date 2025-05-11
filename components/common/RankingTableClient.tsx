@@ -45,7 +45,7 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
         }
 
         const result = await response.json();
-        // 会社名がないデータを除外し、最大5つまで表示
+        // 会社名がないデータをスキップして上位5件までに制限
         const filteredData = result.data
           .filter((item: BaseRankingData) => item.name)
           .slice(0, 5);
@@ -59,7 +59,7 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
     };
 
     fetchData();
-  }, [tableName, limit, initialData]);
+  }, [tableName, limit]);
 
   if (loading) {
     return (
