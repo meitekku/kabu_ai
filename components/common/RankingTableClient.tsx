@@ -35,7 +35,7 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ tableName, limit }),
+          body: JSON.stringify({ tableName, limit: limit + 2 }),
           next: { revalidate: 1800 }, // 30分ごとに更新
         });
         console.log('rankingTableClient');
@@ -45,7 +45,11 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
         }
 
         const result = await response.json();
-        setData(result.data);
+        // 会社名がないデータを除外し、最大5つまで表示
+        const filteredData = result.data
+          .filter((item: BaseRankingData) => item.name)
+          .slice(0, 5);
+        setData(filteredData);
       } catch (error) {
         console.error('Error fetching data:', error);
         setData([]);
