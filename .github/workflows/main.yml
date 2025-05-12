@@ -56,10 +56,6 @@ jobs:
           rm -rf .next/cache
           rm -rf .next/static
           pm2 flush
-          # Vercelのキャッシュをクリア
-          curl -X POST "https://api.vercel.com/v1/deployments/$(git rev-parse HEAD)/clear-cache" \
-            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
-            -H "Content-Type: application/json"
           NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
           pm2 save
           pm2 reload kabu_ai

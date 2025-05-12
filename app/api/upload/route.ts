@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateRandomString } from '@/utils/common/randomString';
-import { put } from '@vercel/blob';
 import path from 'path';
+import fs from 'fs/promises';
 
 export async function POST(req: NextRequest) {
   try {
-    // BLOBトークンの存在確認
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error('BLOB_READ_WRITE_TOKEN 環境変数が設定されていません');
-      return NextResponse.json(
-        { success: false, message: 'サーバー設定エラー: Blob ストレージの設定が不完全です' },
-        { status: 500 }
-      );
-    }
-
     const formData = await req.formData();
     const file = formData.get('file') as File;
     
@@ -37,35 +28,41 @@ export async function POST(req: NextRequest) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     
+    // 保存先ディレクトリのパスを作成
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'post_images', year.toString(), month);
+    
+    // ディレクトリが存在しない場合は作成
+    await fs.mkdir(uploadDir, { recursive: true });
+    
     // ランダム文字列を生成して一意のファイル名を作成
     const fileExtension = path.extname(file.name);
     const fileNameWithoutExt = path.basename(file.name, fileExtension);
     const randomString = generateRandomString(8);
     const newFileName = `${fileNameWithoutExt}_${randomString}${fileExtension}`;
     
-    // Vercel Blob にアップロード
-    const blob = await put(`post_images/${year}/${month}/${newFileName}`, file, {
-      access: 'public',
-    });
+    // ファイルの保存先パス
+    const filePath = path.join(uploadDir, newFileName);
+    
+    // ArrayBufferに変換
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // ファイルを保存
+    await fs.writeFile(filePath, buffer);
+    
+    // 相対パスを生成（URL用）
+    const relativePath = `/uploads/post_images/${year}/${month}/${newFileName}`;
     
     // 成功レスポンス
     return NextResponse.json({
       success: true,
-      filePath: blob.url, // Blob URLを返す
+      filePath: relativePath,
       fileName: newFileName,
       message: 'ファイルのアップロードに成功しました'
     });
     
   } catch (error: unknown) {
     console.error('Unhandled upload error:', error);
-    
-    // Blob認証エラーの特別処理
-    if (error instanceof Error && error.message.includes('No token found')) {
-      return NextResponse.json(
-        { success: false, message: 'Blob認証エラー: BLOB_READ_WRITE_TOKENが設定されていません' },
-        { status: 500 }
-      );
-    }
     
     const message = error instanceof Error ? error.message : '不明な内部エラー';
     // エラーオブジェクトが持つ可能性のある追加情報もログに出力
