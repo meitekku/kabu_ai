@@ -1,7 +1,6 @@
 'use client';
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
-import { CurrentPriceInfo } from "@/components/common/CurrentPriceInfo";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
@@ -28,6 +27,7 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
         </div>
         <div className="iiarea pr-4"></div>
       </div>
+      {/* 一時的にコメントアウト
       <div className="md:flex md:justify-center">
         <div className="overflow-x-auto">
           <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
@@ -40,6 +40,7 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
           </div>
         </div>
       </div>
+      */}
     </header>
   );
  };
