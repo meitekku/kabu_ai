@@ -13,6 +13,7 @@ const nextConfig = {
         pathname: '/post_images/**',
       },
     ],
+    unoptimized: true,
   },
   async rewrites() {
     return [
