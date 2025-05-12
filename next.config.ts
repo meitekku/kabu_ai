@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import { NextConfig } from 'next'
+
+const nextConfig: NextConfig = {
   env: {
     TZ: "Asia/Tokyo",
   },
@@ -19,7 +20,7 @@ const nextConfig = {
         source: '/:path*',
         destination: 'http://133.130.102.77:3000/:path*',
       },
-    ];
+    ]
   },
   experimental: {
     serverActions: {
@@ -41,6 +42,9 @@ const nextConfig = {
       },
     ]
   },
-};
+  httpAgentOptions: {
+    keepAlive: true,
+  },
+}
 
-module.exports = nextConfig;
+export default nextConfig
