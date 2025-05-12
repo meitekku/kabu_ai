@@ -23,6 +23,12 @@ const nextConfig = {
       },
     ];
   },
+  assetPrefix: process.env.NODE_ENV === 'production' ? 'http://133.130.102.77:3000' : '',
+  basePath: '',
+  trailingSlash: true,
+  poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
 };
 
 module.exports = nextConfig;
