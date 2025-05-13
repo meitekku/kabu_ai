@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "node .next/standalone/server.js",
-    "lint": "next lint"
+    "build": "next build && npm run copy",
+    "copy": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/static",
+    "start": "node .next/standalone/server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
