@@ -64,7 +64,14 @@ export async function POST(request: NextRequest) {
     } catch (dbError) {
       console.error('Database connection error:', dbError);
       return NextResponse.json(
-        { success: false, error: 'Database connection failed' },
+        { 
+          success: false, 
+          error: `Database connection failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+          details: process.env.NODE_ENV === 'development' ? {
+            mongodbUri: process.env.MONGODB_URI ? 'Set' : 'Not set',
+            mongodbName: process.env.MONGODB_NAME ? 'Set' : 'Not set'
+          } : undefined
+        },
         { status: 500, headers }
       );
     }

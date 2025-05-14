@@ -56,9 +56,13 @@ jobs:
           rm -rf .next/cache
           rm -rf .next/static
           pm2 flush
-          NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
+          # ポート3000を使用しているプロセスを確認して停止
+          lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9 || true
+          # 少し待機してから新しいプロセスを開始
+          sleep 2
+          # クラスターモードで起動（2インスタンス）
+          NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -i 2 -- start
           pm2 save
-          pm2 reload kabu_ai
           echo "Production deployment completed"
           echo "Verifying deployment..."
           pm2 list
