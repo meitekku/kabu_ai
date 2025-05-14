@@ -56,6 +56,9 @@ jobs:
           rm -rf .next/cache
           rm -rf .next/static
           pm2 flush
+          pm2 stop kabu_ai || true
+          pm2 delete kabu_ai || true
+          lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9 || true
           NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
           pm2 save
           pm2 reload kabu_ai
