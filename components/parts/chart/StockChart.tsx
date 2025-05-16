@@ -499,7 +499,23 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     }
   }, [containerWidth, data, updateBarPositions]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="w-full mt-2 animate-pulse">
+        {/* 株価情報表示のスケルトン */}
+        <div className="mb-2">
+          <div className="h-8 bg-gray-200 rounded"></div>
+        </div>
+
+        {/* 上段チャートのスケルトン */}
+        <div className="h-32 md:h-48 bg-gray-200 rounded"></div>
+
+        {/* 下段チャートのスケルトン */}
+        <div className="h-20 md:h-24 bg-gray-200 rounded mt-2"></div>
+      </div>
+    );
+  }
+
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
   if (data.length === 0) return null;
 

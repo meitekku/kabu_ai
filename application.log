@@ -253,3 +253,9 @@ INFO:     Application shutdown complete.
 2025-05-10T14:01:02.076Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-05-10T14:01:02.282Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-05-10T14:01:02.503Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-05-16T10:11:33.612Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-05-16T10:11:33.820Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-05-16T23:36:11.393Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-05-16T23:36:12.858Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-05-16T23:36:14.497Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-05-16T23:36:29.584Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
