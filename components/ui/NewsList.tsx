@@ -137,32 +137,13 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
     }
   }, [statusLabels]);
 
-  if (loading) {
-    return (
-      <div className="divide-y divide-gray-100">
-        {[...Array(parseInt(num))].map((_, index) => (
-          <Card key={index} className="rounded-lg bg-card text-card-foreground border-0 shadow-none">
-            <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
-                  <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
-                </div>
-                <div className="h-5 w-full bg-gray-200 rounded animate-pulse mt-0.5"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
+  if (loading) return null;
   if (error) {
     return <div className="text-red-500 p-4">Error: {error}</div>;
   }
 
   if (!news || news.length === 0) {
-    return <div className="text-gray-500 p-4">No news available.</div>;
+    return <div className="text-gray-500 p-4">まだニュースがありません。</div>;
   }
 
   return (

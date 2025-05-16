@@ -499,19 +499,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     }
   }, [containerWidth, data, updateBarPositions]);
 
-  if (loading) {
-    return (
-      <div className="w-full mt-2">
-        {/* 株価情報のローディング */}
-        <div className="h-10 bg-gray-200 animate-pulse mb-2 rounded-lg"></div>
-        {/* 上段チャートのローディング */}
-        <div className="h-32 md:h-48 bg-gray-200 animate-pulse"></div>
-        {/* 下段チャートのローディング */}
-        <div className="h-20 md:h-24 bg-gray-200 animate-pulse"></div>
-      </div>
-    );
-  }
-
+  if (loading) return null;
   if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
   if (data.length === 0) return null;
 
