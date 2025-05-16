@@ -50,20 +50,42 @@ jobs:
         sshpass -e ssh $SSH_USER@$SSH_HOST << EOF
           set -e
           cd $TARGET
-          npm install
-          npm run build
+          
+          # 既存のプロセスを停止
+          echo "Stopping existing processes..."
+          pm2 stop kabu_ai || true
           pm2 delete kabu_ai || true
+          
+          # ポート3000を使用しているプロセスを確認して停止
+          if lsof -i :3000 > /dev/null 2>&1; then
+            echo "Killing process using port 3000..."
+            lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9 || true
+            sleep 2
+          fi
+          
+          # キャッシュのクリア
+          echo "Clearing cache..."
           rm -rf .next/cache
           rm -rf .next/static
           pm2 flush
-          pm2 stop kabu_ai || true
-          pm2 delete kabu_ai || true
-          lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9 || true
+          
+          # 依存関係のインストールとビルド
+          echo "Installing dependencies and building..."
+          npm install
+          npm run build
+          
+          # アプリケーションの起動
+          echo "Starting application..."
           NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
           pm2 save
-          pm2 reload kabu_ai
-          echo "Production deployment completed"
+          
+          # デプロイの確認
           echo "Verifying deployment..."
+          sleep 5
           pm2 list
           ls -la $TARGET/app/admin/comment/
+          
+          # ポート3000の状態確認
+          echo "Checking port 3000 status..."
+          lsof -i :3000 || echo "Port 3000 is free"
         EOF
