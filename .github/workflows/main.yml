@@ -51,32 +51,33 @@ jobs:
           set -e
           cd $TARGET
           
-          # 既存のプロセスを停止
-          echo "Stopping existing processes..."
-          pm2 stop kabu_ai || true
-          pm2 delete kabu_ai || true
+          # PM2の全プロセスを停止
+          echo "Stopping all PM2 processes..."
+          pm2 kill || true
+          sleep 2
           
-          # ポート3000を使用しているプロセスを確認して停止
-          if lsof -i :3000 > /dev/null 2>&1; then
-            echo "Killing process using port 3000..."
-            lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9 || true
-            sleep 2
-          fi
+          # ポート3000を使用しているプロセスを強制終了
+          echo "Killing processes using port 3000..."
+          fuser -k 3000/tcp || true
+          sleep 2
           
           # キャッシュのクリア
           echo "Clearing cache..."
           rm -rf .next/cache
           rm -rf .next/static
-          pm2 flush
           
           # 依存関係のインストールとビルド
           echo "Installing dependencies and building..."
           npm install
           npm run build
           
+          # PM2の再起動
+          echo "Restarting PM2..."
+          pm2 resurrect || true
+          
           # アプリケーションの起動
           echo "Starting application..."
-          NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start
+          NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
           pm2 save
           
           # デプロイの確認
@@ -87,5 +88,9 @@ jobs:
           
           # ポート3000の状態確認
           echo "Checking port 3000 status..."
-          lsof -i :3000 || echo "Port 3000 is free"
+          netstat -tulpn | grep :3000 || echo "Port 3000 is free"
+          
+          # PM2のログを確認
+          echo "Checking PM2 logs..."
+          pm2 logs kabu_ai --lines 10
         EOF
