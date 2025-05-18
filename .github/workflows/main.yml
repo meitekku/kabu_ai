@@ -53,13 +53,15 @@ jobs:
           
           # PM2の全プロセスを停止
           echo "Stopping all PM2 processes..."
+          pm2 delete all || true
           pm2 kill || true
-          sleep 2
+          sleep 5
           
           # ポート3000を使用しているプロセスを強制終了
           echo "Killing processes using port 3000..."
+          lsof -ti:3000 | xargs kill -9 || true
           fuser -k 3000/tcp || true
-          sleep 2
+          sleep 5
           
           # キャッシュのクリア
           echo "Clearing cache..."
