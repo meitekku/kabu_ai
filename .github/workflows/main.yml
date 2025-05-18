@@ -11,16 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # ソースコードをチェックアウト
       - uses: actions/checkout@v4
 
-      # sshpass と lsof をまとめてインストール
-      - name: Install dependencies
+      - name: Install sshpass & lsof
         run: |
           sudo apt-get update
           sudo apt-get install -y sshpass lsof
 
-      # SSH の known_hosts にサーバーを登録
       - name: Add SSH known_hosts
         env:
           SSH_HOST: 133.130.102.77
@@ -28,8 +25,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
 
-      # ファイル同期とリモートデプロイ
-      - name: Sync code and deploy
+      - name: Sync and remote deploy
         env:
           SSH_USER: root
           SSH_HOST: 133.130.102.77
@@ -38,7 +34,7 @@ jobs:
         run: |
           export SSHPASS=$SSH_PASSWORD
 
-          echo "Syncing files to server..."
+          echo "Syncing files..."
           sshpass -e rsync -avz --delete \
             . \
             --exclude='.git' \
@@ -47,28 +43,30 @@ jobs:
             --exclude='.env*' \
             $SSH_USER@$SSH_HOST:$TARGET
 
-          echo "Starting remote deployment..."
-          sshpass -e ssh $SSH_USER@$SSH_HOST << 'EOF'
+          echo "Running remote commands..."
+          sshpass -e ssh $SSH_USER@$SSH_HOST << EOF
             set -e
+
+            # 必ず正しいディレクトリへ移動
             cd $TARGET
 
-            # ポート3000を使うプロセスを強制終了
+            # ポート3000を使っているプロセスを強制終了
             sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
 
-            # 既存の PM2 プロセスを止めて削除
+            # 既存の PM2 プロセスを停止・削除
             pm2 stop kabu_ai || true
             pm2 delete kabu_ai || true
 
-            # キャッシュ削除＆ビルド
+            # キャッシュ削除、依存再インストール、ビルド
             rm -rf .next
             npm ci
             npm run build
 
-            # PM2 で起動→保存
+            # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
             pm2 save
 
-            # 動作確認
+            # 確認
             sleep 5
             netstat -tulpn | grep :3000
             pm2 list
