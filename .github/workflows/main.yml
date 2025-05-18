@@ -50,9 +50,9 @@ jobs:
             # 必ず正しいディレクトリへ移動
             cd $TARGET
 
-            # アップロードディレクトリの作成
+            # アップロードディレクトリの作成と権限設定
             mkdir -p public/uploads/post_images
-            chmod 777 public/uploads/post_images
+            chmod -R 777 public/uploads
 
             # ポート3000を使っているプロセスを強制終了
             sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
@@ -66,10 +66,10 @@ jobs:
             npm ci
             npm run build
 
-            # シンボリックリンクの作成
+            # publicディレクトリの設定
             mkdir -p .next/standalone/public
-            rm -rf .next/standalone/public/uploads
-            ln -sf /var/www/kabu_ai/public/uploads/post_images .next/standalone/public/uploads
+            cp -r public/* .next/standalone/public/
+            chmod -R 755 .next/standalone/public
 
             # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G

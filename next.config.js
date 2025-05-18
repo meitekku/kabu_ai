@@ -9,6 +9,12 @@ const nextConfig = {
       allowedOrigins: ['133.130.102.77:3000'],
     },
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.output.assetModuleFilename = 'static/[hash][ext]';
+    }
+    return config;
+  },
 }
 
 module.exports = nextConfig 
