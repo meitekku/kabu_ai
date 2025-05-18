@@ -40,7 +40,6 @@ jobs:
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.next' \
-            --exclude='.env*' \
             --exclude='public/uploads' \
             $SSH_USER@$SSH_HOST:$TARGET
 
