@@ -79,9 +79,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// config は通常不要ですが、もしNext.jsのバージョンや設定によっては必要になる場合があります
-// export const config = {
-//   api: {
-//     bodyParser: false, // formData を扱う場合は false が推奨されることがある
-//   },
-// }; 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}; 
