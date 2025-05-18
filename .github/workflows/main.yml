@@ -9,98 +9,67 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v4
+      # ソースコードをチェックアウト
+      - uses: actions/checkout@v4
 
-    - name: Create SSH config and known_hosts
-      env:
-        SSH_USER: root
-        SSH_HOST: 133.130.102.77
-        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "HOST=$SSH_HOST" > ~/.ssh/config
-        echo "  User $SSH_USER" >> ~/.ssh/config
-        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
-        
-    - name: Install sshpass
-      run: sudo apt-get install -y sshpass
+      # sshpass と lsof をまとめてインストール
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass lsof
 
-    - name: Deploy to Conoha
-      env:
-        SSH_HOST: 133.130.102.77
-        SSH_USER: root
-        SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
-        TARGET: /var/www/kabu_ai
-      run: |
-        echo "Syncing files to server"
-        export SSHPASS=$SSH_PASSWORD
-        sshpass -e rsync -avz --delete-after \
-          . \
-          --exclude '.git' \
-          --exclude 'node_modules' \
-          --exclude '.next' \
-          --exclude '.env' \
-          --exclude '.env.*' \
-          $SSH_USER@$SSH_HOST:$TARGET
+      # SSH の known_hosts にサーバーを登録
+      - name: Add SSH known_hosts
+        env:
+          SSH_HOST: 133.130.102.77
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
 
-        echo "rsync command completed"
-        echo "Executing deployment commands"
-        sshpass -e ssh $SSH_USER@$SSH_HOST << EOF
-          set -e
-          cd $TARGET
-          
-          # PM2の全プロセスを停止
-          echo "Stopping all PM2 processes..."
-          pm2 delete all || true
-          pm2 kill || true
-          sleep 5
-          
-          # ポート3000を使用しているプロセスを強制終了
-          echo "Killing processes using port 3000..."
-          lsof -ti:3000 | xargs kill -9 || true
-          fuser -k 3000/tcp || true
-          sleep 5
-          
-          # キャッシュのクリア
-          echo "Clearing cache..."
-          rm -rf .next/cache
-          rm -rf .next/static
-          
-          # 依存関係のインストールとビルド
-          echo "Installing dependencies and building..."
-          npm install
-          npm run build
-          
-          # PM2の再起動
-          echo "Restarting PM2..."
-          pm2 resurrect || true
-          
-          # アプリケーションの起動
-          echo "Starting application..."
-          NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
-          pm2 save
-          
-          # デプロイの確認
-          echo "Verifying deployment..."
-          sleep 5
-          pm2 list
-          ls -la $TARGET/app/admin/comment/
-          
-          # standalone/publicフォルダの確認
-          echo "Checking standalone/public folder..."
-          ls -la $TARGET/.next/standalone/public/
-          
-          # post_imagesフォルダの確認
-          echo "Checking post_images folder..."
-          ls -la $TARGET/.next/standalone/public/uploads/post_images/
-          
-          # ポート3000の状態確認
-          echo "Checking port 3000 status..."
-          netstat -tulpn | grep :3000 || echo "Port 3000 is free"
-          
-          # PM2のログを確認
-          echo "Checking PM2 logs..."
-          pm2 logs kabu_ai --lines 10
-        EOF
+      # ファイル同期とリモートデプロイ
+      - name: Sync code and deploy
+        env:
+          SSH_USER: root
+          SSH_HOST: 133.130.102.77
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          TARGET: /var/www/kabu_ai
+        run: |
+          export SSHPASS=$SSH_PASSWORD
+
+          echo "Syncing files to server..."
+          sshpass -e rsync -avz --delete \
+            . \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='.env*' \
+            $SSH_USER@$SSH_HOST:$TARGET
+
+          echo "Starting remote deployment..."
+          sshpass -e ssh $SSH_USER@$SSH_HOST << 'EOF'
+            set -e
+            cd $TARGET
+
+            # ポート3000を使うプロセスを強制終了
+            sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
+
+            # 既存の PM2 プロセスを止めて削除
+            pm2 stop kabu_ai || true
+            pm2 delete kabu_ai || true
+
+            # キャッシュ削除＆ビルド
+            rm -rf .next
+            npm ci
+            npm run build
+
+            # PM2 で起動→保存
+            NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
+            pm2 save
+
+            # 動作確認
+            sleep 5
+            netstat -tulpn | grep :3000
+            pm2 list
+          EOF
