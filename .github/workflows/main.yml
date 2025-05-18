@@ -86,6 +86,14 @@ jobs:
           pm2 list
           ls -la $TARGET/app/admin/comment/
           
+          # standalone/publicフォルダの確認
+          echo "Checking standalone/public folder..."
+          ls -la $TARGET/.next/standalone/public/
+          
+          # post_imagesフォルダの確認
+          echo "Checking post_images folder..."
+          ls -la $TARGET/.next/standalone/public/uploads/post_images/
+          
           # ポート3000の状態確認
           echo "Checking port 3000 status..."
           netstat -tulpn | grep :3000 || echo "Port 3000 is free"
