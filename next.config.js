@@ -19,7 +19,7 @@ const nextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: '/uploads/:path*',
+        destination: '/var/www/kabu_ai/public/uploads/:path*',
       },
     ];
   },
