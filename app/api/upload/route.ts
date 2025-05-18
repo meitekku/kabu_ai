@@ -3,6 +3,9 @@ import { generateRandomString } from '@/utils/common/randomString';
 import path from 'path';
 import fs from 'fs/promises';
 
+// アップロード先のベースディレクトリを定義
+const UPLOAD_BASE_DIR = '/var/www/kabu_ai/public/uploads';
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     
     // 保存先ディレクトリのパスを作成
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'post_images', year.toString(), month);
+    const uploadDir = path.join(UPLOAD_BASE_DIR, 'post_images', year.toString(), month);
     
     // ディレクトリが存在しない場合は作成
     await fs.mkdir(uploadDir, { recursive: true });

@@ -50,6 +50,10 @@ jobs:
             # 必ず正しいディレクトリへ移動
             cd $TARGET
 
+            # アップロードディレクトリの作成
+            mkdir -p public/uploads/post_images
+            chmod 777 public/uploads/post_images
+
             # ポート3000を使っているプロセスを強制終了
             sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
 
