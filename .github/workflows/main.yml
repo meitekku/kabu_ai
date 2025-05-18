@@ -68,7 +68,8 @@ jobs:
 
             # シンボリックリンクの作成
             mkdir -p .next/standalone/public
-            ln -sf /var/www/kabu_ai/public/uploads .next/standalone/public/uploads
+            rm -rf .next/standalone/public/uploads
+            ln -sf /var/www/kabu_ai/public/uploads/post_images .next/standalone/public/uploads
 
             # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
