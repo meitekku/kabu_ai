@@ -11,7 +11,7 @@ const HeaderContent = ({ isRoot }: { isRoot: boolean }) => {
   const icon = <Image src='/logo.png' alt='' width={92} height={40} />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center">
-      {icon}
+      {icon}あ
     </Link>
   );
  
