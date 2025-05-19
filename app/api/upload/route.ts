@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
     // ファイルを保存
     await fs.writeFile(filePath, buffer);
     
+    // ファイルの権限を777に設定
+    await fs.chmod(filePath, 0o777);
+    
     // 相対パスを生成（URL用）
     const relativePath = `/uploads/post_images/${year}/${month}/${newFileName}`;
     

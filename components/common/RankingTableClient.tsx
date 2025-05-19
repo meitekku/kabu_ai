@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import RankingTable from './RankingTable';
 
 interface BaseRankingData {
@@ -20,10 +20,11 @@ type RankingTableClientProps = {
 export default function RankingTableClient({ title, tableName, limit = 10, initialData = [] }: RankingTableClientProps) {
   const [data, setData] = useState<BaseRankingData[]>(initialData);
   const [loading, setLoading] = useState(!initialData.length);
+  const initialDataRef = useRef(initialData);
 
   useEffect(() => {
-    if (initialData.length > 0) {
-      setData(initialData);
+    if (initialDataRef.current.length > 0) {
+      setData(initialDataRef.current);
       setLoading(false);
       return;
     }
