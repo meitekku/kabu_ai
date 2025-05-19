@@ -2,7 +2,17 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    domains: ['133.130.102.77'],
+    domains: ['133.130.102.77', 'kabu-ai.jp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'kabu-ai.jp',
+      },
+      {
+        protocol: 'http',
+        hostname: '133.130.102.77',
+      }
+    ],
   },
   experimental: {
     serverActions: {
