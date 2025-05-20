@@ -76,8 +76,7 @@ jobs:
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
             mkdir -p .next/standalone/public/uploads
-            cp -r /var/www/kabu_ai/public/uploads/* /var/www/kabu_ai/.next/standalone/public/uploads/
-            rm -f /var/www/kabu_ai/.next/standalone/public/uploads/uploads
+            rsync -avz /var/www/kabu_ai/public/uploads/ /var/www/kabu_ai/.next/standalone/public/uploads/
             chmod -R 777 /var/www/kabu_ai/.next/standalone/public/uploads
 
             # アプリケーションユーザーの権限を設定
