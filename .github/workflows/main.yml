@@ -75,16 +75,13 @@ jobs:
             
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
-            ln -sf /var/www/kabu_ai/public/uploads .next/standalone/public/uploads
+            ln -sf /var/www/kabu_ai/public/uploads /var/www/kabu_ai/.next/standalone/public/uploads
             chmod -R 777 /var/www/kabu_ai/public/uploads
-            chmod -R 777 .next/standalone/public/uploads
+            chmod -R 777 /var/www/kabu_ai/.next/standalone/public/uploads
 
             # アプリケーションユーザーの権限を設定
             chown -R root:root /var/www/kabu_ai/public/uploads
-            chown -R root:root .next/standalone/public/uploads
-
-            # 静的ファイルのシンボリックリンクを設定
-            ln -sf /var/www/kabu_ai/public/uploads /var/www/kabu_ai/.next/standalone/public/uploads
+            chown -R root:root /var/www/kabu_ai/.next/standalone/public/uploads
 
             # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
