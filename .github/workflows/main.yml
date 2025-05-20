@@ -44,6 +44,11 @@ jobs:
             --exclude='public/uploads' \
             $SSH_USER@$SSH_HOST:$TARGET
 
+          echo "Syncing uploads directory..."
+          sshpass -e rsync -avz \
+            public/uploads/ \
+            $SSH_USER@$SSH_HOST:$TARGET/public/uploads/
+
           echo "Running remote commands..."
           sshpass -e ssh $SSH_USER@$SSH_HOST << EOF
             set -e
@@ -76,7 +81,8 @@ jobs:
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
             mkdir -p .next/standalone/public/uploads
-            rsync -avz /var/www/kabu_ai/public/uploads/ /var/www/kabu_ai/.next/standalone/public/uploads/
+            cp -r /var/www/kabu_ai/public/uploads/* /var/www/kabu_ai/.next/standalone/public/uploads/
+            rm -f /var/www/kabu_ai/.next/standalone/public/uploads/uploads
             chmod -R 777 /var/www/kabu_ai/.next/standalone/public/uploads
 
             # アプリケーションユーザーの権限を設定
