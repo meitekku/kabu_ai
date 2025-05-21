@@ -4,7 +4,9 @@ import path from 'path';
 import fs from 'fs/promises';
 
 // アップロード先のベースディレクトリを定義
-const UPLOAD_BASE_DIR = '/var/www/kabu_ai/public/uploads';
+const UPLOAD_BASE_DIR = process.env.NODE_ENV === 'production' 
+  ? '/var/www/kabu_ai/.next/standalone/public/uploads'
+  : path.join(process.cwd(), 'public/uploads');
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,22 +57,6 @@ export async function POST(req: NextRequest) {
     
     // ファイルの権限を777に設定
     await fs.chmod(filePath, 0o777);
-    
-    // 開発環境用のシンボリックリンクを作成
-    const devUploadDir = path.join(process.cwd(), '.next/standalone/public/uploads');
-    const devUploadPath = path.join(devUploadDir, 'post_images', year.toString(), month);
-    
-    try {
-      // 開発環境のディレクトリが存在しない場合は作成
-      await fs.mkdir(devUploadPath, { recursive: true });
-      
-      // 開発環境用のシンボリックリンクを作成
-      const devFilePath = path.join(devUploadPath, newFileName);
-      await fs.symlink(filePath, devFilePath);
-    } catch (error) {
-      console.error('Failed to create development symlink:', error);
-      // シンボリックリンクの作成に失敗しても処理は続行
-    }
     
     // 相対パスを生成（URL用）
     const relativePath = `/uploads/post_images/${year}/${month}/${newFileName}`;
