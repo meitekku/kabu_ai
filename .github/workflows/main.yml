@@ -80,12 +80,12 @@ jobs:
             
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
-            mkdir -p /var/www/kabu_ai/public/uploads
-            ln -sf /var/www/kabu_ai/public/uploads /var/www/kabu_ai/.next/standalone/public/uploads
-            chmod -R 777 /var/www/kabu_ai/public/uploads
+            mkdir -p .next/standalone/public/uploads
+            cp -r /var/www/kabu_ai/public/uploads/* /var/www/kabu_ai/.next/standalone/public/uploads/ || true
+            chmod -R 777 /var/www/kabu_ai/.next/standalone/public/uploads
 
             # アプリケーションユーザーの権限を設定
-            chown -R root:root /var/www/kabu_ai/public/uploads
+            chown -R root:root /var/www/kabu_ai/.next/standalone/public/uploads
 
             # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
