@@ -47,6 +47,13 @@ const nextConfig = {
       {
         source: '/uploads/:path*',
         destination: '/.next/standalone/public/uploads/:path*',
+        has: [
+          {
+            type: 'query',
+            key: 'path',
+            value: '(.*)',
+          },
+        ],
       },
     ];
   },
