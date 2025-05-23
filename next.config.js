@@ -47,6 +47,19 @@ const nextConfig = {
       {
         source: '/uploads/:path*',
         destination: '/var/www/kabu_ai/public/uploads/:path*',
+        has: [
+          {
+            type: 'header',
+            key: 'x-debug-path',
+            value: '(?<path>.*)',
+          },
+        ],
+        beforeFiles: [
+          {
+            source: '/uploads/:path*',
+            destination: '/api/debug-path?path=:path*',
+          },
+        ],
       },
     ];
   },
