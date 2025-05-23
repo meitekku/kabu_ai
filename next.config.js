@@ -57,6 +57,9 @@ const nextConfig = {
   distDir: '.next',
   poweredByHeader: false,
   generateEtags: false,
+  compress: true,
+  reactStrictMode: true,
+  swcMinify: true,
 }
 
 module.exports = nextConfig
