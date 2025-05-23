@@ -80,6 +80,7 @@ jobs:
             
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
+            mkdir -p /var/www/kabu_ai/public/uploads
             ln -sf /var/www/kabu_ai/public/uploads .next/standalone/public/uploads
             chmod -R 777 .next/standalone/public/uploads
 
@@ -89,6 +90,10 @@ jobs:
             # シンボリックリンクの確認
             ls -la .next/standalone/public/uploads
             ls -la public/uploads
+
+            # 静的ファイルのパーミッションを確認
+            find /var/www/kabu_ai/public/uploads -type f -exec chmod 644 {} \;
+            find /var/www/kabu_ai/public/uploads -type d -exec chmod 755 {} \;
 
             # PM2 で新規起動し、リストを保存
             NODE_ENV=production PORT=3000 pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G

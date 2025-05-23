@@ -50,6 +50,13 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [];
+  },
+  assetPrefix: '',
+  distDir: '.next',
+  poweredByHeader: false,
+  generateEtags: false,
 }
 
 module.exports = nextConfig
