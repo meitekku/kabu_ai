@@ -46,14 +46,7 @@ const nextConfig = {
     return [
       {
         source: '/uploads/:path*',
-        destination: '/.next/standalone/public/uploads/:path*',
-        has: [
-          {
-            type: 'query',
-            key: 'path',
-            value: '(.*)',
-          },
-        ],
+        destination: '/var/www/kabu_ai/public/uploads/:path*',
       },
     ];
   },

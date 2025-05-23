@@ -80,7 +80,7 @@ jobs:
             
             # uploadsディレクトリの設定を改善
             rm -rf .next/standalone/public/uploads
-            ln -sf $TARGET/public/uploads .next/standalone/public/uploads
+            ln -sf /var/www/kabu_ai/public/uploads .next/standalone/public/uploads
             chmod -R 777 .next/standalone/public/uploads
 
             # アプリケーションユーザーの権限を設定
