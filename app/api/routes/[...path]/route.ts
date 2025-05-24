@@ -3,15 +3,20 @@ import fs from 'fs';
 import path from 'path';
 import { NextResponse } from 'next/server';
 
+type Params = Promise<{ path: string[] }>;
+
 export async function GET(
   request: Request,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Params }
 ): Promise<NextResponse> {
   console.log('=== File Request Debug ===');
-  console.log('Requested path array:', params.path);
-  console.log('Request URL:', request.url);
   
-  const filePath = params.path;
+  // params を await する
+  const resolvedParams = await params;
+  const filePath = resolvedParams.path;
+  
+  console.log('Requested path array:', filePath);
+  console.log('Request URL:', request.url);
   
   // セキュリティチェック
   const safePath = filePath.filter((segment: string) => 
