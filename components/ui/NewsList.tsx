@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ServerToDate } from '@/utils/format/ServerToDate';
 import TodayArticleCopyButton from '@/components/parts/admin/TodayArticleCopyButton';
 import { Badge } from "@/components/ui/badge";
 import React from 'react';
@@ -172,7 +171,7 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-gray-500">
-                      {ServerToDate(item.created_at)}
+                      {item.created_at}
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>

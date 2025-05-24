@@ -218,53 +218,20 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
   // ホバー時の座標を記録して実際のチャート配置を学習する
   const recordChartPosition = (index: number, xCoordinate: number) => {
-    console.log('🔴 [DEBUG] 🔥 座標学習記録:', {
-      index,
-      xCoordinate,
-      currentPositions: actualChartPositions.slice(),
-      date: data[index]?.date,
-      学習目的: '次回の初期ツールチップ位置計算で使用'
-    });
-    
     setActualChartPositions(prev => {
       const newPositions = [...prev];
       newPositions[index] = xCoordinate;
-      
-      console.log('🔴 [DEBUG] 🔥 actualChartPositions 配列更新:', {
-        index,
-        oldValue: prev[index],
-        newValue: xCoordinate,
-        fullArray: newPositions.slice(),
-        説明: 'ホバーで取得した実座標を配列に保存'
-      });
-      
       return newPositions;
     });
   };
 
   // 📍 改善された位置計算関数
   const calculateTooltipPosition = (index: number) => {
-    console.log('🟡 [DEBUG] ❄️ 初期ツールチップ位置計算開始:', {
-      index,
-      date: data[index]?.date,
-      containerWidth,
-      actualChartPositions: actualChartPositions.slice(),
-      dataLength: data.length
-    });
-
     const tooltipWidth = 80;
     
     // 1. 実際の座標が記録されている場合はそれを使用
     if (actualChartPositions[index] !== undefined) {
       const position = actualChartPositions[index] - (tooltipWidth / 2);
-      console.log('🟡 [DEBUG] ✅ 学習済み座標使用:', {
-        計算ルート: '1. 学習済み実座標',
-        index,
-        actualPosition: actualChartPositions[index],
-        tooltipWidth,
-        calculatedPosition: position,
-        説明: 'ホバーで学習した実際の座標を使用'
-      });
       return position;
     }
     
@@ -273,13 +240,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       const recordedIndices = actualChartPositions
         .map((pos, idx) => pos !== undefined ? idx : -1)
         .filter(idx => idx !== -1);
-      
-      console.log('🟡 [DEBUG] 🔍 補間計算検討:', {
-        計算ルート: '2. 線形補間',
-        recordedIndices,
-        actualChartPositions: actualChartPositions.slice(),
-        記録済み座標数: recordedIndices.length
-      });
       
       if (recordedIndices.length >= 2) {
         // 線形補間で位置を推定
@@ -291,18 +251,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         const slope = (lastPos - firstPos) / (lastIdx - firstIdx);
         const estimatedX = firstPos + slope * (index - firstIdx);
         const position = estimatedX - (tooltipWidth / 2);
-        
-        console.log('🟡 [DEBUG] ✅ 線形補間計算完了:', {
-          計算ルート: '2. 線形補間',
-          firstIdx,
-          lastIdx,
-          firstPos,
-          lastPos,
-          slope,
-          estimatedX,
-          calculatedPosition: position,
-          説明: '記録済み座標から線形補間で推定'
-        });
         
         return position;
       }
@@ -322,29 +270,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       const estimatedX = yAxisWidth + (pointSpacing * index);
       const position = estimatedX - (tooltipWidth / 2);
       
-      console.log('🟡 [DEBUG] ✅ 改善推定計算完了:', {
-        計算ルート: '3. 改善推定計算',
-        containerWidth,
-        yAxisWidth,
-        rightMargin,
-        effectiveWidth,
-        dataLength: data.length,
-        pointSpacing,
-        index,
-        estimatedX,
-        calculatedPosition: position,
-        説明: 'Rechartsレイアウトを正確に模倣した推定'
-      });
-      
       return position;
     }
     
-    console.log('🟡 [DEBUG] ❌ 全計算失敗:', {
-      計算ルート: '4. 失敗',
-      説明: 'すべての計算方法が失敗、0を返す',
-      containerWidth,
-      dataLength: data.length
-    });
     return 0;
   };
 
@@ -353,19 +281,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     if (!chartContainerRef.current || !containerWidth || data.length === 0) {
       return;
     }
-
-    console.log('🚀 [DEBUG] チャート座標一括取得開始');
     
     // チャートのSVG要素を探す
     const svgElement = chartContainerRef.current.querySelector('svg');
     if (!svgElement) {
-      console.log('🚀 [DEBUG] SVG要素が見つかりません');
       return;
     }
 
     // Rechartsによって生成されたバー要素を探す
     const barElements = svgElement.querySelectorAll('g[class*="recharts-bar"] .recharts-bar-rectangle');
-    console.log('🚀 [DEBUG] バー要素数:', barElements.length);
 
     if (barElements.length > 0) {
       const newPositions = new Array(data.length);
@@ -379,23 +303,12 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         }
       });
 
-      console.log('🚀 [DEBUG] 座標一括取得完了:', {
-        取得座標数: newPositions.filter(pos => pos !== undefined).length,
-        座標配列: newPositions.slice()
-      });
-
       setActualChartPositions(newPositions);
     }
   };
 
   // コンテナの幅が変更された時の処理
   const handleResize = (width: number) => {
-    console.log('🟢 [DEBUG] handleResize 呼び出し:', {
-      oldWidth: containerWidth,
-      newWidth: width,
-      dataLength: data.length
-    });
-    
     setContainerWidth(width);
     // 実際の座標記録をリセット（レイアウトが変わったため）
     setActualChartPositions([]);
@@ -405,10 +318,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     // チャートのレンダリングが安定するまで少し待ってから座標取得と表示許可
     if (width > 0 && data.length > 0) {
       setTimeout(() => {
-        console.log('🟢 [DEBUG] チャート準備完了設定 (handleResize)');
         captureAllChartPositions(); // 📍 座標一括取得
         setIsChartReady(true);
-      }, 2000); // 安定化のため300msに延長
+      }, 1500); // 安定化のため300msに延長
     }
   };
 
@@ -478,18 +390,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
     // 重複を除去して返す
     const uniqueIndices = [...new Set(indices)];
-    console.log('🟠 [DEBUG] ❄️ 初期表示ツールチップ選択結果:', {
-      uniqueIndices,
-      reasons,
-      総データ数: data.length,
-      記事付きデータ数: data.filter(d => d.articles && d.articles.length > 0).length,
-      選択基準: {
-        '1': '最新日のニュース',
-        '2': '変動率上位3つ',
-        '3': '決算日(settlement=0)'
-      }
-    });
-    
     return uniqueIndices;
   };
 
@@ -524,18 +424,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         });
 
         if (!newsResponse.ok) {
-          console.error('News data fetch failed:', await newsResponse.text());
           throw new Error('News data fetch failed');
         }
 
         const newsResult = await newsResponse.json();
         if (!newsResult.success) {
-          console.error('News API returned error:', newsResult);
           throw new Error('News API returned error');
         }
 
         const articles: NewsArticle[] = newsResult.data || [];
-        console.log('記事データ:', articles);
 
         // 日付でソート
         const sortedData = chartResult.data.sort(
@@ -571,48 +468,11 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               const chartDateStr = formatDate(item.date);
 
               // 日付文字列を直接比較
-              const isMatch = articleDateStr === chartDateStr;
-
-              // デバッグ情報を出力（初日のみ）
-              if (index === 0) {
-                console.log('日付比較:', {
-                  articleDate: articleDateStr,
-                  chartDate: chartDateStr,
-                  isMatch,
-                  articleTitle: article.title,
-                  articleCreatedAt: article.created_at,
-                  chartDateOriginal: item.date,
-                  // デバッグ用に日付オブジェクトの詳細も表示
-                  articleDateObj: new Date(article.created_at),
-                  chartDateObj: new Date(item.date),
-                  isDevelopment: process.env.NODE_ENV === 'development'
-                });
-              }
-
-              return isMatch;
-            } catch (error) {
-              console.error('日付比較エラー:', {
-                article: article,
-                item: item,
-                error: error
-              });
+              return articleDateStr === chartDateStr;
+            } catch {
               return false;
             }
           });
-
-          // デバッグ用に記事のマッチング結果をログ出力（マッチした場合のみ）
-          if (dayArticles.length > 0) {
-            console.log('記事マッチング成功:', {
-              date: dateStr,
-              rawDate: item.date,
-              articleCount: dayArticles.length,
-              articles: dayArticles.map(a => ({
-                id: a.id,
-                title: a.title,
-                created_at: a.created_at
-              }))
-            });
-          }
 
           return {
             date: dateStr,
@@ -637,7 +497,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         // データ設定後、コンテナサイズが確定していればチャートの準備完了
         if (containerWidth > 0) {
           setTimeout(() => {
-            console.log('🟢 [DEBUG] チャート準備完了設定 (useEffect)');
             captureAllChartPositions(); // 📍 座標一括取得
             setIsChartReady(true);
           }, 300);
@@ -699,66 +558,22 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                                    item.articles && 
                                    item.articles.length > 0);
 
-          // デバッグ情報の出力（生成した場合）
-          if (item.articles && item.articles.length > 0 && shouldShowTooltip) {
-            const tooltipType = hoveredData ? '🔥 ホバー後のツールチップ生成' : '❄️ 初期状態のツールチップ生成';
-            const positionSource = hoveredData ? 'tooltipPosition (ホバー座標)' : 'calculateTooltipPosition (計算/学習座標)';
-            
-            console.log(`${tooltipType}`, {
-              date: item.date,
-              index,
-              articleCount: item.articles.length,
-              positionSource,
-              '=== 状態詳細 ===': {
-                isDefaultTooltip: isDefaultTooltip,
-                hoveredDate: hoveredData?.date,
-                isHovered: hoveredData?.date === item.date,
-                shouldShowTooltip,
-                isChartReady
-              },
-              '=== 位置計算情報 ===': {
-                actualChartPositionsAtIndex: actualChartPositions[index],
-                tooltipPosition: tooltipPosition,
-                calculatedPosition: !hoveredData ? calculateTooltipPosition(index) : 'ホバー時は未計算'
-              },
-              '=== 日付比較 ===': {
-                hoveredTime: hoveredData?.date ? new Date(hoveredData.date).getTime() : 0,
-                itemTime: new Date(item.date).getTime(),
-                isEqual: hoveredData?.date ? new Date(hoveredData.date).getTime() === new Date(item.date).getTime() : false
-              }
-            });
-          }
-
           if (!item.articles || item.articles.length === 0 || !shouldShowTooltip) return null;
 
           const latestArticle = item.articles[item.articles.length - 1];
           const title = latestArticle.title;
           const displayTitle = (() => {
-            // 1. %）または%)のパターン
-            const index1 = title.indexOf('%）');
-            const index2 = title.indexOf('%)');
+            // 1. 】のパターン
+            const index4 = title.indexOf('】');
             // 2. %のパターン
             const index3 = title.indexOf('%');
-            // 3. 】のパターン
-            const index4 = title.indexOf('】');
-            // 4. 半角/全角)のパターン
-            const index5 = title.indexOf(')');
-            const index6 = title.indexOf('）');
 
             let result = '';
             // 優先順位に従って処理
-            if (index1 !== -1) {
-              result = title.substring(index1 + 2);
-            } else if (index2 !== -1) {
-              result = title.substring(index2 + 2);
+            if (index4 !== -1) {
+              result = title.substring(index4 + 1);
             } else if (index3 !== -1) {
               result = title.substring(index3 + 1);
-            } else if (index4 !== -1) {
-              result = title.substring(index4 + 1);
-            } else if (index5 !== -1) {
-              result = title.substring(index5 + 1);
-            } else if (index6 !== -1) {
-              result = title.substring(index6 + 1);
             } else {
               result = title;
             }
@@ -771,31 +586,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const tooltipLeft = hoveredData 
             ? tooltipPosition  // ホバー時はマウス位置を使用
             : calculateTooltipPosition(index);  // 初期表示時は学習した位置または推定位置を使用
-
-          const positionCalculationType = hoveredData ? '🔥 ホバー座標使用' : '❄️ 計算座標使用';
-          const positionDetails = hoveredData 
-            ? { type: 'hover', source: 'tooltipPosition', value: tooltipPosition }
-            : { type: 'calculated', source: 'calculateTooltipPosition', value: calculateTooltipPosition(index) };
-
-          console.log(`🔵 [DEBUG] ${positionCalculationType} - ツールチップ位置決定:`, {
-            date: item.date,
-            index,
-            '=== 基本情報 ===': {
-              isHoveredData: !!hoveredData,
-              hoveredDataDate: hoveredData?.date,
-              tooltipType: hoveredData ? 'ホバー中のツールチップ' : '初期表示ツールチップ'
-            },
-            '=== 位置情報 ===': {
-              ...positionDetails,
-              finalTooltipLeft: tooltipLeft,
-              actualChartPositionsAtIndex: actualChartPositions[index]
-            },
-            '=== 計算比較 ===': {
-              tooltipPosition: tooltipPosition,
-              calculateTooltipPositionResult: calculateTooltipPosition(index),
-              差分: Math.abs(tooltipPosition - calculateTooltipPosition(index))
-            }
-          });
 
           return (
             <div 
@@ -865,15 +655,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                   // データポイントのインデックスを取得
                   const dataIndex = data.findIndex(item => item.date === payload.date);
                   
-                  console.log('🔴 [DEBUG] 🔥 上段チャート onMouseMove イベント:', {
-                    payloadDate: payload.date,
-                    dataIndex,
-                    activeCoordinateX: e.activeCoordinate.x,
-                    activeCoordinateY: e.activeCoordinate.y,
-                    hasArticles: !!(payload.articles && payload.articles.length > 0),
-                    イベント説明: 'ホバー中 - 学習用座標記録'
-                  });
-                  
                   if (dataIndex !== -1) {
                     // 実際の座標を記録（学習） - データポイントの中央座標
                     recordChartPosition(dataIndex, e.activeCoordinate.x);
@@ -882,18 +663,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                       // ホバー時のツールチップ位置：中央座標から左端座標に変換
                       const tooltipWidth = 80;
                       const position = e.activeCoordinate.x - (tooltipWidth / 2);
-                      
-                      console.log('🔴 [DEBUG] 🔥 ホバーツールチップ位置計算:', {
-                        date: payload.date,
-                        dataIndex,
-                        activeCoordinate: e.activeCoordinate.x,
-                        tooltipWidth,
-                        calculatedPosition: position,
-                        containerWidth,
-                        計算式: `${e.activeCoordinate.x} - (${tooltipWidth} / 2) = ${position}`,
-                        説明: 'ホバー中のリアルタイム位置 - マウス座標から計算'
-                      });
-                      
                       setTooltipPosition(position);
                     }
                   }
@@ -901,7 +670,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }
             }}
             onMouseLeave={() => {
-              console.log('🔴 [DEBUG] 🔥➡️❄️ onMouseLeave イベント - ホバー終了、初期状態に戻る');
               setHoveredData(null);
             }}
             onClick={(e) => {
@@ -976,14 +744,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                   // データポイントのインデックスを取得
                   const dataIndex = data.findIndex(item => item.date === payload.date);
                   
-                  console.log('🟣 [DEBUG] 🔥 下段チャート onMouseMove イベント:', {
-                    payloadDate: payload.date,
-                    dataIndex,
-                    activeCoordinateX: e.activeCoordinate.x,
-                    activeCoordinateY: e.activeCoordinate.y,
-                    説明: '下段チャートでのホバー - 座標学習と位置計算'
-                  });
-                  
                   if (dataIndex !== -1) {
                     // 実際の座標を記録（学習） - データポイントの中央座標
                     recordChartPosition(dataIndex, e.activeCoordinate.x);
@@ -991,24 +751,12 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                     // 下段チャートでもツールチップ位置を統一：中央座標から左端座標に変換
                     const tooltipWidth = 80;
                     const position = e.activeCoordinate.x - (tooltipWidth / 2);
-                    
-                    console.log('🟣 [DEBUG] 🔥 下段チャートツールチップ位置計算:', {
-                      date: payload.date,
-                      dataIndex,
-                      activeCoordinate: e.activeCoordinate.x,
-                      tooltipWidth,
-                      calculatedPosition: position,
-                      計算式: `${e.activeCoordinate.x} - (${tooltipWidth} / 2) = ${position}`,
-                      説明: '下段チャートのホバー位置計算'
-                    });
-                    
                     setTooltipPosition(position);
                   }
                 }
               }
             }}
             onMouseLeave={() => {
-              console.log('🟣 [DEBUG] 🔥➡️❄️ 下段チャート onMouseLeave イベント - ホバー終了');
               setHoveredData(null);
             }}
             onClick={(e) => {
