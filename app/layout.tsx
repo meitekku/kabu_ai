@@ -22,7 +22,7 @@ export default function RootLayout({
         <div className="min-h-screen flex flex-col">
           <GlobalNavigation />
           <Header />
-          <div className="flex-grow max-w-[1000px] w-full mx-auto px-2 my-6 sm:px-6">
+          <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6">
             <div className="flex flex-col md:flex-row gap-8">
               <main className={mainClassName}>
                 {children}
