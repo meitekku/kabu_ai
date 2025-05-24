@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -276,8 +276,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     return 0;
   };
 
-  // 📍 チャート描画完了後の座標一括取得
-  const captureAllChartPositions = () => {
+  const captureAllChartPositions = useCallback(() => {
     if (!chartContainerRef.current || !containerWidth || data.length === 0) {
       return;
     }
@@ -305,7 +304,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
       setActualChartPositions(newPositions);
     }
-  };
+  }, [data.length, containerWidth]);
 
   // コンテナの幅が変更された時の処理
   const handleResize = (width: number) => {
@@ -509,7 +508,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
     };
 
     fetchData();
-  }, [code]);
+  }, [code, captureAllChartPositions, containerWidth]);
 
   // データ変更時の座標再取得
   useEffect(() => {
@@ -518,7 +517,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         captureAllChartPositions();
       }, 100);
     }
-  }, [data, containerWidth]);
+  }, [data, containerWidth, captureAllChartPositions]);
 
   if (loading) {
     return (
