@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ServerToDate } from '@/utils/format/ServerToDate';
 
 interface NewsItem {
   id: number;
@@ -98,16 +97,23 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
         {news.map((item) => (
           <div key={item.id} className="border-b border-gray-100 pb-4">
             <div className="text-sm text-gray-500 mb-1">
-              {ServerToDate(item.created_at)}
+              {item.created_at}
             </div>
             <Link 
               href={`/all/news/article/${item.id}`}
-              className="block font-bold text-gray-900 hover:text-blue-600 mb-2"
+              className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
             >
               {item.title}
             </Link>
             <p className="text-sm text-gray-600 line-clamp-2">
-              {item.content}
+              {item.content?.replace(/<[^>]*>/g, '')}
             </p>
           </div>
         ))}
@@ -186,4 +192,4 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
   );
 };
 
-export default NewsListS; 
+export default NewsListS;

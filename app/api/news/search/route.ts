@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     // データを取得
     const posts = await db.select<PostRow>(query, values);
 
-    // created_atのフォーマットを修正
+    // created_atとupdated_atのフォーマットを修正
     const formattedPosts = posts.map(post => ({
       ...post,
       created_at: new Date(post.created_at).toLocaleString('ja-JP', {
@@ -125,7 +125,15 @@ export async function POST(req: Request) {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false
-      }).replace(/\//g, '-')
+      }).replace(/\//g, '-').replace(/,/g, ''),
+      updated_at: new Date(post.updated_at).toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '-').replace(/,/g, '')
     }));
 
     return NextResponse.json({
