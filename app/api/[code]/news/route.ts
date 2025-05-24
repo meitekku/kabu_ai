@@ -58,9 +58,21 @@ export async function POST(
          
     const queryParams = code === 'all' ? [startDateStr, todayStr] : [code, limit];
     const news = await db.select<NewsRecord>(query, queryParams);
-    console.log(news);
+    
+    // created_atのフォーマットを修正
+    const formattedNews = news.map(item => ({
+      ...item,
+      created_at: new Date(item.created_at).toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '-')
+    }));
 
-    return NextResponse.json({ success: true, data: news });
+    return NextResponse.json({ success: true, data: formattedNews });
   } catch (error) {
     console.error('News API Error:', error);
     return NextResponse.json(

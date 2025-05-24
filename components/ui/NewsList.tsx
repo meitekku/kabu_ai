@@ -70,6 +70,10 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
       }
       const data = await response.json();
       setNews(data.data || []);
+      // データ取得後にcreated_atを表示
+      (data.data || []).forEach((item: NewsItem) => {
+        console.log('created_at:', item.created_at);
+      });
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
@@ -84,6 +88,13 @@ const NewsList = React.memo(({ num = '10', title }: NewsListProps) => {
     console.log('useEffect triggered with:', { code, limit });
     fetchNews();
   }, [fetchNews, code, limit]);
+
+  // ニュースデータが更新されたときにcreated_atを表示
+  useEffect(() => {
+    news.forEach(item => {
+      console.log('created_at:', item.created_at);
+    });
+  }, [news]);
 
   // 日数変更ハンドラー
   const handleDaysChange = React.useCallback((selectedDays: number) => {
