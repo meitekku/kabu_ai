@@ -115,9 +115,22 @@ export async function POST(req: Request) {
     // データを取得
     const posts = await db.select<PostRow>(query, values);
 
+    // created_atのフォーマットを修正
+    const formattedPosts = posts.map(post => ({
+      ...post,
+      created_at: new Date(post.created_at).toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/\//g, '-')
+    }));
+
     return NextResponse.json({
       success: true,
-      data: posts,
+      data: formattedPosts,
       total: total,
       totalPages: Math.ceil(total / limit),
       currentPage: page
