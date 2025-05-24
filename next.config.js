@@ -28,7 +28,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/uploads/:path*',
+        // API経由でのアップロードファイル配信用 - パスを変更
+        source: '/api/routes/:path*',
         headers: [
           {
             key: 'Cache-Control',
@@ -45,8 +46,9 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        // /uploads/* へのアクセスを /api/routes/* にリダイレクト
         source: '/uploads/:path*',
-        destination: '/var/www/kabu_ai/public/uploads/:path*',
+        destination: '/api/routes/:path*',
       },
     ];
   },
