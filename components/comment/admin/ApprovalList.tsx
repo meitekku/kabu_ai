@@ -236,7 +236,8 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   コピー
                 </button>
                 <TwitterPostButton
-                  title={item.title}
+                  title={editedTitles[item.id]}
+                  content={editedContents[item.id]}
                   url={`${window.location.origin}/post/${item.id}`}
                   onSuccess={() => handleAccept(item.id)}
                 />

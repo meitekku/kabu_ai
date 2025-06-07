@@ -17,6 +17,7 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: ['133.130.102.77:3000'],
+      serverComponentsExternalPackages: ['twitter-api-v2']
     },
   },
   webpack: (config, { isServer }) => {

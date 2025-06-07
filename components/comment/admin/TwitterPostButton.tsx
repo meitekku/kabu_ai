@@ -4,11 +4,12 @@ import Image from 'next/image';
 
 interface TwitterPostButtonProps {
   title: string;
+  content: string;
   url: string;
   onSuccess?: () => void;
 }
 
-export default function TwitterPostButton({ title, url, onSuccess }: TwitterPostButtonProps) {
+export default function TwitterPostButton({ title, content, url, onSuccess }: TwitterPostButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,13 +33,15 @@ export default function TwitterPostButton({ title, url, onSuccess }: TwitterPost
       setIsLoading(true);
       setError(null);
 
+      const tweetContent = `${title}\n\n${content}`;
+
       const response = await fetch('/api/twitter/post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title,
+          tweetContent,
           url,
           imageUrl: imageUrl || undefined,
         }),

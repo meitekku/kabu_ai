@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
             const month = ('0' + (now.getMonth() + 1)).slice(-2);
             const day = ('0' + now.getDate()).slice(-2);
             const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
-            conditionParts.push(`created_at = ?`);
+            conditionParts.push(`created_at >= ?`);
             params.push(targetTimestamp);
           } else {
             // 15:30より前の場合：本日の全記事を取得（created_atの日付が本日）
