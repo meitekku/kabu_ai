@@ -32,9 +32,9 @@ export default function TwitterPostButton({ title, content, url, onSuccess }: Tw
     try {
       setIsLoading(true);
       setError(null);
-
-      const tweetContent = `${title}\n\n${content}`;
-
+  
+      const tweetContent = `${title}\n${content}`;
+  
       const response = await fetch('/api/twitter/post', {
         method: 'POST',
         headers: {
@@ -46,13 +46,20 @@ export default function TwitterPostButton({ title, content, url, onSuccess }: Tw
           imageUrl: imageUrl || undefined,
         }),
       });
-
+  
       const result = await response.json();
-
+  
+      // 429エラーの場合は待機時間を表示
+      if (response.status === 429) {
+        const resetTime = response.headers.get('x-rate-limit-reset');
+        const waitTime = resetTime ? new Date(parseInt(resetTime) * 1000) : null;
+        throw new Error(`レート制限に達しました。${waitTime ? `${waitTime.toLocaleTimeString()}頃に` : '少し時間をおいて'}再試行してください。`);
+      }
+  
       if (!result.success) {
         throw new Error(result.message || '投稿に失敗しました');
       }
-
+  
       if (onSuccess) {
         onSuccess();
       }

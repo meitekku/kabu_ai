@@ -45,6 +45,10 @@ interface TweetResponse {
   data?: TweetData;
   error?: unknown;
   tweetUrl?: string;
+  rateLimit?: {
+    remaining: number;
+    resetTime: number | null;
+  };
 }
 
 // OAuth パラメータの型定義
@@ -328,7 +332,7 @@ async function postTweet(
   text: string, 
   mediaIds?: string[], 
   replyToId?: string
-): Promise<TweetData> {
+): Promise<TweetData | Response> {
   const consumerKey = process.env.TWITTER_API_KEY!;
   const consumerSecret = process.env.TWITTER_API_SECRET!;
   const accessToken = process.env.TWITTER_ACCESS_TOKEN!;
@@ -366,13 +370,23 @@ async function postTweet(
     body: JSON.stringify(tweetBody)
   });
 
+  const remaining = response.headers.get('x-rate-limit-remaining');
+  const resetTime = response.headers.get('x-rate-limit-reset');
+
+  if (response.status === 429) {
+    throw new Error(`Rate limit exceeded. Remaining: ${remaining}, Reset time: ${resetTime}`);
+  }
+
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(`Failed to post tweet: ${response.status} ${errorData}`);
   }
 
   const responseData = await response.json();
-  return responseData.data;
+  if (!responseData.data?.id) {
+    throw new Error('Invalid response from Twitter API');
+  }
+  return responseData.data as TweetData;
 }
 
 export async function POST(request: Request): Promise<NextResponse<TweetResponse>> {
@@ -422,7 +436,7 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
       tweetText,
       mediaId ? [mediaId] : undefined,
       replyToId
-    );
+    ) as TweetData;
     
     console.log('Tweet posted successfully:', tweetData);
 
