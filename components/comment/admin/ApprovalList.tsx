@@ -5,6 +5,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
 
+// debounce関数の追加
+function debounce(
+  func: (id: number, title: string, content: string) => void,
+  wait: number
+) {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(id: number, title: string, content: string) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(id, title, content), wait);
+  };
+}
+
 interface ApprovalItem {
   id: number;
   title: string;
@@ -64,11 +76,49 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
     setEditedTitles(initialTitles);
   }, [items]);
 
+  // 更新処理の関数
+  const updatePost = async (id: number, title: string, content: string) => {
+    try {
+      setIsUpdating(prev => ({ ...prev, [id]: true }));
+      setError(null);
+
+      const response = await fetch('/api/post/update_post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, title, content }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '更新に失敗しました');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError('更新に失敗しました');
+      }
+    } finally {
+      setIsUpdating(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  // debounceされた更新関数
+  const debouncedUpdate = useRef(
+    debounce((id: number, title: string, content: string) => {
+      updatePost(id, title, content);
+    }, 1500)
+  ).current;
+
   const handleContentChange = (id: number, newContent: string) => {
     setEditedContents(prev => ({
       ...prev,
       [id]: newContent
     }));
+    debouncedUpdate(id, editedTitles[id] || '', newContent);
   };
 
   const handleTitleChange = (id: number, newTitle: string) => {
@@ -76,38 +126,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       ...prev,
       [id]: newTitle
     }));
-  };
-
-  const handleUpdateTitle = async (id: number): Promise<void> => {
-    try {
-      setIsUpdating(prev => ({ ...prev, [id]: true }));
-      setError(null);
-
-      const response = await fetch('/api/approval', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id,
-          title: editedTitles[id]
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'タイトルの更新に失敗しました');
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError('タイトルの更新に失敗しました');
-      }
-    } finally {
-      setIsUpdating(prev => ({ ...prev, [id]: false }));
-    }
+    debouncedUpdate(id, newTitle, editedContents[id] || '');
   };
 
   const handleAccept = async (id: number): Promise<void> => {
@@ -196,7 +215,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   type="text"
                   value={editedTitles[item.id] || ''}
                   onChange={(e) => handleTitleChange(item.id, e.target.value)}
-                  onBlur={() => handleUpdateTitle(item.id)}
                   className="flex-1 p-2 border rounded-lg w-full mb-2"
                   placeholder="タイトルを入力"
                   disabled={isUpdating[item.id]}
