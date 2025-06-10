@@ -314,11 +314,6 @@ async function uploadMedia(imageBuffer: Buffer, mimeType: string = 'image/jpeg')
 function composeTweetText(tweetContent: string, url: string, hashtags?: string[]): string {
   let text = tweetContent;
 
-  // URLを追加（存在する場合）
-  if (url) {
-    text += `\n\n${url}`;
-  }
-
   // ハッシュタグを追加（存在する場合）
   if (hashtags && hashtags.length > 0) {
     text += '\n\n' + hashtags.map(tag => `#${tag.replace(/^#/, '')}`).join(' ');
