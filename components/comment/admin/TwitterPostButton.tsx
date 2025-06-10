@@ -5,11 +5,10 @@ import Image from 'next/image';
 interface TwitterPostButtonProps {
   title: string;
   content: string;
-  url: string;
   onSuccess?: () => void;
 }
 
-export default function TwitterPostButton({ title, content, url, onSuccess }: TwitterPostButtonProps) {
+export default function TwitterPostButton({ title, content, onSuccess }: TwitterPostButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +41,6 @@ export default function TwitterPostButton({ title, content, url, onSuccess }: Tw
         },
         body: JSON.stringify({
           tweetContent,
-          url,
           imageUrl: imageUrl || undefined,
         }),
       });

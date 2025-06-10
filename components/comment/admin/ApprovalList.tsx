@@ -272,7 +272,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                 <TwitterPostButton
                   title={editedTitles[item.id]}
                   content={editedContents[item.id]}
-                  url={`${window.location.origin}/post/${item.id}`}
                   onSuccess={() => handleAccept(item.id)}
                 />
                 <div className="flex flex-col gap-2 mt-4">
