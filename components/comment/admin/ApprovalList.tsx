@@ -4,6 +4,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
+import Image from 'next/image';
+
+// 薬の画像配列を定義
+const MEDICINE_IMAGES = [
+  {
+    src: '/site_images/admin/messageImage_1749552408215.jpg',
+    alt: 'エンレスト200mg'
+  },
+  {
+    src: '/site_images/admin/messageImage_1749552440144.jpg',
+    alt: 'レンドルミン0.25mg'
+  },
+  {
+    src: '/site_images/admin/messageImage_1749552497655.jpg',
+    alt: 'ジャディアンス10mg'
+  }
+];
 
 // debounce関数の追加
 function debounce(
@@ -227,7 +244,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   作成日時: {ServerToDate(item.created_at)}
                 </p>
               </div>
-              {/* ボタン部分を sticky にして、スクロールに追従させる */}
               <div className="sticky top-4 flex flex-col gap-2 pt-2">
                 <button
                   onClick={() => handleAccept(item.id)}
@@ -259,6 +275,18 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   url={`${window.location.origin}/post/${item.id}`}
                   onSuccess={() => handleAccept(item.id)}
                 />
+                <div className="flex flex-col gap-2 mt-4">
+                  {MEDICINE_IMAGES.map((image, index) => (
+                    <div key={index} className="w-50 h-20 relative">
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </li>

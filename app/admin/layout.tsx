@@ -1,6 +1,6 @@
 "use client"
 
-import { AuthCheck } from '@/app/admin/auth/AuthCheck'
+import { ClientAuthCheck } from '@/app/admin/auth/ClientAuthCheck'
 
 export default function DashboardLayout({
     children,
@@ -9,7 +9,7 @@ export default function DashboardLayout({
 }) {
     return (
         <div>
-            <AuthCheck />
+            <ClientAuthCheck />
             <main className="dashboard-content">
                 {children}
             </main>
