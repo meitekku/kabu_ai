@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaTwitter } from 'react-icons/fa';
+//import { FaTwitter } from 'react-icons/fa';
 import Image from 'next/image';
 
 interface TwitterPostButtonProps {
@@ -77,8 +77,7 @@ export default function TwitterPostButton({ title, content, url, onSuccess }: Tw
         disabled={isLoading}
         className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
       >
-        <FaTwitter className="text-sm" />
-        {isLoading ? '投稿中...' : 'Twitterに投稿'}
+        {isLoading ? '投稿中...' : '検索'}
       </button>
       
       <div className="flex items-center gap-1">

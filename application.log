@@ -45,3 +45,7 @@
 2025-06-08T11:53:47.347Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-06-08T11:53:47.465Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-06-08T11:54:05.317Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-06-10T00:58:33.698Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
+2025-06-10T00:58:33.819Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
+2025-06-10T00:58:33.931Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
+2025-06-10T00:58:34.026Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT

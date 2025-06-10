@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { Search, Clock } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface Company {
   id: string;
@@ -27,6 +27,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   onCompanySelect 
 }) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const isAdminPath = pathname?.includes('admin');
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<Company[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -204,7 +206,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             onChange={(e) => handleSearch(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
-            placeholder="コードまたは会社名"
+            placeholder={isAdminPath ? "処方薬事典を検索する" : "コードまたは会社名"}
             className="w-full pl-12 pr-4 py-2 sm:py-3 bg-gray-50 rounded-lg text-gray-900 placeholder-gray-500 text-sm sm:text-base focus:outline-none"
           />
         </div>

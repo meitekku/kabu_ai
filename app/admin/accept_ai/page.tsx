@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import ApprovalList from '@/components/comment/admin/ApprovalList';
+import Image from 'next/image';
 
 // データ型の定義
 interface ApprovalItem {
@@ -93,8 +94,16 @@ export default function Home() {
   return (
     <main className="container mx-auto py-4">
       {/* <LogoutButton /> */}
-      <h1 className="text-2xl font-bold mb-4">承認リスト</h1>
+      <h1 className="text-2xl font-bold mb-4">リスト</h1>
       <ApprovalList items={items} fetchData={fetchData} />
+      <div className="fixed bottom-4 right-16">
+        <Image 
+          src="/site_images/admin/yakuzaishi_man.png" 
+          alt="薬剤師" 
+          width={200}
+          height={128}
+        />
+      </div>
     </main>
   );
 }
