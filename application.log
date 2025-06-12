@@ -49,3 +49,6 @@
 2025-06-10T00:58:33.819Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
 2025-06-10T00:58:33.931Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
 2025-06-10T00:58:34.026Z [ERROR]: --- [18] Error in main block --- Error: connect ETIMEDOUT
+2025-06-11T12:19:34.764Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-06-11T12:19:35.316Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-06-11T12:19:35.455Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
