@@ -34,110 +34,63 @@ export const StockChartTooltip: React.FC<StockChartTooltipProps> = ({ item, tool
 
   return (
     <div 
-      className="absolute z-10 flex pointer-events-none"
+      className="absolute z-10 pointer-events-none"
       style={{ 
-        left: `${tooltipLeft}px`
+        left: `${tooltipLeft}px`,
+        top: '10px'
       }}
     >
-      <div className="speech-bubble bg-white border border-black p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto">
-        <div
-          key={latestArticle.id}
-          className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer p-0.5 hover:bg-gray-100 line-clamp-2"
-          onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
-          role="button"
-          tabIndex={0}
-          title={displayTitle}
-        >
-          {displayTitle}
+      <div className="pointer-events-auto animate-fadeIn">
+        {/* グラスモーフィズム効果とモダンなスタイリング */}
+        <div className="relative bg-white/90 backdrop-blur-md border border-gray-200/50 rounded-xl p-3 w-[100px] min-w-[100px] max-w-[100px] shadow-lg shadow-black/5 before:absolute before:inset-0 before:rounded-xl before:bg-gradient-to-b before:from-white/20 before:to-transparent before:pointer-events-none">
+          {/* 小さなインジケーター */}
+          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
+          
+          {/* コンテンツ */}
+          <div
+            key={latestArticle.id}
+            className="relative text-xs font-medium text-gray-700 hover:text-blue-600 cursor-pointer p-1 rounded-lg transition-all duration-200 ease-out hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 line-clamp-3"
+            onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
+            role="button"
+            tabIndex={0}
+            title={displayTitle}
+          >
+            <span className="block leading-relaxed">{displayTitle}</span>
+          </div>
+
+          {/* 底部の装飾ライン */}
+          <div className="absolute bottom-0 left-3 right-3 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
         </div>
       </div>
-      <style jsx>{`
-        .speech-bubble {
-          position: relative;
-        }
-        .speech-bubble:after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          bottom: -8px;
-          transform: translateX(-50%);
-          border-width: 4px 4px 0 4px;
-          border-style: solid;
-          border-color: #000 transparent transparent transparent;
-          display: block;
-          width: 0;
-        }
-        .speech-bubble:before {
-          content: '';
-          position: absolute;
-          left: 50%;
-          bottom: -7px;
-          transform: translateX(-50%);
-          border-width: 3px 3px 0 3px;
-          border-style: solid;
-          border-color: #fff transparent transparent transparent;
-          display: block;
-          width: 0;
-        }
-      `}</style>
     </div>
   );
 };
 
-export const calculateTooltipPosition = (
-  index: number,
-  actualChartPositions: number[],
-  containerWidth: number,
-  data: ExtendedChartData[]
-): number => {
-  const tooltipWidth = 80;
-  
-  // 1. 実際の座標が記録されている場合はそれを使用
-  if (actualChartPositions[index] !== undefined) {
-    const position = actualChartPositions[index] - (tooltipWidth / 2);
-    return position;
-  }
-  
-  // 2. フォールバック: 記録された座標から補間計算
-  if (actualChartPositions.length > 0 && containerWidth > 0) {
-    const recordedIndices = actualChartPositions
-      .map((pos, idx) => pos !== undefined ? idx : -1)
-      .filter(idx => idx !== -1);
-    
-    if (recordedIndices.length >= 2) {
-      // 線形補間で位置を推定
-      const firstIdx = recordedIndices[0];
-      const lastIdx = recordedIndices[recordedIndices.length - 1];
-      const firstPos = actualChartPositions[firstIdx];
-      const lastPos = actualChartPositions[lastIdx];
-      
-      const slope = (lastPos - firstPos) / (lastIdx - firstIdx);
-      const estimatedX = firstPos + slope * (index - firstIdx);
-      const position = estimatedX - (tooltipWidth / 2);
-      
-      return position;
+// アニメーション用のスタイル（Tailwindのカスタムクラスとして追加）
+// tailwind.config.jsに以下を追加してください：
+/*
+module.exports = {
+  theme: {
+    extend: {
+      animation: {
+        'fadeIn': 'fadeIn 0.3s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { 
+            opacity: '0',
+            transform: 'translateY(-10px)'
+          },
+          '100%': { 
+            opacity: '1',
+            transform: 'translateY(0)'
+          },
+        }
+      }
     }
   }
-  
-  // 3. 改善された推定計算
-  if (containerWidth > 0 && data.length > 0) {
-    // より正確なRechartsレイアウト計算
-    const yAxisWidth = 35; // YAxisのwidth設定値
-    const rightMargin = 7; // 下段チャートのright margin
-    const effectiveWidth = containerWidth - yAxisWidth - rightMargin;
-    
-    // データポイント間の実際の間隔を計算
-    const pointSpacing = effectiveWidth / Math.max(data.length - 1, 1);
-    
-    // X座標を計算（Rechartsの実際の配置に近似）
-    const estimatedX = yAxisWidth + (pointSpacing * index);
-    const position = estimatedX - (tooltipWidth / 2);
-    
-    return position;
-  }
-  
-  return 0;
-};
+}
+*/
 
 export const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] => {
   const indices: number[] = [];
@@ -202,6 +155,6 @@ export const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] =>
     }
   });
 
-  // 重複を除去して返す
-  return [...new Set(indices)];
-}; 
+  // 重複を除去して最大4つまでに制限
+  return [...new Set(indices)].slice(0, 4);
+};

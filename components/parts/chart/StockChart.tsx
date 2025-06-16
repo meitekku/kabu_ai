@@ -13,7 +13,7 @@ import {
 } from 'recharts';
 import { PriceRecord, ApiResponse } from '@/types/parts/chart/MainChart';
 import { ExtendedChartData, NewsArticle } from './types/StockChartTypes';
-import { StockChartTooltip, calculateTooltipPosition, getDefaultTooltipIndices } from './StockChartTooltip';
+import { getDefaultTooltipIndices } from './StockChartTooltip';
 
 /* --------------------------------------------------
  * 型定義
@@ -27,6 +27,14 @@ interface CandleBodyProps extends RectangleProps {
     index: number;
     articles?: NewsArticle[];
   };
+}
+
+interface TooltipZone {
+  index: number;
+  zone: number;
+  xPosition: number;
+  yPosition: number;
+  isTop: boolean;
 }
 
 /* --------------------------------------------------
@@ -54,6 +62,142 @@ const calculateMA = (data: PriceRecord[], days: number): number[] => {
 };
 
 /* --------------------------------------------------
+ * 空白領域検出とTooltip配置計算
+ * -------------------------------------------------- */
+const findEmptySpaces = (
+  data: ExtendedChartData[],
+  containerWidth: number,
+  chartHeight: number,
+  actualChartPositions: number[],
+  tooltipIndices: number[]
+): { index: number; yPosition: number; isTop: boolean; xPosition: number }[] => {
+  // Y軸の範囲を計算
+  const allValues = data.flatMap(d => [d.high, d.low]);
+  const minValue = Math.min(...allValues);
+  const maxValue = Math.max(...allValues);
+  const valueRange = maxValue - minValue;
+  const padding = valueRange * 0.1;
+  const yAxisMin = minValue - padding;
+  const yAxisMax = maxValue + padding;
+  const yAxisRange = yAxisMax - yAxisMin;
+  
+  const result: { index: number; yPosition: number; isTop: boolean; xPosition: number }[] = [];
+  
+  // 各tooltipインデックスについて最適な位置を計算
+  tooltipIndices.slice(0, 4).forEach(index => {
+    const dataItem = data[index];
+    const xPos = (actualChartPositions[index] || 0) || ((containerWidth / data.length) * index);
+    
+    // 周辺のデータポイントを確認（左右3つずつ）
+    const range = 3;
+    const start = Math.max(0, index - range);
+    const end = Math.min(data.length - 1, index + range);
+    
+    let nearbyMaxHigh = dataItem.high;
+    let nearbyMinLow = dataItem.low;
+    
+    for (let i = start; i <= end; i++) {
+      nearbyMaxHigh = Math.max(nearbyMaxHigh, data[i].high);
+      nearbyMinLow = Math.min(nearbyMinLow, data[i].low);
+    }
+    
+    // 上部と下部の空きスペースを計算
+    const topSpace = yAxisMax - nearbyMaxHigh;
+    const bottomSpace = nearbyMinLow - yAxisMin;
+    
+    // より広い方を選択
+    const isTop = topSpace >= bottomSpace;
+    
+    let yPosition: number;
+    if (isTop) {
+      // 上部に配置: 近傍の最高値から少し上
+      const targetValue = nearbyMaxHigh + (valueRange * 0.08);
+      const yRatio = 1 - (targetValue - yAxisMin) / yAxisRange;
+      yPosition = chartHeight * yRatio - 35; // tooltip高さ分調整
+    } else {
+      // 下部に配置: 近傍の最低値から少し下
+      const targetValue = nearbyMinLow - (valueRange * 0.08);
+      const yRatio = 1 - (targetValue - yAxisMin) / yAxisRange;
+      yPosition = chartHeight * yRatio + 5;
+    }
+    
+    // 境界内に収める
+    yPosition = Math.max(5, Math.min(chartHeight - 35, yPosition));
+    
+    result.push({
+      index,
+      yPosition,
+      isTop,
+      xPosition: xPos
+    });
+  });
+  
+  // 重なりを防ぐために位置を調整
+  const adjustedResult = [...result];
+  const tooltipHeight = 35;
+  const tooltipWidth = 80;
+  const minGap = 5;
+  
+  // X軸方向の重なりチェックと調整
+  for (let i = 0; i < adjustedResult.length; i++) {
+    for (let j = i + 1; j < adjustedResult.length; j++) {
+      const a = adjustedResult[i];
+      const b = adjustedResult[j];
+      
+      // X軸方向の重なりチェック
+      const xOverlap = Math.abs(a.xPosition - b.xPosition) < tooltipWidth + minGap;
+      
+      if (xOverlap) {
+        // Y軸方向の重なりもチェック
+        const yOverlap = Math.abs(a.yPosition - b.yPosition) < tooltipHeight + minGap;
+        
+        if (yOverlap) {
+          // 同じ高さにある場合、片方を少しずらす
+          if (a.isTop === b.isTop) {
+            // 片方を少しずらす
+            if (j % 2 === 0) {
+              b.yPosition += tooltipHeight + minGap;
+            } else {
+              b.yPosition -= tooltipHeight + minGap;
+            }
+            // 境界チェック
+            b.yPosition = Math.max(5, Math.min(chartHeight - 35, b.yPosition));
+          }
+        }
+      }
+    }
+  }
+  
+  return adjustedResult;
+};
+
+const calculateTooltipZones = (
+  tooltipIndices: number[],
+  actualChartPositions: number[],
+  containerWidth: number,
+  data: ExtendedChartData[],
+  chartHeight: number
+): TooltipZone[] => {
+  // 空白領域を検出して最適な配置を計算
+  const positions = findEmptySpaces(
+    data,
+    containerWidth,
+    chartHeight,
+    actualChartPositions,
+    tooltipIndices
+  );
+  
+  // TooltipZone形式に変換
+  return positions.map((pos, i) => ({
+    index: pos.index,
+    zone: i, // ゾーンは使用しないが、互換性のため保持
+    xPosition: pos.xPosition,
+    yPosition: pos.yPosition,
+    isTop: pos.isTop
+  }));
+};
+
+/* --------------------------------------------------
  * ヒゲ（高値安値）描画用カスタムシェイプ
  * -------------------------------------------------- */
 const CandleWickShape: React.FC<RectangleProps> = (props) => {
@@ -63,17 +207,10 @@ const CandleWickShape: React.FC<RectangleProps> = (props) => {
     return null;
   }
 
-  // 実体バーの固定幅 (CandleBodyShapeと同じ)
   const candleWidth = Math.min(width * 1.2, 8);
-  
-  // x座標を左にオフセット（CandleBodyShapeと同じ）
   const offset = width / 2;
   const adjustedX = x - offset;
-
-  // ヒゲは実体の中央に配置
   const cx = adjustedX + (candleWidth * 1.3);
-
-  // top/bottom 計算
   const top = height < 0 ? y + height : y;
   const bottom = height < 0 ? y : y + height;
 
@@ -99,14 +236,9 @@ const CandleBodyShape: React.FC<CandleBodyProps> = (props) => {
     return null;
   }
 
-  // 実体バーの固定幅 (スマホでも横伸びしないようにする)
   const candleWidth = Math.min(width * 1.2, 8);
-  
-  // x座標を左にオフセット
   const offset = width / 2;
   const adjustedX = x - offset;
-
-  // height が負の場合にも対応
   const top = height < 0 ? y + height : y;
   const bodyHeight = Math.abs(height);
 
@@ -132,10 +264,7 @@ const VolumeBarShape: React.FC<RectangleProps> = (props) => {
     return null;
   }
 
-  // 実体バーの固定幅 (CandleBodyShapeと同じ)
   const barWidth = Math.min(width * 1.2, 8);
-  
-  // x座標を左にオフセット（CandleBodyShapeと同じ）
   const offset = width / 2;
   const adjustedX = x - offset;
 
@@ -183,21 +312,24 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredData, setHoveredData] = useState<ExtendedChartData | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState<number>(0);
   const [containerWidth, setContainerWidth] = useState<number>(0);
-  const [actualChartPositions, setActualChartPositions] = useState<number[]>([]);
+  const actualChartPositionsRef = useRef<number[]>([]);
   const [isChartReady, setIsChartReady] = useState(false);
+  const [tooltipZones, setTooltipZones] = useState<TooltipZone[]>([]);
   
-  // チャート要素への参照
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
-  // ホバー時の座標を記録して実際のチャート配置を学習する
+  // ホバー時の座標を記録
   const recordChartPosition = (index: number, xCoordinate: number) => {
-    setActualChartPositions(prev => {
-      const newPositions = [...prev];
-      newPositions[index] = xCoordinate;
-      return newPositions;
-    });
+    const positions = actualChartPositionsRef.current;
+    if (positions.length <= index) {
+      // 配列を拡張
+      for (let i = positions.length; i <= index; i++) {
+        positions[i] = 0;
+      }
+    }
+    positions[index] = xCoordinate;
+    actualChartPositionsRef.current = positions;
   };
 
   const captureAllChartPositions = useCallback(() => {
@@ -205,17 +337,15 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
       return;
     }
     
-    // チャートのSVG要素を探す
     const svgElement = chartContainerRef.current.querySelector('svg');
     if (!svgElement) {
       return;
     }
 
-    // Rechartsによって生成されたバー要素を探す
     const barElements = svgElement.querySelectorAll('g[class*="recharts-bar"] .recharts-bar-rectangle');
 
     if (barElements.length > 0) {
-      const newPositions = new Array(data.length);
+      const newPositions = new Array(data.length).fill(0);
       
       barElements.forEach((element, idx) => {
         if (idx < data.length) {
@@ -226,28 +356,40 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         }
       });
 
-      setActualChartPositions(newPositions);
+      actualChartPositionsRef.current = newPositions;
+      
+      // tooltip zonesを計算
+      const defaultIndices = getDefaultTooltipIndices(data);
+      const chartHeight = window.innerWidth >= 768 ? 192 : 128;
+      const zones = calculateTooltipZones(
+        defaultIndices, 
+        actualChartPositionsRef.current,
+        containerWidth, 
+        data, 
+        chartHeight
+      );
+      setTooltipZones(zones);
     }
-  }, [data.length, containerWidth]);
+  }, [data, containerWidth]);
 
   // コンテナの幅が変更された時の処理
   const handleResize = (width: number) => {
     setContainerWidth(width);
-    // 実際の座標記録をリセット（レイアウトが変わったため）
-    setActualChartPositions([]);
-    // チャートの準備状態をリセット
+    actualChartPositionsRef.current = []; // refをリセット
     setIsChartReady(false);
     
-    // チャートのレンダリングが安定するまで少し待ってから座標取得と表示許可
     if (width > 0 && data.length > 0) {
       setTimeout(() => {
-        captureAllChartPositions(); // 📍 座標一括取得
+        captureAllChartPositions();
         setIsChartReady(true);
-      }, 1500); // 安定化のため300msに延長
+      }, 1500);
     }
   };
 
+  // データ取得用のuseEffect（初回のみ実行）
   useEffect(() => {
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         // 株価データの取得
@@ -261,7 +403,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
         const chartResult = (await chartResponse.json()) as ApiResponse<PriceRecord[]>;
         if (!chartResult.success || !chartResult.data || chartResult.data.length === 0) {
-          setData([]);
+          if (isMounted) setData([]);
           return;
         }
 
@@ -304,13 +446,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           const date = new Date(item.date);
           const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
           
-          // その日の記事をフィルタリング
           const dayArticles = articles.filter((article: NewsArticle) => {
             try {
-              // 日付文字列を YYYY-MM-DD 形式に変換
               const formatDate = (date: Date | string) => {
                 const d = new Date(date);
-                // localhost環境の場合のみ+9時間の処理を適用
                 if (process.env.NODE_ENV === 'development') {
                   const jpDate = new Date(d.getTime() + (9 * 60 * 60 * 1000));
                   return jpDate.toISOString().split('T')[0];
@@ -321,7 +460,6 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               const articleDateStr = formatDate(article.created_at);
               const chartDateStr = formatDate(item.date);
 
-              // 日付文字列を直接比較
               return articleDateStr === chartDateStr;
             } catch {
               return false;
@@ -346,46 +484,52 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
           } as ExtendedChartData;
         });
 
-        setData(formattedData);
-        
-        // データ設定後、コンテナサイズが確定していればチャートの準備完了
-        if (containerWidth > 0) {
-          setTimeout(() => {
-            captureAllChartPositions(); // 📍 座標一括取得
-            setIsChartReady(true);
-          }, 300);
+        if (isMounted) {
+          setData(formattedData);
+          
+          if (containerWidth > 0) {
+            setTimeout(() => {
+              captureAllChartPositions();
+              setIsChartReady(true);
+            }, 300);
+          }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'An error occurred');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [code, captureAllChartPositions, containerWidth]);
 
-  // データ変更時の座標再取得
+    return () => {
+      isMounted = false;
+    };
+  }, [code]); // 依存配列からcaptureAllChartPositionsとcontainerWidthを削除
+
+  // データ変更時の座標再取得（別のuseEffectで管理）
   useEffect(() => {
     if (data.length > 0 && containerWidth > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         captureAllChartPositions();
       }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [data, containerWidth, captureAllChartPositions]);
 
   if (loading) {
     return (
       <div className="w-full mt-2 animate-pulse">
-        {/* 株価情報表示のスケルトン */}
         <div className="mb-2">
           <div className="h-8 bg-gray-200 rounded"></div>
         </div>
-
-        {/* 上段チャートのスケルトン */}
         <div className="h-32 md:h-48 bg-gray-200 rounded"></div>
-
-        {/* 下段チャートのスケルトン */}
         <div className="h-20 md:h-24 bg-gray-200 rounded mt-2"></div>
       </div>
     );
@@ -403,31 +547,103 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
       {/* 上段チャート（ロウソク足 + 移動平均） */}
       <div className="h-32 md:h-48 relative">
-        {/* 関連記事の吹き出しをチャート上に絶対配置 */}
-        {isChartReady && data.map((item, index) => {
-          const isDefaultTooltip = getDefaultTooltipIndices(data).includes(index);
-          const shouldShowTooltip = (isDefaultTooltip && !hoveredData) || 
-                                  (hoveredData && 
-                                   new Date(hoveredData.date).getTime() === new Date(item.date).getTime() && 
-                                   item.articles && 
-                                   item.articles.length > 0);
+        {/* Tooltipとその矢印をチャート内に絶対配置 */}
+        {isChartReady && tooltipZones.map((zone) => {
+          const item = data[zone.index];
+          if (!item || !item.articles || item.articles.length === 0) return null;
 
-          if (!shouldShowTooltip) return null;
-
-          const tooltipLeft = hoveredData 
-            ? tooltipPosition  // ホバー時はマウス位置を使用
-            : calculateTooltipPosition(index, actualChartPositions, containerWidth, data);  // 初期表示時は学習した位置または推定位置を使用
+          // tooltipをX座標に基づいて配置（中央揃え）
+          const tooltipLeft = Math.max(5, Math.min(containerWidth - 85, zone.xPosition - 40)); // 境界チェック
 
           return (
-            <StockChartTooltip
-              key={`tooltip-${index}`}
-              item={item}
-              tooltipLeft={tooltipLeft}
-              code={code}
-            />
+            <React.Fragment key={`tooltip-zone-${zone.index}`}>
+              <div 
+                className="absolute z-20 pointer-events-none"
+                style={{ 
+                  left: `${tooltipLeft}px`,
+                  top: `${zone.yPosition}px`
+                }}
+              >
+                <div className="bg-white border border-gray-700 rounded p-1 w-[80px] min-w-[80px] max-w-[80px] pointer-events-auto shadow-md">
+                  <div
+                    className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer p-0.5 hover:bg-gray-100 line-clamp-2"
+                    onClick={() => {
+                      if (item.articles && item.articles[0]) {
+                        window.location.href = `/${code}/news/article/${item.articles[0].id}`;
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    title={item.articles[0]?.title || ''}
+                  >
+                    {(() => {
+                      const title = item.articles[0]?.title || '';
+                      const index4 = title.indexOf('】');
+                      const index3 = title.indexOf('%');
+                      let result = '';
+                      if (index4 !== -1) {
+                        result = title.substring(index4 + 1);
+                      } else if (index3 !== -1) {
+                        result = title.substring(index3 + 1);
+                      } else {
+                        result = title;
+                      }
+                      return result.trim() === '' || result === '【】' ? title : result;
+                    })()}
+                  </div>
+                </div>
+              </div>
+              {/* 矢印の描画 */}
+              <svg
+                className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
+                style={{ overflow: 'visible' }}
+              >
+                <line
+                  x1={zone.xPosition}
+                  y1={zone.isTop ? zone.yPosition + 30 : zone.yPosition}
+                  x2={zone.xPosition}
+                  y2={(() => {
+                    // 該当日のローソク足の位置を計算
+                    const dataItem = data[zone.index];
+                    const allValues = data.flatMap(d => [d.high, d.low]);
+                    const minValue = Math.min(...allValues);
+                    const maxValue = Math.max(...allValues);
+                    const valueRange = maxValue - minValue;
+                    const padding = valueRange * 0.1;
+                    const yAxisMin = minValue - padding;
+                    const yAxisMax = maxValue + padding;
+                    const yAxisRange = yAxisMax - yAxisMin;
+                    
+                    // 矢印の先端位置を計算（上配置なら高値、下配置なら安値）
+                    const targetValue = zone.isTop ? dataItem.high : dataItem.low;
+                    const yRatio = 1 - (targetValue - yAxisMin) / yAxisRange;
+                    return `${yRatio * 100}%`;
+                  })()}
+                  stroke="#666"
+                  strokeWidth="1.5"
+                  strokeDasharray="2,2"
+                  markerEnd={`url(#arrowhead-${zone.index})`}
+                />
+                <defs>
+                  <marker
+                    id={`arrowhead-${zone.index}`}
+                    markerWidth="10"
+                    markerHeight="7"
+                    refX="9"
+                    refY="3.5"
+                    orient="auto"
+                  >
+                    <polygon
+                      points="0 0, 10 3.5, 0 7"
+                      fill="#666"
+                    />
+                  </marker>
+                </defs>
+              </svg>
+            </React.Fragment>
           );
         })}
-        
+
         <ResponsiveContainer width="100%" height="100%" onResize={handleResize}>
           <ComposedChart 
             data={data} 
@@ -440,19 +656,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                 setHoveredData(payload);
                 
                 if (e.activeCoordinate) {
-                  // データポイントのインデックスを取得
                   const dataIndex = data.findIndex(item => item.date === payload.date);
-                  
                   if (dataIndex !== -1) {
-                    // 実際の座標を記録（学習） - データポイントの中央座標
                     recordChartPosition(dataIndex, e.activeCoordinate.x);
-                    
-                    if (payload.articles && payload.articles.length > 0) {
-                      // ホバー時のツールチップ位置：中央座標から左端座標に変換
-                      const tooltipWidth = 80;
-                      const position = e.activeCoordinate.x - (tooltipWidth / 2);
-                      setTooltipPosition(position);
-                    }
                   }
                 }
               }
@@ -461,9 +667,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (e.activePayload?.[0]?.payload?.articles?.[0]) {
+              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
-                window.location.href = `/${e.activePayload[0].payload.code}/news/article/${article.id}`;
+                const articleCode = e.activePayload[0].payload.code || code;
+                window.location.href = `/${articleCode}/news/article/${article.id}`;
               }
             }}
           >
@@ -522,24 +729,16 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart 
             data={data}
-            margin={{ top: 0, right: -7, bottom: 0, left: 0 }}
+            margin={{ top: 0, right: 5, bottom: 0, left: 0 }}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
                 setHoveredData(payload);
                 
                 if (e.activeCoordinate) {
-                  // データポイントのインデックスを取得
                   const dataIndex = data.findIndex(item => item.date === payload.date);
-                  
                   if (dataIndex !== -1) {
-                    // 実際の座標を記録（学習） - データポイントの中央座標
                     recordChartPosition(dataIndex, e.activeCoordinate.x);
-                    
-                    // 下段チャートでもツールチップ位置を統一：中央座標から左端座標に変換
-                    const tooltipWidth = 80;
-                    const position = e.activeCoordinate.x - (tooltipWidth / 2);
-                    setTooltipPosition(position);
                   }
                 }
               }
@@ -548,9 +747,10 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (e.activePayload?.[0]?.payload?.articles?.[0]) {
+              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
-                window.location.href = `/${e.activePayload[0].payload.code}/news/article/${article.id}`;
+                const articleCode = e.activePayload[0].payload.code || code;
+                window.location.href = `/${articleCode}/news/article/${article.id}`;
               }
             }}
           >

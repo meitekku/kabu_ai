@@ -50,14 +50,17 @@ interface ApprovalListProps {
 const AutoResizeTextarea: React.FC<{
   value: string;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-}> = ({ value, onChange }) => {
+  id: number;
+}> = ({ value, onChange, id }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const adjustHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
+      const scrollTop = textarea.scrollTop;
       textarea.style.height = 'auto';
       textarea.style.height = `${textarea.scrollHeight}px`;
+      textarea.scrollTop = scrollTop;
     }
   };
 
@@ -70,6 +73,7 @@ const AutoResizeTextarea: React.FC<{
       ref={textareaRef}
       value={value}
       onChange={onChange}
+      data-id={id}
       className="w-full p-2 border rounded-lg resize-none overflow-hidden"
       style={{ minHeight: '2.5rem' }}
     />
@@ -127,23 +131,47 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   const debouncedUpdate = useRef(
     debounce((id: number, title: string, content: string) => {
       updatePost(id, title, content);
-    }, 1500)
+    }, 1000)
   ).current;
 
   const handleContentChange = (id: number, newContent: string) => {
+    const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
+    const selectionStart = textarea?.selectionStart;
+    const selectionEnd = textarea?.selectionEnd;
+
     setEditedContents(prev => ({
       ...prev,
       [id]: newContent
     }));
     debouncedUpdate(id, editedTitles[id] || '', newContent);
+
+    // フォーカスとカーソル位置を復元
+    if (textarea) {
+      textarea.focus();
+      if (selectionStart !== null && selectionEnd !== null) {
+        textarea.setSelectionRange(selectionStart, selectionEnd);
+      }
+    }
   };
 
   const handleTitleChange = (id: number, newTitle: string) => {
+    const input = document.querySelector(`input[data-id="${id}"]`) as HTMLInputElement;
+    const selectionStart = input?.selectionStart;
+    const selectionEnd = input?.selectionEnd;
+
     setEditedTitles(prev => ({
       ...prev,
       [id]: newTitle
     }));
     debouncedUpdate(id, newTitle, editedContents[id] || '');
+
+    // フォーカスとカーソル位置を復元
+    if (input) {
+      input.focus();
+      if (selectionStart !== null && selectionEnd !== null) {
+        input.setSelectionRange(selectionStart, selectionEnd);
+      }
+    }
   };
 
   const handleAccept = async (id: number): Promise<void> => {
@@ -235,10 +263,12 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   className="flex-1 p-2 border rounded-lg w-full mb-2"
                   placeholder="タイトルを入力"
                   disabled={isUpdating[item.id]}
+                  data-id={item.id}
                 />
                 <AutoResizeTextarea
                   value={editedContents[item.id] || ''}
                   onChange={(e) => handleContentChange(item.id, e.target.value)}
+                  id={item.id}
                 />
                 <p className="text-sm text-gray-500 mt-2">
                   作成日時: {ServerToDate(item.created_at)}
