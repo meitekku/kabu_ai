@@ -7,7 +7,7 @@ export const fetchChartAndNewsData = async (code: string): Promise<ExtendedChart
   // 株価データ取得
   const chartResponse = await fetch(`/api/${code}/chart`, {
     method: 'POST',
-    body: JSON.stringify({ code, num: 40 }),
+    body: JSON.stringify({ code, num: 60 }),
     headers: { 'Content-Type': 'application/json' }
   });
   if (!chartResponse.ok) throw new Error('Chart data fetch failed');

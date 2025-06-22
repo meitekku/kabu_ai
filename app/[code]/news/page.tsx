@@ -24,7 +24,12 @@ const NewsPage = () => {
   return (
     <div>
       <CompanyBasicInfo code={code} />
-      <StockChart code={code} />
+      <StockChart 
+        code={code}
+        pcHeight={{ upper: 200, lower: 100 }}
+        mobileHeight={{ upper: 100, lower: 80 }}
+        width={"100%"}
+      />
       <NewsList title="最新ニュース" />
     </div>
   );

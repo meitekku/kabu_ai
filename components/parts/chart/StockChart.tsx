@@ -13,23 +13,43 @@ import {
 } from 'recharts';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
-import { CandleWickShape, CandleBodyShape, VolumeBarShape } from './StockChartShapes';
-import { PriceInfo } from './StockChartComponents';
+import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
 import { TooltipZone } from './StockChartLayoutUtils';
 import { fetchChartAndNewsData } from './StockChartDataUtils';
 import { recordChartPosition, captureAllChartPositions, handleResize } from './StockChartPositionUtils';
+import { formatArticleTitle } from './StockChartTooltip';
 
 /* --------------------------------------------------
  * 型定義
  * -------------------------------------------------- */
 interface StockChartProps {
   code: string;
+  width?: string | number;  // チャートの幅（デフォルト: '100%'）
+  pcHeight?: {
+    upper: number;  // 上段チャートの高さ（PC）
+    lower: number;  // 下段チャートの高さ（PC）
+  };
+  mobileHeight?: {
+    upper: number;  // 上段チャートの高さ（モバイル）
+    lower: number;  // 下段チャートの高さ（モバイル）
+  };
 }
 
 /* --------------------------------------------------
  * メインのチャートコンポーネント
  * -------------------------------------------------- */
-const StockChart: React.FC<StockChartProps> = ({ code }) => {
+const StockChart: React.FC<StockChartProps> = ({ 
+  code,
+  width = '100%',
+  pcHeight = {
+    upper: 192,  // 現在のデフォルト: h-48 = 12rem = 192px
+    lower: 96    // 現在のデフォルト: h-24 = 6rem = 96px
+  },
+  mobileHeight = {
+    upper: 128,  // 現在のデフォルト: h-32 = 8rem = 128px
+    lower: 80    // 現在のデフォルト: h-20 = 5rem = 80px
+  }
+}) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,26 +113,47 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
 
   if (loading) {
     return (
-      <div className="w-full mt-2 animate-pulse">
-        <div className="mb-2">
-          <div className="h-8 bg-gray-200 rounded"></div>
-        </div>
-        <div className="h-32 md:h-48 bg-gray-200 rounded"></div>
-        <div className="h-20 md:h-24 bg-gray-200 rounded mt-2"></div>
+      <div className="mt-2 animate-pulse" style={{ width }}>
+        <div 
+          className="bg-gray-200 rounded"
+          style={{
+            height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`
+          }}
+        ></div>
+        <div 
+          className="bg-gray-200 rounded mt-2"
+          style={{
+            height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`
+          }}
+        ></div>
       </div>
     );
   }
-  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
+  if (error) return <div className="text-red-500 p-4">Error:{error}</div>;
   if (data.length === 0) return null;
 
+  // 表示するデータを決定（ホバー中のデータまたは最新データ）
+  const displayData = hoveredData || data[data.length - 1];
+
   return (
-    <div className="w-full mt-2" ref={chartContainerRef}>
-      {/* 株価情報表示 */}
-      <div className="mb-2">
-        <PriceInfo data={data} hoveredData={hoveredData} />
-      </div>
+    <div className="mt-2" style={{ width }} ref={chartContainerRef}>
       {/* 上段チャート（ロウソク足 + 移動平均） */}
-      <div className="h-32 md:h-48 relative">
+      <div 
+        className="relative"
+        style={{
+          height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`
+        }}
+      >
+        {/* 価格情報を左上に表示 */}
+        <div className="absolute top-1 left-9 z-30 pointer-events-none">
+          <div className="text-[10px] space-y-0.5 bg-white/80 px-1 py-0.5 rounded">
+            <div className="text-gray-600">始値:{displayData.open.toLocaleString()}</div>
+            <div className="text-gray-600">高値:{displayData.high.toLocaleString()}</div>
+            <div className="text-gray-600">安値:{displayData.low.toLocaleString()}</div>
+            <div className="text-gray-600">終値:{displayData.close.toLocaleString()}</div>
+          </div>
+        </div>
+
         {/* Tooltipとその矢印をチャート内に絶対配置 */}
         {isChartReady && tooltipZones.map((zone) => {
           const item = data[zone.index];
@@ -127,12 +168,12 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                   top: `${zone.yPosition}px`
                 }}
               >
-                <div className="bg-white/95 backdrop-blur-sm border border-gray-300 rounded-lg p-2 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <div className="bg-white/65 border border-gray-300 rounded-lg p-2 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200">
                   <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="text-[10px] text-gray-500 font-medium">{item.date}</div>
                     <div
-                      className="text-xs text-gray-800 hover:text-blue-600 cursor-pointer rounded transition-colors duration-150 line-clamp-3 leading-relaxed font-medium"
+                      className="text-xs text-gray-800 hover:text-blue-600 cursor-pointer rounded transition-colors duration-150 line-clamp-3 leading-[1.3] font-medium"
                       onClick={() => {
                         if (item.articles && item.articles[0]) {
                           window.location.href = `/${code}/news/article/${item.articles[0].id}`;
@@ -140,22 +181,9 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                       }}
                       role="button"
                       tabIndex={0}
-                      title={item.articles[0]?.title || ''}
+                      title={formatArticleTitle(item.articles[0]?.title || '')}
                     >
-                      {(() => {
-                        const title = item.articles[0]?.title || '';
-                        const index4 = title.indexOf('】');
-                        const index3 = title.indexOf('%');
-                        let result = '';
-                        if (index4 !== -1) {
-                          result = title.substring(index4 + 1);
-                        } else if (index3 !== -1) {
-                          result = title.substring(index3 + 1);
-                        } else {
-                          result = title;
-                        }
-                        return result.trim() === '' || result === '【】' ? title : result;
-                      })()}
+                      {formatArticleTitle(item.articles[0]?.title || '')}
                     </div>
                   </div>
                 </div>
@@ -178,8 +206,13 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
                     const yAxisMin = minValue - padding;
                     const yAxisMax = maxValue + padding;
                     const yAxisRange = yAxisMax - yAxisMin;
+                    
+                    // ヒゲの上下中央を正確に計算
                     const centerValue = (dataItem.high + dataItem.low) / 2;
+                    
+                    // Y座標の割合を計算（0%が上端、100%が下端）
                     const yRatio = 1 - (centerValue - yAxisMin) / yAxisRange;
+                    
                     return `${yRatio * 100}%`;
                   })()}
                   stroke="#666"
@@ -247,7 +280,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis 
               dataKey="date" 
               tick={{ fontSize: 12 }} 
@@ -291,11 +324,27 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
         </ResponsiveContainer>
       </div>
       {/* 下段チャート（出来高） */}
-      <div className="h-20 md:h-24">
+      <div 
+        className="relative"
+        style={{
+          height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`
+        }}
+      >
+        {/* 出来高情報を左上に表示 */}
+        <div className="absolute top-1 left-9 z-30 pointer-events-none">
+          <div className="text-[10px] bg-white/80 px-1 py-0.5 rounded">
+            <div className="text-gray-600">
+              出来高:{(displayData.volume / 10000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}万株
+            </div>
+          </div>
+        </div>
+        
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart 
             data={data}
-            margin={{ top: 0, right: 5, bottom: 0, left: 0 }}
+            barCategoryGap={0}
+            barGap={0}
+            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
@@ -319,7 +368,7 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               }
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
             <YAxis
               tick={{ fontSize: 12, dx: 2 }}
@@ -338,7 +387,31 @@ const StockChart: React.FC<StockChartProps> = ({ code }) => {
               content={() => null}
               cursor={false}
             />
-            <Bar dataKey="volume" name="出来高" shape={(props: unknown) => <VolumeBarShape {...(props as RectangleProps)} />}>
+            <Bar 
+              dataKey="volume" 
+              name="出来高" 
+              shape={(props: unknown) => {
+                const { x, y, width, height, fill, stroke } = props as RectangleProps;
+                if (x == null || y == null || width == null || height == null) {
+                  return <></>;
+                }
+                // バーの位置を右に調整（バー幅の20%分右にずらす）
+                const adjustedX = x + width * 0.2;
+                const adjustedWidth = width * 0.6; // バー幅も少し細くする
+                
+                return (
+                  <rect
+                    x={adjustedX}
+                    y={y}
+                    width={adjustedWidth}
+                    height={height}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={1}
+                  />
+                );
+              }}
+            >
               {data.map((entry, index) => (
                 <Cell
                   key={`volume-cell-${index}`}
