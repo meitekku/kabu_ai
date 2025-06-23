@@ -2,14 +2,14 @@ import { Metadata } from 'next';
 import NewsPageClient from './NewsPageClient';
 
 type Props = {
-  params: {
+  params: Promise<{
     code: string;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
+  }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
-  const code = params.code;
+  const { code } = await params;
   
   return {
     title: `${code} - 株価ニュース`,
@@ -17,8 +17,9 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   };
 };
 
-const NewsPage = ({ params }: Props) => {
-  return <NewsPageClient code={params.code} />;
+const NewsPage = async ({ params }: Props) => {
+  const { code } = await params;
+  return <NewsPageClient code={code} />;
 };
 
 export default NewsPage;
