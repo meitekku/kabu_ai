@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+'use client';
+
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -11,6 +13,7 @@ import {
   Cell,
   RectangleProps
 } from 'recharts';
+import html2canvas from 'html2canvas';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
 import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
@@ -24,32 +27,40 @@ import { formatArticleTitle } from './StockChartTooltip';
  * -------------------------------------------------- */
 interface StockChartProps {
   code: string;
-  width?: string | number;  // チャートの幅（デフォルト: '100%'）
+  width?: string | number;
   pcHeight?: {
-    upper: number;  // 上段チャートの高さ（PC）
-    lower: number;  // 下段チャートの高さ（PC）
+    upper: number;
+    lower: number;
   };
   mobileHeight?: {
-    upper: number;  // 上段チャートの高さ（モバイル）
-    lower: number;  // 下段チャートの高さ（モバイル）
+    upper: number;
+    lower: number;
   };
+  asImage?: boolean;  // 画像として表示するかどうか
+  onImageGenerated?: (imageUrl: string) => void;  // 画像生成完了時のコールバック
+}
+
+export interface StockChartRef {
+  exportAsImage: () => Promise<string>;
 }
 
 /* --------------------------------------------------
  * メインのチャートコンポーネント
  * -------------------------------------------------- */
-const StockChart: React.FC<StockChartProps> = ({ 
+const StockChart = forwardRef<StockChartRef, StockChartProps>(({ 
   code,
   width = '100%',
   pcHeight = {
-    upper: 192,  // 現在のデフォルト: h-48 = 12rem = 192px
-    lower: 96    // 現在のデフォルト: h-24 = 6rem = 96px
+    upper: 192,
+    lower: 96
   },
   mobileHeight = {
-    upper: 128,  // 現在のデフォルト: h-32 = 8rem = 128px
-    lower: 80    // 現在のデフォルト: h-20 = 5rem = 80px
-  }
-}) => {
+    upper: 128,
+    lower: 80
+  },
+  asImage = false,
+  onImageGenerated
+}, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,8 +70,36 @@ const StockChart: React.FC<StockChartProps> = ({
   const [isChartReady, setIsChartReady] = useState(false);
   const [tooltipZones, setTooltipZones] = useState<TooltipZone[]>([]);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  // データ取得用のuseEffect（初回のみ実行）
+  // チャートを画像として出力する関数
+  const exportAsImage = async (): Promise<string> => {
+    if (!chartContainerRef.current) {
+      throw new Error('Chart container not found');
+    }
+
+    try {
+      const canvas = await html2canvas(chartContainerRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // 高解像度のため
+        logging: false,
+        useCORS: true
+      });
+
+      const url = canvas.toDataURL('image/png');
+      return url;
+    } catch (error) {
+      console.error('Error exporting chart as image:', error);
+      throw error;
+    }
+  };
+
+  // refに関数を公開
+  useImperativeHandle(ref, () => ({
+    exportAsImage
+  }));
+
+  // データ取得用のuseEffect
   useEffect(() => {
     let isMounted = true;
     const fetchData = async () => {
@@ -96,7 +135,27 @@ const StockChart: React.FC<StockChartProps> = ({
     };
   }, [code]);
 
-  // データ変更時の座標再取得（別のuseEffectで管理）
+  // asImageがtrueの場合、チャートを画像に変換
+  useEffect(() => {
+    if (asImage && isChartReady && data.length > 0) {
+      const generateImage = async () => {
+        try {
+          const url = await exportAsImage();
+          setImageUrl(url);
+          if (onImageGenerated) {
+            onImageGenerated(url);
+          }
+        } catch (error) {
+          console.error('Failed to generate image:', error);
+        }
+      };
+      
+      // チャートのレンダリングが完了してから画像化
+      setTimeout(generateImage, 500);
+    }
+  }, [asImage, isChartReady, data]);
+
+  // データ変更時の座標再取得
   useEffect(() => {
     if (data.length > 0 && containerWidth > 0) {
       const timer = setTimeout(() => {
@@ -132,7 +191,16 @@ const StockChart: React.FC<StockChartProps> = ({
   if (error) return <div className="text-red-500 p-4">Error:{error}</div>;
   if (data.length === 0) return null;
 
-  // 表示するデータを決定（ホバー中のデータまたは最新データ）
+  // 画像として表示する場合
+  if (asImage && imageUrl) {
+    return (
+      <div className="mt-2" style={{ width }}>
+        <img src={imageUrl} alt={`Stock chart for ${code}`} className="w-full" />
+      </div>
+    );
+  }
+
+  // 表示するデータを決定
   const displayData = hoveredData || data[data.length - 1];
 
   return (
@@ -155,14 +223,14 @@ const StockChart: React.FC<StockChartProps> = ({
         </div>
 
         {/* Tooltipとその矢印をチャート内に絶対配置 */}
-        {isChartReady && tooltipZones.map((zone) => {
+        {isChartReady && !asImage && tooltipZones.map((zone) => {
           const item = data[zone.index];
           if (!item || !item.articles || item.articles.length === 0) return null;
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition - 70));
           return (
             <React.Fragment key={`tooltip-zone-${zone.index}`}>
               <div 
-                className="absolute z-20 pointer-events-none"
+                className="absolute z-30 pointer-events-none"
                 style={{ 
                   left: `${tooltipLeft}px`,
                   top: `${zone.yPosition}px`
@@ -207,10 +275,7 @@ const StockChart: React.FC<StockChartProps> = ({
                     const yAxisMax = maxValue + padding;
                     const yAxisRange = yAxisMax - yAxisMin;
                     
-                    // ヒゲの上下中央を正確に計算
                     const centerValue = (dataItem.high + dataItem.low) / 2;
-                    
-                    // Y座標の割合を計算（0%が上端、100%が下端）
                     const yRatio = 1 - (centerValue - yAxisMin) / yAxisRange;
                     
                     return `${yRatio * 100}%`;
@@ -395,9 +460,8 @@ const StockChart: React.FC<StockChartProps> = ({
                 if (x == null || y == null || width == null || height == null) {
                   return <></>;
                 }
-                // バーの位置を右に調整（バー幅の20%分右にずらす）
                 const adjustedX = x + width * 0.2;
-                const adjustedWidth = width * 0.6; // バー幅も少し細くする
+                const adjustedWidth = width * 0.6;
                 
                 return (
                   <rect
@@ -425,6 +489,8 @@ const StockChart: React.FC<StockChartProps> = ({
       </div>
     </div>
   );
-};
+});
+
+StockChart.displayName = 'StockChart';
 
 export default StockChart;

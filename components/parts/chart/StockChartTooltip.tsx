@@ -147,7 +147,9 @@ const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] => {
     }
   });
   
-  return [...new Set(indices)].slice(0, 4);
+  // スマホサイズ（768px未満）の場合は2つまで、それ以外は4つまで表示
+  const maxTooltips = window.innerWidth < 768 ? 2 : 4;
+  return [...new Set(indices)].slice(0, maxTooltips);
 };
 
 export { getDefaultTooltipIndices };

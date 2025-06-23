@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
 import Image from 'next/image';
+import StockChart, { StockChartRef } from '@/components/parts/chart/StockChart';
 
 // 薬の画像配列を定義
 const MEDICINE_IMAGES = [
@@ -30,6 +31,7 @@ interface ApprovalItem {
   content: string;
   accept: number;
   created_at: string;
+  code: string;
 }
 
 interface ApprovalListProps {
@@ -73,11 +75,15 @@ const AutoResizeTextarea: React.FC<{
 const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   // タイトル入力用 refs
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
+  const chartRefs = useRef<Record<number, StockChartRef | null>>({});
 
   const [error, setError] = useState<string | null>(null);
   const [editedContents, setEditedContents] = useState<{ [key: number]: string }>({});
   const [editedTitles, setEditedTitles] = useState<{ [key: number]: string }>({});
   const [isUpdating, setIsUpdating] = useState<{ [key: number]: boolean }>({});
+  const [expandedCharts, setExpandedCharts] = useState<{ [key: number]: boolean }>({});
+  const [chartImages, setChartImages] = useState<{ [key: number]: string }>({});
+  const [generatingImage, setGeneratingImage] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     const initialContents: Record<number, string> = {};
@@ -116,7 +122,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   ).current;
 
   const handleContentChange = (id: number, newContent: string) => {
-    const textarea = document.querySelector(`textarea[data-id=\"${id}\"]`) as HTMLTextAreaElement;
+    const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
     const start = textarea?.selectionStart;
     const end = textarea?.selectionEnd;
     setEditedContents(prev => ({ ...prev, [id]: newContent }));
@@ -182,6 +188,26 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       .catch(() => alert('コピーに失敗しました'));
   };
 
+  const toggleChart = (id: number) => {
+    setExpandedCharts(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const generateChartImage = async (id: number) => {
+    const chartRef = chartRefs.current[id];
+    if (!chartRef) return;
+
+    try {
+      setGeneratingImage(prev => ({ ...prev, [id]: true }));
+      const imageUrl = await chartRef.exportAsImage();
+      setChartImages(prev => ({ ...prev, [id]: imageUrl }));
+    } catch (error) {
+      console.error('チャート画像の生成に失敗しました:', error);
+      alert('チャート画像の生成に失敗しました');
+    } finally {
+      setGeneratingImage(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
   return (
     <div className="max-w-4xl">
       {error && <div className="text-red-500 mb-4">{error}</div>}
@@ -199,11 +225,94 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   placeholder="タイトルを入力"
                   readOnly={isUpdating[item.id]}
                 />
+                
+                {/* textareaを先に配置 */}
                 <AutoResizeTextarea
                   value={editedContents[item.id] || ''}
                   onChange={e => handleContentChange(item.id, e.target.value)}
                   id={item.id}
                 />
+                
+                {/* チャート表示切り替えボタン */}
+                <button
+                  onClick={() => toggleChart(item.id)}
+                  className="mt-2 mb-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <span className="inline-block transition-transform duration-200" style={{ transform: expandedCharts[item.id] ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                    ▶
+                  </span>
+                  チャートを{expandedCharts[item.id] ? '非表示' : '表示'}
+                </button>
+
+                {/* StockChartをtextareaの後に配置 */}
+                {expandedCharts[item.id] && (
+                  <div className="mb-4 transition-all duration-300">
+                    <StockChart
+                      ref={el => { chartRefs.current[item.id] = el }}
+                      code={item.code}
+                      width="100%"
+                      pcHeight={{
+                        upper: 288,
+                        lower: 144
+                      }}
+                      mobileHeight={{
+                        upper: 192,
+                        lower: 120
+                      }}
+                    />
+                    
+                    {/* チャート画像生成ボタン */}
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => generateChartImage(item.id)}
+                        className={`px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 ${generatingImage[item.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={generatingImage[item.id]}
+                      >
+                        {generatingImage[item.id] ? '画像生成中...' : 'チャートを画像化'}
+                      </button>
+                      
+                      {chartImages[item.id] && (
+                        <button
+                          onClick={() => setChartImages(prev => ({ ...prev, [item.id]: '' }))}
+                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                        >
+                          画像をクリア
+                        </button>
+                      )}
+                    </div>
+                    
+                    {/* 生成されたチャート画像を表示 */}
+                    {chartImages[item.id] && (
+                      <div className="mt-4 border-2 border-purple-300 rounded-lg p-2">
+                        <p className="text-sm text-gray-600 mb-2">生成されたチャート画像:</p>
+                        <img 
+                          src={chartImages[item.id]} 
+                          alt={`Chart for ${item.code}`} 
+                          className="w-full rounded"
+                        />
+                        <div className="mt-2 flex gap-2">
+                          <a
+                            href={chartImages[item.id]}
+                            download={`chart_${item.code}_${new Date().toISOString()}.png`}
+                            className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                          >
+                            画像をダウンロード
+                          </a>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(chartImages[item.id]);
+                              alert('画像URLをクリップボードにコピーしました');
+                            }}
+                            className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                          >
+                            画像URLをコピー
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <p className="text-sm text-gray-500 mt-2">
                   作成日時: {ServerToDate(item.created_at)}
                 </p>
@@ -220,11 +329,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   disabled={isUpdating[item.id]}
                 >{isUpdating[item.id] ? '処理中...' : '却下'}</button>
                 <button onClick={() => handleCopy(item.id)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">コピー</button>
+                
+                {/* TwitterPostButton: titleとcontentを別々に渡す */}
                 <TwitterPostButton
-                  title={editedTitles[item.id]}
-                  content={editedContents[item.id]}
+                  title={editedTitles[item.id] || ''}
+                  content={editedContents[item.id] || ''}
                   onSuccess={() => handleAccept(item.id)}
                 />
+                
                 <div className="flex flex-col gap-2 mt-4">
                   {MEDICINE_IMAGES.map((image, idx) => (
                     <div key={idx} className="w-50 h-20 relative">

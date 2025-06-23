@@ -1,38 +1,17 @@
-'use client';
+import { Metadata } from 'next';
+import NewsPageClient from './NewsPageClient';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import StockChart from '@/components/parts/chart/StockChart';
-import NewsList from '@/components/ui/NewsList';
-import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
+export const generateMetadata = async ({ params }: { params: { code: string } }): Promise<Metadata> => {
+  const code = params.code;
+  
+  return {
+    title: `${code} - 株価ニュース`,
+    description: `${code}の株価チャートとニュース一覧をご覧いただけます。最新の株価情報と関連ニュースをチェックできます。`,
+  };
+};
 
-const NewsPage = () => {
-  const params = useParams();
-  const code = typeof params.code === 'string' ? params.code : '';
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!code) {
-      setError('Invalid code parameter.');
-    }
-  }, [code]);
-
-  if (error) {
-    return <div className="text-red-500 p-4">Error: {error}</div>;
-  }
-
-  return (
-    <div>
-      <CompanyBasicInfo code={code} />
-      <StockChart 
-        code={code}
-        pcHeight={{ upper: 200, lower: 100 }}
-        mobileHeight={{ upper: 100, lower: 80 }}
-        width={"100%"}
-      />
-      <NewsList title="最新ニュース" />
-    </div>
-  );
+const NewsPage = ({ params }: { params: { code: string } }) => {
+  return <NewsPageClient code={params.code} />;
 };
 
 export default NewsPage;

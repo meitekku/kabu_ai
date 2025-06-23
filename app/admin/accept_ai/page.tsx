@@ -7,6 +7,7 @@ interface ApprovalItem {
   id: number;
   title: string;
   content: string;
+  code: string;
   accept: number;
   created_at: string;
 }
@@ -46,7 +47,7 @@ export default function Home() {
       const operation: DatabaseOperation = {
         type: 'select',
         table: 'post',
-        data: ['id', 'title' , 'content', 'accept', 'created_at'],
+        data: ['id', 'title' , 'content', 'code', 'accept', 'created_at'],
         conditions: {
           accept: 0
         }

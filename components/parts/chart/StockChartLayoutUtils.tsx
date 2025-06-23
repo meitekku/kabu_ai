@@ -199,8 +199,11 @@ export const calculateTooltipZones = (
   const zones: TooltipZone[] = [];
   const occupiedPositions: { x: number, y: number, width: number, height: number }[] = [];
   
+  // スマホサイズ（768px未満）の場合は2つまで、それ以外は4つまで表示
+  const maxTooltips = window.innerWidth < 768 ? 2 : 4;
+  
   // インデックスを日付順（新しい順）で処理
-  const sortedTooltipData = tooltipIndices.slice(0, 4).map((index) => ({
+  const sortedTooltipData = tooltipIndices.slice(0, maxTooltips).map((index) => ({
     index,
     xPos: actualChartPositions[index] || ((containerWidth / data.length) * (index + 0.5))
   })).sort((a, b) => b.index - a.index);
