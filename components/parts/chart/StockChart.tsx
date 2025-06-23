@@ -21,6 +21,7 @@ import { TooltipZone } from './StockChartLayoutUtils';
 import { fetchChartAndNewsData } from './StockChartDataUtils';
 import { recordChartPosition, captureAllChartPositions, handleResize } from './StockChartPositionUtils';
 import { formatArticleTitle } from './StockChartTooltip';
+import Image from 'next/image';
 
 /* --------------------------------------------------
  * 型定義
@@ -135,7 +136,21 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     };
   }, [code]);
 
-  // asImageがtrueの場合、チャートを画像に変換
+  // データ変更時の座標再取得
+  useEffect(() => {
+    if (data.length > 0 && containerWidth > 0) {
+      const timer = setTimeout(() => {
+        captureAllChartPositions(
+          chartContainerRef,
+          containerWidth,
+          data,
+          setTooltipZones
+        );
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [data, containerWidth]);
+
   useEffect(() => {
     if (asImage && isChartReady && data.length > 0) {
       const generateImage = async () => {
@@ -153,22 +168,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       // チャートのレンダリングが完了してから画像化
       setTimeout(generateImage, 500);
     }
-  }, [asImage, isChartReady, data]);
-
-  // データ変更時の座標再取得
-  useEffect(() => {
-    if (data.length > 0 && containerWidth > 0) {
-      const timer = setTimeout(() => {
-        captureAllChartPositions(
-          chartContainerRef,
-          containerWidth,
-          data,
-          setTooltipZones
-        );
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [data, containerWidth]);
+  }, [asImage, isChartReady, data, onImageGenerated, exportAsImage]);
 
   if (loading) {
     return (
@@ -195,7 +195,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   if (asImage && imageUrl) {
     return (
       <div className="mt-2" style={{ width }}>
-        <img src={imageUrl} alt={`Stock chart for ${code}`} className="w-full" />
+        <Image 
+          src={imageUrl} 
+          alt={`Stock chart for ${code}`} 
+          className="w-full"
+          width={800}
+          height={600}
+        />
       </div>
     );
   }

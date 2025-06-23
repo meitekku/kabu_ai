@@ -30,7 +30,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
       setPreviewUrl(chartImageUrl);
       setCompressionInfo('チャート画像を使用');
     }
-  }, [chartImageUrl]);
+  }, [chartImageUrl, title, content]);
 
   // 画像を圧縮する関数
   const compressImage = async (file: File): Promise<string> => {

@@ -285,10 +285,12 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                     {chartImages[item.id] && (
                       <div className="mt-4 border-2 border-purple-300 rounded-lg p-2">
                         <p className="text-sm text-gray-600 mb-2">生成されたチャート画像:</p>
-                        <img 
+                        <Image 
                           src={chartImages[item.id]} 
                           alt={`Chart for ${item.code}`} 
                           className="w-full rounded"
+                          width={800}
+                          height={600}
                         />
                         <div className="mt-2 flex gap-2">
                           <a

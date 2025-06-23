@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // データ型の定義
 interface PromptItem {
@@ -134,19 +134,23 @@ export default function PromptPage() {
     element.style.height = `${scrollHeight}px`;
   };
 
-  // すべてのtextareaの高さを調整する関数
-  const adjustAllTextareas = () => {
+  // すべてのtextareaの高さを調整する関数をuseCallbackでメモ化
+  const adjustAllTextareas = useCallback(() => {
     const textareas = document.querySelectorAll('textarea');
     textareas.forEach((textarea) => {
       adjustTextareaHeight(textarea as HTMLTextAreaElement);
     });
-  };
+  }, []);
 
   useEffect(() => {
+    // fetchDataの実行
     void fetchData();
+    
+    // クリーンアップ関数でrefの現在の値をコピーして使用
+    const currentTimeouts = updateTimeoutRef.current;
     return () => {
       // コンポーネントのアンマウント時にタイムアウトをクリア
-      Object.values(updateTimeoutRef.current).forEach(timeout => clearTimeout(timeout));
+      Object.values(currentTimeouts).forEach(timeout => clearTimeout(timeout));
     };
   }, []);
 
@@ -158,7 +162,7 @@ export default function PromptPage() {
         adjustAllTextareas();
       }, 0);
     }
-  }, [loading, items]);
+  }, [loading, items, adjustAllTextareas]); // adjustAllTextareasを依存配列に追加
 
   if (loading) {
     return <div className="flex justify-center p-4">読み込み中...</div>;
