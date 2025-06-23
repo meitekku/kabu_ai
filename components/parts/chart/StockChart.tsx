@@ -134,7 +134,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code]);
+  }, [code, containerWidth]);
 
   // データ変更時の座標再取得
   useEffect(() => {
