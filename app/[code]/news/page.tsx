@@ -1,13 +1,14 @@
 import { Metadata } from 'next';
 import NewsPageClient from './NewsPageClient';
 
-interface PageProps {
+type Props = {
   params: {
     code: string;
   };
-}
+  searchParams: { [key: string]: string | string[] | undefined };
+};
 
-export const generateMetadata = async ({ params }: PageProps): Promise<Metadata> => {
+export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
   const code = params.code;
   
   return {
@@ -16,7 +17,7 @@ export const generateMetadata = async ({ params }: PageProps): Promise<Metadata>
   };
 };
 
-const NewsPage = ({ params }: PageProps) => {
+const NewsPage = ({ params }: Props) => {
   return <NewsPageClient code={params.code} />;
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -74,7 +74,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   // チャートを画像として出力する関数
-  const exportAsImage = async (): Promise<string> => {
+  const exportAsImage = useCallback(async (): Promise<string> => {
     if (!chartContainerRef.current) {
       throw new Error('Chart container not found');
     }
@@ -93,7 +93,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       console.error('Error exporting chart as image:', error);
       throw error;
     }
-  };
+  }, []);
 
   // refに関数を公開
   useImperativeHandle(ref, () => ({
