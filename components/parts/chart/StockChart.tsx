@@ -20,6 +20,7 @@ import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
 import { TooltipZone, calculateTooltipZonesTest } from './StockChartLayoutUtils';
 import { fetchChartAndNewsData } from './StockChartDataUtils';
 import { recordChartPosition, handleResize } from './StockChartPositionUtils';
+import { formatArticleTitle } from './StockChartTooltip';
 import Image from 'next/image';
 
 /* --------------------------------------------------
