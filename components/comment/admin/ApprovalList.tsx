@@ -189,7 +189,15 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   };
 
   const toggleChart = (id: number) => {
-    setExpandedCharts(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedCharts(prev => ({ 
+      ...prev, 
+      [id]: !prev[id] 
+    }));
+    
+    // チャートを閉じる時は画像もクリア
+    if (expandedCharts[id]) {
+      setChartImages(prev => ({ ...prev, [id]: '' }));
+    }
   };
 
   const generateChartImage = async (id: number) => {
@@ -259,32 +267,25 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                         upper: 192,
                         lower: 120
                       }}
+                      onTooltipRendered={(isRendered) => {
+                        // チャート描画完了時に自動的に画像生成
+                        if (isRendered && !chartImages[item.id] && !generatingImage[item.id]) {
+                          generateChartImage(item.id);
+                        }
+                      }}
                     />
                     
-                    {/* チャート画像生成ボタン */}
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={() => generateChartImage(item.id)}
-                        className={`px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 ${generatingImage[item.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        disabled={generatingImage[item.id]}
-                      >
-                        {generatingImage[item.id] ? '画像生成中...' : 'チャートを画像化'}
-                      </button>
-                      
-                      {chartImages[item.id] && (
-                        <button
-                          onClick={() => setChartImages(prev => ({ ...prev, [item.id]: '' }))}
-                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                        >
-                          画像をクリア
-                        </button>
-                      )}
-                    </div>
+                    {/* 画像生成中の表示 */}
+                    {generatingImage[item.id] && (
+                      <div className="mt-2 flex items-center gap-2 text-purple-600">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                        <span>チャート画像を自動生成中...</span>
+                      </div>
+                    )}
                     
                     {/* 生成されたチャート画像を表示 */}
                     {chartImages[item.id] && (
                       <div className="mt-4 border-2 border-purple-300 rounded-lg p-2">
-                        <p className="text-sm text-gray-600 mb-2">生成されたチャート画像:</p>
                         <Image 
                           src={chartImages[item.id]} 
                           alt={`Chart for ${item.code}`} 
@@ -292,24 +293,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                           width={800}
                           height={600}
                         />
-                        <div className="mt-2 flex gap-2">
-                          <a
-                            href={chartImages[item.id]}
-                            download={`chart_${item.code}_${new Date().toISOString()}.png`}
-                            className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                          >
-                            画像をダウンロード
-                          </a>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(chartImages[item.id]);
-                              alert('画像URLをクリップボードにコピーしました');
-                            }}
-                            className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                          >
-                            画像URLをコピー
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>

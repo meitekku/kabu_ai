@@ -17,10 +17,9 @@ import html2canvas from 'html2canvas';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
 import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
-import { TooltipZone } from './StockChartLayoutUtils';
+import { TooltipZone, calculateTooltipZonesTest } from './StockChartLayoutUtils';
 import { fetchChartAndNewsData } from './StockChartDataUtils';
-import { recordChartPosition, captureAllChartPositions, handleResize } from './StockChartPositionUtils';
-import { formatArticleTitle } from './StockChartTooltip';
+import { recordChartPosition, handleResize } from './StockChartPositionUtils';
 import Image from 'next/image';
 
 /* --------------------------------------------------
@@ -37,12 +36,15 @@ interface StockChartProps {
     upper: number;
     lower: number;
   };
-  asImage?: boolean;  // 画像として表示するかどうか
-  onImageGenerated?: (imageUrl: string) => void;  // 画像生成完了時のコールバック
+  asImage?: boolean;
+  onImageGenerated?: (imageUrl: string) => void;
+  onTooltipRendered?: (isRendered: boolean) => void;
+  testMode?: boolean; // テストモードフラグを追加
 }
 
 export interface StockChartRef {
   exportAsImage: () => Promise<string>;
+  isTooltipRendered: () => boolean;
 }
 
 /* --------------------------------------------------
@@ -60,7 +62,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     lower: 80
   },
   asImage = false,
-  onImageGenerated
+  onImageGenerated,
+  onTooltipRendered,
+  testMode = true // デフォルトでテストモードON
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +76,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const [tooltipZones, setTooltipZones] = useState<TooltipZone[]>([]);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isTooltipRendered, setIsTooltipRendered] = useState(false);
+  const upperChartRef = useRef<HTMLDivElement>(null);
 
   // チャートを画像として出力する関数
   const exportAsImage = useCallback(async (): Promise<string> => {
@@ -82,9 +88,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     try {
       const canvas = await html2canvas(chartContainerRef.current, {
         backgroundColor: '#ffffff',
-        scale: 2, // 高解像度のため
+        scale: 2,
         logging: false,
-        useCORS: true
+        useCORS: true,
+        windowHeight: chartContainerRef.current.scrollHeight + 100,
+        height: chartContainerRef.current.scrollHeight + 50
       });
 
       const url = canvas.toDataURL('image/png');
@@ -97,8 +105,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   // refに関数を公開
   useImperativeHandle(ref, () => ({
-    exportAsImage
-  }));
+    exportAsImage,
+    isTooltipRendered: () => isTooltipRendered
+  }), [exportAsImage, isTooltipRendered]);
 
   // データ取得用のuseEffect
   useEffect(() => {
@@ -108,17 +117,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         const formattedData = await fetchChartAndNewsData(code);
         if (isMounted) {
           setData(formattedData);
-          if (containerWidth > 0) {
-            setTimeout(() => {
-              captureAllChartPositions(
-                chartContainerRef,
-                containerWidth,
-                formattedData,
-                setTooltipZones
-              );
-              setIsChartReady(true);
-            }, 300);
-          }
+          setIsChartReady(true);
         }
       } catch (err) {
         if (isMounted) {
@@ -134,22 +133,42 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, containerWidth]);
+  }, [code]);
 
-  // データ変更時の座標再取得
+  // テストモード用のtooltip座標計算
   useEffect(() => {
-    if (data.length > 0 && containerWidth > 0) {
+    if (testMode && data.length > 0 && containerWidth > 0 && isChartReady) {
       const timer = setTimeout(() => {
-        captureAllChartPositions(
-          chartContainerRef,
-          containerWidth,
+        const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+        const zones = calculateTooltipZonesTest(
           data,
-          setTooltipZones
+          actualChartPositionsRef.current,
+          containerWidth,
+          chartHeight
         );
-      }, 100);
+        setTooltipZones(zones);
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [data, containerWidth]);
+  }, [testMode, data, containerWidth, isChartReady, pcHeight.upper, mobileHeight.upper]);
+
+  // Tooltip描画完了の検知
+  useEffect(() => {
+    if (isChartReady && !asImage && tooltipZones.length > 0) {
+      const timer = setTimeout(() => {
+        setIsTooltipRendered(true);
+        if (onTooltipRendered) {
+          onTooltipRendered(true);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setIsTooltipRendered(false);
+      if (onTooltipRendered) {
+        onTooltipRendered(false);
+      }
+    }
+  }, [isChartReady, asImage, tooltipZones, onTooltipRendered]);
 
   useEffect(() => {
     if (asImage && isChartReady && data.length > 0) {
@@ -165,7 +184,6 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         }
       };
       
-      // チャートのレンダリングが完了してから画像化
       setTimeout(generateImage, 500);
     }
   }, [asImage, isChartReady, data, onImageGenerated, exportAsImage]);
@@ -191,7 +209,6 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   if (error) return <div className="text-red-500 p-4">Error:{error}</div>;
   if (data.length === 0) return null;
 
-  // 画像として表示する場合
   if (asImage && imageUrl) {
     return (
       <div className="mt-2" style={{ width }}>
@@ -206,13 +223,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     );
   }
 
-  // 表示するデータを決定
   const displayData = hoveredData || data[data.length - 1];
 
   return (
     <div className="mt-2" style={{ width }} ref={chartContainerRef}>
       {/* 上段チャート（ロウソク足 + 移動平均） */}
       <div 
+        ref={upperChartRef}
         className="relative"
         style={{
           height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`
@@ -228,11 +245,29 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           </div>
         </div>
 
-        {/* Tooltipとその矢印をチャート内に絶対配置 */}
-        {isChartReady && !asImage && tooltipZones.map((zone) => {
+        {/* テストモード: 全ての確保可能な領域に空白のtooltipを配置 */}
+        {testMode && isChartReady && !asImage && tooltipZones.map((zone, index) => (
+          <div 
+            key={`test-tooltip-${index}`}
+            className="absolute z-30"
+            style={{ 
+              left: `${zone.xPosition}px`,
+              top: `${zone.yPosition}px`,
+              width: '140px',
+              height: '60px'
+            }}
+          >
+            <div className="bg-blue-100/80 border-2 border-blue-400 rounded-lg w-full h-full flex items-center justify-center">
+              <span className="text-xs font-bold text-blue-600">空白領域 #{index + 1}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* 通常モード: ニュース記事のtooltip表示 */}
+        {!testMode && isChartReady && !asImage && tooltipZones.map((zone) => {
           const item = data[zone.index];
           if (!item || !item.articles || item.articles.length === 0) return null;
-          const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition - 70));
+          const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
           return (
             <React.Fragment key={`tooltip-zone-${zone.index}`}>
               <div 
@@ -242,20 +277,18 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   top: `${zone.yPosition}px`
                 }}
               >
-                <div className="bg-white/65 border border-gray-300 rounded-lg p-2 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <div className="bg-white/65 border border-gray-300 rounded-lg px-2 py-1.5 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200">
                   <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
                   <div className="space-y-0.5">
                     <div className="text-[10px] text-gray-500 font-medium">{item.date}</div>
                     <div
-                      className="text-xs text-gray-800 hover:text-blue-600 cursor-pointer rounded transition-colors duration-150 line-clamp-3 leading-[1.3] font-medium"
-                      onClick={() => {
-                        if (item.articles && item.articles[0]) {
-                          window.location.href = `/${code}/news/article/${item.articles[0].id}`;
-                        }
+                      className="text-xs text-gray-800 hover:text-blue-600 cursor-pointer rounded transition-colors duration-150 leading-[1.3] font-medium"
+                      style={{
+                        wordWrap: 'break-word',
+                        wordBreak: 'break-word',
+                        display: 'block',
+                        lineHeight: '1.3em',
                       }}
-                      role="button"
-                      tabIndex={0}
-                      title={formatArticleTitle(item.articles[0]?.title || '')}
                     >
                       {formatArticleTitle(item.articles[0]?.title || '')}
                     </div>
@@ -310,18 +343,25 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             </React.Fragment>
           );
         })}
+
         <ResponsiveContainer width="100%" height="100%" onResize={handleResize(
           setContainerWidth,
           actualChartPositionsRef,
           setIsChartReady,
           containerWidth,
           data,
-          () => captureAllChartPositions(
-            chartContainerRef,
-            containerWidth,
-            data,
-            setTooltipZones
-          )
+          () => {
+            if (testMode && data.length > 0) {
+              const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+              const zones = calculateTooltipZonesTest(
+                data,
+                actualChartPositionsRef.current,
+                containerWidth,
+                chartHeight
+              );
+              setTooltipZones(zones);
+            }
+          }
         )}>
           <ComposedChart 
             data={data} 
@@ -344,7 +384,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
+              if (!testMode && e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 window.location.href = `/${articleCode}/news/article/${article.id}`;
@@ -394,6 +434,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
       {/* 下段チャート（出来高） */}
       <div 
         className="relative"
@@ -432,7 +473,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
+              if (!testMode && e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 window.location.href = `/${articleCode}/news/article/${article.id}`;

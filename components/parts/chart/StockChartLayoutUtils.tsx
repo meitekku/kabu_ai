@@ -19,28 +19,36 @@ export interface GridCell {
   centerY: number;
 }
 
+export interface TooltipArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  dataIndex?: number; // 関連するデータのインデックス（テスト時はundefined）
+}
+
 // 動的なマージン計算
 const calculateDynamicMargins = (candleWidth: number, chartHeight: number) => {
   return {
-    xMargin: Math.max(candleWidth + 20, 30), // キャンドル幅 + 余白、最小30px
-    yMargin: Math.max(chartHeight * 0.04, 25), // チャート高さの4%、最小25px
-    lineMargin: 20 // 移動平均線用のマージン
+    xMargin: Math.max(candleWidth * 0.5, 10), // キャンドル幅の半分、最小10px
+    yMargin: Math.max(chartHeight * 0.02, 15), // チャート高さの2%、最小15px
+    lineMargin: 5 // 移動平均線用のマージン（小さくしてOK）
   };
 };
 
-// 空白セル検出（修正版）
+// 空白セル検出（移動平均線は除外）
 export const detectEmptyGridCells = (
   data: ExtendedChartData[],
   containerWidth: number,
   chartHeight: number,
-  actualChartPositions?: number[], // 実際の描画位置を追加
-  gridColumns: number = 12,
-  gridRows: number = 8
+  actualChartPositions?: number[],
+  gridColumns: number = 20,
+  gridRows: number = 15
 ): GridCell[] => {
   const cellWidth = containerWidth / gridColumns;
   const cellHeight = chartHeight / gridRows;
   const grid: GridCell[] = [];
-  const allValues = data.flatMap(d => [d.high, d.low, d.ma5, d.ma25, d.ma75].filter(v => !isNaN(v)));
+  const allValues = data.flatMap(d => [d.high, d.low]);
   const minValue = Math.min(...allValues);
   const maxValue = Math.max(...allValues);
   const valueRange = maxValue - minValue;
@@ -66,125 +74,157 @@ export const detectEmptyGridCells = (
     }
   }
   
-  // 実際のキャンドル幅を計算（データ点数に基づく）
+  // 実際のキャンドル幅を計算
   const actualCandleWidth = Math.min(containerWidth / data.length * 0.8, 12);
   const margins = calculateDynamicMargins(actualCandleWidth, chartHeight);
   
-  // 各データポイントに対して占有領域を設定
+  // 各データポイントのロウソク足のみをチェック（移動平均線は無視）
   data.forEach((item, index) => {
-    // 実際の描画位置を使用（提供されていない場合は計算）
     const xPos = actualChartPositions?.[index] || (containerWidth / data.length) * (index + 0.5);
-    
     const highY = chartHeight * (1 - (item.high - yAxisMin) / yAxisRange);
     const lowY = chartHeight * (1 - (item.low - yAxisMin) / yAxisRange);
-    const ma5Y = !isNaN(item.ma5) ? chartHeight * (1 - (item.ma5 - yAxisMin) / yAxisRange) : null;
-    const ma25Y = !isNaN(item.ma25) ? chartHeight * (1 - (item.ma25 - yAxisMin) / yAxisRange) : null;
-    const ma75Y = !isNaN(item.ma75) ? chartHeight * (1 - (item.ma75 - yAxisMin) / yAxisRange) : null;
     
     grid.forEach((cell, cellIndex) => {
-      // X軸方向の判定（実際のキャンドル幅 + マージン）
-      if (xPos - margins.xMargin <= cell.x + cell.width && xPos + margins.xMargin >= cell.x) {
-        // Y軸方向の判定（高値から安値の範囲 + マージン）
-        if (highY - margins.yMargin <= cell.y + cell.height && lowY + margins.yMargin >= cell.y) {
-          grid[cellIndex].isEmpty = false;
-        }
-        
-        // 移動平均線の判定
-        [ma5Y, ma25Y, ma75Y].forEach(maY => {
-          if (maY !== null && maY - margins.lineMargin <= cell.y + cell.height && maY + margins.lineMargin >= cell.y) {
-            grid[cellIndex].isEmpty = false;
-          }
-        });
+      // ロウソク足の範囲内かチェック
+      if (xPos - margins.xMargin <= cell.x + cell.width && 
+          xPos + margins.xMargin >= cell.x &&
+          highY - margins.yMargin <= cell.y + cell.height && 
+          lowY + margins.yMargin >= cell.y) {
+        grid[cellIndex].isEmpty = false;
       }
     });
   });
   
-  return grid.filter(cell => cell.isEmpty);
+  return grid;
 };
 
-// 右から順に最適な空白セルを見つける（修正版）
-export const findOptimalEmptyCellFromRight = (
-  targetX: number,
-  targetY: number,
+// 指定された位置に140×60のtooltip領域を確保できるかチェック
+const canPlaceTooltip = (
+  x: number,
+  y: number,
   emptyCells: GridCell[],
-  occupiedPositions: { x: number, y: number, width: number, height: number }[],
-  minDistanceFromCandle: number = 50
-): GridCell | null => {
-  if (emptyCells.length === 0) return null;
-  
+  occupiedAreas: TooltipArea[],
+  containerWidth: number,
+  chartHeight: number
+): boolean => {
   const tooltipWidth = 140;
   const tooltipHeight = 60;
-  const minDistanceFromOthers = 20; // 他のツールチップとの最小距離
   
-  // 右から順にソート
-  const sortedCells = [...emptyCells].sort((a, b) => b.centerX - a.centerX);
+  // 境界チェック
+  if (x < 0 || y < 0 || x + tooltipWidth > containerWidth || y + tooltipHeight > chartHeight) {
+    return false;
+  }
   
-  // 利用可能なセルをフィルタリング
-  const availableCells = sortedCells.filter(cell => {
-    // キャンドルスティックからの距離チェック
-    const distanceFromTarget = Math.sqrt(
-      Math.pow(cell.centerX - targetX, 2) + Math.pow(cell.centerY - targetY, 2)
-    );
-    if (distanceFromTarget < minDistanceFromCandle) {
+  // 他のtooltipとの重なりチェック
+  for (const area of occupiedAreas) {
+    if (x < area.x + area.width &&
+        x + tooltipWidth > area.x &&
+        y < area.y + area.height &&
+        y + tooltipHeight > area.y) {
       return false;
     }
-    
-    // 他のツールチップとの重なりチェック
-    return !occupiedPositions.some(pos => {
-      const xOverlap = Math.abs(cell.centerX - pos.x) < (tooltipWidth + pos.width) / 2 + minDistanceFromOthers;
-      const yOverlap = Math.abs(cell.centerY - pos.y) < (tooltipHeight + pos.height) / 2 + minDistanceFromOthers;
-      return xOverlap && yOverlap;
-    });
-  });
+  }
   
-  // 右から順に、Y座標が近いものを優先
-  if (availableCells.length > 0) {
-    return availableCells.reduce((best, cell) => {
-      const cellYDistance = Math.abs(cell.centerY - targetY);
-      const bestYDistance = Math.abs(best.centerY - targetY);
-      
-      // 同じX座標帯でY距離が近いものを選択
-      if (Math.abs(cell.centerX - best.centerX) < 50) {
-        return cellYDistance < bestYDistance ? cell : best;
+  // tooltip領域内の全てのセルが空白かチェック
+  for (const cell of emptyCells) {
+    if (!cell.isEmpty) {
+      // セルとtooltip領域が重なるかチェック
+      if (x < cell.x + cell.width &&
+          x + tooltipWidth > cell.x &&
+          y < cell.y + cell.height &&
+          y + tooltipHeight > cell.y) {
+        return false;
       }
-      // より右にあるものを優先
-      return cell.centerX > best.centerX ? cell : best;
-    });
+    }
   }
   
-  // 利用可能なセルがない場合は、距離制約を緩和して再度検索
-  const relaxedCells = sortedCells.filter(cell => {
-    const distanceFromTarget = Math.sqrt(
-      Math.pow(cell.centerX - targetX, 2) + Math.pow(cell.centerY - targetY, 2)
-    );
-    return distanceFromTarget >= minDistanceFromCandle * 0.6;
-  });
-  
-  if (relaxedCells.length > 0) {
-    return relaxedCells[0];
-  }
-  
-  // それでも見つからない場合は、最も右のセルを返す
-  return sortedCells[0];
+  return true;
 };
 
-// ツールチップ配置計算（修正版）
+// 全ての可能なtooltip配置領域を見つける
+export const findAllPossibleTooltipAreas = (
+  emptyCells: GridCell[],
+  containerWidth: number,
+  chartHeight: number
+): TooltipArea[] => {
+  const tooltipWidth = 140;
+  const tooltipHeight = 60;
+  const stepSize = 20; // 検索ステップサイズ
+  const possibleAreas: TooltipArea[] = [];
+  const occupiedAreas: TooltipArea[] = [];
+  
+  // グリッド全体を走査して配置可能な場所を探す
+  for (let y = 0; y < chartHeight - tooltipHeight; y += stepSize) {
+    for (let x = 0; x < containerWidth - tooltipWidth; x += stepSize) {
+      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight)) {
+        const area: TooltipArea = {
+          x,
+          y,
+          width: tooltipWidth,
+          height: tooltipHeight
+        };
+        possibleAreas.push(area);
+        occupiedAreas.push(area);
+      }
+    }
+  }
+  
+  return possibleAreas;
+};
+
+// tooltip配置計算（テスト版：全ての可能な領域に配置）
+export const calculateTooltipZonesTest = (
+  data: ExtendedChartData[],
+  actualChartPositions: number[],
+  containerWidth: number,
+  chartHeight: number
+): TooltipZone[] => {
+  // 空白セルを検出
+  const emptyCells = detectEmptyGridCells(
+    data,
+    containerWidth,
+    chartHeight,
+    actualChartPositions,
+    30, // より細かいグリッド
+    20
+  );
+  
+  // 全ての可能なtooltip領域を見つける
+  const possibleAreas = findAllPossibleTooltipAreas(
+    emptyCells,
+    containerWidth,
+    chartHeight
+  );
+  
+  // TooltipZone形式に変換（テスト用なのでindexは連番）
+  const zones: TooltipZone[] = possibleAreas.map((area, index) => ({
+    index: index % data.length, // データインデックスを循環
+    zone: index,
+    xPosition: area.x,
+    yPosition: area.y,
+    isTop: area.y < chartHeight / 2
+  }));
+  
+  return zones;
+};
+
+// 実際の運用版：ニュースがあるデータポイントの近くに配置
 export const calculateTooltipZones = (
   tooltipIndices: number[],
   actualChartPositions: number[],
   containerWidth: number,
   data: ExtendedChartData[],
   chartHeight: number,
-  minDistanceFromCandle: number = 60 // デフォルト距離を少し増やす
+  minDistanceFromCandle: number = 60
 ): TooltipZone[] => {
-  // グリッドの解像度を上げてより細かい配置を可能に
+  // 空白セルを検出
   const emptyCells = detectEmptyGridCells(
-    data, 
-    containerWidth, 
-    chartHeight, 
-    actualChartPositions, // 実際の描画位置を渡す
-    20, // グリッド列数
-    12  // グリッド行数
+    data,
+    containerWidth,
+    chartHeight,
+    actualChartPositions,
+    30,
+    20
   );
   
   const allValues = data.flatMap(d => [d.high, d.low]);
@@ -197,121 +237,86 @@ export const calculateTooltipZones = (
   const yAxisRange = yAxisMax - yAxisMin;
   
   const zones: TooltipZone[] = [];
-  const occupiedPositions: { x: number, y: number, width: number, height: number }[] = [];
-  
-  // スマホサイズ（768px未満）の場合は2つまで、それ以外は4つまで表示
+  const occupiedAreas: TooltipArea[] = [];
   const maxTooltips = window.innerWidth < 768 ? 2 : 4;
   
-  // インデックスを日付順（新しい順）で処理
-  const sortedTooltipData = tooltipIndices.slice(0, maxTooltips).map((index) => ({
-    index,
-    xPos: actualChartPositions[index] || ((containerWidth / data.length) * (index + 0.5))
-  })).sort((a, b) => b.index - a.index);
-  
-  // 最大X位置の制約を設定
-  let maxAllowedX = containerWidth - 70;
-  
-  sortedTooltipData.forEach(({ index, xPos }, sortedIndex) => {
+  // 各ニュースポイントに対して最適な配置を見つける
+  tooltipIndices.slice(0, maxTooltips).forEach((index) => {
     const dataItem = data[index];
+    const xPos = actualChartPositions[index] || ((containerWidth / data.length) * (index + 0.5));
     const centerValue = (dataItem.high + dataItem.low) / 2;
     const centerY = chartHeight * (1 - (centerValue - yAxisMin) / yAxisRange);
     
-    // 利用可能な空白セルを右側の制約内でフィルタリング
-    const constrainedEmptyCells = emptyCells.filter(cell => cell.centerX <= maxAllowedX);
+    // ニュースポイントの近くで配置可能な場所を探す
+    let bestPosition: { x: number, y: number, distance: number } | null = null;
+    const searchRadius = 200;
+    const stepSize = 10;
     
-    const optimalCell = findOptimalEmptyCellFromRight(
-      xPos, 
-      centerY, 
-      constrainedEmptyCells, 
-      occupiedPositions, 
-      minDistanceFromCandle
-    );
-    
-    if (optimalCell) {
-      let tooltipX = Math.min(optimalCell.centerX - 70, maxAllowedX - 70);
-      const tooltipY = optimalCell.centerY - 30;
-      
-      // x軸の重なりチェック
-      const minXDistance = 50; // 十分な間隔を確保
-      const overlappingTooltip = zones.find(z => 
-        Math.abs(z.xPosition - (tooltipX + 70)) < minXDistance
-      );
-      
-      if (overlappingTooltip && sortedIndex === 1) {
-        tooltipX = overlappingTooltip.xPosition - 70 - minXDistance - 70;
-        tooltipX = Math.max(10, tooltipX);
-      }
-      
-      zones.push({
-        index,
-        zone: sortedIndex,
-        xPosition: tooltipX + 70,
-        yPosition: tooltipY,
-        isTop: optimalCell.centerY < centerY
-      });
-      
-      occupiedPositions.push({
-        x: tooltipX + 70,
-        y: optimalCell.centerY,
-        width: 140,
-        height: 60
-      });
-      
-      // 次のツールチップの最大X位置を更新
-      maxAllowedX = Math.min(maxAllowedX, tooltipX + 70 - minXDistance);
-    } else {
-      // フォールバック：安全な位置に配置
-      const safeOffset = 80; // 十分な距離を確保
-      
-      let xPosition = Math.min(
-        Math.min(xPos + safeOffset, maxAllowedX),
-        containerWidth - 70
-      );
-      
-      const minXDistance = 50;
-      zones.forEach(existingZone => {
-        if (Math.abs(existingZone.xPosition - xPosition) < minXDistance) {
-          xPosition = existingZone.xPosition - minXDistance - 70;
+    for (let dy = -searchRadius; dy <= searchRadius; dy += stepSize) {
+      for (let dx = -searchRadius; dx <= searchRadius; dx += stepSize) {
+        const testX = xPos + dx - 70; // tooltip中心を調整
+        const testY = centerY + dy - 30;
+        
+        if (canPlaceTooltip(testX, testY, emptyCells, occupiedAreas, containerWidth, chartHeight)) {
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance >= minDistanceFromCandle && (!bestPosition || distance < bestPosition.distance)) {
+            bestPosition = { x: testX, y: testY, distance };
+          }
         }
-      });
-      
-      xPosition = Math.max(70, xPosition);
-      
-      const isTop = centerY > chartHeight / 2;
-      const yPosition = isTop ? centerY - 100 : centerY + 40;
-      
+      }
+    }
+    
+    if (bestPosition) {
       zones.push({
         index,
-        zone: sortedIndex,
-        xPosition,
-        yPosition: Math.max(10, Math.min(chartHeight - 70, yPosition)),
-        isTop
+        zone: zones.length,
+        xPosition: bestPosition.x,
+        yPosition: bestPosition.y,
+        isTop: bestPosition.y < centerY
       });
       
-      occupiedPositions.push({
-        x: xPosition,
-        y: yPosition + 30,
+      occupiedAreas.push({
+        x: bestPosition.x,
+        y: bestPosition.y,
         width: 140,
-        height: 60
+        height: 60,
+        dataIndex: index
       });
-      
-      maxAllowedX = Math.min(maxAllowedX, xPosition - minXDistance);
     }
   });
   
-  // zonesを元の順序で返す
-  return zones.sort((a, b) => a.index - b.index);
+  return zones;
 };
 
-// デバッグ用：グリッドセルの可視化（開発時のみ使用）
-export const debugVisualizeCells = (cells: GridCell[], canvas: HTMLCanvasElement) => {
+// デバッグ用：グリッドと配置領域の可視化
+export const debugVisualizeLayout = (
+  canvas: HTMLCanvasElement,
+  emptyCells: GridCell[],
+  tooltipAreas: TooltipArea[]
+) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   
-  cells.forEach(cell => {
-    ctx.fillStyle = cell.isEmpty ? 'rgba(0, 255, 0, 0.2)' : 'rgba(255, 0, 0, 0.2)';
+  // グリッドセルを描画
+  emptyCells.forEach(cell => {
+    ctx.fillStyle = cell.isEmpty ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)';
     ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
-    ctx.strokeStyle = cell.isEmpty ? 'green' : 'red';
+    ctx.strokeStyle = cell.isEmpty ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
+    ctx.lineWidth = 0.5;
     ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
+  });
+  
+  // tooltip領域を描画
+  tooltipAreas.forEach((area, index) => {
+    ctx.fillStyle = 'rgba(0, 0, 255, 0.2)';
+    ctx.fillRect(area.x, area.y, area.width, area.height);
+    ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(area.x, area.y, area.width, area.height);
+    
+    // 領域番号を表示
+    ctx.fillStyle = 'blue';
+    ctx.font = '12px Arial';
+    ctx.fillText(`#${index}`, area.x + 5, area.y + 15);
   });
 };
