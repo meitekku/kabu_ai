@@ -40,14 +40,19 @@ interface StockChartProps {
   asImage?: boolean;
   onImageGenerated?: (imageUrl: string) => void;
   onTooltipRendered?: (isRendered: boolean) => void;
-  showEmptyAreas?: boolean; // 空白領域を表示するかどうか
-  maxNewsTooltips?: number; // 表示する最大ニュース数
+  showEmptyAreas?: boolean;
+  maxNewsTooltips?: number;
+  theme?: 'default' | 'black';  // 新しいプロパティを追加
 }
 
 export interface StockChartRef {
   exportAsImage: () => Promise<string>;
   isTooltipRendered: () => boolean;
 }
+
+// チャートのマージン設定を定数化
+const UPPER_CHART_MARGIN = { top: 10, right: 5, bottom: 5, left: 30 };
+const LOWER_CHART_MARGIN = { top: 0, right: 5, bottom: 20, left: 30 };
 
 /* --------------------------------------------------
  * メインのチャートコンポーネント
@@ -66,8 +71,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   asImage = false,
   onImageGenerated,
   onTooltipRendered,
-  showEmptyAreas = false, // デフォルトは非表示
-  maxNewsTooltips
+  showEmptyAreas = false,
+  maxNewsTooltips,
+  theme = 'default'  // デフォルトは通常のテーマ
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +88,86 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const [isTooltipRendered, setIsTooltipRendered] = useState(false);
   const upperChartRef = useRef<HTMLDivElement>(null);
 
+  // テーマに基づく色設定
+  const isBlackTheme = theme === 'black';
+  const colors = {
+    background: isBlackTheme ? '#0f0f1e' : '#ffffff',
+    text: isBlackTheme ? '#ffffff' : '#000000',
+    textSecondary: isBlackTheme ? '#b8b8c8' : '#666666',
+    gridColor: isBlackTheme ? '#1f1f33' : '#e0e0e0',
+    tooltipBg: isBlackTheme ? 'rgba(15, 15, 30, 0.3)' : 'rgba(255, 255, 255, 0.65)',
+    tooltipBorder: isBlackTheme ? '#ffffff' : '#cccccc',
+    infoBg: isBlackTheme ? 'rgba(15, 15, 30, 0.85)' : 'rgba(255, 255, 255, 0.8)',
+    emptyAreaBg: isBlackTheme ? 'rgba(31, 31, 51, 0.8)' : 'rgba(243, 244, 246, 0.8)',
+    emptyAreaBorder: isBlackTheme ? '#3d3d5a' : '#d1d5db',
+    emptyAreaText: isBlackTheme ? '#9898b8' : '#6b7280',
+    loadingBg: isBlackTheme ? '#1f1f33' : '#e5e7eb',
+    errorText: isBlackTheme ? '#ff6b6b' : '#ef4444',
+    lineConnector: isBlackTheme ? '#7878a3' : '#666666',
+    ma5Color: isBlackTheme ? '#ffd700' : '#00ff00',
+    ma25Color: isBlackTheme ? '#ff8c00' : '#ff0000',
+    ma75Color: isBlackTheme ? '#ff6347' : '#0000ff',
+    volumeUpFill: isBlackTheme ? '#ffd700' : '#ffcccc',
+    volumeUpStroke: isBlackTheme ? '#ffc700' : '#ff0000',
+    volumeDownFill: isBlackTheme ? '#ffd700' : '#ccccff',
+    volumeDownStroke: isBlackTheme ? '#ffc700' : '#0000ff'
+  };
+
+  // 色変換関数：青色を緑色に変換
+  const convertBlueToGreen = (color: string): string => {
+    // 青系の色を緑色に変換
+    if (color === '#0000ff' || color === '#0000FF' || color === 'blue') {
+      return '#00aa00'; // 緑色に変換
+    }
+    if (color === '#4169e1' || color === '#4169E1') { // Royal Blue
+      return '#32cd32'; // Lime Green
+    }
+    if (color === '#1e90ff' || color === '#1E90FF') { // Dodger Blue
+      return '#00ff00'; // Pure Green
+    }
+    if (color === '#00bfff' || color === '#00BFFF') { // Deep Sky Blue
+      return '#00ff7f'; // Spring Green
+    }
+    // その他の青系の色もここで変換可能
+    return color; // 青系でない場合はそのまま返す
+  };
+
+  // Y軸のドメインを事前に計算する関数
+  const calculateYDomain = useCallback(() => {
+    if (data.length === 0) return { min: 0, max: 100 };
+    
+    const allValues = data.flatMap(d => [d.high, d.low]);
+    const minValue = Math.min(...allValues);
+    const maxValue = Math.max(...allValues);
+    const valueRange = maxValue - minValue;
+    const padding = valueRange * 0.1;
+    
+    return {
+      min: minValue - padding,
+      max: maxValue + padding
+    };
+  }, [data]);
+
+  // ロウソク足の中心Y座標を計算する関数
+  const calculateCandleYPosition = useCallback((dataItem: ExtendedChartData, chartHeight: number) => {
+    const { min: yAxisMin, max: yAxisMax } = calculateYDomain();
+    const yAxisRange = yAxisMax - yAxisMin;
+    
+    // ロウソク足の中心値（高値と安値の中間）
+    const candleCenter = (dataItem.high + dataItem.low) / 2;
+    
+    // Y軸における相対位置（0が上、1が下）
+    const yRatio = (yAxisMax - candleCenter) / yAxisRange;
+    
+    // 実際の描画領域の高さ
+    const drawableHeight = chartHeight - UPPER_CHART_MARGIN.top - UPPER_CHART_MARGIN.bottom;
+    
+    // 実際のピクセル位置
+    const yPosition = UPPER_CHART_MARGIN.top + (yRatio * drawableHeight);
+    
+    return yPosition;
+  }, [calculateYDomain]);
+
   // チャートを画像として出力する関数
   const exportAsImage = useCallback(async (): Promise<string> => {
     if (!chartContainerRef.current) {
@@ -89,22 +175,48 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     }
 
     try {
-      const canvas = await html2canvas(chartContainerRef.current, {
-        backgroundColor: '#ffffff',
+      const container = chartContainerRef.current;
+      
+      // 上段と下段のチャートの高さを正確に計算
+      const upperHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+      const lowerHeight = window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
+      const totalHeight = upperHeight + lowerHeight;
+      
+      // mt-2クラスのマージンを考慮（0.5rem = 8px）
+      const marginTop = 8;
+      const expectedTotalHeight = totalHeight + marginTop;
+      
+      const canvas = await html2canvas(container, {
+        backgroundColor: colors.background,
         scale: 2,
         logging: false,
         useCORS: true,
-        windowHeight: chartContainerRef.current.scrollHeight + 100,
-        height: chartContainerRef.current.scrollHeight + 50
+        // 高さを明示的に制限
+        height: expectedTotalHeight,
+        // windowHeightを削除して自動計算させる
+        // クリッピングエリアを設定
+        width: container.offsetWidth,
+        x: 0,
+        y: 0,
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY
       });
 
-      const url = canvas.toDataURL('image/png');
+      // 余白をトリミング（必要に応じて）
+      const ctx = document.createElement('canvas').getContext('2d');
+      if (!ctx) throw new Error('Canvas context not available');
+      
+      ctx.canvas.width = canvas.width;
+      ctx.canvas.height = Math.min(canvas.height, expectedTotalHeight * 2); // scale: 2を考慮
+      ctx.drawImage(canvas, 0, 0);
+      
+      const url = ctx.canvas.toDataURL('image/png');
       return url;
     } catch (error) {
       console.error('Error exporting chart as image:', error);
       throw error;
     }
-  }, []);
+  }, [colors.background, pcHeight, mobileHeight]);
 
   // refに関数を公開
   useImperativeHandle(ref, () => ({
@@ -119,7 +231,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       try {
         const formattedData = await fetchChartAndNewsData(code);
         if (isMounted) {
-          setData(formattedData);
+          // 黒テーマの時だけデータの色を変換
+          const convertedData = theme === 'black' ? formattedData.map(item => ({
+            ...item,
+            color: convertBlueToGreen(item.color)
+          })) : formattedData;
+          setData(convertedData);
           setIsChartReady(true);
         }
       } catch (err) {
@@ -136,7 +253,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code]);
+  }, [code, theme]);
 
   // tooltip座標計算
   useEffect(() => {
@@ -195,23 +312,25 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   if (loading) {
     return (
-      <div className="mt-2 animate-pulse" style={{ width }}>
+      <div className="mt-2 animate-pulse" style={{ width, backgroundColor: colors.background }}>
         <div 
-          className="bg-gray-200 rounded"
+          className="rounded"
           style={{
-            height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`
+            height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
+            backgroundColor: colors.loadingBg
           }}
         ></div>
         <div 
-          className="bg-gray-200 rounded mt-2"
+          className="rounded mt-2"
           style={{
-            height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`
+            height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
+            backgroundColor: colors.loadingBg
           }}
         ></div>
       </div>
     );
   }
-  if (error) return <div className="text-red-500 p-4">Error:{error}</div>;
+  if (error) return <div className="p-4" style={{ color: colors.errorText }}>Error:{error}</div>;
   if (data.length === 0) return null;
 
   if (asImage && imageUrl) {
@@ -231,22 +350,23 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const displayData = hoveredData || data[data.length - 1];
 
   return (
-    <div className="mt-2" style={{ width }} ref={chartContainerRef}>
+    <div className="mt-2" style={{ width, backgroundColor: colors.background }} ref={chartContainerRef}>
       {/* 上段チャート（ロウソク足 + 移動平均） */}
       <div 
         ref={upperChartRef}
         className="relative"
         style={{
-          height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`
+          height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
+          backgroundColor: colors.background
         }}
       >
         {/* 価格情報を左上に表示 */}
-        <div className="absolute top-1 left-9 z-30 pointer-events-none">
-          <div className="text-[10px] space-y-0.5 bg-white/80 px-1 py-0.5 rounded">
-            <div className="text-gray-600">始値:{displayData.open.toLocaleString()}</div>
-            <div className="text-gray-600">高値:{displayData.high.toLocaleString()}</div>
-            <div className="text-gray-600">安値:{displayData.low.toLocaleString()}</div>
-            <div className="text-gray-600">終値:{displayData.close.toLocaleString()}</div>
+        <div className="absolute top-1 left-14 z-30 pointer-events-none">
+          <div className="text-[10px] space-y-0.5 px-1 py-0.5 rounded" style={{ backgroundColor: colors.infoBg }}>
+            <div style={{ color: colors.textSecondary }}>始値:{displayData.open.toLocaleString()}</div>
+            <div style={{ color: colors.textSecondary }}>高値:{displayData.high.toLocaleString()}</div>
+            <div style={{ color: colors.textSecondary }}>安値:{displayData.low.toLocaleString()}</div>
+            <div style={{ color: colors.textSecondary }}>終値:{displayData.close.toLocaleString()}</div>
           </div>
         </div>
 
@@ -265,8 +385,14 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   height: '60px'
                 }}
               >
-                <div className="bg-gray-100/80 border-2 border-gray-300 rounded-lg w-full h-full flex items-center justify-center">
-                  <span className="text-xs text-gray-500">空白領域 #{zone.zone + 1}</span>
+                <div 
+                  className="border-2 rounded-lg w-full h-full flex items-center justify-center"
+                  style={{ 
+                    backgroundColor: colors.emptyAreaBg,
+                    borderColor: colors.emptyAreaBorder
+                  }}
+                >
+                  <span className="text-xs" style={{ color: colors.emptyAreaText }}>空白領域 #{zone.zone + 1}</span>
                 </div>
               </div>
             );
@@ -276,6 +402,15 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           const item = data[zone.index];
           if (!item || !item.articles || item.articles.length === 0) return null;
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
+          
+          // チャートの高さを取得
+          const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+          
+          // ロウソク足の中心座標を計算
+          const candleX = actualChartPositionsRef.current[zone.index] || 
+            (UPPER_CHART_MARGIN.left + ((containerWidth - UPPER_CHART_MARGIN.left - UPPER_CHART_MARGIN.right) / data.length) * (zone.index + 0.5));
+          const candleY = calculateCandleYPosition(item, chartHeight);
+          
           return (
             <React.Fragment key={`tooltip-zone-${zone.index}`}>
               <div 
@@ -285,13 +420,19 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   top: `${zone.yPosition}px`
                 }}
               >
-                <div className="bg-white/65 border border-gray-300 rounded-lg px-2 py-1.5 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200">
-                  <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                <div 
+                  className="border rounded-lg px-2 py-1.5 w-[140px] min-w-[140px] max-w-[140px] pointer-events-auto shadow-lg hover:shadow-xl transition-shadow duration-200"
+                  style={{ 
+                    backgroundColor: colors.tooltipBg,
+                    borderColor: colors.tooltipBorder
+                  }}
+                >
                   <div className="space-y-0.5">
-                    <div className="text-[10px] text-gray-500 font-medium">{item.date}</div>
+                    <div className="text-[10px] font-medium" style={{ color: colors.textSecondary }}>{item.date}</div>
                     <div
-                      className="text-xs text-gray-800 hover:text-blue-600 cursor-pointer rounded transition-colors duration-150 leading-[1.3] font-medium"
+                      className="text-xs hover:text-blue-400 cursor-pointer rounded transition-colors duration-150 leading-[1.3] font-medium"
                       style={{
+                        color: isBlackTheme ? '#e0e0e0' : '#374151',
                         wordWrap: 'break-word',
                         wordBreak: 'break-word',
                         display: 'block',
@@ -315,25 +456,10 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               >
                 <line
                   x1={tooltipLeft + 70} // tooltip中心からスタート
-                  y1={zone.yPosition + 30}
-                  x2={actualChartPositionsRef.current[zone.index] || ((containerWidth / data.length) * (zone.index + 0.5))}
-                  y2={(() => {
-                    const dataItem = data[zone.index];
-                    const allValues = data.flatMap(d => [d.high, d.low]);
-                    const minValue = Math.min(...allValues);
-                    const maxValue = Math.max(...allValues);
-                    const valueRange = maxValue - minValue;
-                    const padding = valueRange * 0.1;
-                    const yAxisMin = minValue - padding;
-                    const yAxisMax = maxValue + padding;
-                    const yAxisRange = yAxisMax - yAxisMin;
-                    
-                    const centerValue = (dataItem.high + dataItem.low) / 2;
-                    const yRatio = 1 - (centerValue - yAxisMin) / yAxisRange;
-                    
-                    return `${yRatio * 100}%`;
-                  })()}
-                  stroke="#666"
+                  y1={zone.yPosition + 30} // tooltipの下辺から
+                  x2={candleX}
+                  y2={candleY}
+                  stroke={colors.lineConnector}
                   strokeWidth="1.5"
                   strokeDasharray="2,2"
                   markerEnd={`url(#arrowhead-${zone.index})`}
@@ -349,7 +475,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   >
                     <polygon
                       points="0 0, 10 3.5, 0 7"
-                      fill="#666"
+                      fill={colors.lineConnector}
                     />
                   </marker>
                 </defs>
@@ -383,7 +509,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             data={data} 
             barCategoryGap={0} 
             barGap={0}
-            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            margin={UPPER_CHART_MARGIN}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
@@ -407,17 +533,17 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               }
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
             <XAxis 
               dataKey="date" 
-              tick={{ fontSize: 12 }} 
+              tick={{ fontSize: 12, fill: colors.text }} 
               interval="preserveStartEnd" 
               hide
             />
             <YAxis 
-              domain={['auto', 'auto']} 
-              tick={{ fontSize: 12, dx: 2 }} 
-              width={35}
+              domain={[calculateYDomain().min, calculateYDomain().max]}
+              tick={{ fontSize: 12, dx: -5, fill: colors.text }} 
+              width={25}
             />
             <Tooltip 
               content={() => null}
@@ -426,7 +552,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             <Bar
               dataKey="highLowBar"
               fill="none"
-              stroke="#000000"
+              stroke={isBlackTheme ? '#ffffff' : '#000000'}
               strokeWidth={1}
               name="値幅"
               shape={(props: unknown) => <CandleWickShape {...(props as RectangleProps)} />}
@@ -444,24 +570,25 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 />
               ))}
             </Bar>
-            <Line type="monotone" dataKey="ma5" stroke="#00ff00" dot={false} name="MA(5)" />
-            <Line type="monotone" dataKey="ma25" stroke="#ff0000" dot={false} name="MA(25)" />
-            <Line type="monotone" dataKey="ma75" stroke="#0000ff" dot={false} name="MA(75)" />
+            <Line type="monotone" dataKey="ma5" stroke={colors.ma5Color} dot={false} name="MA(5)" />
+            <Line type="monotone" dataKey="ma25" stroke={colors.ma25Color} dot={false} name="MA(25)" />
+            <Line type="monotone" dataKey="ma75" stroke={colors.ma75Color} dot={false} name="MA(75)" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       {/* 下段チャート（出来高） */}
       <div 
-        className="relative"
+        className="relative -mt-1"
         style={{
-          height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`
+          height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
+          backgroundColor: colors.background
         }}
       >
         {/* 出来高情報を左上に表示 */}
-        <div className="absolute top-1 left-9 z-30 pointer-events-none">
-          <div className="text-[10px] bg-white/80 px-1 py-0.5 rounded">
-            <div className="text-gray-600">
+        <div className="absolute top-1 left-14 z-30 pointer-events-none">
+          <div className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: colors.infoBg }}>
+            <div style={{ color: colors.textSecondary }}>
               出来高:{(displayData.volume / 10000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}万株
             </div>
           </div>
@@ -472,7 +599,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             data={data}
             barCategoryGap={0}
             barGap={0}
-            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+            margin={LOWER_CHART_MARGIN}
             onMouseMove={(e) => {
               if (e.activePayload?.[0]?.payload) {
                 const payload = e.activePayload[0].payload;
@@ -496,20 +623,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               }
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
+            <XAxis dataKey="date" tick={{ fontSize: 12, fill: colors.text }} interval="preserveStartEnd" />
             <YAxis
-              tick={{ fontSize: 12, dx: 2 }}
+              tick={{ fontSize: 12, dx: -5, fill: colors.text }}
               tickFormatter={(value: number) => formatNumber(value / 10000)}
-              label={{ 
-                value: '万株', 
-                position: 'top',
-                offset: -10,
-                dx: 0,
-                dy: 48,
-                fontSize: 11 
-              }}
-              width={35}
+              width={25}
             />
             <Tooltip 
               content={() => null}
@@ -539,13 +658,19 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 );
               }}
             >
-              {data.map((entry, index) => (
-                <Cell
-                  key={`volume-cell-${index}`}
-                  fill={entry.color === '#ff0000' ? '#ffcccc' : '#ccccff'}
-                  stroke={entry.color === '#ff0000' ? '#ff0000' : '#0000ff'}
-                />
-              ))}
+              {data.map((entry, index) => {
+                // 黒テーマの時だけ青色系を緑色系に変換
+                const originalColor = entry.color;
+                const convertedColor = theme === 'black' ? convertBlueToGreen(originalColor) : originalColor;
+                
+                return (
+                  <Cell
+                    key={`volume-cell-${index}`}
+                    fill={convertedColor === '#ff0000' ? colors.volumeUpFill : colors.volumeDownFill}
+                    stroke={convertedColor === '#ff0000' ? colors.volumeUpStroke : colors.volumeDownStroke}
+                  />
+                );
+              })}
             </Bar>
           </ComposedChart>
         </ResponsiveContainer>

@@ -273,7 +273,8 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                           generateChartImage(item.id);
                         }
                       }}
-                      // maxNewsTooltips={4}
+                      maxNewsTooltips={4}
+                      theme="black"
                     />
                     
                     {/* 画像生成中の表示 */}
