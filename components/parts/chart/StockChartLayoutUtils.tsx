@@ -7,6 +7,7 @@ export interface TooltipZone {
   xPosition: number;
   yPosition: number;
   isTop: boolean;
+  isNewsTooltip?: boolean;
 }
 
 export interface GridCell {
@@ -25,14 +26,15 @@ export interface TooltipArea {
   width: number;
   height: number;
   dataIndex?: number;
+  priority?: number; // 配置優先度を追加
 }
 
 // 動的なマージン計算（緩和版）
 const calculateDynamicMargins = (candleWidth: number, chartHeight: number) => {
   return {
-    xMargin: Math.max(candleWidth * 0.35, 6), // キャンドル幅の35%、最小6px（以前は50%、最小10px）
-    yMargin: Math.max(chartHeight * 0.015, 10), // チャート高さの1.5%、最小10px（以前は2%、最小15px）
-    lineMargin: 3 // 移動平均線用のマージン（5から3に削減）
+    xMargin: Math.max(candleWidth * 0.35, 6),
+    yMargin: Math.max(chartHeight * 0.015, 10),
+    lineMargin: 3
   };
 };
 
@@ -78,14 +80,13 @@ export const detectEmptyGridCells = (
   const actualCandleWidth = Math.min(containerWidth / data.length * 0.8, 12);
   const margins = calculateDynamicMargins(actualCandleWidth, chartHeight);
   
-  // 各データポイントのロウソク足のみをチェック（移動平均線は無視）
+  // 各データポイントのロウソク足のみをチェック
   data.forEach((item, index) => {
     const xPos = actualChartPositions?.[index] || (containerWidth / data.length) * (index + 0.5);
     const highY = chartHeight * (1 - (item.high - yAxisMin) / yAxisRange);
     const lowY = chartHeight * (1 - (item.low - yAxisMin) / yAxisRange);
     
     grid.forEach((cell, cellIndex) => {
-      // ロウソク足の範囲内かチェック
       if (xPos - margins.xMargin <= cell.x + cell.width && 
           xPos + margins.xMargin >= cell.x &&
           highY - margins.yMargin <= cell.y + cell.height && 
@@ -98,7 +99,7 @@ export const detectEmptyGridCells = (
   return grid;
 };
 
-// 指定された位置に140×60のtooltip領域を確保できるかチェック（緩和版）
+// 指定された位置に140×60のtooltip領域を確保できるかチェック
 const canPlaceTooltip = (
   x: number,
   y: number,
@@ -106,7 +107,8 @@ const canPlaceTooltip = (
   occupiedAreas: TooltipArea[],
   containerWidth: number,
   chartHeight: number,
-  overlapTolerance: number = 0.25 // 25%の重なりまで許容
+  overlapTolerance: number = 0.25,
+  tooltipMargin: number = 20
 ): boolean => {
   const tooltipWidth = 140;
   const tooltipHeight = 60;
@@ -116,22 +118,21 @@ const canPlaceTooltip = (
     return false;
   }
   
-  // 他のtooltipとの重なりチェック（これは厳密にチェック）
+  // 他のtooltipとの重なりチェック
   for (const area of occupiedAreas) {
-    if (x < area.x + area.width &&
-        x + tooltipWidth > area.x &&
-        y < area.y + area.height &&
-        y + tooltipHeight > area.y) {
+    if (x < area.x + area.width + tooltipMargin &&
+        x + tooltipWidth + tooltipMargin > area.x &&
+        y < area.y + area.height + tooltipMargin &&
+        y + tooltipHeight + tooltipMargin > area.y) {
       return false;
     }
   }
   
-  // tooltip領域内の非空白セルの割合をチェック（部分的な重なりを許容）
+  // tooltip領域内の非空白セルの割合をチェック
   let nonEmptyCellCount = 0;
   let totalCellCount = 0;
   
   for (const cell of emptyCells) {
-    // セルとtooltip領域が重なるかチェック
     if (x < cell.x + cell.width &&
         x + tooltipWidth > cell.x &&
         y < cell.y + cell.height &&
@@ -143,7 +144,6 @@ const canPlaceTooltip = (
     }
   }
   
-  // 重なっているセルのうち、非空白セルの割合が許容範囲内かチェック
   if (totalCellCount > 0) {
     const nonEmptyRatio = nonEmptyCellCount / totalCellCount;
     return nonEmptyRatio <= overlapTolerance;
@@ -152,28 +152,36 @@ const canPlaceTooltip = (
   return true;
 };
 
-// 全ての可能なtooltip配置領域を見つける
-export const findAllPossibleTooltipAreas = (
+// 改良版：右上を最優先に配置領域を探索
+export const findAllPossibleTooltipAreasRightTopFirst = (
   emptyCells: GridCell[],
   containerWidth: number,
   chartHeight: number
 ): TooltipArea[] => {
   const tooltipWidth = 140;
   const tooltipHeight = 60;
-  const stepSize = 15; // 検索ステップサイズを20から15に削減
+  const stepSize = 15;
   const possibleAreas: TooltipArea[] = [];
   const occupiedAreas: TooltipArea[] = [];
   
-  // グリッド全体を走査して配置可能な場所を探す（右から左へ）
-  for (let y = 0; y < chartHeight - tooltipHeight; y += stepSize) {
-    // 右から左へ探索（右詰め）
-    for (let x = containerWidth - tooltipWidth; x >= 0; x -= stepSize) {
-      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25)) {
+  // 探索開始位置（右上）
+  const startX = containerWidth - tooltipWidth;
+  const startY = 0;
+  
+  // 優先順位カウンター
+  let priority = 0;
+  
+  // 右から左へ列ごとに探索
+  for (let x = startX; x >= 0; x -= stepSize) {
+    // 各列で上から下へ探索
+    for (let y = startY; y <= chartHeight - tooltipHeight; y += stepSize) {
+      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 20)) {
         const area: TooltipArea = {
           x,
           y,
           width: tooltipWidth,
-          height: tooltipHeight
+          height: tooltipHeight,
+          priority: priority++ // 発見順に優先度を付与
         };
         possibleAreas.push(area);
         occupiedAreas.push(area);
@@ -181,53 +189,67 @@ export const findAllPossibleTooltipAreas = (
     }
   }
   
-  return possibleAreas;
+  // 優先度順にソート（既に右上優先で探索しているため、基本的には発見順）
+  return possibleAreas.sort((a, b) => (a.priority || 0) - (b.priority || 0));
 };
 
-// tooltip配置計算（テスト版：全ての可能な領域に配置）
-export const calculateTooltipZonesTest = (
-  data: ExtendedChartData[],
-  actualChartPositions: number[],
+// ニュースデータの取得と優先順位付け（最新記事を優先）
+const getNewsDataIndicesLatestFirst = (data: ExtendedChartData[]): number[] => {
+  const indices: number[] = [];
+  
+  // ニュース記事があるインデックスを収集
+  data.forEach((item, index) => {
+    if (item.articles && item.articles.length > 0) {
+      indices.push(index);
+    }
+  });
+  
+  // 最新順にソート（インデックスが大きいほど新しい）
+  return indices.sort((a, b) => b - a);
+};
+
+// X座標の重複を回避する関数
+const adjustXPositionIfNeeded = (
+  x: number,
+  existingZones: TooltipZone[],
   containerWidth: number,
-  chartHeight: number
-): TooltipZone[] => {
-  // 空白セルを検出
-  const emptyCells = detectEmptyGridCells(
-    data,
-    containerWidth,
-    chartHeight,
-    actualChartPositions,
-    30, // より細かいグリッド
-    20
-  );
+  tooltipWidth: number = 140,
+  xOffset: number = 15
+): number => {
+  let adjustedX = x;
+  const xTolerance = 5; // X座標が同じとみなす許容範囲
   
-  // 全ての可能なtooltip領域を見つける
-  const possibleAreas = findAllPossibleTooltipAreas(
-    emptyCells,
-    containerWidth,
-    chartHeight
-  );
+  // 既存のゾーンのX座標をチェック
+  const existingXPositions = existingZones.map(zone => zone.xPosition);
   
-  // TooltipZone形式に変換（テスト用なのでindexは連番）
-  const zones: TooltipZone[] = possibleAreas.map((area, index) => ({
-    index: index % data.length, // データインデックスを循環
-    zone: index,
-    xPosition: area.x,
-    yPosition: area.y,
-    isTop: area.y < chartHeight / 2
-  }));
+  // 同じX座標（許容範囲内）のゾーンがあるかチェック
+  while (existingXPositions.some(existingX => Math.abs(existingX - adjustedX) < xTolerance)) {
+    // 左にずらす
+    adjustedX -= xOffset;
+    
+    // コンテナの左端を超えないようにする
+    if (adjustedX < 0) {
+      // 右にずらしてみる
+      adjustedX = x + xOffset;
+      // 右端を超える場合は元の位置に戻す
+      if (adjustedX + tooltipWidth > containerWidth) {
+        adjustedX = x;
+        break;
+      }
+    }
+  }
   
-  return zones;
+  return adjustedX;
 };
 
-// 実際の運用版：ニュースがあるデータポイントの近くに配置
+// メイン関数：右上優先で最新記事を配置（X座標重複回避版）
 export const calculateTooltipZones = (
-  tooltipIndices: number[],
+  data: ExtendedChartData[],
   actualChartPositions: number[],
   containerWidth: number,
-  data: ExtendedChartData[],
   chartHeight: number,
-  minDistanceFromCandle: number = 25 // 60から25に削減
+  showEmptyAreas: boolean = false,
+  maxNewsTooltips?: number
 ): TooltipZone[] => {
   // 空白セルを検出
   const emptyCells = detectEmptyGridCells(
@@ -239,6 +261,22 @@ export const calculateTooltipZones = (
     20
   );
   
+  // 右上優先で可能な配置領域を見つける
+  const possibleAreas = findAllPossibleTooltipAreasRightTopFirst(
+    emptyCells,
+    containerWidth,
+    chartHeight
+  );
+  
+  // 最新記事優先でニュースインデックスを取得
+  const newsIndices = getNewsDataIndicesLatestFirst(data);
+  const limitedNewsIndices = maxNewsTooltips 
+    ? newsIndices.slice(0, maxNewsTooltips)
+    : newsIndices;
+  
+  const zones: TooltipZone[] = [];
+  
+  // Y軸の値計算用
   const allValues = data.flatMap(d => [d.high, d.low]);
   const minValue = Math.min(...allValues);
   const maxValue = Math.max(...allValues);
@@ -248,71 +286,57 @@ export const calculateTooltipZones = (
   const yAxisMax = maxValue + padding;
   const yAxisRange = yAxisMax - yAxisMin;
   
-  const zones: TooltipZone[] = [];
-  const occupiedAreas: TooltipArea[] = [];
-  const maxTooltips = window.innerWidth < 768 ? 3 : 6; // 表示数を増やす（2→3、4→6）
-  
-  // 各ニュースポイントに対して最適な配置を見つける
-  tooltipIndices.slice(0, maxTooltips).forEach((index) => {
-    const dataItem = data[index];
-    const xPos = actualChartPositions[index] || ((containerWidth / data.length) * (index + 0.5));
+  // 最新記事から順に、右上優先で配置
+  limitedNewsIndices.forEach((newsIndex, i) => {
+    if (i >= possibleAreas.length) return;
+    
+    const area = possibleAreas[i];
+    const dataItem = data[newsIndex];
     const centerValue = (dataItem.high + dataItem.low) / 2;
-    const centerY = chartHeight * (1 - (centerValue - yAxisMin) / yAxisRange);
+    const candleY = chartHeight * (1 - (centerValue - yAxisMin) / yAxisRange);
     
-    // ニュースポイントの近くで配置可能な場所を探す（右側優先）
-    let bestPosition: { x: number, y: number, distance: number, xOffset: number } | null = null;
-    const searchRadius = 250; // 200から250に拡大
-    const stepSize = 8; // 10から8に削減（より細かく探索）
-    const overlapTolerance = 0.35; // 35%の重なりまで許容
+    // X座標の重複を回避
+    const adjustedX = adjustXPositionIfNeeded(area.x, zones, containerWidth);
     
-    // 右側を優先して探索
-    for (let dy = -searchRadius; dy <= searchRadius; dy += stepSize) {
-      // 右から左へ探索（dx: searchRadius → -searchRadius）
-      for (let dx = searchRadius; dx >= -searchRadius; dx -= stepSize) {
-        const testX = xPos + dx - 70; // tooltip中心を調整
-        const testY = centerY + dy - 30;
-        
-        if (canPlaceTooltip(testX, testY, emptyCells, occupiedAreas, containerWidth, chartHeight, overlapTolerance)) {
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          if (distance >= minDistanceFromCandle) {
-            // 右側を優先：同じ距離なら右側（dx > 0）を選択
-            if (!bestPosition || 
-                (distance < bestPosition.distance) || 
-                (distance === bestPosition.distance && dx > bestPosition.xOffset)) {
-              bestPosition = { x: testX, y: testY, distance, xOffset: dx };
-            }
-          }
-        }
-      }
-    }
-    
-    if (bestPosition) {
-      zones.push({
-        index,
-        zone: zones.length,
-        xPosition: bestPosition.x,
-        yPosition: bestPosition.y,
-        isTop: bestPosition.y < centerY
-      });
-      
-      occupiedAreas.push({
-        x: bestPosition.x,
-        y: bestPosition.y,
-        width: 140,
-        height: 60,
-        dataIndex: index
-      });
-    }
+    zones.push({
+      index: newsIndex,
+      zone: zones.length,
+      xPosition: adjustedX,
+      yPosition: area.y,
+      isTop: area.y < candleY,
+      isNewsTooltip: true
+    });
   });
+  
+  // 残った空白領域を表示する場合
+  if (showEmptyAreas) {
+    const usedAreaCount = zones.length;
+    for (let i = usedAreaCount; i < possibleAreas.length; i++) {
+      const area = possibleAreas[i];
+      
+      // 空白領域でもX座標の重複を回避
+      const adjustedX = adjustXPositionIfNeeded(area.x, zones, containerWidth);
+      
+      zones.push({
+        index: -1,
+        zone: zones.length,
+        xPosition: adjustedX,
+        yPosition: area.y,
+        isTop: area.y < chartHeight / 2,
+        isNewsTooltip: false
+      });
+    }
+  }
   
   return zones;
 };
 
-// デバッグ用：グリッドと配置領域の可視化
-export const debugVisualizeLayout = (
+// デバッグ用：配置順序を可視化（X座標調整を反映）
+export const debugVisualizeLayoutWithPriority = (
   canvas: HTMLCanvasElement,
   emptyCells: GridCell[],
-  tooltipAreas: TooltipArea[]
+  tooltipAreas: TooltipArea[],
+  actualZones?: TooltipZone[]
 ) => {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -326,17 +350,39 @@ export const debugVisualizeLayout = (
     ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
   });
   
-  // tooltip領域を描画
-  tooltipAreas.forEach((area, index) => {
-    ctx.fillStyle = 'rgba(0, 0, 255, 0.2)';
-    ctx.fillRect(area.x, area.y, area.width, area.height);
-    ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(area.x, area.y, area.width, area.height);
-    
-    // 領域番号を表示
-    ctx.fillStyle = 'blue';
-    ctx.font = '12px Arial';
-    ctx.fillText(`#${index}`, area.x + 5, area.y + 15);
-  });
+  // 実際のゾーン配置を描画（X座標調整後）
+  if (actualZones) {
+    actualZones.forEach((zone, index) => {
+      const opacity = 0.8 - (index * 0.05);
+      ctx.fillStyle = `rgba(0, 0, 255, ${Math.max(0.2, opacity)})`;
+      ctx.fillRect(zone.xPosition, zone.yPosition, 140, 60);
+      ctx.strokeStyle = zone.isNewsTooltip ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(zone.xPosition, zone.yPosition, 140, 60);
+      
+      // 優先度番号を表示
+      ctx.fillStyle = 'white';
+      ctx.fillRect(zone.xPosition + 2, zone.yPosition + 2, 30, 20);
+      ctx.fillStyle = zone.isNewsTooltip ? 'red' : 'blue';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText(`${index + 1}`, zone.xPosition + 8, zone.yPosition + 16);
+    });
+  } else {
+    // tooltip領域を優先度順に色分けして描画
+    tooltipAreas.forEach((area, index) => {
+      const opacity = 0.8 - (index * 0.05);
+      ctx.fillStyle = `rgba(0, 0, 255, ${Math.max(0.2, opacity)})`;
+      ctx.fillRect(area.x, area.y, area.width, area.height);
+      ctx.strokeStyle = 'rgba(0, 0, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(area.x, area.y, area.width, area.height);
+      
+      // 優先度番号を表示
+      ctx.fillStyle = 'white';
+      ctx.fillRect(area.x + 2, area.y + 2, 30, 20);
+      ctx.fillStyle = 'blue';
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText(`${index + 1}`, area.x + 8, area.y + 16);
+    });
+  }
 };

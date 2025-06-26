@@ -17,7 +17,7 @@ import html2canvas from 'html2canvas';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
 import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
-import { TooltipZone, calculateTooltipZonesTest } from './StockChartLayoutUtils';
+import { TooltipZone, calculateTooltipZones } from './StockChartLayoutUtils';
 import { fetchChartAndNewsData } from './StockChartDataUtils';
 import { recordChartPosition, handleResize } from './StockChartPositionUtils';
 import { formatArticleTitle } from './StockChartTooltip';
@@ -40,7 +40,8 @@ interface StockChartProps {
   asImage?: boolean;
   onImageGenerated?: (imageUrl: string) => void;
   onTooltipRendered?: (isRendered: boolean) => void;
-  testMode?: boolean; // テストモードフラグを追加
+  showEmptyAreas?: boolean; // 空白領域を表示するかどうか
+  maxNewsTooltips?: number; // 表示する最大ニュース数
 }
 
 export interface StockChartRef {
@@ -65,7 +66,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   asImage = false,
   onImageGenerated,
   onTooltipRendered,
-  testMode = true // デフォルトでテストモードON
+  showEmptyAreas = false, // デフォルトは非表示
+  maxNewsTooltips
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -136,22 +138,24 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     };
   }, [code]);
 
-  // テストモード用のtooltip座標計算
+  // tooltip座標計算
   useEffect(() => {
-    if (testMode && data.length > 0 && containerWidth > 0 && isChartReady) {
+    if (data.length > 0 && containerWidth > 0 && isChartReady) {
       const timer = setTimeout(() => {
         const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-        const zones = calculateTooltipZonesTest(
+        const zones = calculateTooltipZones(
           data,
           actualChartPositionsRef.current,
           containerWidth,
-          chartHeight
+          chartHeight,
+          showEmptyAreas,
+          maxNewsTooltips
         );
         setTooltipZones(zones);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [testMode, data, containerWidth, isChartReady, pcHeight.upper, mobileHeight.upper]);
+  }, [data, containerWidth, isChartReady, pcHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
 
   // Tooltip描画完了の検知
   useEffect(() => {
@@ -246,26 +250,29 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           </div>
         </div>
 
-        {/* テストモード: 全ての確保可能な領域に空白のtooltipを配置 */}
-        {testMode && isChartReady && !asImage && tooltipZones.map((zone, index) => (
-          <div 
-            key={`test-tooltip-${index}`}
-            className="absolute z-30"
-            style={{ 
-              left: `${zone.xPosition}px`,
-              top: `${zone.yPosition}px`,
-              width: '140px',
-              height: '60px'
-            }}
-          >
-            <div className="bg-blue-100/80 border-2 border-blue-400 rounded-lg w-full h-full flex items-center justify-center">
-              <span className="text-xs font-bold text-blue-600">空白領域 #{index + 1}</span>
-            </div>
-          </div>
-        ))}
+        {/* Tooltip配置 */}
+        {isChartReady && !asImage && tooltipZones.map((zone, index) => {
+          // 空白領域の表示
+          if (zone.index === -1) {
+            return (
+              <div 
+                key={`empty-tooltip-${index}`}
+                className="absolute z-30"
+                style={{ 
+                  left: `${zone.xPosition}px`,
+                  top: `${zone.yPosition}px`,
+                  width: '140px',
+                  height: '60px'
+                }}
+              >
+                <div className="bg-gray-100/80 border-2 border-gray-300 rounded-lg w-full h-full flex items-center justify-center">
+                  <span className="text-xs text-gray-500">空白領域 #{zone.zone + 1}</span>
+                </div>
+              </div>
+            );
+          }
 
-        {/* 通常モード: ニュース記事のtooltip表示 */}
-        {!testMode && isChartReady && !asImage && tooltipZones.map((zone) => {
+          // ニュース記事のtooltip表示
           const item = data[zone.index];
           if (!item || !item.articles || item.articles.length === 0) return null;
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
@@ -290,6 +297,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                         display: 'block',
                         lineHeight: '1.3em',
                       }}
+                      onClick={() => {
+                        if (!item.articles?.length) return;
+                        const article = item.articles[0];
+                        const articleCode = item.code || code;
+                        window.location.href = `/${articleCode}/news/article/${article.id}`;
+                      }}
                     >
                       {formatArticleTitle(item.articles[0]?.title || '')}
                     </div>
@@ -301,7 +314,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 style={{ overflow: 'visible' }}
               >
                 <line
-                  x1={zone.xPosition}
+                  x1={tooltipLeft + 70} // tooltip中心からスタート
                   y1={zone.yPosition + 30}
                   x2={actualChartPositionsRef.current[zone.index] || ((containerWidth / data.length) * (zone.index + 0.5))}
                   y2={(() => {
@@ -352,13 +365,15 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           containerWidth,
           data,
           () => {
-            if (testMode && data.length > 0) {
+            if (data.length > 0) {
               const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-              const zones = calculateTooltipZonesTest(
+              const zones = calculateTooltipZones(
                 data,
                 actualChartPositionsRef.current,
                 containerWidth,
-                chartHeight
+                chartHeight,
+                showEmptyAreas,
+                maxNewsTooltips
               );
               setTooltipZones(zones);
             }
@@ -385,7 +400,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (!testMode && e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
+              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 window.location.href = `/${articleCode}/news/article/${article.id}`;
@@ -474,7 +489,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               setHoveredData(null);
             }}
             onClick={(e) => {
-              if (!testMode && e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
+              if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 window.location.href = `/${articleCode}/news/article/${article.id}`;
