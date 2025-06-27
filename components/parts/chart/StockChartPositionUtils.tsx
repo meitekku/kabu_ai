@@ -36,10 +36,9 @@ export const captureAllChartPositions = (
     const defaultIndices = getDefaultTooltipIndices(data);
     const chartHeight = window.innerWidth >= 768 ? 192 : 128;
     const zones = calculateTooltipZones(
-      defaultIndices,
+      defaultIndices.map(index => data[index]),
       newPositions,
       containerWidth,
-      data,
       chartHeight
     );
     setTooltipZones(zones);

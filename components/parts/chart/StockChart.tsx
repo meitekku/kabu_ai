@@ -43,6 +43,7 @@ interface StockChartProps {
   showEmptyAreas?: boolean;
   maxNewsTooltips?: number;
   theme?: 'default' | 'black';  // 新しいプロパティを追加
+  company_name?: boolean;  // 会社名と前日比を表示するかどうか
 }
 
 export interface StockChartRef {
@@ -53,6 +54,32 @@ export interface StockChartRef {
 // チャートのマージン設定を定数化
 const UPPER_CHART_MARGIN = { top: 10, right: 5, bottom: 5, left: 30 };
 const LOWER_CHART_MARGIN = { top: 0, right: 5, bottom: 20, left: 30 };
+
+// 会社情報を取得する関数
+const fetchCompanyInfo = async (code: string) => {
+  try {
+    const response = await fetch(`/api/${code}/company_info`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ code }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch company info');
+    }
+    
+    const result = await response.json();
+    if (result.success && result.data && result.data.length > 0) {
+      return result.data[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching company info:', error);
+    return null;
+  }
+};
 
 /* --------------------------------------------------
  * メインのチャートコンポーネント
@@ -73,7 +100,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   onTooltipRendered,
   showEmptyAreas = false,
   maxNewsTooltips,
-  theme = 'default'  // デフォルトは通常のテーマ
+  theme = 'default',  // デフォルトは通常のテーマ
+  company_name = false  // デフォルトはfalse
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +115,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isTooltipRendered, setIsTooltipRendered] = useState(false);
   const upperChartRef = useRef<HTMLDivElement>(null);
+  const [companyInfo, setCompanyInfo] = useState<{
+    companyName: string;
+    changePrice: number;
+    changePercent: number;
+    currentPrice: number;
+  } | null>(null);
 
   // テーマに基づく色設定
   const isBlackTheme = theme === 'black';
@@ -180,7 +214,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       // 上段と下段のチャートの高さを正確に計算
       const upperHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
       const lowerHeight = window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
-      const totalHeight = upperHeight + lowerHeight;
+      const headerHeight = company_name && companyInfo ? 60 : 0; // ヘッダーの高さを追加
+      const totalHeight = upperHeight + lowerHeight + headerHeight;
       
       // mt-2クラスのマージンを考慮（0.5rem = 8px）
       const marginTop = 8;
@@ -216,7 +251,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       console.error('Error exporting chart as image:', error);
       throw error;
     }
-  }, [colors.background, pcHeight, mobileHeight]);
+  }, [colors.background, pcHeight, mobileHeight, company_name, companyInfo]);
 
   // refに関数を公開
   useImperativeHandle(ref, () => ({
@@ -238,6 +273,26 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           })) : formattedData;
           setData(convertedData);
           setIsChartReady(true);
+          
+          // company_nameがtrueの場合、会社情報を取得して前日比を計算
+          if (company_name && convertedData.length >= 2) {
+            const latestData = convertedData[convertedData.length - 1];
+            const previousData = convertedData[convertedData.length - 2];
+            const changePrice = latestData.close - previousData.close;
+            const changePercent = (changePrice / previousData.close) * 100;
+            
+            // APIから会社情報を取得
+            const companyData = await fetchCompanyInfo(code);
+            console.log(companyData);
+            const companyDisplayName = companyData ? companyData.name : '会社名';
+            
+            setCompanyInfo({
+              companyName: companyDisplayName,
+              changePrice: changePrice,
+              changePercent: changePercent,
+              currentPrice: latestData.close
+            });
+          }
         }
       } catch (err) {
         if (isMounted) {
@@ -253,7 +308,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, theme]);
+  }, [code, theme, company_name]);
 
   // tooltip座標計算
   useEffect(() => {
@@ -336,6 +391,70 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   if (asImage && imageUrl) {
     return (
       <div className="mt-2" style={{ width }}>
+        {company_name && companyInfo && (
+          <div 
+            className="px-4 py-2 border-b" 
+            style={{ 
+              backgroundColor: colors.background,
+              borderColor: colors.gridColor
+            }}
+          >
+            <div className="flex items-center justify-between relative">
+              {/* 会社名を中央に配置 */}
+              <div className="absolute left-1/2 transform -translate-x-1/2">
+                <span 
+                  className="text-lg font-bold" 
+                  style={{ 
+                    color: companyInfo.changePrice >= 0 
+                      ? '#ff0000'  // プラスなら赤
+                      : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
+                  }}
+                >
+                  ({code}) {companyInfo.companyName}
+                </span>
+                <span 
+                  className="text-base font-medium ml-2" 
+                  style={{ 
+                    color: companyInfo.changePrice >= 0 
+                      ? '#ff0000'  // プラスなら赤
+                      : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
+                  }}
+                >
+                  {companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePrice.toFixed(0)}
+                  ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
+                </span>
+              </div>
+              {/* 価格情報を右側に配置 */}
+              <div className="ml-auto flex items-center gap-4">
+                <span className="text-2xl font-bold" style={{ color: colors.text }}>
+                  {companyInfo.currentPrice.toLocaleString()}<span className="text-lg ml-1">円</span>
+                </span>
+                <div className="flex flex-col items-end">
+                  <span 
+                    className="text-lg font-medium flex items-center"
+                    style={{ 
+                      color: companyInfo.changePrice >= 0 
+                        ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
+                        : '#ff0000'  // 赤色
+                    }}
+                  >
+                    {companyInfo.changePrice >= 0 ? '▲' : '▼'}{Math.abs(companyInfo.changePrice).toFixed(0)}
+                  </span>
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ 
+                      color: companyInfo.changePrice >= 0 
+                        ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
+                        : '#ff0000'  // 赤色
+                    }}
+                  >
+                    ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(2)}%)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <Image 
           src={imageUrl} 
           alt={`Stock chart for ${code}`} 
@@ -351,6 +470,72 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   return (
     <div className="mt-2" style={{ width, backgroundColor: colors.background }} ref={chartContainerRef}>
+      {/* 会社名と前日比を表示 */}
+      {company_name && companyInfo && (
+        <div 
+          className="px-4 py-2 border-b" 
+          style={{ 
+            backgroundColor: colors.background,
+            borderColor: colors.gridColor
+          }}
+        >
+          <div className="flex items-center justify-between relative">
+            {/* 会社名を中央に配置 */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <span 
+                className="text-lg font-bold" 
+                style={{ 
+                  color: companyInfo.changePrice >= 0 
+                    ? '#ff0000'  // プラスなら赤
+                    : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
+                }}
+              >
+                ({code}) {companyInfo.companyName}
+              </span>
+              <span 
+                className="text-base font-medium ml-2" 
+                style={{ 
+                  color: companyInfo.changePrice >= 0 
+                    ? '#ff0000'  // プラスなら赤
+                    : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
+                }}
+              >
+                {companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePrice.toFixed(0)}
+                ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
+              </span>
+            </div>
+            {/* 価格情報を右側に配置 */}
+            <div className="ml-auto flex items-center gap-4">
+              <span className="text-2xl font-bold" style={{ color: colors.text }}>
+                {companyInfo.currentPrice.toLocaleString()}<span className="text-lg ml-1">円</span>
+              </span>
+              <div className="flex flex-col items-end">
+                <span 
+                  className="text-lg font-medium flex items-center"
+                  style={{ 
+                    color: companyInfo.changePrice >= 0 
+                      ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
+                      : '#ff0000'  // 赤色
+                  }}
+                >
+                  {companyInfo.changePrice >= 0 ? '▲' : '▼'}{Math.abs(companyInfo.changePrice).toFixed(0)}
+                </span>
+                <span 
+                  className="text-sm font-medium"
+                  style={{ 
+                    color: companyInfo.changePrice >= 0 
+                      ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
+                      : '#ff0000'  // 赤色
+                  }}
+                >
+                  ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(2)}%)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* 上段チャート（ロウソク足 + 移動平均） */}
       <div 
         ref={upperChartRef}
