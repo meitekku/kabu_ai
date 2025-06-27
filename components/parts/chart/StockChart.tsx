@@ -13,73 +13,17 @@ import {
   Cell,
   RectangleProps
 } from 'recharts';
-import html2canvas from 'html2canvas';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
 import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
 import { TooltipZone, calculateTooltipZones } from './StockChartLayoutUtils';
-import { fetchChartAndNewsData } from './StockChartDataUtils';
-import { recordChartPosition, handleResize } from './StockChartPositionUtils';
+import { fetchChartAndNewsData, recordChartPosition, handleResize } from './StockChartUtils';
 import { formatArticleTitle } from './StockChartTooltip';
-import Image from 'next/image';
-
-/* --------------------------------------------------
- * 型定義
- * -------------------------------------------------- */
-interface StockChartProps {
-  code: string;
-  width?: string | number;
-  pcHeight?: {
-    upper: number;
-    lower: number;
-  };
-  mobileHeight?: {
-    upper: number;
-    lower: number;
-  };
-  asImage?: boolean;
-  onImageGenerated?: (imageUrl: string) => void;
-  onTooltipRendered?: (isRendered: boolean) => void;
-  showEmptyAreas?: boolean;
-  maxNewsTooltips?: number;
-  theme?: 'default' | 'black';  // 新しいプロパティを追加
-  company_name?: boolean;  // 会社名と前日比を表示するかどうか
-}
-
-export interface StockChartRef {
-  exportAsImage: () => Promise<string>;
-  isTooltipRendered: () => boolean;
-}
-
-// チャートのマージン設定を定数化
-const UPPER_CHART_MARGIN = { top: 10, right: 5, bottom: 5, left: 30 };
-const LOWER_CHART_MARGIN = { top: 0, right: 5, bottom: 20, left: 30 };
-
-// 会社情報を取得する関数
-const fetchCompanyInfo = async (code: string) => {
-  try {
-    const response = await fetch(`/api/${code}/company_info`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch company info');
-    }
-    
-    const result = await response.json();
-    if (result.success && result.data && result.data.length > 0) {
-      return result.data[0];
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching company info:', error);
-    return null;
-  }
-};
+import { StockChartProps, StockChartRef, UPPER_CHART_MARGIN, LOWER_CHART_MARGIN } from './StockChartTypes';
+import { getThemeColors, convertBlueToGreen } from './StockChartTheme';
+import { fetchCompanyInfo } from './StockChartApi';
+import { CompanyHeader } from './StockChartHeader';
+import { StockChartImage, exportAsImage } from './StockChartImage';
 
 /* --------------------------------------------------
  * メインのチャートコンポーネント
@@ -100,8 +44,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   onTooltipRendered,
   showEmptyAreas = false,
   maxNewsTooltips,
-  theme = 'default',  // デフォルトは通常のテーマ
-  company_name = false  // デフォルトはfalse
+  theme = 'default',
+  company_name = false
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,48 +67,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   } | null>(null);
 
   // テーマに基づく色設定
-  const isBlackTheme = theme === 'black';
-  const colors = {
-    background: isBlackTheme ? '#0f0f1e' : '#ffffff',
-    text: isBlackTheme ? '#ffffff' : '#000000',
-    textSecondary: isBlackTheme ? '#b8b8c8' : '#666666',
-    gridColor: isBlackTheme ? '#1f1f33' : '#e0e0e0',
-    tooltipBg: isBlackTheme ? 'rgba(15, 15, 30, 0.3)' : 'rgba(255, 255, 255, 0.65)',
-    tooltipBorder: isBlackTheme ? '#ffffff' : '#cccccc',
-    infoBg: isBlackTheme ? 'rgba(15, 15, 30, 0.85)' : 'rgba(255, 255, 255, 0.8)',
-    emptyAreaBg: isBlackTheme ? 'rgba(31, 31, 51, 0.8)' : 'rgba(243, 244, 246, 0.8)',
-    emptyAreaBorder: isBlackTheme ? '#3d3d5a' : '#d1d5db',
-    emptyAreaText: isBlackTheme ? '#9898b8' : '#6b7280',
-    loadingBg: isBlackTheme ? '#1f1f33' : '#e5e7eb',
-    errorText: isBlackTheme ? '#ff6b6b' : '#ef4444',
-    lineConnector: isBlackTheme ? '#7878a3' : '#666666',
-    ma5Color: isBlackTheme ? '#ffd700' : '#00ff00',
-    ma25Color: isBlackTheme ? '#ff8c00' : '#ff0000',
-    ma75Color: isBlackTheme ? '#ff6347' : '#0000ff',
-    volumeUpFill: isBlackTheme ? '#ffd700' : '#ffcccc',
-    volumeUpStroke: isBlackTheme ? '#ffc700' : '#ff0000',
-    volumeDownFill: isBlackTheme ? '#ffd700' : '#ccccff',
-    volumeDownStroke: isBlackTheme ? '#ffc700' : '#0000ff'
-  };
-
-  // 色変換関数：青色を緑色に変換
-  const convertBlueToGreen = (color: string): string => {
-    // 青系の色を緑色に変換
-    if (color === '#0000ff' || color === '#0000FF' || color === 'blue') {
-      return '#00aa00'; // 緑色に変換
-    }
-    if (color === '#4169e1' || color === '#4169E1') { // Royal Blue
-      return '#32cd32'; // Lime Green
-    }
-    if (color === '#1e90ff' || color === '#1E90FF') { // Dodger Blue
-      return '#00ff00'; // Pure Green
-    }
-    if (color === '#00bfff' || color === '#00BFFF') { // Deep Sky Blue
-      return '#00ff7f'; // Spring Green
-    }
-    // その他の青系の色もここで変換可能
-    return color; // 青系でない場合はそのまま返す
-  };
+  const colors = getThemeColors(theme);
 
   // Y軸のドメインを事前に計算する関数
   const calculateYDomain = useCallback(() => {
@@ -202,62 +105,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return yPosition;
   }, [calculateYDomain]);
 
-  // チャートを画像として出力する関数
-  const exportAsImage = useCallback(async (): Promise<string> => {
-    if (!chartContainerRef.current) {
-      throw new Error('Chart container not found');
-    }
-
-    try {
-      const container = chartContainerRef.current;
-      
-      // 上段と下段のチャートの高さを正確に計算
-      const upperHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-      const lowerHeight = window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
-      const headerHeight = company_name && companyInfo ? 60 : 0; // ヘッダーの高さを追加
-      const totalHeight = upperHeight + lowerHeight + headerHeight;
-      
-      // mt-2クラスのマージンを考慮（0.5rem = 8px）
-      const marginTop = 8;
-      const expectedTotalHeight = totalHeight + marginTop;
-      
-      const canvas = await html2canvas(container, {
-        backgroundColor: colors.background,
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        // 高さを明示的に制限
-        height: expectedTotalHeight,
-        // windowHeightを削除して自動計算させる
-        // クリッピングエリアを設定
-        width: container.offsetWidth,
-        x: 0,
-        y: 0,
-        scrollX: -window.scrollX,
-        scrollY: -window.scrollY
-      });
-
-      // 余白をトリミング（必要に応じて）
-      const ctx = document.createElement('canvas').getContext('2d');
-      if (!ctx) throw new Error('Canvas context not available');
-      
-      ctx.canvas.width = canvas.width;
-      ctx.canvas.height = Math.min(canvas.height, expectedTotalHeight * 2); // scale: 2を考慮
-      ctx.drawImage(canvas, 0, 0);
-      
-      const url = ctx.canvas.toDataURL('image/png');
-      return url;
-    } catch (error) {
-      console.error('Error exporting chart as image:', error);
-      throw error;
-    }
-  }, [colors.background, pcHeight, mobileHeight, company_name, companyInfo]);
-
   // refに関数を公開
   useImperativeHandle(ref, () => ({
-    exportAsImage,
+    exportAsImage: async () => {
+      return exportAsImage(chartContainerRef, colors, pcHeight, mobileHeight, company_name, companyInfo);
+    },
     isTooltipRendered: () => isTooltipRendered
-  }), [exportAsImage, isTooltipRendered]);
+  }), [colors, pcHeight, mobileHeight, company_name, companyInfo, isTooltipRendered]);
 
   // データ取得用のuseEffect
   useEffect(() => {
@@ -283,7 +137,6 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             
             // APIから会社情報を取得
             const companyData = await fetchCompanyInfo(code);
-            console.log(companyData);
             const companyDisplayName = companyData ? companyData.name : '会社名';
             
             setCompanyInfo({
@@ -351,7 +204,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     if (asImage && isChartReady && data.length > 0) {
       const generateImage = async () => {
         try {
-          const url = await exportAsImage();
+          const url = await exportAsImage(chartContainerRef, colors, pcHeight, mobileHeight, company_name, companyInfo);
           setImageUrl(url);
           if (onImageGenerated) {
             onImageGenerated(url);
@@ -363,7 +216,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       
       setTimeout(generateImage, 500);
     }
-  }, [asImage, isChartReady, data, onImageGenerated, exportAsImage]);
+  }, [asImage, isChartReady, data, onImageGenerated, colors, pcHeight, mobileHeight, company_name, companyInfo]);
 
   if (loading) {
     return (
@@ -390,79 +243,17 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   if (asImage && imageUrl) {
     return (
-      <div className="mt-2" style={{ width }}>
-        {company_name && companyInfo && (
-          <div 
-            className="px-4 py-2 border-b" 
-            style={{ 
-              backgroundColor: colors.background,
-              borderColor: colors.gridColor
-            }}
-          >
-            <div className="flex items-center justify-between relative">
-              {/* 会社名を中央に配置 */}
-              <div className="absolute left-1/2 transform -translate-x-1/2">
-                <span 
-                  className="text-lg font-bold" 
-                  style={{ 
-                    color: companyInfo.changePrice >= 0 
-                      ? '#ff0000'  // プラスなら赤
-                      : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
-                  }}
-                >
-                  ({code}) {companyInfo.companyName}
-                </span>
-                <span 
-                  className="text-base font-medium ml-2" 
-                  style={{ 
-                    color: companyInfo.changePrice >= 0 
-                      ? '#ff0000'  // プラスなら赤
-                      : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
-                  }}
-                >
-                  {companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePrice.toFixed(0)}
-                  ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
-                </span>
-              </div>
-              {/* 価格情報を右側に配置 */}
-              <div className="ml-auto flex items-center gap-4">
-                <span className="text-2xl font-bold" style={{ color: colors.text }}>
-                  {companyInfo.currentPrice.toLocaleString()}<span className="text-lg ml-1">円</span>
-                </span>
-                <div className="flex flex-col items-end">
-                  <span 
-                    className="text-lg font-medium flex items-center"
-                    style={{ 
-                      color: companyInfo.changePrice >= 0 
-                        ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
-                        : '#ff0000'  // 赤色
-                    }}
-                  >
-                    {companyInfo.changePrice >= 0 ? '▲' : '▼'}{Math.abs(companyInfo.changePrice).toFixed(0)}
-                  </span>
-                  <span 
-                    className="text-sm font-medium"
-                    style={{ 
-                      color: companyInfo.changePrice >= 0 
-                        ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
-                        : '#ff0000'  // 赤色
-                    }}
-                  >
-                    ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(2)}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        <Image 
-          src={imageUrl} 
-          alt={`Stock chart for ${code}`} 
-          className="w-full"
-          width={800}
-          height={600}
-        />
-      </div>
+      <StockChartImage
+        chartContainerRef={chartContainerRef}
+        colors={colors}
+        pcHeight={pcHeight}
+        mobileHeight={mobileHeight}
+        company_name={company_name}
+        companyInfo={companyInfo}
+        code={code}
+        theme={theme}
+        imageUrl={imageUrl}
+      />
     );
   }
 
@@ -470,71 +261,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   return (
     <div className="mt-2" style={{ width, backgroundColor: colors.background }} ref={chartContainerRef}>
-      {/* 会社名と前日比を表示 */}
-      {company_name && companyInfo && (
-        <div 
-          className="px-4 py-2 border-b" 
-          style={{ 
-            backgroundColor: colors.background,
-            borderColor: colors.gridColor
-          }}
-        >
-          <div className="flex items-center justify-between relative">
-            {/* 会社名を中央に配置 */}
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <span 
-                className="text-lg font-bold" 
-                style={{ 
-                  color: companyInfo.changePrice >= 0 
-                    ? '#ff0000'  // プラスなら赤
-                    : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
-                }}
-              >
-                ({code}) {companyInfo.companyName}
-              </span>
-              <span 
-                className="text-base font-medium ml-2" 
-                style={{ 
-                  color: companyInfo.changePrice >= 0 
-                    ? '#ff0000'  // プラスなら赤
-                    : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
-                }}
-              >
-                {companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePrice.toFixed(0)}
-                ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
-              </span>
-            </div>
-            {/* 価格情報を右側に配置 */}
-            <div className="ml-auto flex items-center gap-4">
-              <span className="text-2xl font-bold" style={{ color: colors.text }}>
-                {companyInfo.currentPrice.toLocaleString()}<span className="text-lg ml-1">円</span>
-              </span>
-              <div className="flex flex-col items-end">
-                <span 
-                  className="text-lg font-medium flex items-center"
-                  style={{ 
-                    color: companyInfo.changePrice >= 0 
-                      ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
-                      : '#ff0000'  // 赤色
-                  }}
-                >
-                  {companyInfo.changePrice >= 0 ? '▲' : '▼'}{Math.abs(companyInfo.changePrice).toFixed(0)}
-                </span>
-                <span 
-                  className="text-sm font-medium"
-                  style={{ 
-                    color: companyInfo.changePrice >= 0 
-                      ? (theme === 'black' ? '#00aa00' : '#00aa00')  // 緑色
-                      : '#ff0000'  // 赤色
-                  }}
-                >
-                  ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(2)}%)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <CompanyHeader
+        company_name={company_name}
+        companyInfo={companyInfo}
+        code={code}
+        theme={theme}
+        colors={colors}
+      />
       
       {/* 上段チャート（ロウソク足 + 移動平均） */}
       <div 
@@ -617,7 +350,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                     <div
                       className="text-xs hover:text-blue-400 cursor-pointer rounded transition-colors duration-150 leading-[1.3] font-medium"
                       style={{
-                        color: isBlackTheme ? '#e0e0e0' : '#374151',
+                        color: theme === 'black' ? '#e0e0e0' : '#374151',
                         wordWrap: 'break-word',
                         wordBreak: 'break-word',
                         display: 'block',
@@ -737,7 +470,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             <Bar
               dataKey="highLowBar"
               fill="none"
-              stroke={isBlackTheme ? '#ffffff' : '#000000'}
+              stroke={theme === 'black' ? '#ffffff' : '#000000'}
               strokeWidth={1}
               name="値幅"
               shape={(props: unknown) => <CandleWickShape {...(props as RectangleProps)} />}
@@ -867,3 +600,4 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 StockChart.displayName = 'StockChart';
 
 export default StockChart;
+export type { StockChartRef } from './StockChartTypes';
