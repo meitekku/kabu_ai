@@ -28,7 +28,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
       // console.log('[DEBUG TwitterPostButton] チャート画像を設定');
       setImageUrl(chartImageUrl);
       setPreviewUrl(chartImageUrl);
-      setCompressionInfo('チャート画像を使用');
+      setCompressionInfo(''); // 「チャート画像を使用」テキストを削除
     }
   }, [chartImageUrl, title, content]);
 
@@ -215,7 +215,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         disabled={isLoading}
         className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
       >
-        {isLoading ? '投稿中...' : '投稿'}
+        {isLoading ? '検索中...' : '検索'}
       </button>
       
       <div className="flex items-center gap-1">
@@ -230,14 +230,13 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
           htmlFor={`image-upload-${title}`}
           className="text-xs text-gray-600 cursor-pointer hover:text-gray-800"
         >
-          画像を選択
         </label>
         {previewUrl && (
           <button
             onClick={handleClearImage}
             className="text-xs text-red-600 hover:text-red-800 ml-2"
           >
-            画像をクリア
+            クリア
           </button>
         )}
       </div>
@@ -255,9 +254,6 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
             height={100}
             className="rounded shadow-sm"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            {chartImageUrl ? 'チャート画像' : '選択した画像'}
-          </p>
         </div>
       )}
 

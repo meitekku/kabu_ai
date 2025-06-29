@@ -502,30 +502,66 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 className="absolute top-0 left-0 w-full h-full pointer-events-none z-10"
                 style={{ overflow: 'visible' }}
               >
-                <line
-                  x1={tooltipLeft + 70} // tooltip中心からスタート
-                  y1={zone.yPosition + 30} // tooltipの下辺から
-                  x2={candleX}
-                  y2={candleY}
-                  stroke={colors.lineConnector}
-                  strokeWidth="1.5"
-                  markerEnd={`url(#arrowhead-${zone.index})`}
-                />
-                <defs>
-                  <marker
-                    id={`arrowhead-${zone.index}`}
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon
-                      points="0 0, 10 3.5, 0 7"
-                      fill={colors.lineConnector}
-                    />
-                  </marker>
-                </defs>
+                {(() => {
+                  // tooltipの情報
+                  const tooltipWidth = 140;
+                  const tooltipHeight = 30; // おおよその高さ
+                  const tooltipBottom = zone.yPosition + tooltipHeight;
+                  
+                  // ローソク足とtooltipの相対位置を計算
+                  let startX: number;
+                  let startY: number;
+                  
+                  // X軸方向の判定
+                  if (candleX < tooltipLeft) {
+                    // ローソク足が左側にある場合：tooltipの左辺から
+                    startX = tooltipLeft;
+                  } else if (candleX > tooltipLeft + tooltipWidth) {
+                    // ローソク足が右側にある場合：tooltipの右辺から
+                    startX = tooltipLeft + tooltipWidth;
+                  } else {
+                    // ローソク足が真下にある場合：X座標をそのまま使用
+                    startX = candleX;
+                  }
+                  
+                  // Y軸方向の判定
+                  if (candleY > tooltipBottom) {
+                    // ローソク足が下にある場合：tooltipの下辺から
+                    startY = tooltipBottom;
+                  } else {
+                    // ローソク足が上または同じ高さの場合：tooltipの中央の高さから
+                    startY = zone.yPosition + tooltipHeight / 2;
+                  }
+                  
+                  return (
+                    <>
+                      <line
+                        x1={startX}
+                        y1={startY}
+                        x2={candleX}
+                        y2={candleY}
+                        stroke={colors.lineConnector}
+                        strokeWidth="1.5"
+                        markerEnd={`url(#arrowhead-${zone.index})`}
+                      />
+                      <defs>
+                        <marker
+                          id={`arrowhead-${zone.index}`}
+                          markerWidth="10"
+                          markerHeight="7"
+                          refX="9"
+                          refY="3.5"
+                          orient="auto"
+                        >
+                          <polygon
+                            points="0 0, 10 3.5, 0 7"
+                            fill={colors.lineConnector}
+                          />
+                        </marker>
+                      </defs>
+                    </>
+                  );
+                })()}
               </svg>
             </React.Fragment>
           );
