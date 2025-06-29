@@ -30,11 +30,11 @@ export interface TooltipArea {
   distance?: number; // ロウソク足からの距離を追加
 }
 
-// 動的なマージン計算（拡大版）
+// 動的なマージン計算（緩和版）
 const calculateDynamicMargins = (candleWidth: number, chartHeight: number) => {
   return {
-    xMargin: Math.max(candleWidth * 0.42, 7.2),
-    yMargin: Math.max(chartHeight * 0.018, 12),
+    xMargin: Math.max(candleWidth * 0.35, 6),
+    yMargin: Math.max(chartHeight * 0.015, 10),
     lineMargin: 3
   };
 };
