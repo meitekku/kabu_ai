@@ -32,7 +32,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
   
   return (
     <div 
-      className="px-4 py-4 border-b" 
+      className="px-4 py-4 border-b mb-4" 
       style={{ 
         backgroundColor: colors.background,
         borderColor: colors.gridColor
@@ -66,4 +66,4 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
       </div>
     </div>
   );
-}; 
+};

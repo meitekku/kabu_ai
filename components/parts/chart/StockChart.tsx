@@ -25,6 +25,16 @@ import { fetchCompanyInfo } from './StockChartApi';
 import { CompanyHeader } from './StockChartHeader';
 import { StockChartImage, exportAsImage } from './StockChartImage';
 
+// Add this type definition after imports
+interface ExtendedRectangleProps extends RectangleProps {
+  payload?: ExtendedChartData & {
+    date: string;
+    articles?: Array<{ id: string; title: string }>;
+    code?: string;
+    index: number;
+  };
+}
+
 /* --------------------------------------------------
  * メインのチャートコンポーネント
  * -------------------------------------------------- */
@@ -65,6 +75,46 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     changePercent: number;
     currentPrice: number;
   } | null>(null);
+  
+  // チャートがレンダリングされ、初期位置が計算されたかを追跡
+  const [isInitialPositionCalculated, setIsInitialPositionCalculated] = useState(false);
+  
+  // ローソク足描画時の実際のX座標を記録するref
+  const candleXPositionsRef = useRef<number[]>([]);
+
+  // ログの重複を防ぐためのref
+  const loggedArticlesRef = useRef<Set<string>>(new Set());
+  const loggedArrowsRef = useRef<Set<string>>(new Set());
+  const loggedHoversRef = useRef<Set<string>>(new Set());
+  const loggedCandlesRef = useRef<Set<string>>(new Set());
+
+  // 重複防止ログ関数
+  const logOnce = {
+    articles: (key: string, message: string) => {
+      if (!loggedArticlesRef.current.has(key)) {
+        console.log(message);
+        loggedArticlesRef.current.add(key);
+      }
+    },
+    arrow: (key: string, message: string) => {
+      if (!loggedArrowsRef.current.has(key)) {
+        console.log(message);
+        loggedArrowsRef.current.add(key);
+      }
+    },
+    hover: (key: string, message: string) => {
+      if (!loggedHoversRef.current.has(key)) {
+        console.log(message);
+        loggedHoversRef.current.add(key);
+      }
+    },
+    candle: (key: string, message: string) => {
+      if (!loggedCandlesRef.current.has(key)) {
+        console.log(message);
+        loggedCandlesRef.current.add(key);
+      }
+    }
+  };
 
   // テーマに基づく色設定
   const colors = getThemeColors(theme);
@@ -105,6 +155,51 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return yPosition;
   }, [calculateYDomain]);
 
+  // tooltip座標を再計算する関数
+  const recalculateTooltipZones = useCallback(() => {
+    const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+    const zones = calculateTooltipZones(
+      data,
+      actualChartPositionsRef.current,
+      containerWidth,
+      chartHeight,
+      showEmptyAreas,
+      maxNewsTooltips
+    );
+    setTooltipZones(zones);
+  }, [data, containerWidth, pcHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
+
+
+  const calculateCandleXPosition = useCallback((index: number, totalDataPoints: number, chartWidth: number) => {
+    // ローソク足描画時に記録された実際のX座標があればそれを使用
+    if (candleXPositionsRef.current[index] && candleXPositionsRef.current[index] > 0) {
+      return candleXPositionsRef.current[index];
+    }
+    
+    // チャートの描画領域の幅を計算
+    const drawableWidth = chartWidth - UPPER_CHART_MARGIN.left - UPPER_CHART_MARGIN.right;
+    
+    // Rechartsのバンドスケールを模倣
+    // barCategoryGap=0の場合でも、Rechartsは内部的に小さなパディングを適用
+    const bandWidth = drawableWidth / totalDataPoints;
+    
+    // barCategoryGap=0の場合の実際のバー位置計算
+    // Rechartsは各バンドの中心にバーを配置
+    const bandCenter = UPPER_CHART_MARGIN.left + (index + 0.5) * bandWidth;
+    
+    return bandCenter;
+  }, []);
+
+  // 初期位置の計算と記録
+  const calculateInitialPositions = useCallback(() => {
+    if (data.length > 0 && containerWidth > 0 && !isInitialPositionCalculated) {
+      // 初期位置を計算して記録（実際の位置は後でhover時に更新される）
+      actualChartPositionsRef.current = new Array(data.length).fill(0);
+      candleXPositionsRef.current = new Array(data.length).fill(0);
+      setIsInitialPositionCalculated(true);
+    }
+  }, [data, containerWidth, isInitialPositionCalculated]);
+
   // refに関数を公開
   useImperativeHandle(ref, () => ({
     exportAsImage: async () => {
@@ -127,6 +222,20 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           })) : formattedData;
           setData(convertedData);
           setIsChartReady(true);
+          
+          // 記事付きデータがある場合のみログ出力（重複防止）
+          const articlesData = convertedData.filter(d => d.articles && d.articles.length > 0);
+          if (articlesData.length > 0) {
+            const headerKey = `articles-header-${code}`;
+            logOnce.articles(headerKey, '===== 記事データ取得完了 =====');
+            
+            articlesData.forEach(d => {
+              const originalIndex = convertedData.indexOf(d);
+              const articleKey = `article-${code}-${originalIndex}-${d.date}`;
+              const message = `記事データ[${originalIndex}]: ${d.date} - ${d.articles?.[0]?.title?.substring(0, 30)}...`;
+              logOnce.articles(articleKey, message);
+            });
+          }
           
           // company_nameがtrueの場合、会社情報を取得して前日比を計算
           if (company_name && convertedData.length >= 2) {
@@ -163,24 +272,20 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     };
   }, [code, theme, company_name]);
 
+  // 初期位置の計算
+  useEffect(() => {
+    calculateInitialPositions();
+  }, [calculateInitialPositions]);
+
   // tooltip座標計算
   useEffect(() => {
     if (data.length > 0 && containerWidth > 0 && isChartReady) {
       const timer = setTimeout(() => {
-        const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-        const zones = calculateTooltipZones(
-          data,
-          actualChartPositionsRef.current,
-          containerWidth,
-          chartHeight,
-          showEmptyAreas,
-          maxNewsTooltips
-        );
-        setTooltipZones(zones);
+        recalculateTooltipZones();
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [data, containerWidth, isChartReady, pcHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
+  }, [data, containerWidth, isChartReady, candleXPositionsRef.current, recalculateTooltipZones]);
 
   // Tooltip描画完了の検知
   useEffect(() => {
@@ -325,9 +430,34 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
           
           // ロウソク足の中心座標を計算
-          const candleX = actualChartPositionsRef.current[zone.index] || 
-            (UPPER_CHART_MARGIN.left + ((containerWidth - UPPER_CHART_MARGIN.left - UPPER_CHART_MARGIN.right) / data.length) * (zone.index + 0.5));
+          let candleX;
+          
+          // 優先順位：
+          // 1. hover時に記録された実際の位置
+          // 2. ローソク足描画時に記録された位置
+          // 3. 計算値
+          if (actualChartPositionsRef.current[zone.index] && actualChartPositionsRef.current[zone.index] > 0) {
+            candleX = actualChartPositionsRef.current[zone.index];
+          } else if (candleXPositionsRef.current[zone.index] && candleXPositionsRef.current[zone.index] > 0) {
+            candleX = candleXPositionsRef.current[zone.index];
+          } else {
+            // まだ記録されていない場合は計算値を使用
+            candleX = calculateCandleXPosition(zone.index, data.length, containerWidth);
+          }
+          
           const candleY = calculateCandleYPosition(item, chartHeight);
+          
+          // 記事データがある場合のみ矢印描画の詳細ログ（重複防止）
+          let status = 'CALCULATED';
+          if (actualChartPositionsRef.current[zone.index] && actualChartPositionsRef.current[zone.index] > 0) {
+            status = 'ACTUAL';
+          } else if (candleXPositionsRef.current[zone.index] && candleXPositionsRef.current[zone.index] > 0) {
+            status = 'CANDLE';
+          }
+          
+          const arrowKey = `arrow-${code}-${zone.index}-${item.date}-${status}`;
+          const message = `矢印描画[${zone.index}]: ${item.date} | ${status} | X座標=${candleX.toFixed(2)} | Y座標=${candleY.toFixed(2)} | 記事="${item.articles[0]?.title?.substring(0, 30)}..."`;
+          logOnce.arrow(arrowKey, message);
           
           return (
             <React.Fragment key={`tooltip-zone-${zone.index}`}>
@@ -379,7 +509,6 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   y2={candleY}
                   stroke={colors.lineConnector}
                   strokeWidth="1.5"
-                  strokeDasharray="2,2"
                   markerEnd={`url(#arrowhead-${zone.index})`}
                 />
                 <defs>
@@ -410,16 +539,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           data,
           () => {
             if (data.length > 0) {
-              const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-              const zones = calculateTooltipZones(
-                data,
-                actualChartPositionsRef.current,
-                containerWidth,
-                chartHeight,
-                showEmptyAreas,
-                maxNewsTooltips
-              );
-              setTooltipZones(zones);
+              recalculateTooltipZones();
             }
           }
         )}>
@@ -435,7 +555,21 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 if (e.activeCoordinate) {
                   const dataIndex = data.findIndex(item => item.date === payload.date);
                   if (dataIndex !== -1) {
+                    // hover時に実際の位置を記録
+                    const previousValue = actualChartPositionsRef.current[dataIndex];
                     recordChartPosition(actualChartPositionsRef, dataIndex, e.activeCoordinate.x);
+                    
+                    // 記事がある場合のみHover時の位置記録ログ（重複防止）
+                    if (payload.articles && payload.articles.length > 0) {
+                      const hoverKey = `hover-${code}-${dataIndex}-${payload.date}`;
+                      const message = `HOVER記録[${dataIndex}]: ${payload.date} | 記事あり | 前回=${previousValue || 'なし'} | 新規=${e.activeCoordinate.x} | 記事="${payload.articles[0]?.title?.substring(0, 30)}..."`;
+                      logOnce.hover(hoverKey, message);
+                    }
+                    
+                    // 初めて実際の位置が記録された場合、tooltipゾーンを再計算
+                    if (!previousValue || previousValue === 0) {
+                      recalculateTooltipZones();
+                    }
                   }
                 }
               }
@@ -478,7 +612,26 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             <Bar
               dataKey="candlestick"
               name="株価"
-              shape={(props: unknown) => <CandleBodyShape {...(props as RectangleProps)} />}
+              shape={(props: unknown) => {
+                const chartProps = props as ExtendedRectangleProps;
+                // 記事があるデータのみローソク足描画ログ（重複防止）
+                const articles = chartProps.payload?.articles;
+                const date = chartProps.payload?.date;
+                if (articles?.length && date && chartProps.x && chartProps.width) {
+                  const dataIndex = data.findIndex(item => item.date === date);
+                  const centerX = chartProps.x + chartProps.width / 2;
+                  
+                  // ローソク足の中心X座標を記録
+                  if (dataIndex !== -1) {
+                    candleXPositionsRef.current[dataIndex] = centerX;
+                  }
+                  
+                  const candleKey = `candle-${code}-${dataIndex}-${date}`;
+                  const message = `ローソク足描画[${dataIndex}]: ${date} | X座標=${chartProps.x} | 中心X=${centerX} | 記事="${articles[0]?.title?.substring(0, 30)}..."`;
+                  logOnce.candle(candleKey, message);
+                }
+                return <CandleBodyShape {...chartProps} />;
+              }}
             >
               {data.map((entry, index) => (
                 <Cell

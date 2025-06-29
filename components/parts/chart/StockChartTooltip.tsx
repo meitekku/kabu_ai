@@ -13,6 +13,11 @@ export const formatArticleTitle = (title: string): string => {
   // 「出来高」を含むフレーズを一時的に保存
   const volumeMatch = result.match(/出来高[^、：]*/);
   const volumePhrase = volumeMatch ? volumeMatch[0] : null;
+  
+  // 出来高フレーズを一時的に削除（後で追加するため重複を防ぐ）
+  if (volumePhrase) {
+    result = result.replace(volumePhrase, '');
+  }
 
   // 2) 念のため、本文に紛れ込む可能性のある「大幅」「下落」「上昇」などの文字列をグローバルに削除
   //    ただし、「出来高」「増加」「減少」などの重要なキーワードは保護する
@@ -53,7 +58,7 @@ export const formatArticleTitle = (title: string): string => {
     result = result.replace(/^[+\-−–]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
   }
 
-  // 保存しておいた「出来高」フレーズを結果に追加
+  // 保存しておいた「出来高」フレーズを結果に追加（重複チェック済み）
   if (volumePhrase) {
     result = volumePhrase + result;
   }

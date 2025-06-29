@@ -76,6 +76,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   // タイトル入力用 refs
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const chartRefs = useRef<Record<number, StockChartRef | null>>({});
+  const chartButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
 
   const [error, setError] = useState<string | null>(null);
   const [editedContents, setEditedContents] = useState<{ [key: number]: string }>({});
@@ -84,6 +85,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   const [expandedCharts, setExpandedCharts] = useState<{ [key: number]: boolean }>({});
   const [chartImages, setChartImages] = useState<{ [key: number]: string }>({});
   const [generatingImage, setGeneratingImage] = useState<{ [key: number]: boolean }>({});
+  const [autoExpandedIds, setAutoExpandedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const initialContents: Record<number, string> = {};
@@ -95,6 +97,42 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
     setEditedContents(initialContents);
     setEditedTitles(initialTitles);
   }, [items]);
+
+  // Intersection Observer for auto-expanding charts
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const button = entry.target as HTMLButtonElement;
+            const id = Number(button.dataset.chartId);
+            
+            // まだ自動展開していない場合のみ展開
+            if (!autoExpandedIds.has(id) && !expandedCharts[id]) {
+              setAutoExpandedIds(prev => new Set([...prev, id]));
+              setExpandedCharts(prev => ({ ...prev, [id]: true }));
+            }
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1 // ボタンの10%が見えたら発動
+      }
+    );
+
+    // すべてのチャートボタンを監視
+    Object.values(chartButtonRefs.current).forEach(button => {
+      if (button) {
+        observer.observe(button);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [items, autoExpandedIds, expandedCharts]);
 
   const updatePost = async (id: number, title: string, content: string) => {
     try {
@@ -223,7 +261,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
         {items.map(item => (
           <li key={item.id} className="relative rounded-lg border p-4">
             <div className="flex items-start gap-4">
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <input
                   ref={el => { inputRefs.current[item.id] = el }}
                   type="text"
@@ -243,6 +281,8 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                 
                 {/* チャート表示切り替えボタン */}
                 <button
+                  ref={el => { chartButtonRefs.current[item.id] = el }}
+                  data-chart-id={item.id}
                   onClick={() => toggleChart(item.id)}
                   className="mt-2 mb-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-2 transition-colors"
                 >
@@ -250,6 +290,9 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                     ▶
                   </span>
                   チャートを{expandedCharts[item.id] ? '非表示' : '表示'}
+                  {autoExpandedIds.has(item.id) && !expandedCharts[item.id] && (
+                    <span className="text-xs text-gray-500">（自動展開済み）</span>
+                  )}
                 </button>
 
                 {/* StockChartをtextareaの後に配置 */}
@@ -274,30 +317,9 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                         }
                       }}
                       maxNewsTooltips={4}
-                      theme="black"
+                      // theme="black"
                       company_name={true}
                     />
-                    
-                    {/* 画像生成中の表示 */}
-                    {generatingImage[item.id] && (
-                      <div className="mt-2 flex items-center gap-2 text-purple-600">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
-                        <span>チャート画像を自動生成中...</span>
-                      </div>
-                    )}
-                    
-                    {/* 生成されたチャート画像を表示 */}
-                    {chartImages[item.id] && (
-                      <div className="mt-4 border-2 border-purple-300 rounded-lg p-2">
-                        <Image 
-                          src={chartImages[item.id]} 
-                          alt={`Chart for ${item.code}`} 
-                          className="w-full rounded"
-                          width={800}
-                          height={600}
-                        />
-                      </div>
-                    )}
                   </div>
                 )}
                 
@@ -305,7 +327,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   作成日時: {ServerToDate(item.created_at)}
                 </p>
               </div>
-              <div className="sticky top-4 flex flex-col gap-2 pt-2">
+              <div className="sticky top-4 flex flex-col gap-2 pt-2 w-[200px] flex-shrink-0">
                 <button
                   onClick={() => handleAccept(item.id)}
                   className={`px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 ${isUpdating[item.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -322,13 +344,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                 <TwitterPostButton
                   title={editedTitles[item.id] || ''}
                   content={editedContents[item.id] || ''}
+                  chartImageUrl={chartImages[item.id]}
                   onSuccess={() => handleAccept(item.id)}
                 />
                 
                 <div className="flex flex-col gap-2 mt-4">
                   {MEDICINE_IMAGES.map((image, idx) => (
                     <div key={idx} className="w-50 h-20 relative">
-                      <Image src={image.src} alt={image.alt} fill className="object-contain" />
+                      <Image src={image.src} alt={image.alt} fill className="object-contain" sizes="(max-width: 200px) 100vw, 200px" />
                     </div>
                   ))}
                 </div>

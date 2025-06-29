@@ -17,15 +17,15 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
 
   // チャート画像が渡された場合、それを使用
   useEffect(() => {
-    console.log('[DEBUG TwitterPostButton] Props受信:', {
-      title: title?.substring(0, 20) + '...',
-      content: content?.substring(0, 20) + '...',
-      chartImageUrl: chartImageUrl ? 'あり' : 'なし',
-      chartImageUrlLength: chartImageUrl?.length || 0
-    });
+    // console.log('[DEBUG TwitterPostButton] Props受信:', {
+    //   title: title?.substring(0, 20) + '...',
+    //   content: content?.substring(0, 20) + '...',
+    //   chartImageUrl: chartImageUrl ? 'あり' : 'なし',
+    //   chartImageUrlLength: chartImageUrl?.length || 0
+    // });
 
     if (chartImageUrl) {
-      console.log('[DEBUG TwitterPostButton] チャート画像を設定');
+      // console.log('[DEBUG TwitterPostButton] チャート画像を設定');
       setImageUrl(chartImageUrl);
       setPreviewUrl(chartImageUrl);
       setCompressionInfo('チャート画像を使用');
@@ -113,7 +113,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      console.log('[DEBUG TwitterPostButton] 手動で画像選択:', file.name, formatFileSize(file.size));
+      // console.log('[DEBUG TwitterPostButton] 手動で画像選択:', file.name, formatFileSize(file.size));
       try {
         setCompressionInfo('画像を圧縮中...');
         setError(null);
@@ -142,10 +142,10 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   };
 
   const handlePost = async () => {
-    console.log('[DEBUG TwitterPostButton] 投稿開始');
-    console.log('[DEBUG TwitterPostButton] 画像URL存在:', imageUrl ? 'あり' : 'なし');
-    console.log('[DEBUG TwitterPostButton] 画像URLタイプ:', imageUrl ? (imageUrl.startsWith('data:') ? 'Data URL' : 'その他') : 'なし');
-    console.log('[DEBUG TwitterPostButton] 画像URLサイズ:', imageUrl?.length || 0);
+    // console.log('[DEBUG TwitterPostButton] 投稿開始');
+    // console.log('[DEBUG TwitterPostButton] 画像URL存在:', imageUrl ? 'あり' : 'なし');
+    // console.log('[DEBUG TwitterPostButton] 画像URLタイプ:', imageUrl ? (imageUrl.startsWith('data:') ? 'Data URL' : 'その他') : 'なし');
+    // console.log('[DEBUG TwitterPostButton] 画像URLサイズ:', imageUrl?.length || 0);
     
     try {
       setIsLoading(true);
@@ -158,11 +158,11 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         imageUrl: imageUrl || undefined,
       };
       
-      console.log('[DEBUG TwitterPostButton] リクエストボディ:', {
-        tweetContentLength: tweetContent.length,
-        hasImage: !!requestBody.imageUrl,
-        imageUrlLength: requestBody.imageUrl?.length || 0
-      });
+      // console.log('[DEBUG TwitterPostButton] リクエストボディ:', {
+      //   tweetContentLength: tweetContent.length,
+      //   hasImage: !!requestBody.imageUrl,
+      //   imageUrlLength: requestBody.imageUrl?.length || 0
+      // });
       
       const response = await fetch('/api/twitter/post', {
         method: 'POST',
@@ -172,10 +172,10 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         body: JSON.stringify(requestBody),
       });
       
-      console.log('[DEBUG TwitterPostButton] レスポンスステータス:', response.status);
+      // console.log('[DEBUG TwitterPostButton] レスポンスステータス:', response.status);
       
       const result = await response.json();
-      console.log('[DEBUG TwitterPostButton] レスポンス内容:', result);
+      // console.log('[DEBUG TwitterPostButton] レスポンス内容:', result);
       
       // 429エラーの場合は待機時間を表示
       if (response.status === 429) {
@@ -188,12 +188,12 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         throw new Error(result.message || '投稿に失敗しました');
       }
       
-      console.log('[DEBUG TwitterPostButton] 投稿成功');
+      // console.log('[DEBUG TwitterPostButton] 投稿成功');
       if (onSuccess) {
         onSuccess();
       }
     } catch (err) {
-      console.error('[DEBUG TwitterPostButton] 投稿エラー:', err);
+      // console.error('[DEBUG TwitterPostButton] 投稿エラー:', err);
       setError(err instanceof Error ? err.message : '投稿に失敗しました');
     } finally {
       setIsLoading(false);
@@ -202,7 +202,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
 
   // 画像をクリア
   const handleClearImage = () => {
-    console.log('[DEBUG TwitterPostButton] 画像クリア');
+    // console.log('[DEBUG TwitterPostButton] 画像クリア');
     setImageUrl('');
     setPreviewUrl('');
     setCompressionInfo('');

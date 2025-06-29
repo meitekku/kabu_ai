@@ -246,3 +246,4 @@
 2025-06-22T15:10:00.690Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-06-24T14:20:02.988Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-06-24T14:20:14.255Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-06-29T01:22:07.511Z [ERROR]: --- [18] Error in main block --- SyntaxError: Unexpected end of JSON input

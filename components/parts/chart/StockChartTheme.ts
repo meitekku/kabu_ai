@@ -35,7 +35,7 @@ export const getThemeColors = (theme: ChartTheme) => {
     emptyAreaText: isBlackTheme ? '#9898b8' : '#6b7280',
     loadingBg: isBlackTheme ? '#1f1f33' : '#e5e7eb',
     errorText: isBlackTheme ? '#ff6b6b' : '#ef4444',
-    lineConnector: isBlackTheme ? '#7878a3' : '#666666',
+    lineConnector: isBlackTheme ? '#ffffff' : '#000000',
     ma5Color: isBlackTheme ? '#ffd700' : '#00ff00',
     ma25Color: isBlackTheme ? '#ff8c00' : '#ff0000',
     ma75Color: isBlackTheme ? '#ff6347' : '#0000ff',

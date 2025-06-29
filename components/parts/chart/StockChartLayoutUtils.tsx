@@ -30,11 +30,11 @@ export interface TooltipArea {
   distance?: number; // ロウソク足からの距離を追加
 }
 
-// 動的なマージン計算（緩和版）
+// 動的なマージン計算（拡大版）
 const calculateDynamicMargins = (candleWidth: number, chartHeight: number) => {
   return {
-    xMargin: Math.max(candleWidth * 0.35, 6),
-    yMargin: Math.max(chartHeight * 0.015, 10),
+    xMargin: Math.max(candleWidth * 0.42, 7.2),
+    yMargin: Math.max(chartHeight * 0.018, 12),
     lineMargin: 3
   };
 };
@@ -109,7 +109,7 @@ const canPlaceTooltip = (
   containerWidth: number,
   chartHeight: number,
   overlapTolerance: number = 0.25,
-  tooltipMargin: number = 20
+  tooltipMargin: number = 30  // 20 → 30
 ): boolean => {
   const tooltipWidth = 140;
   const tooltipHeight = 60;
@@ -194,7 +194,7 @@ const findClosestTooltipArea = (
   // 全ての可能な位置を探索
   for (let x = 0; x <= containerWidth - tooltipWidth; x += stepSize) {
     for (let y = 0; y <= chartHeight - tooltipHeight; y += stepSize) {
-      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 20)) {
+      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 30)) {
         // ツールチップの中心とロウソク足の中心の距離を計算
         const tooltipCenterX = x + tooltipWidth / 2;
         const tooltipCenterY = y + tooltipHeight / 2;
@@ -359,7 +359,7 @@ export const calculateTooltipZones = (
     
     for (let x = 0; x <= containerWidth - tooltipWidth; x += stepSize) {
       for (let y = 0; y <= chartHeight - tooltipHeight; y += stepSize) {
-        if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 20)) {
+        if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 30)) {
           const adjustedX = adjustXPositionIfNeeded(x, zones, containerWidth);
           
           zones.push({
