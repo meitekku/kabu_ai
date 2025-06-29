@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -88,8 +88,8 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const loggedHoversRef = useRef<Set<string>>(new Set());
   const loggedCandlesRef = useRef<Set<string>>(new Set());
 
-  // 重複防止ログ関数
-  const logOnce = {
+  // 重複防止ログ関数をuseMemoでメモ化
+  const logOnce = useMemo(() => ({
     articles: (key: string, message: string) => {
       if (!loggedArticlesRef.current.has(key)) {
         console.log(message);
@@ -114,7 +114,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         loggedCandlesRef.current.add(key);
       }
     }
-  };
+  }), []); // 依存関係は空配列（refは変更されない）
 
   // テーマに基づく色設定
   const colors = getThemeColors(theme);
@@ -270,14 +270,14 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, theme, company_name]);
+  }, [code, theme, company_name, logOnce]);
 
   // 初期位置の計算
   useEffect(() => {
     calculateInitialPositions();
   }, [calculateInitialPositions]);
 
-  // tooltip座標計算
+  // tooltip座標計算（candleXPositionsRef.currentを依存関係から削除）
   useEffect(() => {
     if (data.length > 0 && containerWidth > 0 && isChartReady) {
       const timer = setTimeout(() => {
@@ -285,7 +285,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [data, containerWidth, isChartReady, candleXPositionsRef.current, recalculateTooltipZones]);
+  }, [data, containerWidth, isChartReady, recalculateTooltipZones]);
 
   // Tooltip描画完了の検知
   useEffect(() => {
