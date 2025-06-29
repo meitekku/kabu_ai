@@ -15,6 +15,22 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   const [error, setError] = useState<string | null>(null);
   const [compressionInfo, setCompressionInfo] = useState<string>('');
 
+  // Unixタイムスタンプを日本時間の「MM月DD日 H:i:s」形式に変換する関数
+  const formatUnixTimestampToJST = (unixTimestamp: number): string => {
+    const date = new Date(unixTimestamp * 1000);
+    
+    // 日本時間に変換（UTC+9）
+    const jstDate = new Date(date.getTime() + (9 * 60 * 60 * 1000));
+    
+    const month = jstDate.getUTCMonth() + 1;
+    const day = jstDate.getUTCDate();
+    const hours = jstDate.getUTCHours().toString().padStart(2, '0');
+    const minutes = jstDate.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = jstDate.getUTCSeconds().toString().padStart(2, '0');
+    
+    return `${month}月${day}日 ${hours}:${minutes}:${seconds}`;
+  };
+
   // チャート画像が渡された場合、それを使用
   useEffect(() => {
     // console.log('[DEBUG TwitterPostButton] Props受信:', {
@@ -177,11 +193,16 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
       const result = await response.json();
       // console.log('[DEBUG TwitterPostButton] レスポンス内容:', result);
       
-      // 429エラーの場合は待機時間を表示
+      // 429エラーの場合は待機時間を日本時間で表示
       if (response.status === 429) {
         const resetTime = response.headers.get('x-rate-limit-reset');
-        const waitTime = resetTime ? new Date(parseInt(resetTime) * 1000) : null;
-        throw new Error(`レート制限に達しました。${waitTime ? `${waitTime.toLocaleTimeString()}頃に` : '少し時間をおいて'}再試行してください。`);
+        if (resetTime) {
+          const resetTimestamp = parseInt(resetTime);
+          const jstTime = formatUnixTimestampToJST(resetTimestamp);
+          throw new Error(`レート制限に達しました。${jstTime}頃に再試行してください。`);
+        } else {
+          throw new Error('レート制限に達しました。少し時間をおいて再試行してください。');
+        }
       }
       
       if (!result.success) {
