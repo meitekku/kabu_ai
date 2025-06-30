@@ -39,7 +39,7 @@ export async function POST(
     const startDateStr = startDate.toISOString().split('T')[0];
     
     let query: string;
-    let queryParams: any[];
+    let queryParams: (string | number)[];
 
     if (code === 'all') {
       query = `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
