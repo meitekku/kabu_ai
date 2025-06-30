@@ -20,6 +20,7 @@ export async function POST(
     const body = await request.json();
     const limit = body.limit || 10;
     const days = body.days || 1;
+    const excludeId = body.excludeId; // New parameter to exclude specific article ID
 
     if (!code) {
       return NextResponse.json(
@@ -37,26 +38,33 @@ export async function POST(
     const todayStr = today.toISOString().split('T')[0];
     const startDateStr = startDate.toISOString().split('T')[0];
     
-    const query = code === 'all'
-      ? `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
-         FROM post p
-         LEFT JOIN post_status ps ON p.id = ps.post_id
-         WHERE 
-          p.accept = 1
-          AND p.site = 0
-          AND DATE(p.created_at) >= ?
-          AND DATE(p.created_at) <= ?
-         ORDER BY p.created_at DESC
-         LIMIT 100`
-      : `SELECT p.id, p.code, p.title, p.created_at, ps.status
-         FROM post p
-         LEFT JOIN post_status ps ON p.id = ps.post_id
-         WHERE p.code = ?
-         AND p.accept = 1
-         ORDER BY p.created_at DESC
-         LIMIT ?`;
-         
-    const queryParams = code === 'all' ? [startDateStr, todayStr] : [code, limit];
+    let query: string;
+    let queryParams: any[];
+
+    if (code === 'all') {
+      query = `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
+               FROM post p
+               LEFT JOIN post_status ps ON p.id = ps.post_id
+               WHERE 
+                p.accept = 1
+                AND p.site = 0
+                AND DATE(p.created_at) >= ?
+                AND DATE(p.created_at) <= ?
+                ${excludeId ? 'AND p.id != ?' : ''}
+               ORDER BY p.created_at DESC
+               LIMIT 100`;
+      queryParams = excludeId ? [startDateStr, todayStr, excludeId] : [startDateStr, todayStr];
+    } else {
+      query = `SELECT p.id, p.code, p.title, p.created_at, ps.status
+               FROM post p
+               LEFT JOIN post_status ps ON p.id = ps.post_id
+               WHERE p.code = ?
+               AND p.accept = 1
+               ${excludeId ? 'AND p.id != ?' : ''}
+               ORDER BY p.created_at DESC
+               LIMIT ?`;
+      queryParams = excludeId ? [code, excludeId, limit] : [code, limit];
+    }
     const news = await db.select<NewsRecord>(query, queryParams);
     
     // created_atのフォーマットを修正

@@ -1,4 +1,7 @@
-import TimeDisplay from '@/app/test/TimeDisplay'; // 「use client」がついているコンポーネント
+import TimeDisplay from '@/app/test/TimeDisplay';
+import { metadata } from './metadata';
+
+export { metadata };
 
 export default function TestPage() {
   // このページにアクセスされた時点でサーバー側で時間を取得するイメージ

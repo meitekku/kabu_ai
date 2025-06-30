@@ -1,12 +1,9 @@
 import DefaultTemplate from "@/components/template/DefaultTemplate";
 import NewsListS from "@/components/news/NewsListS";
 import NewsSection from "@/components/news/NewsSection";
-import { Metadata } from 'next';
+import { metadata } from './metadata';
 
-export const metadata: Metadata = {
-  title: '株AIトップページ',
-  description: '株AIは株式投資の分析・判断をサポートするAIツールです。',
-}
+export { metadata };
 
 export default function Home() {
   return (

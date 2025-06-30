@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import TodayArticleCopyButton from '@/components/parts/admin/TodayArticleCopyButton';
-import { Badge } from "@/components/ui/badge";
 import React from 'react';
+import { Badge } from "@/components/ui/badge";
 
 interface NewsItem {
   id: number;
@@ -25,23 +23,16 @@ interface StatusLabels {
   }
 }
 
-interface NewsListProps {
-  num?: string;
-  title?: string;
+interface RelatedStocksNewsProps {
+  code: string;
   excludeId?: string;
-  h3Title?: string;
+  limit?: number;
 }
 
-const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsListProps) => {
-  const params = useParams();
-  const code = params.code as string;
-  const limit = parseInt(num);
-
+const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProps) => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [days, setDays] = useState(1);
-  const daysRef = React.useRef(days);
 
   // ステータスラベルの定義
   const statusLabels = React.useMemo<StatusLabels>(() => ({
@@ -53,59 +44,36 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
     settlement: { label: '決算', color: 'bg-orange-500 text-white' }
   }), []);
 
-  const fetchNews = React.useCallback(async () => {
-    if (!code) return;
-    
-    console.log('fetchNews called with:', { code, limit, days: daysRef.current, excludeId });
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/${code}/news`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code, limit, days: daysRef.current, excludeId }),
-      });
+  useEffect(() => {
+    const fetchRelatedNews = async () => {
+      if (!code) return;
+      
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/${code}/related-stocks-news`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ code, excludeId, limit }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch news');
+        if (!response.ok) {
+          throw new Error('Failed to fetch related stocks news');
+        }
+        const data = await response.json();
+        setNews(data.data || []);
+        setError(null);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
       }
-      const data = await response.json();
-      setNews(data.data || []);
-      // データ取得後にcreated_atを表示
-      (data.data || []).forEach((item: NewsItem) => {
-        console.log('created_at:', item.created_at);
-      });
-      setError(null);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [code, limit, excludeId]);
+    };
 
-  // 初回マウント時とcode/limitが変更された時のみ実行
-  useEffect(() => {
-    console.log('useEffect triggered with:', { code, limit });
-    fetchNews();
-  }, [fetchNews, code, limit]);
-
-  // ニュースデータが更新されたときにcreated_atを表示
-  useEffect(() => {
-    news.forEach(item => {
-      console.log('created_at:', item.created_at);
-    });
-  }, [news]);
-
-  // 日数変更ハンドラー
-  const handleDaysChange = React.useCallback((selectedDays: number) => {
-    console.log('handleDaysChange called with:', selectedDays);
-    if (selectedDays === daysRef.current) return;
-    daysRef.current = selectedDays;
-    setDays(selectedDays);
-    fetchNews();
-  }, [fetchNews]);
+    fetchRelatedNews();
+  }, [code, excludeId, limit]);
 
   // ステータスからラベルを生成する関数
   const renderStatusLabels = React.useCallback((statusJson?: string) => {
@@ -155,37 +123,27 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
   }
 
   if (!news || news.length === 0) {
-    return <div className="text-gray-500 p-4">まだニュースがありません。</div>;
+    return <div className="text-gray-500 p-4">関連銘柄の記事がありません。</div>;
   }
 
   return (
     <div>
-      {h3Title && (
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
-      )}
-      {title && (
-        <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{title}</h2>
-      )}
-      {code === 'all' && (
-        <div className="flex justify-end mb-4">
-          <TodayArticleCopyButton 
-            articles={news} 
-            onDaysChange={handleDaysChange} 
-          />
-        </div>
-      )}
+      <h3 className="text-lg font-bold text-gray-900 mb-4">関連銘柄の最新記事</h3>
       
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
           <Link 
-            href={`/${code}/news/article/${item.id}`}
+            href={`/${item.code}/news/article/${item.id}`}
             key={item.id}
             className="block"
           >
             <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
               <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-bold text-sm text-blue-600">
+                      {item.company_name}
+                    </span>
                     <span className="font-bold text-sm text-gray-500">
                       {item.created_at}
                     </span>
@@ -200,8 +158,6 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
       </div>
     </div>
   );
-});
+};
 
-NewsList.displayName = 'NewsList';
-
-export default NewsList;
+export default RelatedStocksNews;

@@ -1,4 +1,7 @@
 import NewsListS from '@/components/news/NewsListS';
+import { metadata } from './metadata';
+
+export { metadata };
 
 export default function LatestNewsPage() {
   return (
