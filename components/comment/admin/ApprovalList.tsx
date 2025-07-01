@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
+import TwitterPythonButton from './TwitterPythonButton'; // 新しく追加
 import Image from 'next/image';
 import StockChart, { StockChartRef } from '@/components/parts/chart/StockChart';
 
@@ -254,6 +255,12 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
     }
   };
 
+  // Twitter Python投稿のエラーハンドラー
+  const handlePythonPostError = (id: number, error: string) => {
+    console.error(`Twitter Python投稿エラー (ID: ${id}):`, error);
+    // 必要に応じてユーザーに通知
+  };
+
   return (
     <div className="max-w-4xl">
       {error && <div className="text-red-500 mb-4">{error}</div>}
@@ -340,12 +347,21 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                 >{isUpdating[item.id] ? '処理中...' : '却下'}</button>
                 <button onClick={() => handleCopy(item.id)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">コピー</button>
                 
-                {/* TwitterPostButton: titleとcontentを別々に渡す */}
+                {/* 既存のTwitterPostButton */}
                 <TwitterPostButton
                   title={editedTitles[item.id] || ''}
                   content={editedContents[item.id] || ''}
                   chartImageUrl={chartImages[item.id]}
                   onSuccess={() => handleAccept(item.id)}
+                />
+                
+                {/* 新しく追加: TwitterPythonButton */}
+                <TwitterPythonButton
+                  title={editedTitles[item.id] || ''}
+                  content={editedContents[item.id] || ''}
+                  chartImageUrl={chartImages[item.id]}
+                  onSuccess={() => handleAccept(item.id)}
+                  onError={(error) => handlePythonPostError(item.id, error)}
                 />
                 
                 <div className="flex flex-col gap-2 mt-4">
