@@ -30,7 +30,7 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
         pcHeight={{ upper: 200, lower: 100 }}
         mobileHeight={{ upper: 100, lower: 80 }}
         width={"100%"}
-        maxNewsTooltips={6}
+        maxNewsTooltips={4}
       />
       <NewsList title="最新ニュース" />
     </div>

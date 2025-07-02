@@ -5,25 +5,51 @@ import { ExtendedChartData } from './types/StockChartTypes';
 export const formatArticleTitle = (title: string): string => {
   console.log('🔍 formatArticleTitle - 処理前:', title);
   
-  // シンプルに【】を削除するだけ
-  let result = title.replace(/【[^】]*】/g, '');
-  console.log('🔍 formatArticleTitle - 【】削除後:', result);
+  let result = title;
   
-  // 先頭の「-数字%」「数字%上昇」「数字%下落」などを削除
-  result = result.replace(/^[+\-–−]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
-  console.log('🔍 formatArticleTitle - パーセント削除後:', result);
-  
-  // 「、」「：」がある場合はその後の部分を取得
-  const afterDelimiterMatch = result.match(/[、：]\s*(.+)/);
-  if (afterDelimiterMatch) {
-    result = afterDelimiterMatch[1];
-    console.log('🔍 formatArticleTitle - 区切り文字後:', result);
+  // 最初が【で最後が】の場合（例：【トヨタ自動車(7203)株価0.51%上昇の背景】）
+  if (title.startsWith('【') && title.endsWith('】')) {
+    console.log('🔍 formatArticleTitle - 全体が【】で囲まれている場合');
+    
+    // 【】を削除
+    result = title.slice(1, -1);
+    console.log('🔍 formatArticleTitle - 【】削除後:', result);
+    
+    // 先頭の「-数字%」「数字%上昇」「数字%下落」などを削除
+    result = result.replace(/^[+\-–−]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
+    console.log('🔍 formatArticleTitle - パーセント削除後:', result);
+    
+    // 「、」「：」がある場合はその後の部分を取得
+    const afterDelimiterMatch = result.match(/[、：]\s*(.+)/);
+    if (afterDelimiterMatch) {
+      result = afterDelimiterMatch[1];
+      console.log('🔍 formatArticleTitle - 区切り文字後:', result);
+    }
+    
+    result = result.trim();
+    
+  } else {
+    console.log('🔍 formatArticleTitle - 通常の場合');
+    
+    // 先頭の「-数字%」「数字%上昇」「数字%下落」などを削除
+    result = result.replace(/^[+\-–−]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
+    console.log('🔍 formatArticleTitle - パーセント削除後:', result);
+    
+    // 「、」「：」がある場合はその後の部分を取得
+    const afterDelimiterMatch = result.match(/[、：]\s*(.+)/);
+    if (afterDelimiterMatch) {
+      result = afterDelimiterMatch[1];
+      console.log('🔍 formatArticleTitle - 区切り文字後:', result);
+    }
+    
+    result = result.trim();
+    
+    // 最後に【】を削除
+    result = result.replace(/【[^】]*】/g, '');
+    console.log('🔍 formatArticleTitle - 【】削除後:', result);
   }
   
-  // 前後の空白を削除
-  result = result.trim();
-  
-  // 結果が空でなければそれを返す、空なら【】だけ削除したバージョンを返す
+  // 結果が空の場合は元のタイトルから【】だけ削除
   const finalResult = result === '' ? title.replace(/【[^】]*】/g, '').trim() : result;
   console.log('🔍 formatArticleTitle - 最終結果:', finalResult);
   return finalResult;
