@@ -1,4 +1,5 @@
 // app/api/twitter/post_selenium/save-image/route.ts
+// 画像保存API - TwitterPythonButtonから呼び出される
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
@@ -20,66 +21,46 @@ export async function POST(request: NextRequest) {
     const body: SaveImageRequest = await request.json();
     
     if (!body.imageData) {
-      return NextResponse.json<SaveImageResponse>(
-        {
-          success: false,
-          error: '画像データが必要です'
-        },
-        { status: 400 }
-      );
+      return NextResponse.json<SaveImageResponse>({
+        success: false,
+        error: '画像データが提供されていません'
+      }, { status: 400 });
     }
     
-    // Base64データからヘッダーを削除
+    // データURLから実際のBase64データを抽出
     const base64Data = body.imageData.replace(/^data:image\/\w+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
     
-    // 画像の拡張子を判定
-    const imageType = body.imageData.match(/data:image\/(\w+);base64/);
-    const extension = imageType ? imageType[1] : 'png';
-    
-    // 一時ファイル名を生成
-    const timestamp = new Date().getTime();
-    const filename = `twitter_upload_${timestamp}.${extension}`;
-    
-    // 保存ディレクトリ（publicディレクトリまたはtmpディレクトリ）
+    // 保存先ディレクトリ
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     
     // ディレクトリが存在しない場合は作成
-    try {
-      await fs.access(uploadDir);
-    } catch {
-      await fs.mkdir(uploadDir, { recursive: true });
-    }
+    await fs.mkdir(uploadDir, { recursive: true });
     
-    // ファイルパス
+    // ユニークなファイル名を生成
+    const timestamp = Date.now();
+    const filename = `twitter_upload_${timestamp}.png`;
     const filePath = path.join(uploadDir, filename);
-    const relativePath = path.join('public', 'uploads', filename);
     
     // ファイルを保存
     await fs.writeFile(filePath, buffer);
     
     console.log(`✅ 画像を保存しました: ${filePath}`);
     
-    return NextResponse.json<SaveImageResponse>(
-      {
-        success: true,
-        path: relativePath,
-        absolutePath: filePath,
-        filename: filename
-      },
-      { status: 200 }
-    );
+    // レスポンス
+    return NextResponse.json<SaveImageResponse>({
+      success: true,
+      path: `/uploads/${filename}`,
+      absolutePath: filePath,
+      filename: filename
+    });
     
   } catch (error) {
-    console.error('💥 画像保存エラー:', error);
-    
-    return NextResponse.json<SaveImageResponse>(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '画像の保存に失敗しました'
-      },
-      { status: 500 }
-    );
+    console.error('画像保存エラー:', error);
+    return NextResponse.json<SaveImageResponse>({
+      success: false,
+      error: error instanceof Error ? error.message : '画像の保存に失敗しました'
+    }, { status: 500 });
   }
 }
 
@@ -87,20 +68,18 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: '画像保存API',
-    version: '1.0',
-    endpoints: {
-      POST: {
-        description: 'Base64画像データをファイルとして保存します',
-        body: {
-          imageData: 'Base64エンコードされた画像データ（data:image/png;base64,... 形式）'
-        },
-        response: {
-          success: '成功/失敗のブール値',
-          path: '相対パス',
-          absolutePath: '絶対パス',
-          filename: 'ファイル名',
-          error: 'エラーメッセージ'
-        }
+    description: 'Base64エンコードされた画像データをサーバーに保存します',
+    endpoint: {
+      method: 'POST',
+      body: {
+        imageData: 'Base64エンコードされた画像データ（data:image/png;base64,... 形式）'
+      },
+      response: {
+        success: '成功/失敗のブール値',
+        path: 'Webパス（/uploads/filename.png）',
+        absolutePath: '絶対パス（Pythonスクリプト用）',
+        filename: 'ファイル名',
+        error: 'エラーメッセージ（エラー時のみ）'
       }
     }
   });

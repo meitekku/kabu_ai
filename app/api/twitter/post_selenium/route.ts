@@ -1,4 +1,5 @@
 // app/api/twitter/post_selenium/route.ts
+// メインAPIルート - 絵文字対応版
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
@@ -6,6 +7,8 @@ import path from 'path';
 // リクエストボディの型定義
 interface TweetRequest {
   message?: string;
+  encodedMessage?: string;  // 絵文字対応のためのBase64エンコードメッセージ
+  hasEmoji?: boolean;       // 絵文字が含まれているかのフラグ
   imagePath?: string;
   textOnly?: boolean;
 }
@@ -61,21 +64,6 @@ function extractJsonReport(output: string): PythonErrorReport | null {
     ).trim();
     
     const report = JSON.parse(jsonString) as PythonErrorReport;
-    
-    // summaryフィールドが存在しない場合は手動で作成
-    if (!report.summary) {
-      report.summary = {
-        total_errors: report.errors?.length || 0,
-        total_warnings: report.warnings?.length || 0,
-        total_success_steps: report.success_steps?.length || 0
-      };
-    }
-    
-    // 配列フィールドが存在しない場合は空配列を設定
-    if (!report.errors) report.errors = [];
-    if (!report.warnings) report.warnings = [];
-    if (!report.success_steps) report.success_steps = [];
-    
     return report;
   } catch (error) {
     console.error('Failed to parse JSON report:', error);
@@ -88,20 +76,10 @@ function logDetailedReport(report: PythonErrorReport) {
   console.log('\n=== PYTHON SCRIPT DETAILED REPORT ===');
   console.log(`Final Result: ${report.final_result}`);
   console.log(`Timestamp: ${report.timestamp}`);
-  
-  // summaryフィールドの存在チェック
-  if (report.summary) {
-    console.log(`Summary: ${report.summary.total_errors} errors, ${report.summary.total_warnings} warnings, ${report.summary.total_success_steps} success steps`);
-  } else {
-    // summaryがない場合は配列の長さから計算
-    const errorCount = report.errors?.length || 0;
-    const warningCount = report.warnings?.length || 0;
-    const successCount = report.success_steps?.length || 0;
-    console.log(`Summary: ${errorCount} errors, ${warningCount} warnings, ${successCount} success steps`);
-  }
+  console.log(`Summary: ${report.summary.total_errors} errors, ${report.summary.total_warnings} warnings, ${report.summary.total_success_steps} success steps`);
   
   // 成功ステップをログ出力
-  if (report.success_steps && report.success_steps.length > 0) {
+  if (report.success_steps.length > 0) {
     console.log('\n🟢 SUCCESS STEPS:');
     report.success_steps.forEach((step, index) => {
       console.log(`  ${index + 1}. [${step.step}] ${step.message} (${step.timestamp})`);
@@ -109,7 +87,7 @@ function logDetailedReport(report: PythonErrorReport) {
   }
   
   // 警告をログ出力
-  if (report.warnings && report.warnings.length > 0) {
+  if (report.warnings.length > 0) {
     console.log('\n🟡 WARNINGS:');
     report.warnings.forEach((warning, index) => {
       console.log(`  ${index + 1}. [${warning.step}] ${warning.message} (${warning.timestamp})`);
@@ -117,7 +95,7 @@ function logDetailedReport(report: PythonErrorReport) {
   }
   
   // エラーをログ出力
-  if (report.errors && report.errors.length > 0) {
+  if (report.errors.length > 0) {
     console.log('\n🔴 ERRORS:');
     report.errors.forEach((error, index) => {
       console.log(`  ${index + 1}. [${error.step}] ${error.message} (${error.timestamp})`);
@@ -136,42 +114,51 @@ function logDetailedReport(report: PythonErrorReport) {
 // Pythonスクリプトを実行する関数
 async function executePythonScript(
   message?: string,
+  encodedMessage?: string,
+  hasEmoji?: boolean,
   imagePath?: string,
   textOnly: boolean = false
 ): Promise<{ success: boolean; report?: PythonErrorReport }> {
   return new Promise((resolve, reject) => {
-    // 修正: Pythonスクリプトのパス（同じディレクトリにある場合）
+    // Pythonスクリプトのパス（同じディレクトリにある場合）
     const scriptPath = path.join(process.cwd(), 'app', 'api', 'twitter', 'post_selenium', 'twitter_auto_post_secure.py');
     
     // コマンドライン引数を構築
     const args: string[] = [];
     
-    if (textOnly) {
-      args.push('--text-only');
-      if (message) {
+    // 絵文字が含まれている場合は、エンコードされたメッセージを使用
+    if (hasEmoji && encodedMessage) {
+      args.push('--encoded-message', encodedMessage);
+      // 画像がある場合
+      if (imagePath && !textOnly) {
+        args.push('--image', imagePath);
+      }
+    } else {
+      // 通常のメッセージ処理
+      if (textOnly) {
+        args.push('--text-only');
+        if (message) {
+          args.push(message);
+        }
+      } else if (imagePath) {
+        args.push('--image');
+        args.push(imagePath);
+        if (message) {
+          args.push(message);
+        }
+      } else if (message) {
         args.push(message);
       }
-    } else if (imagePath) {
-      args.push('--image');
-      args.push(imagePath);
-      if (message) {
-        args.push(message);
-      }
-    } else if (message) {
-      args.push(message);
     }
     
     console.log('Executing Python script:', scriptPath);
     console.log('Arguments:', args);
-    
-    // Python実行環境の確認
-    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+    if (hasEmoji) {
+      console.log('Note: Message contains emoji, using encoded format');
+    }
     
     // Pythonスクリプトを実行
-    const pythonProcess = spawn(pythonCommand, [scriptPath, ...args], {
-      env: { ...process.env },
-      cwd: process.cwd()
-    });
+    const pythonProcess = spawn('python', [scriptPath, ...args]);
     
     let stdout = '';
     let stderr = '';
@@ -192,18 +179,14 @@ async function executePythonScript(
     
     // プロセス終了時の処理
     pythonProcess.on('close', (code) => {
-      console.log(`Python process exited with code ${code}`);
+      console.log(`\nPython process exited with code ${code}`);
       
       // JSONレポートを抽出
       const report = extractJsonReport(stdout);
       
       if (report) {
         // 詳細レポートをコンソールに出力
-        try {
-          logDetailedReport(report);
-        } catch (error) {
-          console.error('Error logging detailed report:', error);
-        }
+        logDetailedReport(report);
         
         // レポートの final_result を基に成功/失敗を判定
         resolve({ success: report.final_result, report });
@@ -247,12 +230,7 @@ async function executePythonScript(
           fallbackReport.summary.total_errors++;
         }
         
-        try {
-          logDetailedReport(fallbackReport);
-        } catch (error) {
-          console.error('Error logging fallback report:', error);
-        }
-        
+        logDetailedReport(fallbackReport);
         resolve({ success, report: fallbackReport });
       }
     });
@@ -281,12 +259,7 @@ async function executePythonScript(
         }
       };
       
-      try {
-        logDetailedReport(errorReport);
-      } catch (logError) {
-        console.error('Error logging error report:', logError);
-      }
-      
+      logDetailedReport(errorReport);
       reject(error);
     });
     
@@ -313,12 +286,7 @@ async function executePythonScript(
         }
       };
       
-      try {
-        logDetailedReport(timeoutReport);
-      } catch (error) {
-        console.error('Error logging timeout report:', error);
-      }
-      
+      logDetailedReport(timeoutReport);
       reject(new Error('Python script timeout'));
     }, 5 * 60 * 1000);
   });
@@ -331,8 +299,8 @@ export async function POST(request: NextRequest) {
     const body: TweetRequest = await request.json();
     
     // 入力検証
-    if (!body.message && !body.imagePath) {
-      console.log('❌ Request validation failed: No message or image path provided');
+    if (!body.message && !body.encodedMessage && !body.imagePath) {
+      console.log('❌ Request validation failed: No message, encoded message, or image path provided');
       return NextResponse.json<TweetResponse>(
         {
           success: false,
@@ -342,11 +310,21 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('🚀 Tweet request received:', JSON.stringify(body, null, 2));
+    console.log('🚀 Tweet request received:', JSON.stringify({
+      ...body,
+      encodedMessage: body.encodedMessage ? '[BASE64 ENCODED]' : undefined
+    }, null, 2));
+    
+    // 絵文字が含まれているかのログ
+    if (body.hasEmoji) {
+      console.log('📝 Message contains emoji - using special handling');
+    }
     
     // Pythonスクリプトを実行
     const { success, report } = await executePythonScript(
       body.message,
+      body.encodedMessage,
+      body.hasEmoji,
       body.imagePath,
       body.textOnly || false
     );
@@ -364,10 +342,23 @@ export async function POST(request: NextRequest) {
       );
     } else {
       console.log('❌ Tweet posting failed');
+      
+      // 絵文字関連のエラーかチェック
+      const isEmojiError = report?.errors.some(error => 
+        error.message.includes('ChromeDriver only supports characters in the BMP') ||
+        error.exception?.includes('ChromeDriver only supports characters in the BMP')
+      );
+      
+      if (isEmojiError) {
+        console.error('⚠️ Emoji-related error detected. The emoji handling may not be working properly.');
+      }
+      
       return NextResponse.json<TweetResponse>(
         {
           success: false,
-          error: 'ツイートの投稿に失敗しました',
+          error: isEmojiError 
+            ? '絵文字の処理でエラーが発生しました。再度お試しください。' 
+            : 'ツイートの投稿に失敗しました',
           details: report
         },
         { status: 500 }
@@ -392,12 +383,14 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'Twitter投稿API',
-    version: '2.1 - Enhanced Error Handling',
+    version: '3.0 - Emoji Support & Enhanced Error Reporting',
     endpoints: {
       POST: {
-        description: 'ツイートを投稿します',
+        description: 'ツイートを投稿します（絵文字対応）',
         body: {
           message: '投稿するメッセージ（オプション）',
+          encodedMessage: 'Base64エンコードされたメッセージ（絵文字対応、オプション）',
+          hasEmoji: '絵文字が含まれているかのフラグ（オプション）',
           imagePath: '画像のパス（オプション）',
           textOnly: 'テキストのみの投稿かどうか（オプション、デフォルト: false）'
         },
@@ -410,12 +403,19 @@ export async function GET() {
       }
     },
     features: [
+      'Full emoji support using JavaScript injection',
+      'Base64 encoding for non-BMP characters',
       'Detailed error reporting from Python script',
       'Step-by-step execution tracking',
       'JSON-based error communication',
       'Enhanced console logging',
       'Comprehensive error analysis',
-      'Robust error handling for missing fields'
+      'Automatic emoji detection in React component'
+    ],
+    notes: [
+      'Emoji handling: Messages containing emoji are Base64 encoded and sent to Python script',
+      'Python script uses JavaScript injection to bypass ChromeDriver emoji limitations',
+      'All text input now uses JavaScript instead of send_keys for better compatibility'
     ]
   });
 }

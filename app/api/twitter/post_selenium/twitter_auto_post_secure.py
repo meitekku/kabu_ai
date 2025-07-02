@@ -1,17 +1,12 @@
 # twitter_auto_post_secure.py
-# 環境変数から認証情報を読み取るバージョン + 詳細エラーレポート機能 + 絵文字対応修正
+# 環境変数から認証情報を読み取るバージョン + 詳細エラーレポート機能 + 絵文字対応 + テキスト入力修正版（コピペ動作対応）
 
 import os
 import json
 import traceback
-from dotenv import load_dotenv  # pip install python-dotenv
-
-import argparse
 import base64
 import urllib.parse
-import sys
-import tempfile
-import shutil
+from dotenv import load_dotenv  # pip install python-dotenv
 
 # .envファイルを読み込む（Next.jsの.env.localも読める）
 load_dotenv('.env.local')
@@ -110,64 +105,26 @@ if TWITTER_USERNAME == 'default_username' or TWITTER_PASSWORD == 'default_passwo
     exit(1)
 
 def decode_emoji_message(encoded_message):
-    """Base64エンコードされたメッセージをデコード"""
+    """Base64エンコードされたメッセージをデコード（修正版）"""
     try:
         # Base64デコード
         decoded_bytes = base64.b64decode(encoded_message)
-        # URL形式のエンコーディングを解除
-        decoded_str = urllib.parse.unquote(decoded_bytes.decode('latin-1'))
+        # UTF-8でデコード（日本語と絵文字に対応）
+        decoded_str = decoded_bytes.decode('utf-8')
         return decoded_str
     except Exception as e:
-        print(f"メッセージのデコードエラー: {e}")
-        return None
-
-def set_text_with_javascript(driver, element, text):
-    """JavaScriptを使用してテキストを設定（絵文字対応）"""
-    try:
-        script = """
-        var element = arguments[0];
-        var text = arguments[1];
-        
-        // フォーカスを設定
-        element.focus();
-        
-        // 既存の内容をクリア
-        element.innerHTML = '';
-        element.textContent = '';
-        
-        // テキストを設定（改行対応）
-        if (text.includes('\\n')) {
-            // 改行がある場合はHTMLとして設定
-            var lines = text.split('\\n');
-            var htmlContent = lines.map(function(line) {
-                return '<div>' + (line || '<br>') + '</div>';
-            }).join('');
-            element.innerHTML = htmlContent;
-        } else {
-            // 改行がない場合は単純にテキスト設定
-            element.textContent = text;
-        }
-        
-        // React/Vue.jsなどのフレームワーク用のイベントを発火
-        var inputEvent = new Event('input', { bubbles: true, cancelable: true });
-        element.dispatchEvent(inputEvent);
-        
-        var changeEvent = new Event('change', { bubbles: true, cancelable: true });
-        element.dispatchEvent(changeEvent);
-        
-        // フォーカスアウト
-        element.blur();
-        element.focus();
-        
-        return true;
-        """
-        
-        result = driver.execute_script(script, element, text)
-        return result
-        
-    except Exception as e:
-        print(f"JavaScript テキスト設定エラー: {e}")
-        return False
+        # UTF-8でエラーが出た場合、URL形式のデコードを試みる
+        try:
+            decoded_bytes = base64.b64decode(encoded_message)
+            # URLエンコードされている可能性があるので、まずバイト列として取得
+            url_encoded_str = decoded_bytes.decode('ascii')
+            # URLデコード
+            decoded_str = urllib.parse.unquote(url_encoded_str)
+            return decoded_str
+        except Exception as e2:
+            print(f"メッセージのデコードエラー: {e}, {e2}")
+            error_reporter.add_error("decode_message", f"デコードエラー: {e}, {e2}", e)
+            return None
 
 def create_chrome_driver():
     """Chromeドライバーを直接起動"""
@@ -178,8 +135,8 @@ def create_chrome_driver():
         # Chromeオプションを設定
         options = Options()
         
-        # ヘッドレスモード追加
-        options.add_argument("--headless")
+        # ヘッドレスモード追加（必要に応じてコメントアウト）
+        # options.add_argument("--headless")
         
         # 自動化の痕跡を隠す設定
         options.add_argument("--disable-blink-features=AutomationControlled")
@@ -188,79 +145,41 @@ def create_chrome_driver():
         options.add_argument("--no-first-run")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--no-sandbox")
-        options.add_argument("--disable-gpu")
+        
+        # 文字化け対策：言語設定を追加
+        options.add_argument("--lang=ja")
         
         # ユーザーエージェントを設定
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # 一時プロファイルディレクトリを安全に作成
-        temp_dir = None
-        try:
-            # tempfileを使って安全な一時ディレクトリを作成
-            temp_dir = tempfile.mkdtemp(prefix='chrome_twitter_profile_')
-            print(f"一時プロファイルディレクトリを作成: {temp_dir}")
-            error_reporter.add_success("driver_init", f"一時プロファイルディレクトリ作成: {temp_dir}")
-        except Exception as e:
-            # フォールバック: 手動でディレクトリを作成
-            if os.name == 'nt':  # Windows
-                temp_base = os.environ.get('TEMP', 'C:\\Temp')
-            else:  # macOS/Linux
-                temp_base = '/tmp'
-            
-            temp_dir = os.path.join(temp_base, f'chrome_twitter_profile_{os.getpid()}')
-            
-            try:
-                os.makedirs(temp_dir, exist_ok=True)
-                print(f"フォールバック: 一時プロファイルディレクトリを作成: {temp_dir}")
-                error_reporter.add_success("driver_init", f"フォールバック一時ディレクトリ作成: {temp_dir}")
-            except Exception as mkdir_error:
-                error_msg = f"一時ディレクトリの作成に失敗: {mkdir_error}"
-                print(f"❌ {error_msg}")
-                error_reporter.add_error("driver_init", error_msg, mkdir_error)
-                return None
+        # 一時プロファイルディレクトリを設定
+        if os.name == 'nt':  # Windows
+            temp_dir = os.path.join(os.environ.get('TEMP'), 'chrome_twitter_profile')
+        else:  # macOS/Linux
+            temp_dir = os.path.join('/tmp', 'chrome_twitter_profile')
+        
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
         
         options.add_argument(f"--user-data-dir={temp_dir}")
         
         # WebDriverManagerでChromeDriverを自動管理
-        try:
-            service = Service(ChromeDriverManager().install())
-        except Exception as e:
-            error_msg = f"ChromeDriverのダウンロードに失敗: {e}"
-            print(f"❌ {error_msg}")
-            error_reporter.add_error("driver_init", error_msg, e)
-            # 一時ディレクトリをクリーンアップ
-            if temp_dir and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            return None
+        service = Service(ChromeDriverManager().install())
         
         # Chromeドライバーを起動
-        try:
-            driver = webdriver.Chrome(service=service, options=options)
-            driver.implicitly_wait(10)
-            driver.set_window_size(1200, 800)
-            
-            # WebDriver検出回避の追加設定
-            driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-                "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            })
-            driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-            
-            print("Chrome起動完了！")
-            error_reporter.add_success("driver_init", "Chrome起動完了")
-            
-            # 一時ディレクトリのパスをドライバーオブジェクトに保存（後でクリーンアップ用）
-            driver.temp_profile_dir = temp_dir
-            
-            return driver
-            
-        except Exception as e:
-            error_msg = f"Chromeの起動に失敗: {e}"
-            print(f"❌ {error_msg}")
-            error_reporter.add_error("driver_init", error_msg, e)
-            # 一時ディレクトリをクリーンアップ
-            if temp_dir and os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            return None
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.implicitly_wait(10)
+        driver.set_window_size(1200, 800)
+        
+        # WebDriver検出回避の追加設定
+        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
+        print("Chrome起動完了！")
+        error_reporter.add_success("driver_init", "Chrome起動完了")
+        return driver
         
     except Exception as e:
         error_msg = f"Chromeの起動に失敗: {e}"
@@ -405,8 +324,432 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         return False
 
 
-def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IMAGE_PATH):
-    """画像付きツイートを投稿（絵文字対応版）"""
+def find_tweet_button(driver):
+    """投稿ボタンを複数の方法で探す"""
+    # 複数のセレクタを試す
+    selectors = [
+        '[data-testid="tweetButtonInline"]',
+        '[data-testid="tweetButton"]',
+        'button[data-testid*="tweet"]',
+        'div[role="button"][tabindex="0"] span:contains("Post")',
+        'div[role="button"][tabindex="0"] span:contains("ポスト")',
+        'div[dir="ltr"] > span > span:contains("Post")',
+        'div[dir="ltr"] > span > span:contains("ポスト")'
+    ]
+    
+    for selector in selectors:
+        try:
+            # CSSセレクタを試す
+            if ':contains' not in selector:
+                button = driver.find_element(By.CSS_SELECTOR, selector)
+                if button and button.is_displayed() and button.is_enabled():
+                    print(f"✅ 投稿ボタン発見: {selector}")
+                    return button
+        except:
+            pass
+    
+    # XPathでも試す
+    xpath_selectors = [
+        "//div[@role='button']//span[text()='Post']",
+        "//div[@role='button']//span[text()='ポスト']",
+        "//button[contains(@data-testid, 'tweet')]",
+        "//div[@role='button' and @tabindex='0']//span[contains(text(), 'Post')]",
+        "//div[@role='button' and @tabindex='0']//span[contains(text(), 'ポスト')]"
+    ]
+    
+    for xpath in xpath_selectors:
+        try:
+            button = driver.find_element(By.XPATH, xpath)
+            if button and button.is_displayed() and button.is_enabled():
+                print(f"✅ 投稿ボタン発見(XPath): {xpath}")
+                return button
+        except:
+            pass
+    
+    # 最後の手段：JavaScriptで探す
+    try:
+        script = """
+        // 「Post」または「ポスト」というテキストを含むボタンを探す
+        var buttons = document.querySelectorAll('div[role="button"], button');
+        for (var btn of buttons) {
+            var text = btn.textContent || btn.innerText || '';
+            if (text === 'Post' || text === 'ポスト' || text.includes('Post') || text.includes('ポスト')) {
+                // ボタンが表示されていて、有効であることを確認
+                var rect = btn.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && btn.offsetParent !== null) {
+                    return btn;
+                }
+            }
+        }
+        return null;
+        """
+        button = driver.execute_script(script)
+        if button:
+            print("✅ 投稿ボタン発見(JavaScript)")
+            return button
+    except:
+        pass
+    
+    return None
+
+
+# ========== 改良版テキスト入力機能 ==========
+
+def input_text_with_clipboard(driver, element, text):
+    """コピペ動作でテキストを確実に入力する（改良版）"""
+    try:
+        print(f"クリップボード経由でテキスト入力: {text[:50]}...")
+        
+        # 要素をクリックしてフォーカス
+        element.click()
+        time.sleep(0.5)
+        
+        # 既存のテキストをクリア
+        try:
+            # Ctrl+A で全選択してからDelete
+            if os.name == 'nt':  # Windows
+                element.send_keys(Keys.CONTROL + 'a')
+            else:  # Mac/Linux
+                element.send_keys(Keys.COMMAND + 'a')
+            time.sleep(0.2)
+            element.send_keys(Keys.DELETE)
+            time.sleep(0.2)
+        except:
+            pass
+        
+        # 方法1: document.execCommand を使用した確実なコピー操作
+        try:
+            print("方法1: document.execCommand でクリップボード操作")
+            script = """
+            // 隠しテキストエリアを作成
+            var tempTextArea = document.createElement('textarea');
+            tempTextArea.value = arguments[0];
+            tempTextArea.style.position = 'fixed';
+            tempTextArea.style.left = '-9999px';
+            tempTextArea.style.top = '-9999px';
+            document.body.appendChild(tempTextArea);
+            
+            // テキストを選択
+            tempTextArea.select();
+            tempTextArea.setSelectionRange(0, 99999);
+            
+            // コピー実行
+            var copySuccess = false;
+            try {
+                copySuccess = document.execCommand('copy');
+            } catch (err) {
+                console.log('execCommand copy failed:', err);
+            }
+            
+            // 隠し要素を削除
+            document.body.removeChild(tempTextArea);
+            
+            return copySuccess;
+            """
+            
+            copy_success = driver.execute_script(script, text)
+            print(f"execCommand copy 結果: {copy_success}")
+            
+            if copy_success:
+                # フォーカスを戻してペースト
+                element.click()
+                time.sleep(0.3)
+                
+                # ペースト実行
+                if os.name == 'nt':  # Windows
+                    element.send_keys(Keys.CONTROL + 'v')
+                else:  # Mac/Linux
+                    element.send_keys(Keys.COMMAND + 'v')
+                
+                time.sleep(1)
+                
+                # 入力確認
+                current_text = element.text or element.get_attribute('value') or ''
+                if text.strip() in current_text.strip():
+                    print("✅ execCommand方式でテキスト入力成功")
+                    return True
+                    
+        except Exception as e:
+            print(f"execCommand方式エラー: {e}")
+        
+        # 方法2: navigator.clipboard.writeText (モダンブラウザ)
+        try:
+            print("方法2: navigator.clipboard.writeText")
+            script = """
+            return navigator.clipboard.writeText(arguments[0]).then(function() {
+                return true;
+            }).catch(function(err) {
+                console.log('clipboard.writeText failed:', err);
+                return false;
+            });
+            """
+            
+            # 非同期処理のため、同期的に実行
+            copy_success = driver.execute_script("""
+                var text = arguments[0];
+                var callback = arguments[arguments.length - 1];
+                
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        callback(true);
+                    }).catch(function(err) {
+                        callback(false);
+                    });
+                } else {
+                    callback(false);
+                }
+            """, text)
+            
+            if copy_success:
+                time.sleep(0.5)
+                element.click()
+                time.sleep(0.3)
+                
+                # ペースト実行
+                if os.name == 'nt':  # Windows
+                    element.send_keys(Keys.CONTROL + 'v')
+                else:  # Mac/Linux
+                    element.send_keys(Keys.COMMAND + 'v')
+                
+                time.sleep(1)
+                
+                # 入力確認
+                current_text = element.text or element.get_attribute('value') or ''
+                if text.strip() in current_text.strip():
+                    print("✅ navigator.clipboard方式でテキスト入力成功")
+                    return True
+                    
+        except Exception as e:
+            print(f"navigator.clipboard方式エラー: {e}")
+        
+        # 方法3: 直接DOM操作でクリップボードイベントをシミュレート
+        try:
+            print("方法3: クリップボードイベントシミュレーション")
+            script = """
+            var element = arguments[0];
+            var text = arguments[1];
+            
+            // 要素にフォーカス
+            element.focus();
+            
+            // クリップボードデータを含むペーストイベントを作成
+            var pasteEvent = new ClipboardEvent('paste', {
+                clipboardData: new DataTransfer()
+            });
+            
+            // DataTransferオブジェクトにテキストデータを設定
+            pasteEvent.clipboardData.setData('text/plain', text);
+            
+            // ペーストイベントをディスパッチ
+            element.dispatchEvent(pasteEvent);
+            
+            // 要素の値を直接設定（フォールバック）
+            if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
+                element.value = text;
+            } else {
+                element.textContent = text;
+                element.innerHTML = text.replace(/\n/g, '<br>');
+            }
+            
+            // 必要なイベントをトリガー
+            ['input', 'change', 'keyup'].forEach(function(eventType) {
+                var event = new Event(eventType, { bubbles: true, cancelable: true });
+                element.dispatchEvent(event);
+            });
+            
+            return element.textContent || element.value || '';
+            """
+            
+            result = driver.execute_script(script, element, text)
+            print(f"DOM操作結果: {result[:50]}...")
+            time.sleep(1)
+            
+            # 入力確認
+            current_text = element.text or element.get_attribute('value') or ''
+            if text.strip() in current_text.strip():
+                print("✅ DOM操作方式でテキスト入力成功")
+                return True
+                
+        except Exception as e:
+            print(f"DOM操作方式エラー: {e}")
+        
+        # 方法4: Pyperclip を使用したシステムクリップボード操作（最後の手段）
+        try:
+            print("方法4: システムクリップボード（pyperclip）")
+            # pyperclipがインストールされているかチェック
+            try:
+                import pyperclip
+                pyperclip.copy(text)
+                print("pyperclip でクリップボードにコピー完了")
+                
+                # 要素をクリックしてフォーカス
+                element.click()
+                time.sleep(0.5)
+                
+                # ペースト実行
+                if os.name == 'nt':  # Windows
+                    element.send_keys(Keys.CONTROL + 'v')
+                else:  # Mac/Linux
+                    element.send_keys(Keys.COMMAND + 'v')
+                
+                time.sleep(1)
+                
+                # 入力確認
+                current_text = element.text or element.get_attribute('value') or ''
+                if text.strip() in current_text.strip():
+                    print("✅ pyperclip方式でテキスト入力成功")
+                    return True
+                    
+            except ImportError:
+                print("pyperclip がインストールされていません (pip install pyperclip)")
+                
+        except Exception as e:
+            print(f"pyperclip方式エラー: {e}")
+        
+        print("❌ すべてのクリップボード方式が失敗しました")
+        return False
+        
+    except Exception as e:
+        print(f"❌ クリップボード入力で予期しないエラー: {e}")
+        return False
+
+
+def input_text_with_events_improved(driver, element, text):
+    """改良版テキスト入力（コピペ優先）"""
+    try:
+        print(f"改良版テキスト入力開始: {text[:50]}...")
+        
+        # まずクリップボード方式を試行
+        if input_text_with_clipboard(driver, element, text):
+            return True
+        
+        print("クリップボード方式が失敗、フォールバック方式を試行...")
+        
+        # フォールバック1: JavaScriptでの直接設定
+        try:
+            print("フォールバック1: JavaScript直接設定")
+            script = """
+            var element = arguments[0];
+            var text = arguments[1];
+            
+            // 要素にフォーカス
+            element.focus();
+            element.click();
+            
+            // React の内部プロパティを探す
+            var reactKey = Object.keys(element).find(key => 
+                key.startsWith('__reactInternalInstance') || 
+                key.startsWith('__reactFiber') ||
+                key.startsWith('__reactProps')
+            );
+            
+            // 要素の値を設定
+            if (element.tagName.toLowerCase() === 'textarea' || 
+                (element.tagName.toLowerCase() === 'input' && element.type === 'text')) {
+                element.value = text;
+            } else {
+                element.textContent = text;
+                element.innerHTML = text.replace(/\\n/g, '<br>');
+            }
+            
+            // React の onChange イベントを手動でトリガー
+            if (reactKey) {
+                var reactInstance = element[reactKey];
+                if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {
+                    reactInstance.memoizedProps.onChange({
+                        target: element,
+                        currentTarget: element,
+                        type: 'change'
+                    });
+                }
+            }
+            
+            // 標準的なイベントをディスパッチ
+            var events = ['input', 'change', 'blur', 'focus'];
+            events.forEach(function(eventType) {
+                var event = new Event(eventType, { 
+                    bubbles: true, 
+                    cancelable: true 
+                });
+                element.dispatchEvent(event);
+            });
+            
+            // キーボードイベントもトリガー
+            ['keydown', 'keypress', 'keyup'].forEach(function(eventType) {
+                var keyEvent = new KeyboardEvent(eventType, {
+                    bubbles: true,
+                    cancelable: true,
+                    key: 'Unidentified'
+                });
+                element.dispatchEvent(keyEvent);
+            });
+            
+            return element.textContent || element.value || '';
+            """
+            
+            result = driver.execute_script(script, element, text)
+            print(f"JavaScript直接設定結果: {result[:50]}...")
+            time.sleep(1)
+            
+            # 入力確認
+            current_text = element.text or element.get_attribute('value') or ''
+            if text.strip() in current_text.strip():
+                print("✅ JavaScript直接設定で成功")
+                return True
+                
+        except Exception as e:
+            print(f"JavaScript直接設定エラー: {e}")
+        
+        # フォールバック2: ゆっくりとした文字入力（最後の手段）
+        try:
+            print("フォールバック2: ゆっくり文字入力")
+            element.clear()
+            element.click()
+            time.sleep(0.5)
+            
+            # 文字を少しずつ入力
+            chunk_size = 10  # 10文字ずつ入力
+            for i in range(0, len(text), chunk_size):
+                chunk = text[i:i+chunk_size]
+                element.send_keys(chunk)
+                time.sleep(0.1)  # 各チャンクの間に遅延
+            
+            time.sleep(1)
+            
+            # 入力確認
+            current_text = element.text or element.get_attribute('value') or ''
+            if text.strip() in current_text.strip():
+                print("✅ ゆっくり文字入力で成功")
+                return True
+                
+        except Exception as e:
+            print(f"ゆっくり文字入力エラー: {e}")
+        
+        print("❌ すべての入力方式が失敗しました")
+        return False
+        
+    except Exception as e:
+        print(f"❌ 改良版テキスト入力で予期しないエラー: {e}")
+        return False
+
+
+# ========== 従来のテキスト入力機能（互換性のため残す） ==========
+
+def input_text_with_events(driver, element, text):
+    """テキストを確実に入力する（従来版）"""
+    try:
+        # 新しい改良版を呼び出す
+        return input_text_with_events_improved(driver, element, text)
+        
+    except Exception as e:
+        print(f"従来版テキスト入力エラー: {e}")
+        return False
+
+
+# ========== 改良版投稿機能 ==========
+
+def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IMAGE_PATH):
+    """画像付きツイートを投稿（改良版テキスト入力使用）"""
     try:
         print(f"画像付きツイート投稿中...")
         print(f"  メッセージ: {message}")
@@ -445,31 +788,19 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
             error_reporter.add_error("tweet_with_image", error_msg, e)
             return False
         
-        # テキスト入力（JavaScriptを使用して絵文字対応）
-        print("メッセージを入力中（JavaScript使用）...")
-        try:
-            success = set_text_with_javascript(driver, tweet_textarea, message)
-            if success:
-                time.sleep(2)
-                error_reporter.add_success("tweet_with_image", "メッセージ入力完了（JavaScript）")
-                print("✅ メッセージ入力完了（絵文字対応）")
-            else:
-                # フォールバック: 通常のsend_keysを試行
-                print("⚠️ JavaScript入力に失敗、通常入力を試行...")
-                tweet_textarea.clear()
-                tweet_textarea.send_keys(message)
-                time.sleep(2)
-                error_reporter.add_warning("tweet_with_image", "フォールバック: 通常入力を使用")
-                print("✅ メッセージ入力完了（通常入力）")
-        except Exception as e:
-            error_msg = f"メッセージ入力エラー: {e}"
-            error_reporter.add_error("tweet_with_image", error_msg, e)
-            return False
+        # テキスト入力（改良版を使用）
+        print("メッセージを入力中...")
+        text_input_success = input_text_with_events_improved(driver, tweet_textarea, message)
+        
+        if text_input_success:
+            error_reporter.add_success("tweet_with_image", "メッセージ入力完了")
+        else:
+            error_reporter.add_warning("tweet_with_image", "メッセージ入力に問題がある可能性があります")
         
         # 画像アップロードボタンを探してクリック
         print("画像アップロードボタンを探しています...")
         try:
-            # 直接ファイル入力要素を探す（これが確実に動作している）
+            # 直接ファイル入力要素を探す
             print("ファイル入力要素を検索中...")
             file_input = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"][accept*="image"]'))
@@ -484,53 +815,28 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
             time.sleep(3)
             error_reporter.add_success("tweet_with_image", "画像ファイルアップロード送信完了")
             
-            # アップロード完了確認：ファイル入力要素の状態をチェック
+            # アップロード完了確認
             print("アップロード完了を確認中...")
             upload_success = False
             
-            # 方法1: ファイル入力要素のvalue属性をチェック
-            try:
-                file_value = file_input.get_attribute('value')
-                if file_value:
-                    print(f"✅ ファイル入力要素にファイルが設定されています: {file_value}")
-                    upload_success = True
-                    error_reporter.add_success("tweet_with_image", f"ファイル設定確認: {file_value}")
-            except:
-                pass
+            # 簡単なセレクターでメディア要素をチェック
+            simple_selectors = [
+                '[data-testid="media"]',
+                'img[src*="blob:"]',
+                '[data-testid="removeMedia"]'
+            ]
             
-            # 方法2: 簡単なセレクターでメディア要素をチェック
-            if not upload_success:
-                simple_selectors = [
-                    '[data-testid="media"]',
-                    'img[src*="blob:"]',
-                    '[data-testid="removeMedia"]'
-                ]
-                
-                for selector in simple_selectors:
-                    try:
-                        WebDriverWait(driver, 5).until(
-                            EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                        )
-                        print(f"✅ 画像アップロード完了確認（{selector}）")
-                        upload_success = True
-                        error_reporter.add_success("tweet_with_image", f"アップロード確認: {selector}")
-                        break
-                    except:
-                        continue
-            
-            # 方法3: 少し待ってツイートエリア内の変化をチェック
-            if not upload_success:
+            for selector in simple_selectors:
                 try:
-                    time.sleep(2)
-                    # ツイートエリア内にimg要素があるかチェック
-                    tweet_container = driver.find_element(By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]').find_element(By.XPATH, './ancestor::form | ./ancestor::div[@role="dialog"] | ./ancestor::div[contains(@class, "css-")]')
-                    images = tweet_container.find_elements(By.TAG_NAME, 'img')
-                    if len(images) > 0:
-                        print(f"✅ ツイートエリア内に画像を確認（{len(images)}個）")
-                        upload_success = True
-                        error_reporter.add_success("tweet_with_image", f"ツイートエリア内画像確認: {len(images)}個")
-                except Exception as e:
-                    error_reporter.add_warning("tweet_with_image", f"コンテナチェックエラー: {e}")
+                    WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                    )
+                    print(f"✅ 画像アップロード完了確認（{selector}）")
+                    upload_success = True
+                    error_reporter.add_success("tweet_with_image", f"アップロード確認: {selector}")
+                    break
+                except:
+                    continue
             
             if upload_success:
                 print("🎉 画像アップロード完了！")
@@ -549,12 +855,14 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
         time.sleep(2)
         
         # 投稿ボタンをクリック
-        print("投稿ボタンをクリック...")
+        print("投稿ボタンを探しています...")
         try:
-            post_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="tweetButtonInline"]'))
-            )
-            post_button.click()
+            post_button = find_tweet_button(driver)
+            if not post_button:
+                raise Exception("投稿ボタンが見つかりません")
+            
+            # JavaScriptでクリック（通常のクリックが失敗する場合があるため）
+            driver.execute_script("arguments[0].click();", post_button)
             time.sleep(5)
             error_reporter.add_success("tweet_with_image", "投稿ボタンクリック完了")
         except Exception as e:
@@ -562,7 +870,7 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
             error_reporter.add_error("tweet_with_image", error_msg, e)
             return False
         
-        # 投稿完了確認（ホームタイムラインに戻っているかチェック）
+        # 投稿完了確認
         try:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
@@ -575,7 +883,7 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
             warning_msg = "投稿完了の確認ができませんでしたが、投稿ボタンはクリックしました"
             print(f"⚠️ {warning_msg}")
             error_reporter.add_warning("tweet_with_image", warning_msg)
-            return True  # ボタンクリック成功で成功とみなす
+            return True
         
     except Exception as e:
         error_msg = f"投稿エラー: {e}"
@@ -584,8 +892,8 @@ def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IM
         return False
 
 
-def post_tweet(driver, message=DEFAULT_MESSAGE):
-    """テキストのみのツイートを投稿（絵文字対応版）"""
+def post_tweet_improved(driver, message=DEFAULT_MESSAGE):
+    """テキストのみのツイートを投稿（改良版テキスト入力使用）"""
     try:
         print(f"ツイート投稿中: {message}")
         error_reporter.add_success("tweet_text_only", f"テキストツイート開始: {message}")
@@ -610,34 +918,26 @@ def post_tweet(driver, message=DEFAULT_MESSAGE):
             error_reporter.add_error("tweet_text_only", error_msg, e)
             return False
         
-        # テキスト入力（JavaScriptを使用して絵文字対応）
-        print("メッセージを入力中（JavaScript使用）...")
-        try:
-            success = set_text_with_javascript(driver, tweet_textarea, message)
-            if success:
-                time.sleep(2)
-                error_reporter.add_success("tweet_text_only", "メッセージ入力完了（JavaScript）")
-                print("✅ メッセージ入力完了（絵文字対応）")
-            else:
-                # フォールバック: 通常のsend_keysを試行
-                print("⚠️ JavaScript入力に失敗、通常入力を試行...")
-                tweet_textarea.clear()
-                tweet_textarea.send_keys(message)
-                time.sleep(2)
-                error_reporter.add_warning("tweet_text_only", "フォールバック: 通常入力を使用")
-                print("✅ メッセージ入力完了（通常入力）")
-        except Exception as e:
-            error_msg = f"メッセージ入力エラー: {e}"
-            error_reporter.add_error("tweet_text_only", error_msg, e)
-            return False
+        # テキスト入力（改良版を使用）
+        print("メッセージを入力中...")
+        text_input_success = input_text_with_events_improved(driver, tweet_textarea, message)
+        
+        if text_input_success:
+            error_reporter.add_success("tweet_text_only", "メッセージ入力完了")
+        else:
+            error_reporter.add_warning("tweet_text_only", "メッセージ入力に問題がある可能性があります")
+        
+        time.sleep(1)
         
         # 投稿ボタンをクリック
-        print("投稿ボタンをクリック...")
+        print("投稿ボタンを探しています...")
         try:
-            post_button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="tweetButtonInline"]'))
-            )
-            post_button.click()
+            post_button = find_tweet_button(driver)
+            if not post_button:
+                raise Exception("投稿ボタンが見つかりません")
+            
+            # JavaScriptでクリック
+            driver.execute_script("arguments[0].click();", post_button)
             time.sleep(3)
             error_reporter.add_success("tweet_text_only", "投稿ボタンクリック完了")
         except Exception as e:
@@ -645,7 +945,7 @@ def post_tweet(driver, message=DEFAULT_MESSAGE):
             error_reporter.add_error("tweet_text_only", error_msg, e)
             return False
         
-        # 投稿完了確認（ホームタイムラインに戻っているかチェック）
+        # 投稿完了確認
         try:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
@@ -658,7 +958,7 @@ def post_tweet(driver, message=DEFAULT_MESSAGE):
             warning_msg = "投稿完了の確認ができませんでしたが、投稿ボタンはクリックしました"
             print(f"⚠️ {warning_msg}")
             error_reporter.add_warning("tweet_text_only", warning_msg)
-            return True  # ボタンクリック成功で成功とみなす
+            return True
         
     except Exception as e:
         error_msg = f"投稿エラー: {e}"
@@ -667,19 +967,40 @@ def post_tweet(driver, message=DEFAULT_MESSAGE):
         return False
 
 
-def run_main(message=None, image_path=None, text_only=False):
-    """メイン処理 - 成功時True、失敗時Falseを返す"""
+# ========== 従来の投稿機能（互換性のため残す） ==========
+
+def post_tweet_with_image(driver, message=DEFAULT_MESSAGE, image_path=DEFAULT_IMAGE_PATH):
+    """画像付きツイートを投稿（従来版、内部的には改良版を呼び出し）"""
+    return post_tweet_with_image_improved(driver, message, image_path)
+
+
+def post_tweet(driver, message=DEFAULT_MESSAGE):
+    """テキストのみのツイートを投稿（従来版、内部的には改良版を呼び出し）"""
+    return post_tweet_improved(driver, message)
+
+
+# ========== メイン処理 ==========
+
+def main_improved(message=None, image_path=None, text_only=False, encoded_message=None):
+    """メイン処理（改良版） - 成功時True、失敗時Falseを返す"""
     driver = None
-    temp_dir = None
     try:
         error_reporter.add_success("main", "メイン処理開始")
+        
+        # エンコードされたメッセージがある場合はデコード
+        if encoded_message:
+            decoded = decode_emoji_message(encoded_message)
+            if decoded:
+                message = decoded
+                print(f"📝 エンコードされたメッセージをデコードしました")
+                error_reporter.add_success("main", "エンコードされたメッセージをデコード")
         
         # メッセージが指定されていない場合はデフォルトを使用
         if message is None:
             message = DEFAULT_MESSAGE
         
         # 画像パスが指定されていない場合はデフォルトを使用
-        if image_path is None:
+        if image_path is None and not text_only:
             image_path = DEFAULT_IMAGE_PATH
         
         # Chromeを直接起動
@@ -690,10 +1011,6 @@ def run_main(message=None, image_path=None, text_only=False):
             error_reporter.add_error("main", error_msg)
             error_reporter.set_final_result(False)
             return False
-        
-        # ドライバーから一時ディレクトリのパスを取得
-        if hasattr(driver, 'temp_profile_dir'):
-            temp_dir = driver.temp_profile_dir
         
         # まずログイン状態をチェック
         is_logged_in = check_login_status(driver)
@@ -706,9 +1023,9 @@ def run_main(message=None, image_path=None, text_only=False):
         # ログイン済み（または新規ログイン成功）の場合、ツイート投稿
         if is_logged_in:
             if text_only:
-                success = post_tweet(driver, message)
+                success = post_tweet_improved(driver, message)
             else:
-                success = post_tweet_with_image(driver, message, image_path)
+                success = post_tweet_with_image_improved(driver, message, image_path)
             
             if success:
                 print("✅ 処理が正常に完了しました")
@@ -744,27 +1061,26 @@ def run_main(message=None, image_path=None, text_only=False):
                 error_reporter.add_success("cleanup", "ブラウザクリーンアップ完了")
             except Exception as e:
                 error_reporter.add_warning("cleanup", f"ブラウザクリーンアップエラー: {e}")
-        
-        # 一時プロファイルディレクトリをクリーンアップ
-        if temp_dir and os.path.exists(temp_dir):
-            try:
-                shutil.rmtree(temp_dir, ignore_errors=True)
-                print(f"一時プロファイルディレクトリを削除: {temp_dir}")
-                error_reporter.add_success("cleanup", f"一時ディレクトリ削除: {temp_dir}")
-            except Exception as e:
-                error_reporter.add_warning("cleanup", f"一時ディレクトリ削除エラー: {e}")
 
 
-# 簡単に使える関数
+def main(message=None, image_path=None, text_only=False, encoded_message=None):
+    """メイン処理（互換性維持用、内部的には改良版を呼び出し）"""
+    return main_improved(message, image_path, text_only, encoded_message)
+
+
+# ========== 簡単に使える関数 ==========
+
 def quick_tweet(message=None):
-    """簡単にテキストツイートを投稿する関数 - 成功時True、失敗時Falseを返す"""
-    return run_main(message, text_only=True)
+    """簡単にテキストツイートを投稿する関数 - 成功時True、失敗時Falseを返す（改良版）"""
+    return main_improved(message, text_only=True)
 
 
 def quick_image_tweet(message=None, image_path=None):
-    """簡単に画像付きツイートを投稿する関数 - 成功時True、失敗時Falseを返す"""
-    return run_main(message, image_path)
+    """簡単に画像付きツイートを投稿する関数 - 成功時True、失敗時Falseを返す（改良版）"""
+    return main_improved(message, image_path)
 
+
+# ========== ユーティリティ関数 ==========
 
 def is_image_file(file_path):
     """ファイルが画像かどうかを判定する"""
@@ -778,10 +1094,10 @@ def is_image_file(file_path):
 
 def print_usage():
     """使用方法を表示"""
-    print("\n=== Twitter自動投稿スクリプト 使用方法 ===")
+    print("\n=== Twitter自動投稿スクリプト 使用方法（改良版） ===")
     print("引数なし:")
     print("  python script.py")
-    print("  → デフォルト画像とメッセージで投稿")
+    print("  → デフォルト画像とメッセージで投稿（コピペ動作）")
     print()
     print("テキストのみ投稿:")
     print("  python script.py --text-only")
@@ -792,57 +1108,137 @@ def print_usage():
     print("  python script.py --image \"path/to/image.jpg\"")
     print("  python script.py --image \"path/to/image.jpg\" \"カスタムメッセージ\"")
     print()
+    print("エンコードメッセージ（絵文字対応）:")
+    print("  python script.py --encoded-message \"base64エンコードされたメッセージ\"")
+    print("  python script.py --encoded-message \"base64エンコードされたメッセージ\" --image \"path/to/image.jpg\"")
+    print()
     print("自動判定（推奨）:")
     print("  python script.py \"テキストメッセージ\"")
     print("  python script.py \"path/to/image.jpg\" \"メッセージ\"")
     print("  python script.py \"path/to/image.jpg\"")
     print("  → 第1引数が画像ファイルかどうかで自動判定")
     print()
+    print("推奨インストール:")
+    print("  pip install pyperclip  # より確実なクリップボード操作のため")
+    print()
     print("ヘルプ:")
     print("  python script.py --help")
-    print("==========================================\n")
+    print("===============================================\n")
 
-def main():
-    parser = argparse.ArgumentParser(description='Twitter自動投稿スクリプト')
-    parser.add_argument('message', nargs='?', help='投稿するメッセージ')
-    parser.add_argument('--encoded-message', help='Base64エンコードされたメッセージ')
-    parser.add_argument('--image', help='画像ファイルのパス')
-    parser.add_argument('--text-only', action='store_true', help='テキストのみの投稿')
-    
-    args = parser.parse_args()
-    
-    # メッセージの処理
-    message = None
-    if args.encoded_message:
-        # エンコードされたメッセージをデコード
-        message = decode_emoji_message(args.encoded_message)
-        if not message:
-            error_reporter.add_error("argument_parse", "エンコードされたメッセージのデコードに失敗しました")
-            error_reporter.set_final_result(False)
-            error_reporter.output_json_report()
-            sys.exit(1)
-        print(f"📝 エンコードされたメッセージをデコードしました")
-    else:
-        message = args.message
-    
-    # 画像パスの処理
-    image_path = args.image
-    
-    try:
-        # メイン処理を実行
-        success = run_main(message, image_path, args.text_only)
-        
-        # JSONレポートを出力
-        error_reporter.output_json_report()
-        
-        # 終了コードを設定
-        sys.exit(0 if success else 1)
-        
-    except Exception as e:
-        error_reporter.add_error("main", f"メイン処理で予期しないエラー: {e}", e)
-        error_reporter.set_final_result(False)
-        error_reporter.output_json_report()
-        sys.exit(1)
+
+# ========== メイン実行部 ==========
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # pyperclip のインストール推奨メッセージ
+    try:
+        import pyperclip
+        print("✅ pyperclip が利用可能です（より確実なクリップボード操作のため）")
+    except ImportError:
+        print("ℹ️ より確実なテキスト入力のために 'pip install pyperclip' をお勧めします")
+    
+    # 結果を格納する変数
+    result = False
+    
+    try:
+        # ヘルプ表示
+        if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h', 'help']:
+            print_usage()
+            exit(0)
+        
+        # コマンドライン引数の処理
+        if len(sys.argv) == 1:
+            # 引数なし - デフォルトで画像付き投稿
+            print("📝 デフォルト設定で画像付き投稿を実行します（改良版テキスト入力使用）")
+            result = main_improved()
+            
+        elif sys.argv[1] == "--text-only":
+            # テキストのみモード
+            if len(sys.argv) > 2:
+                message = " ".join(sys.argv[2:])
+                print(f"📝 テキストのみ投稿（改良版）: {message}")
+            else:
+                message = None
+                print("📝 デフォルトメッセージでテキスト投稿を実行します（改良版）")
+            result = main_improved(message, text_only=True)
+            
+        elif sys.argv[1] == "--image":
+            # 画像付きモード（明示的指定）
+            image_path = None
+            message = None
+            
+            if len(sys.argv) > 2:
+                # 第2引数があるかチェック
+                potential_image = sys.argv[2]
+                if is_image_file(potential_image):
+                    image_path = potential_image
+                    if len(sys.argv) > 3:
+                        message = " ".join(sys.argv[3:])
+                    print(f"📝 画像付き投稿（改良版）: {image_path}, メッセージ: {message or 'デフォルト'}")
+                else:
+                    # 第2引数が画像でない場合は、メッセージとして扱う
+                    message = " ".join(sys.argv[2:])
+                    print(f"📝 デフォルト画像で投稿（改良版）, メッセージ: {message}")
+            else:
+                print("📝 デフォルト画像とメッセージで投稿を実行します（改良版）")
+            
+            result = main_improved(message, image_path)
+            
+        elif sys.argv[1] == "--encoded-message":
+            # エンコードされたメッセージモード（絵文字対応）
+            if len(sys.argv) < 3:
+                print("❌ エンコードされたメッセージが指定されていません")
+                result = False
+            else:
+                encoded_message = sys.argv[2]
+                image_path = None
+                
+                # --imageオプションがあるかチェック
+                if len(sys.argv) > 3 and sys.argv[3] == "--image" and len(sys.argv) > 4:
+                    image_path = sys.argv[4]
+                    print(f"📝 エンコードメッセージ付き画像投稿（改良版）: 画像={image_path}")
+                else:
+                    print("📝 エンコードメッセージでテキスト投稿（改良版）")
+                
+                result = main_improved(encoded_message=encoded_message, image_path=image_path, text_only=(image_path is None))
+            
+        else:
+            # 自動判定モード（推奨）
+            first_arg = sys.argv[1]
+            
+            if is_image_file(first_arg):
+                # 第1引数が画像ファイル → 画像付き投稿
+                image_path = first_arg
+                if len(sys.argv) > 2:
+                    message = " ".join(sys.argv[2:])
+                else:
+                    message = None
+                print(f"📝 画像付き投稿（自動判定・改良版）: {image_path}, メッセージ: {message or 'デフォルト'}")
+                result = main_improved(message, image_path)
+            else:
+                # 第1引数が画像でない → テキストメッセージとして扱う
+                message = " ".join(sys.argv[1:])
+                print(f"📝 テキスト投稿（自動判定・改良版）: {message}")
+                result = main_improved(message, text_only=True)
+    
+    except Exception as e:
+        error_msg = f"コマンドライン引数処理エラー: {e}"
+        print(f"❌ {error_msg}")
+        error_reporter.add_error("command_line", error_msg, e)
+        result = False
+    
+    finally:
+        # 結果を設定
+        error_reporter.set_final_result(result)
+        
+        # JSON詳細レポートを出力
+        error_reporter.output_json_report()
+        
+        # 結果を出力
+        if result:
+            print("\n🎉 最終結果: True - 処理成功（改良版テキスト入力使用）")
+            exit(0)  # 成功の終了コード
+        else:
+            print("\n💥 最終結果: False - 処理失敗")
+            exit(1)  # 失敗の終了コード
