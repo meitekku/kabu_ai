@@ -3,69 +3,30 @@ import { ExtendedChartData } from './types/StockChartTypes';
 
 // タイトルを整形するユーティリティ関数
 export const formatArticleTitle = (title: string): string => {
-  let result = title;
-  let hasMatch = false;
-
-  // 1) 先頭の「会社名(code)」「数字＋％＋動詞＋、」など、最初の「、」または「：」までを一括で削除
-  //    → -3.62%下落、 や 【〇〇】+5%上昇： などあらゆる前置きをまとめて消せる
-  result = result.replace(/^.*?[、：]\s*/, '');
-
-  // 「出来高」を含むフレーズを一時的に保存
-  const volumeMatch = result.match(/出来高[^、：]*/);
-  const volumePhrase = volumeMatch ? volumeMatch[0] : null;
+  console.log('🔍 formatArticleTitle - 処理前:', title);
   
-  // 出来高フレーズを一時的に削除（後で追加するため重複を防ぐ）
-  if (volumePhrase) {
-    result = result.replace(volumePhrase, '');
-  }
-
-  // 2) 念のため、本文に紛れ込む可能性のある「大幅」「下落」「上昇」などの文字列をグローバルに削除
-  //    ただし、「出来高」「増加」「減少」などの重要なキーワードは保護する
-  const movementPatterns = [
-    /[+\-–−]?\d+(?:\.\d+)?[%％][^、：]*[、：]?/g,
-    /大幅?[^、：]*[、：]?/g,
-    /急激?[^、：]*[、：]?/g,
-    /下落[^、：]*[、：]?/g,
-    /上昇[^、：]*[、：]?/g,
-    /急騰[^、：]*[、：]?/g,
-    /急落[^、：]*[、：]?/g,
-    /反発[^、：]*[、：]?/g,
-    /反落[^、：]*[、：]?/g,
-    /続落[^、：]*[、：]?/g,
-    /続伸[^、：]*[、：]?/g,
-    /伸び[^、：]*[、：]?/g,
-    /下げ[^、：]*[、：]?/g,
-    /上げ[^、：]*[、：]?/g,
-    // 「高」「低」は文頭のみ削除（「出来高」などの重要なキーワードを保護）
-    /^高[^、：]*[、：]?/g,
-    /^低[^、：]*[、：]?/g
-  ];
+  // シンプルに【】を削除するだけ
+  let result = title.replace(/【[^】]*】/g, '');
+  console.log('🔍 formatArticleTitle - 【】削除後:', result);
   
-  movementPatterns.forEach(pattern => {
-    const newResult = result.replace(pattern, '');
-    if (newResult !== result) {
-      hasMatch = true;
-      result = newResult;
-    }
-  });
-
-  // movementPatternsに一致した場合のみ、以下の処理を実行
-  if (hasMatch) {
-    // 1) 先頭から最初の「、」か「：」まで（会社名・株価％動き・動詞など何でも）丸ごと削除
-    result = result.replace(/^.*?[、：]\s*/, '');
-
-    // 2) 念のため、先頭に残る可能性のある「±数字％動き…」を削除
-    result = result.replace(/^[+\-−–]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
+  // 先頭の「-数字%」「数字%上昇」「数字%下落」などを削除
+  result = result.replace(/^[+\-–−]?\d+(?:\.\d+)?[%％][^、：]*[、：]?\s*/, '');
+  console.log('🔍 formatArticleTitle - パーセント削除後:', result);
+  
+  // 「、」「：」がある場合はその後の部分を取得
+  const afterDelimiterMatch = result.match(/[、：]\s*(.+)/);
+  if (afterDelimiterMatch) {
+    result = afterDelimiterMatch[1];
+    console.log('🔍 formatArticleTitle - 区切り文字後:', result);
   }
-
-  // 保存しておいた「出来高」フレーズを結果に追加（重複チェック済み）
-  if (volumePhrase) {
-    result = volumePhrase + result;
-  }
-
-  // 前後の空白を削除して、空なら元タイトルを返す
+  
+  // 前後の空白を削除
   result = result.trim();
-  return result === '' ? title : result;
+  
+  // 結果が空でなければそれを返す、空なら【】だけ削除したバージョンを返す
+  const finalResult = result === '' ? title.replace(/【[^】]*】/g, '').trim() : result;
+  console.log('🔍 formatArticleTitle - 最終結果:', finalResult);
+  return finalResult;
 };
 
 interface StockChartTooltipProps {
