@@ -113,7 +113,7 @@ export const StockChartTooltip: React.FC<StockChartTooltipProps> = ({ item, tool
   );
 };
 
-const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] => {
+const getDefaultTooltipIndices = (data: ExtendedChartData[], maxNewsTooltips?: number): number[] => {
   const indices: number[] = [];
   
   // 最新日のニュースがある場合は必ず表示
@@ -122,7 +122,7 @@ const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] => {
     indices.push(latestDayIndex);
   }
   
-  // 変動率の計算と上位3つの抽出
+  // 変動率の計算と上位の抽出（maxNewsTooltipsに基づいて数を調整）
   const changeRates: { index: number; totalChangeRate: number }[] = [];
   
   data.forEach((item, index) => {
@@ -136,24 +136,49 @@ const getDefaultTooltipIndices = (data: ExtendedChartData[]): number[] => {
     changeRates.push({ index, totalChangeRate });
   });
   
-  // 上位3つを取得
+  // maxNewsTooltipsが指定されている場合は、その数から最新日分を引いた数を上限とする
+  const topChangesLimit = maxNewsTooltips ? maxNewsTooltips - indices.length : 3;
+  
+  // 上位の変動率を持つ日を取得
   const topChanges = changeRates
     .sort((a, b) => b.totalChangeRate - a.totalChangeRate)
-    .slice(0, 3);
+    .slice(0, topChangesLimit);
   
   topChanges.forEach(change => {
-    indices.push(change.index);
-  });
-  
-  // 決算日を追加
-  data.forEach((item, index) => {
-    if (item.settlement === 0 && item.articles && item.articles.length > 0 && !indices.includes(index)) {
-      indices.push(index);
+    if (!indices.includes(change.index)) {
+      indices.push(change.index);
     }
   });
   
-  // スマホサイズ（768px未満）の場合は2つまで、それ以外は4つまで表示
-  const maxTooltips = window.innerWidth < 768 ? 2 : 4;
+  // 決算日を追加（まだmaxNewsTooltipsに達していない場合）
+  if (!maxNewsTooltips || indices.length < maxNewsTooltips) {
+    data.forEach((item, index) => {
+      if (item.settlement === 0 && item.articles && item.articles.length > 0 && !indices.includes(index)) {
+        indices.push(index);
+        // maxNewsTooltipsに達したら終了
+        if (maxNewsTooltips && indices.length >= maxNewsTooltips) {
+          return;
+        }
+      }
+    });
+  }
+  
+  // 記事がある日をすべて追加（まだmaxNewsTooltipsに達していない場合）
+  if (!maxNewsTooltips || indices.length < maxNewsTooltips) {
+    data.forEach((item, index) => {
+      if (item.articles && item.articles.length > 0 && !indices.includes(index)) {
+        indices.push(index);
+        // maxNewsTooltipsに達したら終了
+        if (maxNewsTooltips && indices.length >= maxNewsTooltips) {
+          return;
+        }
+      }
+    });
+  }
+  
+  // maxNewsTooltipsが指定されている場合はその数まで、
+  // 指定がない場合は画面サイズに応じて2つまたは4つまで表示
+  const maxTooltips = maxNewsTooltips ?? (window.innerWidth < 768 ? 2 : 4);
   return [...new Set(indices)].slice(0, maxTooltips);
 };
 

@@ -55,7 +55,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   showEmptyAreas = false,
   maxNewsTooltips,
   theme = 'default',
-  company_name = false
+  company_name = false,
+  newsInstitution,
+  targetDate
 }, ref) => {
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,7 +215,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     let isMounted = true;
     const fetchData = async () => {
       try {
-        const formattedData = await fetchChartAndNewsData(code);
+        const formattedData = await fetchChartAndNewsData(code, newsInstitution, targetDate);
         if (isMounted) {
           // 黒テーマの時だけデータの色を変換
           const convertedData = theme === 'black' ? formattedData.map(item => ({
@@ -270,7 +272,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, theme, company_name, logOnce]);
+  }, [code, theme, company_name, logOnce, newsInstitution, targetDate]);
 
   // 初期位置の計算
   useEffect(() => {

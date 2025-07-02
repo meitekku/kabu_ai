@@ -3,7 +3,6 @@
 import React from 'react';
 import Image from 'next/image';
 import domtoimage from 'dom-to-image';
-import { CompanyHeader } from './StockChartHeader';
 import { ChartTheme } from './StockChartTheme';
 
 interface CompanyInfo {
@@ -63,10 +62,10 @@ export const exportAsImage = async (
       });
     });
 
-    // 上段と下段のチャートの高さを計算
+    // 上段と下段のチャートの高さを計算（ヘッダーの高さを増加）
     const upperHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
     const lowerHeight = window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
-    const headerHeight = company_name && companyInfo ? 60 : 0;
+    const headerHeight = company_name && companyInfo ? 80 : 0; // 高さを増加（60→80）
     const totalHeight = upperHeight + lowerHeight + headerHeight + 8;
 
     // 高画質化のための前処理
@@ -322,6 +321,30 @@ export const exportAsImage = async (
   }
 };
 
+// 価格変化に基づく色と矢印を取得する関数
+const getPriceChangeStyle = (changePrice: number, theme: ChartTheme) => {
+  const isPositive = changePrice >= 0;
+  
+  // テーマに応じた色の設定（blackテーマがダークテーマ）
+  const colors = {
+    positive: theme === 'black' ? '#22c55e' : '#16a34a', // 緑色（上昇）
+    negative: theme === 'black' ? '#ef4444' : '#dc2626', // 赤色（下降）
+  };
+  
+  return {
+    color: isPositive ? colors.positive : colors.negative,
+    arrow: isPositive ? '↑' : '↓'
+  };
+};
+
+// 数値をフォーマットする関数
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('ja-JP', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(price);
+};
+
 // 画像表示用コンポーネント
 export const StockChartImage: React.FC<StockChartImageProps> = ({
   colors,
@@ -331,17 +354,55 @@ export const StockChartImage: React.FC<StockChartImageProps> = ({
   theme,
   imageUrl
 }) => {
+  // 価格変化のスタイルを取得
+  const priceChangeStyle = companyInfo ? getPriceChangeStyle(companyInfo.changePrice, theme) : null;
+  
+  // テキストの色を決定（テーマに応じて）
+  const textColor = theme === 'black' ? '#ffffff' : '#000000';
+  
   return (
     <div className="mt-2" style={{ width: '100%', backgroundColor: colors.background, opacity: 1 }}>
-      {/* 会社情報ヘッダー */}
+      {/* 会社情報ヘッダー（改修版） */}
       {company_name && companyInfo && (
-        <CompanyHeader
-          company_name={company_name}
-          companyInfo={companyInfo}
-          code={code}
-          theme={theme}
-          colors={colors}
-        />
+        <div 
+          style={{ 
+            padding: '12px 16px',
+            backgroundColor: colors.background,
+            borderBottom: `1px solid ${colors.gridColor}`,
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+          }}
+        >
+          {/* 会社名 */}
+          <div 
+            style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: textColor,
+              marginBottom: '8px', // 改行のためのマージン
+              lineHeight: '1.2'
+            }}
+          >
+            {companyInfo.companyName} ({code})
+          </div>
+          
+          {/* 現在値と矢印 */}
+          {priceChangeStyle && (
+            <div 
+              style={{
+                fontSize: '16px',
+                fontWeight: '500',
+                color: priceChangeStyle.color,
+                lineHeight: '1.2',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <span>¥{formatPrice(companyInfo.currentPrice)}</span>
+              <span style={{ fontSize: '14px' }}>{priceChangeStyle.arrow}</span>
+            </div>
+          )}
+        </div>
       )}
       
       {/* チャート画像 */}

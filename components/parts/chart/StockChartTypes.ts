@@ -60,6 +60,8 @@ export interface StockChartProps {
   maxNewsTooltips?: number;
   theme?: ChartTheme;
   company_name?: boolean;
+  newsInstitution?: string;
+  targetDate?: Date;
 }
 
 export interface StockChartRef {

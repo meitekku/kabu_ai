@@ -32,11 +32,22 @@ export const calculateMA = (data: PriceRecord[], days: number): number[] => {
 /* --------------------------------------------------
  * データ取得と加工
  * -------------------------------------------------- */
-export const fetchChartAndNewsData = async (code: string): Promise<ExtendedChartData[]> => {
+export const fetchChartAndNewsData = async (code: string, newsInstitution?: string, targetDate?: Date): Promise<ExtendedChartData[]> => {
+  // 対象日付の設定（デフォルトは2ヶ月前）
+  const date = targetDate || new Date();
+  date.setMonth(date.getMonth() - 2);
+  
+  // 日付をYYYY-MM-DD形式に変換
+  const formattedDate = date.toISOString().split('T')[0];
+
   // 株価データ取得
   const chartResponse = await fetch(`/api/${code}/chart`, {
     method: 'POST',
-    body: JSON.stringify({ code, num: 60 }),
+    body: JSON.stringify({ 
+      code, 
+      num: 60,
+      target_date: formattedDate // 対象日付を追加
+    }),
     headers: { 'Content-Type': 'application/json' }
   });
   if (!chartResponse.ok) throw new Error('Chart data fetch failed');
@@ -44,11 +55,17 @@ export const fetchChartAndNewsData = async (code: string): Promise<ExtendedChart
   if (!chartResult.success || !chartResult.data || chartResult.data.length === 0) {
     return [];
   }
+
   // 記事データ取得
   const newsResponse = await fetch(`/api/${code}/news`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ limit: 60, page: 1 })
+    body: JSON.stringify({ 
+      limit: 60, 
+      page: 1,
+      institution: newsInstitution,
+      target_date: formattedDate // 対象日付を追加
+    })
   });
   if (!newsResponse.ok) throw new Error('News data fetch failed');
   const newsResult = await newsResponse.json();

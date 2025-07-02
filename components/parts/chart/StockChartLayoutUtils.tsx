@@ -273,15 +273,15 @@ export const calculateTooltipZones = (
   );
   
   // 変動率と最新記事を考慮してニュースインデックスを取得
-  const newsIndices = getDefaultTooltipIndices(data);
+  const newsIndices = getDefaultTooltipIndices(data, maxNewsTooltips);
   
   // 最新記事を優先するため、インデックスを降順（大きい順）にソート
   // これにより、新しい日付の記事から先に良い位置を確保できる
   const sortedNewsIndices = [...newsIndices].sort((a, b) => b - a);
   
-  const limitedNewsIndices = maxNewsTooltips 
-    ? sortedNewsIndices.slice(0, maxNewsTooltips)
-    : sortedNewsIndices;
+  // maxNewsTooltipsの制限は既にgetDefaultTooltipIndicesで適用されているので、
+  // ここでの追加の制限は不要
+  const limitedNewsIndices = sortedNewsIndices;
   
   const zones: TooltipZone[] = [];
   const occupiedAreas: TooltipArea[] = [];
