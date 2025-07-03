@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 interface PromptItem {
   id: number;
   prompt: string;
+  category: string;
 }
 
 type SqlValue = string | number | boolean | null | Date;
@@ -44,7 +45,7 @@ export default function PromptPage() {
       const operation: DatabaseOperation = {
         type: 'select',
         table: 'prompt',
-        data: ['id', 'prompt']
+        data: ['id', 'prompt', 'category']
       };
 
       const response = await fetch('/api/admin/prompt', {
@@ -179,7 +180,7 @@ export default function PromptPage() {
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="border p-4 rounded-lg bg-white shadow-sm">
-              <div className="mb-2 text-sm text-gray-500">ID: {item.id}</div>
+              <div className="mb-2 text-sm text-gray-500">ID: {item.category}</div>
               <textarea
                 value={editValues[item.id] || ''}
                 onChange={(e) => {
