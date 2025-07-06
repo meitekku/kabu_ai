@@ -80,10 +80,10 @@ export default function NewsSection() {
                   )}
                 </div>
                 <div className="p-2 flex flex-col flex-grow">
-                  <h3 className="font-medium text-gray-900 line-clamp-3 flex-grow">{item.title}</h3>
+                  <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{item.title}</h3>
                   <div className="mt-2 flex items-center justify-end">
                     {item.company_name && (
-                      <span className="text-sm text-gray-600">{item.company_name}</span>
+                      <span className="text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
                     )}
                   </div>
                 </div>
