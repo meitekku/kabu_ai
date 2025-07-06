@@ -9,6 +9,7 @@ const NAVIGATION_LINKS = [
   { href: '/admin/prompt', label: 'プロンプト変更' },
   { href: '/admin/all-article', label: 'コメントコピー' },
   { href: '/admin/post/new', label: '投稿ページ' },
+  { href: '/admin/news-summary', label: 'ニュース要約' },
   { href: '/all/news', label: '全ページ' },
 ] as const;
 
