@@ -35,8 +35,20 @@ export async function POST(request: NextRequest) {
     switch (operation.type) {
       case 'select': {
         if (Array.isArray(operation.data) && operation.table) {
-          const fields = operation.data.join(', ');
-          let query = `SELECT ${fields} FROM ${operation.table}`;
+          // postテーブルの場合は、post_codeテーブルとJOINしてcodeを取得
+          let query: string;
+          if (operation.table === 'post' && operation.data.includes('code')) {
+            const fields = operation.data.map(field => {
+              if (field === 'code') {
+                return 'pc.code';
+              }
+              return `p.${field}`;
+            }).join(', ');
+            query = `SELECT ${fields} FROM ${operation.table} p LEFT JOIN post_code pc ON p.id = pc.post_id`;
+          } else {
+            const fields = operation.data.join(', ');
+            query = `SELECT ${fields} FROM ${operation.table}`;
+          }
           const params: (string | number | boolean | null)[] = [];
           
           // 複数条件を格納する配列を用意
@@ -45,9 +57,24 @@ export async function POST(request: NextRequest) {
           // ユーザーからの条件があれば追加
           if (operation.conditions) {
             for (const [key, value] of Object.entries(operation.conditions)) {
-              conditionParts.push(`${key} = ?`);
+              // postテーブルのJOINクエリの場合はプリフィックスを追加
+              if (operation.table === 'post' && operation.data.includes('code')) {
+                conditionParts.push(`p.${key} = ?`);
+              } else {
+                conditionParts.push(`${key} = ?`);
+              }
               params.push(value);
             }
+          }
+          
+          // site=72の記事を除外
+          if (operation.table === 'post') {
+            if (operation.data.includes('code')) {
+              conditionParts.push(`p.site != ?`);
+            } else {
+              conditionParts.push(`site != ?`);
+            }
+            params.push(72);
           }
 
           // 現在時刻を取得して、15:30以降かどうかで条件を切り替え
@@ -62,11 +89,19 @@ export async function POST(request: NextRequest) {
             const month = ('0' + (now.getMonth() + 1)).slice(-2);
             const day = ('0' + now.getDate()).slice(-2);
             const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
-            conditionParts.push(`created_at >= ?`);
+            if (operation.table === 'post' && operation.data.includes('code')) {
+              conditionParts.push(`p.created_at >= ?`);
+            } else {
+              conditionParts.push(`created_at >= ?`);
+            }
             params.push(targetTimestamp);
           } else {
             // 15:30より前の場合：本日の全記事を取得（created_atの日付が本日）
-            conditionParts.push(`DATE(created_at) = CURDATE()`);
+            if (operation.table === 'post' && operation.data.includes('code')) {
+              conditionParts.push(`DATE(p.created_at) = CURDATE()`);
+            } else {
+              conditionParts.push(`DATE(created_at) = CURDATE()`);
+            }
           }
 
           // WHERE 節を付与

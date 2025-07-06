@@ -6,9 +6,10 @@ interface TwitterPostButtonProps {
   content: string;
   chartImageUrl?: string; // チャート画像のURL（data URL）
   onSuccess?: () => void;
+  siteNumber?: number; // サイト番号（デフォルト: 72）
 }
 
-export default function TwitterPostButton({ title, content, chartImageUrl, onSuccess }: TwitterPostButtonProps) {
+export default function TwitterPostButton({ title, content, chartImageUrl, onSuccess, siteNumber = 72 }: TwitterPostButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -158,44 +159,47 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   };
 
   const handlePost = async () => {
-    // console.log('[DEBUG TwitterPostButton] 投稿開始');
-    // console.log('[DEBUG TwitterPostButton] 画像URL存在:', imageUrl ? 'あり' : 'なし');
-    // console.log('[DEBUG TwitterPostButton] 画像URLタイプ:', imageUrl ? (imageUrl.startsWith('data:') ? 'Data URL' : 'その他') : 'なし');
-    // console.log('[DEBUG TwitterPostButton] 画像URLサイズ:', imageUrl?.length || 0);
-    
     try {
       setIsLoading(true);
       setError(null);
       
       const tweetContent = `${title}\n${content}`;
       
-      const requestBody = {
-        tweetContent,
-        imageUrl: imageUrl || undefined,
-      };
-      
-      // console.log('[DEBUG TwitterPostButton] リクエストボディ:', {
-      //   tweetContentLength: tweetContent.length,
-      //   hasImage: !!requestBody.imageUrl,
-      //   imageUrlLength: requestBody.imageUrl?.length || 0
-      // });
-      
-      const response = await fetch('/api/twitter/post', {
+      // 1. Webサイトに投稿
+      const postResponse = await fetch('/api/post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          code: '0000', // ニュース要約用の汎用コード
+          title: title,
+          content: content,
+          site: siteNumber, // サイト番号
+          accept: 1, // 承認済み
+          pickup: 0 // 通常投稿
+        }),
       });
       
-      // console.log('[DEBUG TwitterPostButton] レスポンスステータス:', response.status);
+      if (!postResponse.ok) {
+        throw new Error('Webサイトへの投稿に失敗しました');
+      }
       
-      const result = await response.json();
-      // console.log('[DEBUG TwitterPostButton] レスポンス内容:', result);
+      // 2. Twitterに投稿
+      const twitterResponse = await fetch('/api/twitter/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tweetContent,
+          imageUrl: imageUrl || undefined,
+        }),
+      });
       
       // 429エラーの場合は待機時間を日本時間で表示
-      if (response.status === 429) {
-        const resetTime = response.headers.get('x-rate-limit-reset');
+      if (twitterResponse.status === 429) {
+        const resetTime = twitterResponse.headers.get('x-rate-limit-reset');
         if (resetTime) {
           const resetTimestamp = parseInt(resetTime);
           const jstTime = formatUnixTimestampToJST(resetTimestamp);
@@ -205,16 +209,16 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         }
       }
       
-      if (!result.success) {
-        throw new Error(result.message || '投稿に失敗しました');
+      const twitterResult = await twitterResponse.json();
+      
+      if (!twitterResult.success) {
+        throw new Error(twitterResult.message || 'Twitter投稿に失敗しました');
       }
       
-      // console.log('[DEBUG TwitterPostButton] 投稿成功');
       if (onSuccess) {
         onSuccess();
       }
     } catch (err) {
-      // console.error('[DEBUG TwitterPostButton] 投稿エラー:', err);
       setError(err instanceof Error ? err.message : '投稿に失敗しました');
     } finally {
       setIsLoading(false);
@@ -236,7 +240,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         disabled={isLoading}
         className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
       >
-        {isLoading ? '検索中...' : '検索'}
+        {isLoading ? '投稿中...' : 'Twitter & Web投稿'}
       </button>
       
       <div className="flex items-center gap-1">

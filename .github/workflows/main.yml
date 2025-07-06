@@ -74,6 +74,14 @@ jobs:
             npm ci
             npm run build
 
+            # Python仮想環境のセットアップ
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+            source venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
             # publicディレクトリの設定
             mkdir -p .next/standalone/public
             cp -r public/* .next/standalone/public/

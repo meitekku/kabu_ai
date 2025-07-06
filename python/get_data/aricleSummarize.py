@@ -138,11 +138,11 @@ def generate_news_content(materials):
         if material.get('company_names'):
             news_summary += f"企業名: {material['company_names']}\n"
         news_summary += f"タイトル: {material['title']}\n"
-        news_summary += f"内容: {material['content'][:300]}...\n"
+        news_summary += f"内容: {material['content']}...\n"
     
     # プロンプトにニュース素材を追加
     prompt = base_prompt + news_summary
-    print(prompt)
+    # print(prompt)  # デバッグ用のプロンプト出力をコメントアウト
     
     try:
         max_retries = 2
@@ -279,14 +279,14 @@ def generate_daily_news():
     """
     毎日のニュース生成のメイン関数
     """
-    # 休日チェック
-    if not common_calc.is_not_holiday():
-        print("本日は休日のため、処理をスキップします。")
-        return
+    # # 休日チェック
+    # if not common_calc.is_not_holiday():
+    #     print("本日は休日のため、処理をスキップします。")
+    #     return
     
-    # 生成条件チェック
-    if not check_generation_conditions():
-        return
+    # # 生成条件チェック
+    # if not check_generation_conditions():
+    #     return
     
     # ニュース素材を取得
     materials = get_todays_news_materials()
@@ -305,6 +305,11 @@ def generate_daily_news():
     print(f"生成されたタイトル: {title}")
     print(f"生成されたコンテンツ長: {len(content)}文字")
     
+    # 生成されたコンテンツを出力
+    print("コンテンツ:")
+    print(content)
+    print("コンテンツ終了")
+    
     # 関連するコードを取得（重複を除去）
     related_codes = []
     for material in materials:
@@ -314,24 +319,12 @@ def generate_daily_news():
                 if code.strip() and code.strip() not in related_codes:
                     related_codes.append(code.strip())
     
-    # データベースに挿入
-    post_id = insert_news_post(title, content, related_codes)
-    if post_id:
-        # post_statusにも挿入（ニュース記事用のステータス）
-        status_dict = {
-            "news_generated": 1,
-            "material_count": len(materials)
-        }
-        
-        insert_status_sql = """
-            INSERT INTO post_status (post_id, status) 
-            VALUES ('{}', '{}');
-        """.format(post_id, json.dumps(status_dict))
-        
-        common_calc.insert_sql(insert_status_sql)
-        print("ニュース生成プロセスが完了しました。")
-    else:
-        print("ニュース記事の保存に失敗しました。")
+    if related_codes:
+        print(f"関連コード: {', '.join(related_codes)}")
+    
+    # データベースへの挿入はスキップし、フロントエンドで処理
+    print("ニュース生成プロセスが完了しました。")
+    print("データベースへの保存はフロントエンドで実行されます。")
 
 if __name__ == "__main__":
     generate_daily_news()

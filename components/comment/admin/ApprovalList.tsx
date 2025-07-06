@@ -353,6 +353,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   content={editedContents[item.id] || ''}
                   chartImageUrl={chartImages[item.id]}
                   onSuccess={() => handleAccept(item.id)}
+                  siteNumber={71}
                 />
                 
                 {/* 新しく追加: TwitterPythonButton */}

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import TwitterPostButton from '@/components/comment/admin/TwitterPostButton';
+import { useState } from 'react';
 
 interface SummaryResponse {
   success: boolean;
@@ -12,6 +11,11 @@ interface SummaryResponse {
     stdout: string;
     stderr: string;
   };
+  generatedNews?: {
+    title: string;
+    content: string;
+    postCode: string;
+  };
 }
 
 export default function NewsSummaryGenerator() {
@@ -19,27 +23,10 @@ export default function NewsSummaryGenerator() {
   const [summaryResult, setSummaryResult] = useState<SummaryResponse | null>(null);
   const [generatedTitle, setGeneratedTitle] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
+  const [generatedPostCode, setGeneratedPostCode] = useState('');
   const [showPopup, setShowPopup] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
 
-  useEffect(() => {
-    // ページ読み込み時に最新の要約記事があるかチェック
-    fetchLatestSummary();
-  }, []);
-
-  const fetchLatestSummary = async () => {
-    try {
-      const response = await fetch('/api/admin/get-latest-summary');
-      const result = await response.json();
-      
-      if (result.success && result.data) {
-        setGeneratedTitle(result.data.title);
-        setGeneratedContent(result.data.content);
-        setShowPopup(true);
-      }
-    } catch (error) {
-      console.error('Failed to fetch latest summary:', error);
-    }
-  };
 
   const handleGenerateSummary = async () => {
     setIsLoading(true);
@@ -59,9 +46,12 @@ export default function NewsSummaryGenerator() {
       const result: SummaryResponse = await response.json();
       setSummaryResult(result);
 
-      if (result.success && result.data?.stdout) {
-        // 生成された記事をデータベースから取得してポップアップ表示
-        await fetchLatestSummary();
+      if (result.success && result.generatedNews) {
+        // 生成されたニュースをポップアップで表示
+        setGeneratedTitle(result.generatedNews.title);
+        setGeneratedContent(result.generatedNews.content);
+        setGeneratedPostCode(result.generatedNews.postCode);
+        setShowPopup(true);
       }
     } catch (error) {
       setSummaryResult({
@@ -84,7 +74,89 @@ export default function NewsSummaryGenerator() {
 
   const handleTwitterSuccess = () => {
     setShowPopup(false);
-    alert('Twitterに投稿されました！');
+    alert('TwitterとWebサイトに投稿されました！');
+  };
+
+  const handleDiscardNews = () => {
+    setShowPopup(false);
+    setGeneratedTitle('');
+    setGeneratedContent('');
+    setGeneratedPostCode('');
+    alert('ニュースが破棄されました。');
+  };
+
+  const handlePostToSite = async () => {
+    if (!generatedTitle || !generatedContent) {
+      alert('投稿に必要な情報が不足しています。');
+      return;
+    }
+
+    setIsPosting(true);
+    try {
+      // 1. Webサイトに保存 (accept=1, site=72)
+      const saveResponse = await fetch('/api/admin/save-news', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: generatedTitle,
+          content: generatedContent,
+          postCode: generatedPostCode,
+        }),
+      });
+
+      const saveResult = await saveResponse.json();
+      
+      if (!saveResult.success) {
+        alert('Webサイトへの保存に失敗しました: ' + saveResult.message);
+        return;
+      }
+
+      // 2. Twitterに投稿
+      const tweetContent = `${generatedTitle}\n${generatedContent}`;
+      const twitterResponse = await fetch('/api/twitter/post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tweetContent: tweetContent,
+        }),
+      });
+
+      if (twitterResponse.status === 429) {
+        const resetTime = twitterResponse.headers.get('x-rate-limit-reset');
+        if (resetTime) {
+          const resetTimestamp = parseInt(resetTime);
+          const resetDate = new Date(resetTimestamp * 1000);
+          const jstDate = new Date(resetDate.getTime() + (9 * 60 * 60 * 1000));
+          const jstTime = `${jstDate.getUTCMonth() + 1}月${jstDate.getUTCDate()}日 ${jstDate.getUTCHours()}:${jstDate.getUTCMinutes().toString().padStart(2, '0')}`;
+          alert(`レート制限に達しました。${jstTime}頃に再試行してください。\n\nWebサイトへの保存は成功しました。`);
+        } else {
+          alert('レート制限に達しました。少し時間をおいて再試行してください。\n\nWebサイトへの保存は成功しました。');
+        }
+        setShowPopup(false);
+        return;
+      }
+
+      const twitterResult = await twitterResponse.json();
+      
+      if (!twitterResult.success) {
+        alert('Twitter投稿に失敗しました: ' + twitterResult.message + '\n\nWebサイトへの保存は成功しました。');
+        setShowPopup(false);
+        return;
+      }
+
+      // 成功時の処理
+      handleTwitterSuccess();
+      
+    } catch (error) {
+      console.error('投稿エラー:', error);
+      alert('投稿中にエラーが発生しました。');
+    } finally {
+      setIsPosting(false);
+    }
   };
 
   const handleClosePopup = () => {
@@ -202,19 +274,25 @@ export default function NewsSummaryGenerator() {
                 </p>
               </div>
 
-              {/* Twitter投稿ボタン */}
+              {/* アクションボタン */}
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={handleClosePopup}
-                  className="px-6 py-3 bg-gray-500 text-white rounded-lg font-medium hover:bg-gray-600 transition-colors"
+                  onClick={handleDiscardNews}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 >
-                  閉じる
+                  破棄
                 </button>
-                <TwitterPostButton
-                  title={generatedTitle}
-                  content={generatedContent}
-                  onSuccess={handleTwitterSuccess}
-                />
+                <button
+                  onClick={handlePostToSite}
+                  disabled={isPosting}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                    isPosting
+                      ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                >
+                  {isPosting ? '投稿中...' : 'Twitter & Web投稿'}
+                </button>
               </div>
             </div>
           </div>
