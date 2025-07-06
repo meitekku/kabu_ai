@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ServerToDate } from '@/utils/format/ServerToDate';
 import Image from 'next/image';
 import NewsList from '@/components/ui/NewsList';
 import RelatedStocksNews from '@/components/news/RelatedStocksNews';
@@ -275,7 +274,7 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
               <Link href={`/${code}/news`} className="text-blue-600 hover:text-blue-700 transition-colors">
                 {article.company_name}
               </Link> <br/>
-              {ServerToDate(article.created_at)}
+              {article.created_at}
             </div>
             <div className="flex space-x-3">
               <TwitterShareButton url={currentUrl} text={article.title} />
