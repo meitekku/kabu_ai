@@ -22,7 +22,7 @@ export default function LayoutClient({
       <Header />
       <MobileTopAd />
       <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6">
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col md:flex-row gap-10">
           <main className={mainClassName}>
             {children}
           </main>

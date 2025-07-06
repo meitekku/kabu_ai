@@ -1,6 +1,6 @@
 export default function DefaultTemplate({ children }: { children: React.ReactNode }) {
   return (
-    <div className="container mx-auto">
+    <div className="mx-auto">
       {children}
     </div>
   )
