@@ -46,8 +46,8 @@ export async function POST(
                FROM post p
                LEFT JOIN post_status ps ON p.id = ps.post_id
                WHERE 
-                p.accept = 1
-                AND p.site = 0
+                p.accept > 0
+                AND p.site >= 0
                 AND DATE(p.created_at) >= ?
                 AND DATE(p.created_at) <= ?
                 ${excludeId ? 'AND p.id != ?' : ''}

@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import TodayArticleCopyButton from '@/components/parts/admin/TodayArticleCopyButton';
 import { Badge } from "@/components/ui/badge";
 import React from 'react';
 
@@ -24,21 +24,12 @@ interface StatusLabels {
   }
 }
 
-interface NewsListProps {
-  num?: string;
-  title?: string;
-  excludeId?: string;
-  h3Title?: string;
-}
-
-const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsListProps) => {
-  const params = useParams();
-  const code = params.code as string;
-  const limit = parseInt(num);
-
+const AllArticleAdminPage = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [days, setDays] = useState(1);
+  const daysRef = React.useRef(days);
 
   // ステータスラベルの定義
   const statusLabels = React.useMemo<StatusLabels>(() => ({
@@ -51,28 +42,33 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
   }), []);
 
   const fetchNews = React.useCallback(async () => {
-    if (!code) return;
-    
-    console.log('fetchNews called with:', { code, limit, excludeId });
+    console.log('fetchNews called with days:', daysRef.current);
     try {
       setLoading(true);
-      const response = await fetch(`/api/${code}/news`, {
+      const response = await fetch('/api/all/news', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code, limit, excludeId }),
+        body: JSON.stringify({ code: 'all', limit: 100, days: daysRef.current }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to fetch news');
       }
       const data = await response.json();
-      setNews(data.data || []);
-      // データ取得後にcreated_atを表示
-      (data.data || []).forEach((item: NewsItem) => {
-        console.log('created_at:', item.created_at);
+      
+      // 当日15:30以降の記事のみフィルタリング
+      const today = new Date();
+      const cutoffTime = new Date(today);
+      cutoffTime.setHours(15, 30, 0, 0);
+      
+      const filteredNews = (data.data || []).filter((item: NewsItem) => {
+        const createdAt = new Date(item.created_at);
+        return createdAt >= cutoffTime;
       });
+      
+      setNews(filteredNews);
       setError(null);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
@@ -80,21 +76,21 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
     } finally {
       setLoading(false);
     }
-  }, [code, limit, excludeId]);
+  }, []);
 
-  // 初回マウント時とcode/limitが変更された時のみ実行
+  // 初回マウント時に実行
   useEffect(() => {
-    console.log('useEffect triggered with:', { code, limit });
     fetchNews();
-  }, [fetchNews, code, limit]);
+  }, [fetchNews]);
 
-  // ニュースデータが更新されたときにcreated_atを表示
-  useEffect(() => {
-    news.forEach(item => {
-      console.log('created_at:', item.created_at);
-    });
-  }, [news]);
-
+  // 日数変更ハンドラー
+  const handleDaysChange = React.useCallback((selectedDays: number) => {
+    console.log('handleDaysChange called with:', selectedDays);
+    if (selectedDays === daysRef.current) return;
+    daysRef.current = selectedDays;
+    setDays(selectedDays);
+    fetchNews();
+  }, [fetchNews]);
 
   // ステータスからラベルを生成する関数
   const renderStatusLabels = React.useCallback((statusJson?: string) => {
@@ -138,51 +134,51 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title }: NewsList
     }
   }, [statusLabels]);
 
-  if (loading) return null;
+  if (loading) return <div className="p-4">読み込み中...</div>;
   if (error) {
     return <div className="text-red-500 p-4">Error: {error}</div>;
   }
 
-  if (!news || news.length === 0) {
-    return <div className="text-gray-500 p-4">まだニュースがありません。</div>;
-  }
-
   return (
-    <div>
-      {h3Title && (
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
-      )}
-      {title && (
-        <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{title}</h2>
-      )}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">全記事管理 - 当日15:30以降</h1>
       
-      <div className="divide-y divide-gray-100">
-        {news.map((item) => (
-          <Link 
-            href={`/${code}/news/article/${item.id}`}
-            key={item.id}
-            className="block"
-          >
-            <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-              <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-gray-500">
-                      {item.created_at}
-                    </span>
-                    {renderStatusLabels(item.status)}
-                  </div>
-                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title}</div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      <div className="flex justify-end mb-4">
+        <TodayArticleCopyButton 
+          articles={news} 
+          onDaysChange={handleDaysChange} 
+        />
       </div>
+      
+      {!news || news.length === 0 ? (
+        <div className="text-gray-500 p-4">当日15:30以降のニュースがありません。</div>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {news.map((item) => (
+            <Link 
+              href={`/all/news/article/${item.id}`}
+              key={item.id}
+              className="block"
+            >
+              <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
+                <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-gray-500">
+                        {item.created_at}
+                      </span>
+                      {renderStatusLabels(item.status)}
+                    </div>
+                    <div className="font-bold text-base text-gray-900 mt-0.5">{item.title}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
-});
+};
 
-NewsList.displayName = 'NewsList';
-
-export default NewsList;
+export default AllArticleAdminPage;
