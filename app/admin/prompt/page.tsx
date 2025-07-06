@@ -145,7 +145,7 @@ export default function PromptPage() {
   }, []);
 
   // LocalStorageから開閉状態を読み込む
-  const loadCollapsedState = () => {
+  const loadCollapsedState = useCallback(() => {
     try {
       const saved = localStorage.getItem('prompt-collapsed-state');
       if (saved) {
@@ -161,7 +161,7 @@ export default function PromptPage() {
     } catch (error) {
       console.error('Failed to load collapsed state:', error);
     }
-  };
+  }, [items]);
 
   // LocalStorageに開閉状態を保存する
   const saveCollapsedState = (newState: { [key: number]: boolean }) => {
@@ -209,7 +209,7 @@ export default function PromptPage() {
     if (!loading && items.length > 0) {
       loadCollapsedState();
     }
-  }, [loading, items]);
+  }, [loading, items, loadCollapsedState]);
 
   // データがロードされた後、textareaの高さを調整
   useEffect(() => {
