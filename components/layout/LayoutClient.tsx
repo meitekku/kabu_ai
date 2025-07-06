@@ -26,7 +26,11 @@ export default function LayoutClient({
           <main className={mainClassName}>
             {children}
           </main>
-          {!isAdminPage && <Sidebar />}
+          {!isAdminPage && (
+            <aside className="w-full md:w-[300px] flex-shrink-0">
+              <Sidebar />
+            </aside>
+          )}
         </div>
       </div>
       <Footer />

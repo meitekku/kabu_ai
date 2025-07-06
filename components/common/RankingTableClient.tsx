@@ -64,12 +64,18 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
 
   if (loading) {
     return (
-      <div className="w-full bg-white rounded-lg shadow-sm p-4">
+      <div className="w-full bg-white rounded-lg shadow-sm p-4 min-h-[240px]">
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="space-y-3">
-            {[...Array(limit)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="h-12 bg-gray-200 rounded"></div>
+            {[...Array(5)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="flex items-center space-x-3">
+                <div className="h-10 bg-gray-200 rounded w-12 flex-shrink-0"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded"></div>
+                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                </div>
+              </div>
             ))}
           </div>
         </div>

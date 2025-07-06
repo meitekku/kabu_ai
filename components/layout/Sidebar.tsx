@@ -3,7 +3,7 @@ import GoogleAdsense from '@/components/common/GoogleAdsense'
 
 export default function Sidebar() {
   return (
-    <aside className="w-full md:w-[300px] space-y-6">
+    <div className="space-y-6">
       <GoogleAdsense />
       <RankingTableClient 
         title="アクセスランキング"
@@ -35,6 +35,6 @@ export default function Sidebar() {
         tableName="ranking_trading_value"
         limit={5}
       />
-    </aside>
+    </div>
   )
 } 
