@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build && npm run copy",
-    "copy": "cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/static",
+    "copy": "cp -r public .next/standalone/ && (cp -r .next/static .next/standalone/.next/static || true) && node copy-python-files.js",
     "start": "node .next/standalone/server.js"
   },
   "dependencies": {

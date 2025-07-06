@@ -20,12 +20,6 @@ const nextConfig = {
       serverComponentsExternalPackages: ['twitter-api-v2']
     },
   },
-  api: {
-    bodyParser: {
-      sizeLimit: '15mb',
-    },
-    responseLimit: '15mb',
-  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.output.assetModuleFilename = 'static/[hash][ext]';
@@ -68,7 +62,6 @@ const nextConfig = {
   generateEtags: false,
   compress: true,
   reactStrictMode: true,
-  swcMinify: true,
 }
 
 module.exports = nextConfig
