@@ -1,4 +1,4 @@
-from . import common_calc
+# common_calcは動的にロードされるため、直接参照ではなく関数内で使用
 
 def get_relative_code(code):
     """

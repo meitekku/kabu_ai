@@ -1,15 +1,33 @@
 import sys
 import os
-# pythonディレクトリをパスに追加
-current_dir = os.path.dirname(os.path.abspath(__file__))
-python_dir = os.path.dirname(current_dir)
-sys.path.insert(0, python_dir)
-
-# 絶対importを使用
-from get_data import common_calc
-from get_data import common_ai
+import importlib.util
 import time
-from get_data.chatGPT import chatGPT
+
+# モジュールを絶対パスで直接ロード
+def load_module_from_path(module_name, file_path):
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+# 現在のファイルパスを基準にモジュールをロード
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# common_calcモジュールをロード
+common_calc_path = os.path.join(current_dir, 'common_calc.py')
+common_calc = load_module_from_path('common_calc', common_calc_path)
+
+# common_aiモジュールをロード
+common_ai_path = os.path.join(current_dir, 'common_ai.py')
+common_ai = load_module_from_path('common_ai', common_ai_path)
+
+# chatGPTモジュールをロード
+chatgpt_path = os.path.join(current_dir, 'chatGPT', 'chatGPT.py')
+chatGPT_module = load_module_from_path('chatGPT', chatgpt_path)
+chatGPT = chatGPT_module
+
+# common_aiでcommon_calcを使用できるようにグローバル設定
+common_ai.common_calc = common_calc
 from datetime import datetime
 import pandas as pd
 import re
