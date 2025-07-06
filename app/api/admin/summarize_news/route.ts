@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 
-export async function POST() {
+export async function POST(): Promise<NextResponse> {
   try {
     const pythonScriptPath = path.join(process.cwd(), 'python', 'get_data', 'aricleSummarize.py');
     
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       const pythonProcess = spawn('python3', [pythonScriptPath], {
         cwd: process.cwd(),
         stdio: ['pipe', 'pipe', 'pipe']
