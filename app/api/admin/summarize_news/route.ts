@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const pythonScriptPath = path.join(process.cwd(), 'python', 'get_data', 'aricleSummarize.py');
     

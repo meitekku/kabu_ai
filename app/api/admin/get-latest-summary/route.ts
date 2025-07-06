@@ -10,7 +10,7 @@ interface SummaryPost extends RowDataPacket {
   updated_at: string;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const db = Database.getInstance();
     

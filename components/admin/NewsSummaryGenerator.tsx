@@ -19,7 +19,6 @@ export default function NewsSummaryGenerator() {
   const [summaryResult, setSummaryResult] = useState<SummaryResponse | null>(null);
   const [generatedTitle, setGeneratedTitle] = useState('');
   const [generatedContent, setGeneratedContent] = useState('');
-  const [showPostOptions, setShowPostOptions] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
@@ -47,7 +46,6 @@ export default function NewsSummaryGenerator() {
     setSummaryResult(null);
     setGeneratedTitle('');
     setGeneratedContent('');
-    setShowPostOptions(false);
     setShowPopup(false);
 
     try {
