@@ -51,6 +51,9 @@ export async function POST(
     const article = articles[0];
     article.content = article.content.replace(/\\n/g, '\n');
 
+    // Keep the date as ISO string for consistent formatting
+    article.created_at = new Date(article.created_at).toISOString();
+
     return NextResponse.json({
       status: 'success',
       data: article
