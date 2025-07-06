@@ -1,6 +1,7 @@
 import '@/app/globals.css'
 import LayoutClient from '@/components/layout/LayoutClient'
 import Script from 'next/script'
+import MobileTopAd from '@/components/common/MobileTopAd'
 
 export const metadata = {
   title: {
@@ -32,6 +33,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <MobileTopAd />
         <LayoutClient>
           {children}
         </LayoutClient>
