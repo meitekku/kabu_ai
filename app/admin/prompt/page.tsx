@@ -38,6 +38,7 @@ export default function PromptPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ [key: number]: string }>({});
+  const [collapsedItems, setCollapsedItems] = useState<{ [key: number]: boolean }>({});
   const updateTimeoutRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
 
   const fetchData = async (): Promise<void> => {
@@ -143,6 +144,54 @@ export default function PromptPage() {
     });
   }, []);
 
+  // LocalStorageから開閉状態を読み込む
+  const loadCollapsedState = () => {
+    try {
+      const saved = localStorage.getItem('prompt-collapsed-state');
+      if (saved) {
+        setCollapsedItems(JSON.parse(saved));
+      } else {
+        // デフォルトで全て閉じる
+        const defaultState = items.reduce((acc, item) => {
+          acc[item.id] = true;
+          return acc;
+        }, {} as { [key: number]: boolean });
+        setCollapsedItems(defaultState);
+      }
+    } catch (error) {
+      console.error('Failed to load collapsed state:', error);
+    }
+  };
+
+  // LocalStorageに開閉状態を保存する
+  const saveCollapsedState = (newState: { [key: number]: boolean }) => {
+    try {
+      localStorage.setItem('prompt-collapsed-state', JSON.stringify(newState));
+    } catch (error) {
+      console.error('Failed to save collapsed state:', error);
+    }
+  };
+
+  // 開閉状態を切り替える
+  const toggleCollapsed = (id: number) => {
+    const newState = {
+      ...collapsedItems,
+      [id]: !collapsedItems[id]
+    };
+    setCollapsedItems(newState);
+    saveCollapsedState(newState);
+    
+    // 展開する場合、textareaの高さを再計算
+    if (collapsedItems[id]) {
+      setTimeout(() => {
+        const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
+        if (textarea) {
+          adjustTextareaHeight(textarea);
+        }
+      }, 0);
+    }
+  };
+
   useEffect(() => {
     // fetchDataの実行
     void fetchData();
@@ -154,6 +203,13 @@ export default function PromptPage() {
       Object.values(currentTimeouts).forEach(timeout => clearTimeout(timeout));
     };
   }, []);
+
+  // データがロードされた後に開閉状態を読み込む
+  useEffect(() => {
+    if (!loading && items.length > 0) {
+      loadCollapsedState();
+    }
+  }, [loading, items]);
 
   // データがロードされた後、textareaの高さを調整
   useEffect(() => {
@@ -180,17 +236,28 @@ export default function PromptPage() {
         <div className="space-y-4">
           {items.map((item) => (
             <div key={item.id} className="border p-4 rounded-lg bg-white shadow-sm">
-              <div className="mb-2 text-sm text-gray-500">ID: {item.category}</div>
-              <textarea
-                value={editValues[item.id] || ''}
-                onChange={(e) => {
-                  handleChange(item.id, e.target.value);
-                  adjustTextareaHeight(e.target);
-                }}
-                onFocus={(e) => adjustTextareaHeight(e.target)}
-                className="w-full p-3 border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="プロンプトを入力してください..."
-              />
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-gray-500">ID: {item.category}</div>
+                <button
+                  onClick={() => toggleCollapsed(item.id)}
+                  className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                >
+                  {collapsedItems[item.id] ? '▼ 展開' : '▲ 折りたたみ'}
+                </button>
+              </div>
+              {!collapsedItems[item.id] && (
+                <textarea
+                  data-id={item.id}
+                  value={editValues[item.id] || ''}
+                  onChange={(e) => {
+                    handleChange(item.id, e.target.value);
+                    adjustTextareaHeight(e.target);
+                  }}
+                  onFocus={(e) => adjustTextareaHeight(e.target)}
+                  className="w-full p-3 border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="プロンプトを入力してください..."
+                />
+              )}
             </div>
           ))}
         </div>
