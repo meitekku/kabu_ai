@@ -35,17 +35,18 @@ export async function POST(req: Request) {
     
     // 総件数を取得するクエリ
     let countQuery = `
-      SELECT COUNT(*) as total
+      SELECT COUNT(DISTINCT p.id) as total
       FROM post p
-      LEFT JOIN company c ON p.code = c.code
+      LEFT JOIN post_code pc ON p.id = pc.post_id
+      LEFT JOIN company c ON pc.code = c.code
       WHERE p.accept = 1
     `;
 
     // データを取得するクエリ
     let query = `
-      SELECT 
+      SELECT DISTINCT
         p.id,
-        p.code,
+        pc.code,
         p.title,
         p.content,
         p.site,
@@ -54,7 +55,8 @@ export async function POST(req: Request) {
         p.updated_at,
         c.name as company_name
       FROM post p
-      LEFT JOIN company c ON p.code = c.code
+      LEFT JOIN post_code pc ON p.id = pc.post_id
+      LEFT JOIN company c ON pc.code = c.code
       WHERE p.accept = 1
     `;
 
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
     }
 
     if (company_code) {
-      conditions.push('p.code = ?');
+      conditions.push('pc.code = ?');
       values.push(String(company_code));
     }
 

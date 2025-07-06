@@ -31,14 +31,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const db = Database.getInstance();
     const query = `
       SELECT 
-        id,
-        code,
-        title,
-        content,
-        created_at,
-        pickup
-      FROM post
-      WHERE id = ?
+        p.id,
+        pc.code,
+        p.title,
+        p.content,
+        p.created_at,
+        p.pickup
+      FROM post p
+      LEFT JOIN post_code pc ON p.id = pc.post_id
+      WHERE p.id = ?
     `;
 
     const posts = await db.select<PostRow>(query, [post_id]);

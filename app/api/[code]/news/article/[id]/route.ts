@@ -25,13 +25,14 @@ export async function POST(
     const query = `
       SELECT 
         n.id,
-        n.code,
+        pc.code,
         n.title,
         REPLACE(n.content, '\n', '\\n') as content,
         n.created_at,
         c.name as company_name
       FROM post n
-      LEFT JOIN company c ON n.code = c.code
+      LEFT JOIN post_code pc ON n.id = pc.post_id
+      LEFT JOIN company c ON pc.code = c.code
       WHERE n.id = ?
     `;
 

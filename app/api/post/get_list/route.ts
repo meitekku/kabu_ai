@@ -24,14 +24,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const db = Database.getInstance();
     const query = `
-      SELECT 
-        id,
-        code,
-        title,
-        content,
-        created_at
-      FROM post
-      ORDER BY created_at DESC
+      SELECT DISTINCT
+        p.id,
+        pc.code,
+        p.title,
+        p.content,
+        p.created_at
+      FROM post p
+      LEFT JOIN post_code pc ON p.id = pc.post_id
+      ORDER BY p.created_at DESC
       LIMIT ?
     `;
 

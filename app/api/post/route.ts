@@ -246,8 +246,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 
     const db = Database.getInstance();
     const insertId = await db.insert(
-      'INSERT INTO post (code, title, content, site, accept, pickup) VALUES (?, ?, ?, ?, ?, ?)',
-      [code, title, content, site, accept, pickup]
+      'INSERT INTO post (title, content, site, accept, pickup) VALUES (?, ?, ?, ?, ?)',
+      [title, content, site, accept, pickup]
+    );
+
+    // Insert into post_code table to associate the post with the company code
+    await db.insert(
+      'INSERT INTO post_code (post_id, code) VALUES (?, ?)',
+      [insertId, code]
     );
 
     // post_status テーブルにステータス情報を挿入
@@ -310,8 +316,15 @@ export async function PUT(request: NextRequest): Promise<NextResponse<ApiRespons
     const db = Database.getInstance();
 
     const affectedRows = await db.update(
-      'UPDATE post SET code = ?, title = ?, content = ?, site = ?, accept = ?, pickup = ? WHERE id = ?',
-      [code, title, content, site, accept, pickup, id]
+      'UPDATE post SET title = ?, content = ?, site = ?, accept = ?, pickup = ? WHERE id = ?',
+      [title, content, site, accept, pickup, id]
+    );
+
+    // Update post_code table
+    await db.delete('DELETE FROM post_code WHERE post_id = ?', [id]);
+    await db.insert(
+      'INSERT INTO post_code (post_id, code) VALUES (?, ?)',
+      [id, code]
     );
 
     if (affectedRows === 0) {

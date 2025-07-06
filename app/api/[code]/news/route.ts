@@ -42,8 +42,9 @@ export async function POST(
     let queryParams: (string | number)[];
 
     if (code === 'all') {
-      query = `SELECT p.id, p.code, p.title, p.content, p.created_at, ps.status
+      query = `SELECT DISTINCT p.id, pc.code, p.title, p.content, p.created_at, ps.status
                FROM post p
+               LEFT JOIN post_code pc ON p.id = pc.post_id
                LEFT JOIN post_status ps ON p.id = ps.post_id
                WHERE 
                 p.accept > 0
@@ -55,10 +56,11 @@ export async function POST(
                LIMIT 100`;
       queryParams = excludeId ? [startDateStr, todayStr, excludeId] : [startDateStr, todayStr];
     } else {
-      query = `SELECT p.id, p.code, p.title, p.created_at, ps.status
+      query = `SELECT DISTINCT p.id, pc.code, p.title, p.created_at, ps.status
                FROM post p
+               JOIN post_code pc ON p.id = pc.post_id
                LEFT JOIN post_status ps ON p.id = ps.post_id
-               WHERE p.code = ?
+               WHERE pc.code = ?
                AND p.accept = 1
                ${excludeId ? 'AND p.id != ?' : ''}
                ORDER BY p.created_at DESC

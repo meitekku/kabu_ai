@@ -35,18 +35,19 @@ export async function POST(
     
     // 関連銘柄の最新記事を取得
     const query = `
-      SELECT 
+      SELECT DISTINCT
         p.id, 
-        p.code, 
+        pc.code, 
         p.title, 
         p.content, 
         p.created_at,
         c.name as company_name,
         ps.status
       FROM post p
-      JOIN company c ON p.code = c.code
+      JOIN post_code pc ON p.id = pc.post_id
+      JOIN company c ON pc.code = c.code
       LEFT JOIN post_status ps ON p.id = ps.post_id
-      WHERE p.code IN (${placeholders})
+      WHERE pc.code IN (${placeholders})
       AND p.accept = 1
       ${excludeId ? 'AND p.id != ?' : ''}
       ORDER BY p.created_at DESC
