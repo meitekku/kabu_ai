@@ -261,14 +261,14 @@ def generate_daily_news():
     """
     毎日のニュース生成のメイン関数
     """
-    # # 休日チェック
-    # if not common_calc.is_not_holiday():
-    #     print("本日は休日のため、処理をスキップします。")
-    #     return
+    # 休日チェック
+    if not common_calc.is_not_holiday():
+        print("本日は休日のため、処理をスキップします。")
+        return
     
-    # # 生成条件チェック
-    # if not check_generation_conditions():
-    #     return
+    # 生成条件チェック
+    if not check_generation_conditions():
+        return
     
     # ニュース素材を取得
     materials = get_todays_news_materials()
