@@ -7,14 +7,16 @@ interface TwitterPostButtonProps {
   chartImageUrl?: string; // チャート画像のURL（data URL）
   onSuccess?: () => void;
   siteNumber?: number; // サイト番号（デフォルト: 72）
+  onComplete?: () => void; // 投稿完了時のコールバック
 }
 
-export default function TwitterPostButton({ title, content, chartImageUrl, onSuccess, siteNumber = 72 }: TwitterPostButtonProps) {
+export default function TwitterPostButton({ title, content, chartImageUrl, onSuccess, siteNumber = 72, onComplete }: TwitterPostButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [compressionInfo, setCompressionInfo] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   // Unixタイムスタンプを日本時間の「MM月DD日 H:i:s」形式に変換する関数
   const formatUnixTimestampToJST = (unixTimestamp: number): string => {
@@ -215,9 +217,18 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
         throw new Error(twitterResult.message || 'Twitter投稿に失敗しました');
       }
       
-      if (onSuccess) {
-        onSuccess();
-      }
+      // 成功メッセージを表示
+      setSuccessMessage('TwitterとWebの両方に投稿が完了しました！');
+      
+      // 0.5秒後に完了処理を実行
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        }
+        if (onSuccess) {
+          onSuccess();
+        }
+      }, 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : '投稿に失敗しました');
     } finally {
@@ -284,6 +295,10 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
 
       {error && (
         <p className="text-red-500 text-xs mt-1">{error}</p>
+      )}
+      
+      {successMessage && (
+        <p className="text-green-600 text-xs mt-1 font-medium">{successMessage}</p>
       )}
       
       {/* デバッグ情報表示（開発時のみ） */}

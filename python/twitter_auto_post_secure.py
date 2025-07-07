@@ -6,6 +6,16 @@ import json
 import traceback
 import base64
 import urllib.parse
+import subprocess
+import signal
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    print("⚠️ psutil がインストールされていません。'pip install psutil' でインストールしてください。")
+    print("   ChromeDriverプロセスの自動終了機能が制限されます。")
+
 from dotenv import load_dotenv  # pip install python-dotenv
 
 # .envファイルを読み込む（Next.jsの.env.localも読める）
@@ -126,9 +136,65 @@ def decode_emoji_message(encoded_message):
             error_reporter.add_error("decode_message", f"デコードエラー: {e}, {e2}", e)
             return None
 
+def kill_all_chromedrivers():
+    """すべてのChromeDriverプロセスを強制終了"""
+    try:
+        print("ChromeDriverプロセスをクリーンアップ中...")
+        killed_count = 0
+        
+        # psutilが利用可能な場合の詳細検索
+        if PSUTIL_AVAILABLE:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    proc_name = proc.info['name'].lower()
+                    cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
+                    
+                    # ChromeDriverプロセスを特定
+                    if ('chromedriver' in proc_name or 
+                        'chromedriver' in cmdline.lower() or
+                        (proc_name == 'chrome' and '--test-type' in cmdline)):
+                        
+                        print(f"ChromeDriverプロセス終了: PID={proc.info['pid']}, 名前={proc_name}")
+                        proc.kill()
+                        killed_count += 1
+                        
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+        
+        # コマンドラインでも確実に終了（psutil有無に関わらず実行）
+        if os.name == 'nt':  # Windows
+            try:
+                result = subprocess.run(['taskkill', '/F', '/IM', 'chromedriver.exe'], 
+                                     capture_output=True, text=True)
+                if result.returncode == 0:
+                    print("WindowsでChromeDriverプロセスを終了しました")
+            except Exception as e:
+                print(f"Windows taskkill エラー: {e}")
+        else:  # macOS/Linux
+            try:
+                result = subprocess.run(['pkill', '-f', 'chromedriver'], 
+                                     capture_output=True, text=True)
+                if result.returncode == 0:
+                    print("macOS/LinuxでChromeDriverプロセスを終了しました")
+            except Exception as e:
+                print(f"macOS/Linux pkill エラー: {e}")
+        
+        print(f"ChromeDriverプロセスクリーンアップ完了: {killed_count}個のプロセスを終了")
+        error_reporter.add_success("cleanup", f"ChromeDriverプロセス終了: {killed_count}個")
+        
+    except Exception as e:
+        error_msg = f"ChromeDriverクリーンアップエラー: {e}"
+        print(f"⚠️ {error_msg}")
+        error_reporter.add_warning("cleanup", error_msg)
+
+
 def create_chrome_driver():
     """Chromeドライバーを直接起動"""
     try:
+        print("既存のChromeDriverプロセスをクリーンアップ...")
+        kill_all_chromedrivers()
+        time.sleep(2)  # プロセス終了を待つ
+        
         print("Chromeを起動中...")
         error_reporter.add_success("driver_init", "Chrome起動プロセス開始")
         
@@ -152,16 +218,26 @@ def create_chrome_driver():
         # ユーザーエージェントを設定
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # 一時プロファイルディレクトリを設定
+        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名）
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
+        
         if os.name == 'nt':  # Windows
-            temp_dir = os.path.join(os.environ.get('TEMP'), 'chrome_twitter_profile')
+            temp_dir = os.path.join(os.environ.get('TEMP'), f'chrome_twitter_profile_{unique_id}')
         else:  # macOS/Linux
-            temp_dir = os.path.join('/tmp', 'chrome_twitter_profile')
+            temp_dir = os.path.join('/tmp', f'chrome_twitter_profile_{unique_id}')
         
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         
         options.add_argument(f"--user-data-dir={temp_dir}")
+        
+        # セッション競合を避けるための追加オプション
+        options.add_argument("--disable-background-timer-throttling")
+        options.add_argument("--disable-backgrounding-occluded-windows")
+        options.add_argument("--disable-renderer-backgrounding")
+        options.add_argument("--disable-features=TranslateUI")
+        options.add_argument("--disable-ipc-flooding-protection")
         
         # WebDriverManagerでChromeDriverを自動管理
         service = Service(ChromeDriverManager().install())
@@ -185,6 +261,8 @@ def create_chrome_driver():
         error_msg = f"Chromeの起動に失敗: {e}"
         print(f"❌ {error_msg}")
         error_reporter.add_error("driver_init", error_msg, e)
+        # 失敗時もクリーンアップを試行
+        kill_all_chromedrivers()
         return None
 
 
@@ -262,13 +340,13 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         # ユーザー名入力
         print("ユーザー名を入力...")
         try:
-            username_input = WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'input[autocomplete="username"]'))
+            username_input = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[autocomplete="username"]'))
             )
             username_input.clear()
             username_input.send_keys(username)
             username_input.send_keys(Keys.RETURN)
-            time.sleep(2)
+            time.sleep(1)
             error_reporter.add_success("login", "ユーザー名入力完了")
         except Exception as e:
             error_msg = f"ユーザー名入力エラー: {e}"
@@ -277,7 +355,7 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         
         # 電話番号/メール確認画面が出る場合の対処
         try:
-            phone_input = WebDriverWait(driver, 5).until(
+            phone_input = WebDriverWait(driver, 2).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'input[data-testid="ocfEnterTextTextInput"]'))
             )
             error_msg = "電話番号/メール確認が必要です。手動で入力してください..."
@@ -290,13 +368,13 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         # パスワード入力
         print("パスワードを入力...")
         try:
-            password_input = WebDriverWait(driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="password"]'))
+            password_input = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[type="password"]'))
             )
             password_input.clear()
             password_input.send_keys(password)
             password_input.send_keys(Keys.RETURN)
-            time.sleep(5)
+            time.sleep(2)
             error_reporter.add_success("login", "パスワード入力完了")
         except Exception as e:
             error_msg = f"パスワード入力エラー: {e}"
@@ -306,7 +384,7 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         # ログイン成功確認
         print("ログイン確認中...")
         try:
-            WebDriverWait(driver, 30).until(
+            WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="SideNav_AccountSwitcher_Button"]'))
             )
             print("✅ ログイン成功！")
@@ -777,11 +855,11 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
         # ツイート入力エリアをクリック
         print("入力エリアを探しています...")
         try:
-            tweet_textarea = WebDriverWait(driver, 20).until(
+            tweet_textarea = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
             )
             tweet_textarea.click()
-            time.sleep(1)
+            time.sleep(0.5)
             error_reporter.add_success("tweet_with_image", "ツイート入力エリア発見・クリック完了")
         except Exception as e:
             error_msg = f"ツイート入力エリアが見つかりません: {e}"
@@ -802,7 +880,7 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
         try:
             # 直接ファイル入力要素を探す
             print("ファイル入力要素を検索中...")
-            file_input = WebDriverWait(driver, 10).until(
+            file_input = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"][accept*="image"]'))
             )
             print("✅ ファイル入力要素を発見！")
@@ -828,7 +906,7 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
             
             for selector in simple_selectors:
                 try:
-                    WebDriverWait(driver, 5).until(
+                    WebDriverWait(driver, 2).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, selector))
                     )
                     print(f"✅ 画像アップロード完了確認（{selector}）")
@@ -872,7 +950,7 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
         
         # 投稿完了確認
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
             )
             success_msg = f"ツイート投稿完了！時刻: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, 内容: {message}, 画像: {image_path}"
@@ -907,11 +985,11 @@ def post_tweet_improved(driver, message=DEFAULT_MESSAGE):
         # ツイート入力エリアをクリック
         print("入力エリアを探しています...")
         try:
-            tweet_textarea = WebDriverWait(driver, 20).until(
+            tweet_textarea = WebDriverWait(driver, 5).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
             )
             tweet_textarea.click()
-            time.sleep(1)
+            time.sleep(0.5)
             error_reporter.add_success("tweet_text_only", "ツイート入力エリア発見・クリック完了")
         except Exception as e:
             error_msg = f"ツイート入力エリアが見つかりません: {e}"
@@ -947,7 +1025,7 @@ def post_tweet_improved(driver, message=DEFAULT_MESSAGE):
         
         # 投稿完了確認
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
             )
             success_msg = f"ツイート投稿完了！時刻: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, 内容: {message}"
@@ -998,6 +1076,43 @@ def main_improved(message=None, image_path=None, text_only=False, encoded_messag
         # メッセージが指定されていない場合はデフォルトを使用
         if message is None:
             message = DEFAULT_MESSAGE
+        
+        # localhost環境の場合はメッセージを100文字に制限（テスト用）
+        # 複数の方法でlocalhost/開発環境を判定
+        import socket
+        try:
+            hostname = socket.gethostname()
+            # localhost環境の判定条件を複数チェック
+            is_localhost = (
+                # ホスト名チェック
+                "localhost" in hostname.lower() or 
+                hostname.lower() in ["localhost", "127.0.0.1"] or
+                # 環境変数チェック
+                os.getenv("NODE_ENV") == "development" or
+                os.getenv("ENVIRONMENT") == "development" or
+                os.getenv("ENVIRONMENT") == "local" or
+                os.getenv("TWITTER_TEST_MODE") == "true" or
+                # 開発フラグ
+                os.getenv("DEV_MODE") == "true"
+            )
+            
+            # さらに確実にするため、強制的にテストモードフラグもチェック
+            if not is_localhost:
+                # デバッグ用: 環境変数TWITTER_LIMIT_CHARSが設定されている場合も制限
+                is_localhost = os.getenv("TWITTER_LIMIT_CHARS") == "true"
+            
+            if is_localhost and message and len(message) > 100:
+                original_message = message
+                message = message[:100] + "..."
+                print(f"📝 localhost/開発環境のため、メッセージを100文字に制限")
+                print(f"  元のメッセージ: {original_message[:50]}...")
+                print(f"  制限後: {message}")
+                print(f"  判定理由: ホスト名={hostname}, 環境変数確認済み")
+                error_reporter.add_warning("main", f"localhost環境のため文字数制限適用: {len(original_message)}文字 → {len(message)}文字")
+            else:
+                print(f"📝 本番環境として判定: ホスト名={hostname}, 文字数制限なし")
+        except Exception as e:
+            print(f"環境判定エラー（処理は続行）: {e}")
         
         # 画像パスが指定されていない場合はデフォルトを使用
         if image_path is None and not text_only:
@@ -1061,6 +1176,10 @@ def main_improved(message=None, image_path=None, text_only=False, encoded_messag
                 error_reporter.add_success("cleanup", "ブラウザクリーンアップ完了")
             except Exception as e:
                 error_reporter.add_warning("cleanup", f"ブラウザクリーンアップエラー: {e}")
+        
+        # すべてのChromeDriverプロセスを強制終了
+        print("すべてのChromeDriverプロセスを強制終了...")
+        kill_all_chromedrivers()
 
 
 def main(message=None, image_path=None, text_only=False, encoded_message=None):

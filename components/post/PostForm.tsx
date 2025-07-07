@@ -126,22 +126,22 @@ export default function PostForm({
     let fadeTimeout: NodeJS.Timeout;
     let hideTimeout: NodeJS.Timeout;
 
-    if (message && !redirectAfterPost) {
+    if (message) {
       fadeTimeout = setTimeout(() => {
         setMessageOpacity(0);
-      }, 3000);
+      }, 500);
 
       hideTimeout = setTimeout(() => {
         setMessage('');
         setMessageOpacity(1);
-      }, 3300);
+      }, 800);
     }
 
     return () => {
       if (fadeTimeout) clearTimeout(fadeTimeout);
       if (hideTimeout) clearTimeout(hideTimeout);
     };
-  }, [message, redirectAfterPost]);
+  }, [message]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -365,7 +365,7 @@ export default function PostForm({
           console.error('Twitter投稿中にエラーが発生:', error);
         }
 
-        setMessage(postId && postId !== 'new' ? '更新が完了しました（コピー済み）' : '投稿が完了しました（コピー済み）');
+        setMessage(postId && postId !== 'new' ? '更新が完了しました！' : '投稿が完了しました！');
         setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
         
         if (redirectAfterPost) {
@@ -548,7 +548,11 @@ export default function PostForm({
   
       {message && (
         <div 
-          className="mt-4 p-2 text-center rounded bg-gray-100 transition-opacity duration-300"
+          className={`mt-4 p-3 text-center rounded-lg transition-opacity duration-300 ${
+            message.includes('完了しました') 
+              ? 'bg-green-100 text-green-800 border border-green-300' 
+              : 'bg-red-100 text-red-800 border border-red-300'
+          }`}
           style={{ opacity: messageOpacity }}
         >
           {message}

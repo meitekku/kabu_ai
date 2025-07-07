@@ -87,6 +87,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   const [chartImages, setChartImages] = useState<{ [key: number]: string }>({});
   const [generatingImage, setGeneratingImage] = useState<{ [key: number]: boolean }>({});
   const [autoExpandedIds, setAutoExpandedIds] = useState<Set<number>>(new Set());
+  const [fadingOut, setFadingOut] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
     const initialContents: Record<number, string> = {};
@@ -261,12 +262,22 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
     // 必要に応じてユーザーに通知
   };
 
+  // Twitter投稿完了時のフェードアウト処理
+  const handleTwitterPostComplete = (id: number) => {
+    setFadingOut(prev => ({ ...prev, [id]: true }));
+  };
+
   return (
     <div className="max-w-4xl">
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <ul className="space-y-4">
         {items.map(item => (
-          <li key={item.id} className="relative rounded-lg border p-4">
+          <li 
+            key={item.id} 
+            className={`relative rounded-lg border p-4 transition-opacity duration-500 ${
+              fadingOut[item.id] ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
             <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
                 <input
@@ -353,6 +364,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   content={editedContents[item.id] || ''}
                   chartImageUrl={chartImages[item.id]}
                   onSuccess={() => handleAccept(item.id)}
+                  onComplete={() => handleTwitterPostComplete(item.id)}
                   siteNumber={71}
                 />
                 

@@ -245,6 +245,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     }
 
     const db = Database.getInstance();
+    
+    // Check if company code exists, if not create it
+    console.log('Checking company code:', code);
+    const [companyRows] = await db.query(
+      'SELECT code FROM company WHERE code = ?',
+      [code]
+    );
+    console.log('Company rows found:', companyRows);
+    
+    if (!companyRows || companyRows.length === 0) {
+      // Insert the company code if it doesn't exist
+      console.log('Creating company code:', code);
+      await db.insert(
+        'INSERT INTO company (code, name) VALUES (?, ?)',
+        [code, `Company ${code}`]
+      );
+    }
+    
     const insertId = await db.insert(
       'INSERT INTO post (title, content, site, accept, pickup) VALUES (?, ?, ?, ?, ?)',
       [title, content, site, accept, pickup]

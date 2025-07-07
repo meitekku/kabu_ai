@@ -120,8 +120,8 @@ async function executePythonScript(
   textOnly: boolean = false
 ): Promise<{ success: boolean; report?: PythonErrorReport }> {
   return new Promise((resolve, reject) => {
-    // Pythonスクリプトのパス（同じディレクトリにある場合）
-    const scriptPath = path.join(process.cwd(), 'app', 'api', 'twitter', 'post_selenium', 'twitter_auto_post_secure.py');
+    // Pythonスクリプトのパス（プロジェクトディレクトリ直下のpythonフォルダ）
+    const scriptPath = path.join(process.cwd(), 'python', 'twitter_auto_post_secure.py');
     
     // コマンドライン引数を構築
     const args: string[] = [];
