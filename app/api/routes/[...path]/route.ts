@@ -87,6 +87,34 @@ export async function GET(
                   console.log(`    📂 Found uploads at: ${uploadsPath}`);
                   const uploadContents = fs.readdirSync(uploadsPath);
                   console.log(`      Upload contents: ${uploadContents.join(', ')}`);
+                  
+                  // Check post_images directory structure
+                  if (uploadContents.includes('post_images')) {
+                    const postImagesPath = path.join(uploadsPath, 'post_images');
+                    console.log(`      📂 Exploring post_images at: ${postImagesPath}`);
+                    try {
+                      const postImageContents = fs.readdirSync(postImagesPath);
+                      console.log(`        Contents: ${postImageContents.join(', ')}`);
+                      
+                      // Check 2025 directory if exists
+                      if (postImageContents.includes('2025')) {
+                        const year2025Path = path.join(postImagesPath, '2025');
+                        console.log(`        📂 Exploring 2025 at: ${year2025Path}`);
+                        const year2025Contents = fs.readdirSync(year2025Path);
+                        console.log(`          Contents: ${year2025Contents.join(', ')}`);
+                        
+                        // Check 05 directory if exists
+                        if (year2025Contents.includes('05')) {
+                          const month05Path = path.join(year2025Path, '05');
+                          console.log(`          📂 Exploring 05 at: ${month05Path}`);
+                          const month05Contents = fs.readdirSync(month05Path);
+                          console.log(`            Contents: ${month05Contents.slice(0, 10).join(', ')}${month05Contents.length > 10 ? ` ...and ${month05Contents.length - 10} more` : ''}`);
+                        }
+                      }
+                    } catch (e) {
+                      console.log(`        ❌ Cannot read post_images: ${e instanceof Error ? e.message : String(e)}`);
+                    }
+                  }
                 }
               } catch (e) {
                 console.log(`    ❌ Cannot read ${publicPath}: ${e instanceof Error ? e.message : String(e)}`);
