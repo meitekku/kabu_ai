@@ -25,20 +25,55 @@ export async function GET(
   
   console.log('Safe path array:', safePath);
   
-  const fullPath = path.join(process.cwd(), 'public', 'uploads', ...safePath);
-  console.log('Full file path:', fullPath);
-  console.log('File exists:', fs.existsSync(fullPath));
+  // Try multiple possible file locations for standalone mode
+  const possiblePaths = [
+    path.join(process.cwd(), 'public', 'uploads', ...safePath), // Standard location
+    path.join(process.cwd(), '../public', 'uploads', ...safePath), // Parent directory
+    path.join('/var/www/kabu_ai/public', 'uploads', ...safePath), // Absolute path
+    path.join(process.cwd(), '../../../public', 'uploads', ...safePath), // Deep nesting
+  ];
+  
+  console.log('Possible file paths:', possiblePaths);
+  
+  let fullPath = '';
+  let foundFile = false;
+  
+  for (const testPath of possiblePaths) {
+    console.log('Testing path:', testPath);
+    if (fs.existsSync(testPath)) {
+      fullPath = testPath;
+      foundFile = true;
+      console.log('✅ Found file at:', fullPath);
+      break;
+    }
+  }
+  
+  if (!foundFile) {
+    console.log('❌ File not found in any location');
+    console.log('Current working directory:', process.cwd());
+  }
   
   try {
-    if (!fs.existsSync(fullPath)) {
+    if (!foundFile || !fs.existsSync(fullPath)) {
       console.log('File not found:', fullPath);
       return new NextResponse('File not found', { status: 404 });
     }
     
-    // ディレクトリトラバーサル攻撃の防止
-    const publicUploadsPath = path.join(process.cwd(), 'public', 'uploads');
-    if (!fullPath.startsWith(publicUploadsPath)) {
+    // ディレクトリトラバーサル攻撃の防止 - multiple allowed paths for standalone mode
+    const allowedBasePaths = [
+      path.join(process.cwd(), 'public', 'uploads'),
+      path.join(process.cwd(), '../public', 'uploads'),
+      path.join('/var/www/kabu_ai/public', 'uploads'),
+      path.join(process.cwd(), '../../../public', 'uploads'),
+    ];
+    
+    const isPathAllowed = allowedBasePaths.some(basePath => 
+      fullPath.startsWith(basePath)
+    );
+    
+    if (!isPathAllowed) {
       console.log('Access denied for path:', fullPath);
+      console.log('Allowed base paths:', allowedBasePaths);
       return new NextResponse('Access denied', { status: 403 });
     }
     
