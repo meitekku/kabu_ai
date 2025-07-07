@@ -12,6 +12,7 @@ interface NewsItem {
   company_name: string | null;
   site: number | null;
   pickup: number;
+  image_path?: string | null;
 }
 
 interface NewsListSProps {
@@ -91,32 +92,60 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
     );
   }
 
+  const extractImageFromContent = (content: string | null): string | null => {
+    if (!content) return null;
+    const imgMatch = content.match(/<img[^>]+src=['"]([^'"]+)['"][^>]*>/);
+    return imgMatch ? imgMatch[1] : null;
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-4">
-        {news.map((item) => (
-          <div key={item.id} className="border-b border-gray-100 pb-4">
-            <div className="text-sm text-gray-500 mb-1">
-              {item.created_at}
+        {news.map((item) => {
+          const imageUrl = item.image_path || extractImageFromContent(item.content);
+          
+          return (
+            <div key={item.id} className="border-b border-gray-100 pb-4">
+              <div className="text-sm text-gray-500 mb-1">
+                {item.created_at}
+              </div>
+              
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Link 
+                    href={`/all/news/article/${item.id}`}
+                    className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {item.title}
+                  </Link>
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {item.content?.replace(/<[^>]*>/g, '')}
+                  </p>
+                </div>
+                
+                {imageUrl && (
+                  <div className="flex-shrink-0 w-20 h-20">
+                    <img 
+                      src={imageUrl} 
+                      alt={item.title || ''}
+                      className="w-full h-full object-cover rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-            <Link 
-              href={`/all/news/article/${item.id}`}
-              className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {item.title}
-            </Link>
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {item.content?.replace(/<[^>]*>/g, '')}
-            </p>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {more ? (
         <div className="text-right">
