@@ -51,6 +51,55 @@ export async function GET(
   if (!foundFile) {
     console.log('❌ File not found in any location');
     console.log('Current working directory:', process.cwd());
+    
+    // Deep exploration of file system structure
+    const baseDirectories = [
+      '/var/www/kabu_ai',
+      '/var/www',
+      process.cwd(),
+      path.dirname(process.cwd()),
+    ];
+    
+    console.log('🔍 Exploring file system structure...');
+    
+    for (const baseDir of baseDirectories) {
+      try {
+        console.log(`\n📁 Exploring ${baseDir}:`);
+        if (fs.existsSync(baseDir)) {
+          const contents = fs.readdirSync(baseDir);
+          console.log(`  Contents: ${contents.join(', ')}`);
+          
+          // Look for public directories
+          const publicDirs = contents.filter(item => 
+            item.includes('public') || item.includes('uploads')
+          );
+          
+          for (const publicDir of publicDirs) {
+            const publicPath = path.join(baseDir, publicDir);
+            if (fs.existsSync(publicPath) && fs.statSync(publicPath).isDirectory()) {
+              console.log(`  📂 Found potential directory: ${publicPath}`);
+              try {
+                const pubContents = fs.readdirSync(publicPath);
+                console.log(`    Contents: ${pubContents.join(', ')}`);
+                
+                if (pubContents.includes('uploads')) {
+                  const uploadsPath = path.join(publicPath, 'uploads');
+                  console.log(`    📂 Found uploads at: ${uploadsPath}`);
+                  const uploadContents = fs.readdirSync(uploadsPath);
+                  console.log(`      Upload contents: ${uploadContents.join(', ')}`);
+                }
+              } catch (e) {
+                console.log(`    ❌ Cannot read ${publicPath}: ${e.message}`);
+              }
+            }
+          }
+        } else {
+          console.log(`  ❌ Directory does not exist: ${baseDir}`);
+        }
+      } catch (e) {
+        console.log(`  ❌ Error exploring ${baseDir}: ${e.message}`);
+      }
+    }
   }
   
   try {
