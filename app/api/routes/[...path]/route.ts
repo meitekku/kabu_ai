@@ -89,7 +89,7 @@ export async function GET(
                   console.log(`      Upload contents: ${uploadContents.join(', ')}`);
                 }
               } catch (e) {
-                console.log(`    ❌ Cannot read ${publicPath}: ${e.message}`);
+                console.log(`    ❌ Cannot read ${publicPath}: ${e instanceof Error ? e.message : String(e)}`);
               }
             }
           }
@@ -97,7 +97,7 @@ export async function GET(
           console.log(`  ❌ Directory does not exist: ${baseDir}`);
         }
       } catch (e) {
-        console.log(`  ❌ Error exploring ${baseDir}: ${e.message}`);
+        console.log(`  ❌ Error exploring ${baseDir}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   }
