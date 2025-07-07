@@ -95,8 +95,40 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
 
   const extractImageFromContent = (content: string | null): string | null => {
     if (!content) return null;
-    const imgMatch = content.match(/<img[^>]+src=['"]([^'"]+)['"][^>]*>/);
-    return imgMatch ? imgMatch[1] : null;
+    
+    // まず通常のsrc属性を確認
+    const srcMatch = content.match(/<img[^>]+src=['"]([^'"]+)['"][^>]*>/);
+    if (srcMatch) {
+      const srcUrl = srcMatch[1];
+      
+      // Next.js最適化URLの場合、元のURLを抽出
+      if (srcUrl.includes('/_next/image?url=')) {
+        const urlMatch = srcUrl.match(/url=([^&]+)/);
+        if (urlMatch) {
+          return decodeURIComponent(urlMatch[1]);
+        }
+      }
+      
+      return srcUrl;
+    }
+    
+    // srcsetからも抽出を試みる
+    const srcsetMatch = content.match(/srcset=['"]([^'"]+)['"][^>]*>/);
+    if (srcsetMatch) {
+      const srcsetValue = srcsetMatch[1];
+      const firstUrl = srcsetValue.split(' ')[0];
+      
+      if (firstUrl.includes('/_next/image?url=')) {
+        const urlMatch = firstUrl.match(/url=([^&]+)/);
+        if (urlMatch) {
+          return decodeURIComponent(urlMatch[1]);
+        }
+      }
+      
+      return firstUrl;
+    }
+    
+    return null;
   };
 
   return (
