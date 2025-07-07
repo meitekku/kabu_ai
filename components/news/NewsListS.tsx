@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface NewsItem {
   id: number;
@@ -131,11 +132,13 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
                 </div>
                 
                 {imageUrl && (
-                  <div className="flex-shrink-0 w-20 h-20">
-                    <img 
-                      src={imageUrl} 
+                  <div className="flex-shrink-0 w-20 h-20 relative">
+                    <Image
+                      src={imageUrl}
                       alt={item.title || ''}
-                      className="w-full h-full object-cover rounded"
+                      fill
+                      className="object-cover rounded"
+                      sizes="80px"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none';
                       }}
