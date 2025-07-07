@@ -201,6 +201,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
                     />
                     
                     {/* Fallback regular img tag */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       className="fallback-img absolute inset-0 w-full h-full object-cover rounded"
                       src={imageUrl}
