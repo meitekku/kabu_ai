@@ -1,201 +1,122 @@
-// app/api/routes/[...path]/route.ts
-import fs from 'fs';
+// app/api/uploads/[...path]/route.ts
+// カスタム画像ハンドラーを作成して、画像の保存と取得を管理
+// 注意: Next.js 13+ App Routerの場合、このファイルは以下のパスに配置します：
+// app/api/uploads/[...path]/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
+import { readFile, mkdir, writeFile } from 'fs/promises';
 import path from 'path';
-import { NextResponse } from 'next/server';
+import { existsSync } from 'fs';
 
-type Params = Promise<{ path: string[] }>;
-
+// 画像を取得するGETハンドラー
 export async function GET(
-  request: Request,
-  { params }: { params: Params }
-): Promise<NextResponse> {
-  console.log('=== File Request Debug ===');
-  
-  // params を await する
-  const resolvedParams = await params;
-  const filePath = resolvedParams.path;
-  
-  console.log('Requested path array:', filePath);
-  console.log('Request URL:', request.url);
-  
-  // セキュリティチェック
-  const safePath = filePath.filter((segment: string) => 
-    !segment.includes('..') && segment.trim() !== ''
-  );
-  
-  console.log('Safe path array:', safePath);
-  
-  // Try multiple possible file locations for standalone mode
-  const possiblePaths = [
-    path.join(process.cwd(), 'public', 'uploads', ...safePath), // Standard location
-    path.join(process.cwd(), '../public', 'uploads', ...safePath), // Parent directory
-    path.join('/var/www/kabu_ai/public', 'uploads', ...safePath), // Absolute path
-    path.join(process.cwd(), '../../../public', 'uploads', ...safePath), // Deep nesting
-  ];
-  
-  console.log('Possible file paths:', possiblePaths);
-  
-  let fullPath = '';
-  let foundFile = false;
-  
-  for (const testPath of possiblePaths) {
-    console.log('Testing path:', testPath);
-    if (fs.existsSync(testPath)) {
-      fullPath = testPath;
-      foundFile = true;
-      console.log('✅ Found file at:', fullPath);
-      break;
-    }
-  }
-  
-  if (!foundFile) {
-    console.log('❌ File not found in any location');
-    console.log('Current working directory:', process.cwd());
-    
-    // Deep exploration of file system structure
-    const baseDirectories = [
-      '/var/www/kabu_ai',
-      '/var/www',
-      process.cwd(),
-      path.dirname(process.cwd()),
+  request: NextRequest,
+  { params }: { params: { path: string[] } }
+) {
+  try {
+    // パスの組み立て
+    const relativePath = params.path.join('/');
+    const possiblePaths = [
+      path.join(process.cwd(), 'public/uploads', relativePath),
+      path.join('/var/www/kabu_ai/public/uploads', relativePath),
+      path.join('/var/www/kabu_ai/.next/standalone/public/uploads', relativePath)
     ];
-    
-    console.log('🔍 Exploring file system structure...');
-    
-    for (const baseDir of baseDirectories) {
-      try {
-        console.log(`\n📁 Exploring ${baseDir}:`);
-        if (fs.existsSync(baseDir)) {
-          const contents = fs.readdirSync(baseDir);
-          console.log(`  Contents: ${contents.join(', ')}`);
-          
-          // Look for public directories
-          const publicDirs = contents.filter(item => 
-            item.includes('public') || item.includes('uploads')
-          );
-          
-          for (const publicDir of publicDirs) {
-            const publicPath = path.join(baseDir, publicDir);
-            if (fs.existsSync(publicPath) && fs.statSync(publicPath).isDirectory()) {
-              console.log(`  📂 Found potential directory: ${publicPath}`);
-              try {
-                const pubContents = fs.readdirSync(publicPath);
-                console.log(`    Contents: ${pubContents.join(', ')}`);
-                
-                if (pubContents.includes('uploads')) {
-                  const uploadsPath = path.join(publicPath, 'uploads');
-                  console.log(`    📂 Found uploads at: ${uploadsPath}`);
-                  const uploadContents = fs.readdirSync(uploadsPath);
-                  console.log(`      Upload contents: ${uploadContents.join(', ')}`);
-                  
-                  // Check post_images directory structure
-                  if (uploadContents.includes('post_images')) {
-                    const postImagesPath = path.join(uploadsPath, 'post_images');
-                    console.log(`      📂 Exploring post_images at: ${postImagesPath}`);
-                    try {
-                      const postImageContents = fs.readdirSync(postImagesPath);
-                      console.log(`        Contents: ${postImageContents.join(', ')}`);
-                      
-                      // Check 2025 directory if exists
-                      if (postImageContents.includes('2025')) {
-                        const year2025Path = path.join(postImagesPath, '2025');
-                        console.log(`        📂 Exploring 2025 at: ${year2025Path}`);
-                        const year2025Contents = fs.readdirSync(year2025Path);
-                        console.log(`          Contents: ${year2025Contents.join(', ')}`);
-                        
-                        // Check 05 directory if exists
-                        if (year2025Contents.includes('05')) {
-                          const month05Path = path.join(year2025Path, '05');
-                          console.log(`          📂 Exploring 05 at: ${month05Path}`);
-                          const month05Contents = fs.readdirSync(month05Path);
-                          console.log(`            Contents: ${month05Contents.slice(0, 10).join(', ')}${month05Contents.length > 10 ? ` ...and ${month05Contents.length - 10} more` : ''}`);
-                        }
-                      }
-                    } catch (e) {
-                      console.log(`        ❌ Cannot read post_images: ${e instanceof Error ? e.message : String(e)}`);
-                    }
-                  }
-                }
-              } catch (e) {
-                console.log(`    ❌ Cannot read ${publicPath}: ${e instanceof Error ? e.message : String(e)}`);
-              }
-            }
-          }
-        } else {
-          console.log(`  ❌ Directory does not exist: ${baseDir}`);
-        }
-      } catch (e) {
-        console.log(`  ❌ Error exploring ${baseDir}: ${e instanceof Error ? e.message : String(e)}`);
+
+    // ファイルを探す
+    let fileBuffer = null;
+    let foundPath = null;
+
+    for (const filePath of possiblePaths) {
+      if (existsSync(filePath)) {
+        fileBuffer = await readFile(filePath);
+        foundPath = filePath;
+        break;
       }
     }
-  }
-  
-  try {
-    if (!foundFile || !fs.existsSync(fullPath)) {
-      console.log('File not found:', fullPath);
-      return new NextResponse('File not found', { status: 404 });
+
+    if (!fileBuffer || !foundPath) {
+      return new NextResponse('Image not found', { status: 404 });
     }
-    
-    // ディレクトリトラバーサル攻撃の防止 - multiple allowed paths for standalone mode
-    const allowedBasePaths = [
-      path.join(process.cwd(), 'public', 'uploads'),
-      path.join(process.cwd(), '../public', 'uploads'),
-      path.join('/var/www/kabu_ai/public', 'uploads'),
-      path.join(process.cwd(), '../../../public', 'uploads'),
-    ];
-    
-    const isPathAllowed = allowedBasePaths.some(basePath => 
-      fullPath.startsWith(basePath)
-    );
-    
-    if (!isPathAllowed) {
-      console.log('Access denied for path:', fullPath);
-      console.log('Allowed base paths:', allowedBasePaths);
-      return new NextResponse('Access denied', { status: 403 });
-    }
-    
-    const stat = fs.statSync(fullPath);
-    const fileBuffer = fs.readFileSync(fullPath);
-    
-    console.log('File size:', stat.size);
-    console.log('File modified:', stat.mtime);
-    
-    const ext = path.extname(fullPath).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-    };
-    
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-    console.log('Content type:', contentType);
-    
-    const etag = `"${stat.mtime.getTime()}-${stat.size}"`;
-    
-    // 条件付きリクエストの処理
-    const ifNoneMatch = request.headers.get('if-none-match');
-    if (ifNoneMatch === etag) {
-      console.log('304 Not Modified');
-      return new NextResponse(null, { status: 304 });
-    }
-    
-    console.log('200 OK - File served successfully');
+
+    // 適切なContent-Typeを設定
+    const ext = path.extname(foundPath).toLowerCase();
+    const contentType = getContentType(ext);
+
     return new NextResponse(fileBuffer, {
-      status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Length': stat.size.toString(),
         'Cache-Control': 'public, max-age=31536000, immutable',
-        'ETag': etag,
       },
     });
-    
   } catch (error) {
-    console.error('File serving error:', error);
-    return new NextResponse('Internal server error', { status: 500 });
+    console.error('Error serving image:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error details:', errorMessage);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
+
+// 画像をアップロードするPOSTハンドラー
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // ファイル名の生成（タイムスタンプ付き）
+    const timestamp = Date.now();
+    const originalName = file.name;
+    const ext = path.extname(originalName);
+    const nameWithoutExt = path.basename(originalName, ext);
+    const fileName = `${nameWithoutExt}_${timestamp}${ext}`;
+
+    // 保存先ディレクトリの作成（年/月形式）
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const dirPath = path.join(process.cwd(), 'public/uploads/post_images', String(year), month);
+    
+    // ディレクトリが存在しない場合は作成
+    await mkdir(dirPath, { recursive: true });
+
+    // ファイルの保存
+    const filePath = path.join(dirPath, fileName);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    
+    await writeFile(filePath, buffer);
+
+    // URLパスの生成
+    const urlPath = `/uploads/post_images/${year}/${month}/${fileName}`;
+
+    return NextResponse.json({
+      success: true,
+      url: urlPath,
+      fileName: fileName,
+      size: file.size
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Failed to upload file', details: errorMessage },
+      { status: 500 }
+    );
+  }
+}
+
+function getContentType(ext: string): string {
+  const mimeTypes: { [key: string]: string } = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.svg': 'image/svg+xml',
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+

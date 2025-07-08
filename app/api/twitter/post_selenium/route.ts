@@ -54,7 +54,6 @@ function extractJsonReport(output: string): PythonErrorReport | null {
     const endIndex = output.indexOf(endMarker);
     
     if (startIndex === -1 || endIndex === -1) {
-      console.warn('JSON report markers not found in output');
       return null;
     }
     
@@ -66,49 +65,16 @@ function extractJsonReport(output: string): PythonErrorReport | null {
     const report = JSON.parse(jsonString) as PythonErrorReport;
     return report;
   } catch (error) {
-    console.error('Failed to parse JSON report:', error);
     return null;
   }
 }
 
 // エラーレポートをコンソールに詳細表示する関数
 function logDetailedReport(report: PythonErrorReport) {
-  console.log('\n=== PYTHON SCRIPT DETAILED REPORT ===');
-  console.log(`Final Result: ${report.final_result}`);
-  console.log(`Timestamp: ${report.timestamp}`);
-  console.log(`Summary: ${report.summary.total_errors} errors, ${report.summary.total_warnings} warnings, ${report.summary.total_success_steps} success steps`);
-  
-  // 成功ステップをログ出力
-  if (report.success_steps.length > 0) {
-    console.log('\n🟢 SUCCESS STEPS:');
-    report.success_steps.forEach((step, index) => {
-      console.log(`  ${index + 1}. [${step.step}] ${step.message} (${step.timestamp})`);
-    });
-  }
-  
-  // 警告をログ出力
-  if (report.warnings.length > 0) {
-    console.log('\n🟡 WARNINGS:');
-    report.warnings.forEach((warning, index) => {
-      console.log(`  ${index + 1}. [${warning.step}] ${warning.message} (${warning.timestamp})`);
-    });
-  }
-  
-  // エラーをログ出力
+  // エラーがある場合のみログ出力
   if (report.errors.length > 0) {
-    console.log('\n🔴 ERRORS:');
-    report.errors.forEach((error, index) => {
-      console.log(`  ${index + 1}. [${error.step}] ${error.message} (${error.timestamp})`);
-      if (error.exception) {
-        console.log(`     Exception: ${error.exception}`);
-      }
-      if (error.traceback) {
-        console.log(`     Traceback:\n${error.traceback}`);
-      }
-    });
+    console.error('Twitter post failed:', report.errors[0]?.message || 'Unknown error');
   }
-  
-  console.log('=== END DETAILED REPORT ===\n');
 }
 
 // Pythonスクリプトを実行する関数
@@ -151,11 +117,6 @@ async function executePythonScript(
       }
     }
     
-    console.log('Executing Python script:', scriptPath);
-    console.log('Arguments:', args);
-    if (hasEmoji) {
-      console.log('Note: Message contains emoji, using encoded format');
-    }
     
     // Pythonスクリプトを実行
     const pythonProcess = spawn('python', [scriptPath, ...args]);
@@ -167,20 +128,16 @@ async function executePythonScript(
     pythonProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdout += output;
-      console.log('Python stdout:', output);
     });
     
     // エラー出力を収集
     pythonProcess.stderr.on('data', (data) => {
       const output = data.toString();
       stderr += output;
-      console.error('Python stderr:', output);
     });
     
     // プロセス終了時の処理
     pythonProcess.on('close', (code) => {
-      console.log(`\nPython process exited with code ${code}`);
-      
       // JSONレポートを抽出
       const report = extractJsonReport(stdout);
       
@@ -191,7 +148,6 @@ async function executePythonScript(
         // レポートの final_result を基に成功/失敗を判定
         resolve({ success: report.final_result, report });
       } else {
-        console.warn('No detailed report available, falling back to exit code');
         
         // JSONレポートが取得できない場合は終了コードで判定
         const success = code === 0;
@@ -265,7 +221,6 @@ async function executePythonScript(
     
     // タイムアウト設定（5分）
     setTimeout(() => {
-      console.warn('Python script timeout - killing process');
       pythonProcess.kill();
       
       const timeoutReport: PythonErrorReport = {
@@ -300,7 +255,6 @@ export async function POST(request: NextRequest) {
     
     // 入力検証
     if (!body.message && !body.encodedMessage && !body.imagePath) {
-      console.log('❌ Request validation failed: No message, encoded message, or image path provided');
       return NextResponse.json<TweetResponse>(
         {
           success: false,
@@ -310,15 +264,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('🚀 Tweet request received:', JSON.stringify({
-      ...body,
-      encodedMessage: body.encodedMessage ? '[BASE64 ENCODED]' : undefined
-    }, null, 2));
-    
-    // 絵文字が含まれているかのログ
-    if (body.hasEmoji) {
-      console.log('📝 Message contains emoji - using special handling');
-    }
     
     // Pythonスクリプトを実行
     const { success, report } = await executePythonScript(
@@ -331,7 +276,6 @@ export async function POST(request: NextRequest) {
     
     // 結果に基づいてレスポンスを返す
     if (success) {
-      console.log('✅ Tweet posted successfully');
       return NextResponse.json<TweetResponse>(
         {
           success: true,
@@ -341,7 +285,6 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     } else {
-      console.log('❌ Tweet posting failed');
       
       // 絵文字関連のエラーかチェック
       const isEmojiError = report?.errors.some(error => 
@@ -349,9 +292,6 @@ export async function POST(request: NextRequest) {
         error.exception?.includes('ChromeDriver only supports characters in the BMP')
       );
       
-      if (isEmojiError) {
-        console.error('⚠️ Emoji-related error detected. The emoji handling may not be working properly.');
-      }
       
       return NextResponse.json<TweetResponse>(
         {
@@ -366,7 +306,7 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
-    console.error('💥 API error:', error);
+    console.error('API error:', error);
     
     // エラーレスポンス
     return NextResponse.json<TweetResponse>(

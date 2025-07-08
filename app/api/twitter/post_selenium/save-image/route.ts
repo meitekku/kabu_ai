@@ -45,7 +45,6 @@ export async function POST(request: NextRequest) {
     // ファイルを保存
     await fs.writeFile(filePath, buffer);
     
-    console.log(`✅ 画像を保存しました: ${filePath}`);
     
     // レスポンス
     return NextResponse.json<SaveImageResponse>({
@@ -56,7 +55,6 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('画像保存エラー:', error);
     return NextResponse.json<SaveImageResponse>({
       success: false,
       error: error instanceof Error ? error.message : '画像の保存に失敗しました'

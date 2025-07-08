@@ -160,7 +160,6 @@ async function optimizeImageBuffer(buffer: Buffer, mimeType: string): Promise<{ 
     return { buffer, mimeType };
   }
 
-  console.log(`Image size ${formatFileSize(buffer.length)} exceeds limit, optimizing...`);
 
   try {
     // Node.js環境でのCanvas APIは利用できないため、品質を下げて再エンコード
@@ -169,12 +168,10 @@ async function optimizeImageBuffer(buffer: Buffer, mimeType: string): Promise<{ 
     // 簡易的な圧縮：JPEGの場合は品質を下げる
     if (mimeType.includes('jpeg') || mimeType.includes('jpg')) {
       // ここでは元のバッファをそのまま返すが、実際にはsharpなどで品質を下げる
-      console.log('JPEG optimization would be applied here (requires sharp library)');
     }
     
     return { buffer, mimeType: 'image/jpeg' };
   } catch (error) {
-    console.error('Image optimization failed:', error);
     throw new Error(`画像の最適化に失敗しました: ${formatFileSize(buffer.length)}のファイルサイズが大きすぎます`);
   }
 }
@@ -192,7 +189,6 @@ async function downloadImage(imageUrl: string): Promise<{ buffer: Buffer; mimeTy
     const base64Data = matches[2];
     const buffer = Buffer.from(base64Data, 'base64');
     
-    console.log(`Base64 image decoded: ${formatFileSize(buffer.length)}, type: ${mimeType}`);
     
     return { buffer, mimeType };
   }
@@ -226,7 +222,6 @@ async function validateAndConvertImage(buffer: Buffer, mimeType: string): Promis
 
   // サポートされている形式かチェック
   if (!supportedFormats.includes(mimeType)) {
-    console.log(`Converting ${mimeType} to JPEG for Twitter compatibility`);
     mimeType = 'image/jpeg';
   }
   
@@ -253,16 +248,13 @@ function calculateOptimalChunkSize(totalSize: number): number {
 async function uploadMedia(imageBuffer: Buffer, mimeType: string = 'image/jpeg'): Promise<string> {
   const totalBytes = imageBuffer.length;
   
-  console.log(`Starting media upload: ${formatFileSize(totalBytes)}, type: ${mimeType}`);
 
   try {
     // ファイルサイズが小さい場合は単純アップロードを試行
     if (totalBytes <= 1024 * 1024) { // 1MB以下
-      console.log('Attempting simple upload for small file');
       try {
         return await simpleMediaUpload(imageBuffer, mimeType);
       } catch (error) {
-        console.log('Simple upload failed, falling back to chunked upload:', error);
       }
     }
 
@@ -270,7 +262,6 @@ async function uploadMedia(imageBuffer: Buffer, mimeType: string = 'image/jpeg')
     return await chunkedMediaUpload(imageBuffer, mimeType);
 
   } catch (error) {
-    console.error('Media upload failed:', error);
     throw error;
   }
 }
@@ -324,7 +315,6 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
   const totalBytes = imageBuffer.length;
   const chunkSize = calculateOptimalChunkSize(totalBytes);
   
-  console.log(`Using chunked upload: ${formatFileSize(totalBytes)} with ${formatFileSize(chunkSize)} chunks`);
 
   // INIT - アップロードの初期化
   const initParams = {
@@ -363,14 +353,12 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
   const initData: MediaUploadResponse = await initResponse.json();
   const mediaId = initData.media_id_string;
 
-  console.log(`Media upload initialized: ${mediaId}`);
 
   // APPEND - チャンクごとにアップロード
   let segmentIndex = 0;
   for (let offset = 0; offset < totalBytes; offset += chunkSize) {
     const chunk = imageBuffer.slice(offset, Math.min(offset + chunkSize, totalBytes));
     
-    console.log(`Uploading chunk ${segmentIndex + 1}: ${formatFileSize(chunk.length)}`);
 
     const appendAuthHeader = generateOAuthHeader(
       'POST',
@@ -399,7 +387,6 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
 
     if (!appendResponse.ok) {
       const errorData = await appendResponse.text();
-      console.error(`APPEND failed for segment ${segmentIndex}:`, errorData);
       throw new Error(`Failed to append media chunk ${segmentIndex}: ${errorData}`);
     }
 
@@ -438,7 +425,6 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
     throw new Error(`Failed to finalize media upload: ${errorData}`);
   }
 
-  console.log(`Media upload completed successfully: ${mediaId}`);
   return mediaId;
 }
 
@@ -538,19 +524,13 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
     // 画像がある場合の処理
     if (imageUrl) {
       try {
-        console.log('Downloading image from:', imageUrl.substring(0, 100) + '...');
         const { buffer: downloadedBuffer, mimeType: originalMimeType } = await downloadImage(imageUrl);
-        console.log(`Image downloaded: ${formatFileSize(downloadedBuffer.length)}, type: ${originalMimeType}`);
         
         // 画像フォーマットの検証と必要に応じた変換
         const { buffer: imageBuffer, mimeType } = await validateAndConvertImage(downloadedBuffer, originalMimeType);
-        console.log(`Image validated: ${formatFileSize(imageBuffer.length)}, final type: ${mimeType}`);
         
-        console.log('Uploading image to Twitter...');
         mediaId = await uploadMedia(imageBuffer, mimeType);
-        console.log('Image uploaded successfully, media ID:', mediaId);
       } catch (error) {
-        console.error('Error processing image:', error);
         
         // 画像アップロードのエラーは詳細なメッセージを返す
         if (error instanceof Error && error.message.includes('ファイルサイズ')) {
@@ -560,16 +540,12 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
           }, { status: 400 });
         }
         
-        console.error('Note: Ensure your Twitter Access Token has "Read and write" permissions');
-        console.error('You can check this in the Twitter Developer Portal under "Keys and tokens"');
         
         // その他のエラーの場合はツイートのみ投稿
-        console.log('Continuing with text-only tweet due to image upload failure');
       }
     }
 
     // ツイートを投稿
-    console.log('Posting tweet:', tweetText.substring(0, 100) + '...');
     
     const tweetData = await postTweet(
       tweetText,
@@ -577,7 +553,6 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
       replyToId
     ) as TweetData;
     
-    console.log('Tweet posted successfully:', tweetData.id);
 
     // ツイートのURLを生成
     const tweetUrl = `https://twitter.com/i/web/status/${tweetData.id}`;
@@ -590,7 +565,6 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
     });
 
   } catch (error) {
-    console.error('Error posting tweet:', error);
     
     let errorMessage = 'Failed to post tweet';
     const errorDetails: unknown = error;
