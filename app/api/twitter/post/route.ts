@@ -171,7 +171,7 @@ async function optimizeImageBuffer(buffer: Buffer, mimeType: string): Promise<{ 
     }
     
     return { buffer, mimeType: 'image/jpeg' };
-  } catch (error) {
+  } catch {
     throw new Error(`画像の最適化に失敗しました: ${formatFileSize(buffer.length)}のファイルサイズが大きすぎます`);
   }
 }
@@ -254,7 +254,7 @@ async function uploadMedia(imageBuffer: Buffer, mimeType: string = 'image/jpeg')
     if (totalBytes <= 1024 * 1024) { // 1MB以下
       try {
         return await simpleMediaUpload(imageBuffer, mimeType);
-      } catch (error) {
+      } catch {
       }
     }
 

@@ -64,7 +64,7 @@ function extractJsonReport(output: string): PythonErrorReport | null {
     
     const report = JSON.parse(jsonString) as PythonErrorReport;
     return report;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
