@@ -11,11 +11,12 @@ import { existsSync } from 'fs';
 // 画像を取得するGETハンドラー
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
     // パスの組み立て
-    const relativePath = params.path.join('/');
+    const resolvedParams = await params;
+    const relativePath = resolvedParams.path.join('/');
     const possiblePaths = [
       path.join(process.cwd(), 'public/uploads', relativePath),
       path.join('/var/www/kabu_ai/public/uploads', relativePath),
