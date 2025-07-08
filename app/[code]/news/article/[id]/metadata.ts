@@ -27,11 +27,12 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
       SELECT 
         p.id, 
         p.title, 
-        p.code,
+        pc.code,
         c.name as company_name
       FROM post p
-      JOIN company c ON p.code = c.code
-      WHERE p.id = ? AND p.code = ? AND p.accept = 1
+      JOIN post_code pc ON p.id = pc.post_id
+      JOIN company c ON pc.code = c.code
+      WHERE p.id = ? AND pc.code = ? AND p.accept = 1
     `;
     
     const results = await database.select(query, [id, code]) as RowDataPacket[];
