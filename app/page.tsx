@@ -10,7 +10,7 @@ export default function Home() {
     <DefaultTemplate>
       <NewsSection />
       <h2 className="text-xl font-bold mb-2">新着ニュース</h2>
-      <NewsListS more={true} />
+      <NewsListS more={true} site={[1,70]} />
     </DefaultTemplate>
   );
 }
