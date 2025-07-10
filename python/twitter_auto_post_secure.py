@@ -98,21 +98,82 @@ class ErrorReporter:
 error_reporter = ErrorReporter()
 
 # ========== 環境変数から設定を読み込み ==========
-TWITTER_USERNAME = os.getenv('TWITTER_USERNAME', 'default_username')
-TWITTER_PASSWORD = os.getenv('TWITTER_PASSWORD', 'default_password')
+def get_twitter_credentials():
+    """環境に応じてTwitter認証情報を取得"""
+    import socket
+    try:
+        hostname = socket.gethostname()
+        # localhost環境の判定
+        is_localhost = (
+            "localhost" in hostname.lower() or 
+            hostname.lower() in ["localhost", "127.0.0.1"] or
+            os.getenv("NODE_ENV") == "development" or
+            os.getenv("ENVIRONMENT") == "development" or
+            os.getenv("ENVIRONMENT") == "local" or
+            os.getenv("TWITTER_TEST_MODE") == "true" or
+            os.getenv("DEV_MODE") == "true" or
+            os.getenv("TWITTER_LIMIT_CHARS") == "true"
+        )
+        
+        if is_localhost:
+            # localhost環境: 環境変数から取得
+            username = os.getenv('TWITTER_USERNAME', 'default_username')
+            password = os.getenv('TWITTER_PASSWORD', 'default_password')
+            print(f"📝 localhost環境: 環境変数から認証情報を取得")
+        else:
+            # 本番環境: 固定の認証情報
+            username = 'smartaiinvest@gmail.com'
+            password = 'sarukiki1'
+            print(f"📝 本番環境: 固定認証情報を使用")
+            
+        return username, password
+    except Exception as e:
+        print(f"認証情報取得エラー: {e}")
+        # フォールバック: 環境変数から取得
+        return os.getenv('TWITTER_USERNAME', 'default_username'), os.getenv('TWITTER_PASSWORD', 'default_password')
+
+TWITTER_USERNAME, TWITTER_PASSWORD = get_twitter_credentials()
 DEFAULT_MESSAGE = "画像付き自動投稿テスト: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 DEFAULT_IMAGE_PATH = os.getenv('DEFAULT_IMAGE_PATH', 'test.png')
 
-# 認証情報が設定されているか確認
-if TWITTER_USERNAME == 'default_username' or TWITTER_PASSWORD == 'default_password':
-    error_msg = "環境変数 TWITTER_USERNAME と TWITTER_PASSWORD を設定してください"
-    error_reporter.add_error("environment_check", error_msg)
-    print("⚠️ 警告: " + error_msg)
-    print("例: export TWITTER_USERNAME='your_username'")
-    print("例: export TWITTER_PASSWORD='your_password'")
-    error_reporter.set_final_result(False)
-    error_reporter.output_json_report()
-    exit(1)
+# 認証情報が設定されているか確認（localhost環境のみ）
+import socket
+try:
+    hostname = socket.gethostname()
+    is_localhost = (
+        "localhost" in hostname.lower() or 
+        hostname.lower() in ["localhost", "127.0.0.1"] or
+        os.getenv("NODE_ENV") == "development" or
+        os.getenv("ENVIRONMENT") == "development" or
+        os.getenv("ENVIRONMENT") == "local" or
+        os.getenv("TWITTER_TEST_MODE") == "true" or
+        os.getenv("DEV_MODE") == "true" or
+        os.getenv("TWITTER_LIMIT_CHARS") == "true"
+    )
+    
+    # localhost環境でのみ環境変数チェック
+    if is_localhost and (TWITTER_USERNAME == 'default_username' or TWITTER_PASSWORD == 'default_password'):
+        error_msg = "localhost環境では環境変数 TWITTER_USERNAME と TWITTER_PASSWORD を設定してください"
+        error_reporter.add_error("environment_check", error_msg)
+        print("⚠️ 警告: " + error_msg)
+        print("例: export TWITTER_USERNAME='your_username'")
+        print("例: export TWITTER_PASSWORD='your_password'")
+        error_reporter.set_final_result(False)
+        error_reporter.output_json_report()
+        exit(1)
+    else:
+        print(f"✅ 認証情報確認完了: {TWITTER_USERNAME}")
+        
+except Exception as e:
+    print(f"環境判定エラー: {e}")
+    # エラー時は localhost として扱う
+    if TWITTER_USERNAME == 'default_username' or TWITTER_PASSWORD == 'default_password':
+        error_msg = "環境変数 TWITTER_USERNAME と TWITTER_PASSWORD を設定してください"
+        error_reporter.add_error("environment_check", error_msg)
+        print("⚠️ 警告: " + error_msg)
+        error_reporter.set_final_result(False)
+        error_reporter.output_json_report()
+        exit(1)
 
 def decode_emoji_message(encoded_message):
     """Base64エンコードされたメッセージをデコード（修正版）"""
@@ -137,7 +198,7 @@ def decode_emoji_message(encoded_message):
             return None
 
 def kill_all_chromedrivers():
-    """すべてのChromeDriverプロセスを強制終了"""
+    """すべてのChromeDriverプロセスを強制終了（緊急時・エラー時専用）"""
     try:
         print("ChromeDriverプロセスをクリーンアップ中...")
         killed_count = 0
@@ -179,8 +240,8 @@ def kill_all_chromedrivers():
             except Exception as e:
                 print(f"macOS/Linux pkill エラー: {e}")
         
-        print(f"ChromeDriverプロセスクリーンアップ完了: {killed_count}個のプロセスを終了")
-        error_reporter.add_success("cleanup", f"ChromeDriverプロセス終了: {killed_count}個")
+        print(f"緊急ChromeDriverプロセスクリーンアップ完了: {killed_count}個のプロセスを終了")
+        error_reporter.add_warning("cleanup", f"緊急時ChromeDriverプロセス終了: {killed_count}個")
         
     except Exception as e:
         error_msg = f"ChromeDriverクリーンアップエラー: {e}"
@@ -189,13 +250,10 @@ def kill_all_chromedrivers():
 
 
 def create_chrome_driver():
-    """Chromeドライバーを直接起動"""
+    """Chromeドライバーを直接起動（個別プロセス管理）"""
+    driver = None
     try:
-        print("既存のChromeDriverプロセスをクリーンアップ...")
-        kill_all_chromedrivers()
-        time.sleep(2)  # プロセス終了を待つ
-        
-        print("Chromeを起動中...")
+        print("Chromeを起動中（並行実行対応）...")
         error_reporter.add_success("driver_init", "Chrome起動プロセス開始")
         
         # Chromeオプションを設定
@@ -218,34 +276,52 @@ def create_chrome_driver():
         # ユーザーエージェントを設定
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名）
+        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名 + ポート）
         import uuid
+        import random
         unique_id = str(uuid.uuid4())[:8]
         
+        # ランダムなリモートデバッグポートを設定（並行実行対応）
+        debug_port = random.randint(9222, 9322)
+        options.add_argument(f"--remote-debugging-port={debug_port}")
+        
         if os.name == 'nt':  # Windows
-            temp_dir = os.path.join(os.environ.get('TEMP'), f'chrome_twitter_profile_{unique_id}')
+            temp_dir = os.path.join(os.environ.get('TEMP'), f'chrome_twitter_profile_{unique_id}_{debug_port}')
         else:  # macOS/Linux
-            temp_dir = os.path.join('/tmp', f'chrome_twitter_profile_{unique_id}')
+            temp_dir = os.path.join('/tmp', f'chrome_twitter_profile_{unique_id}_{debug_port}')
         
         if not os.path.exists(temp_dir):
             os.makedirs(temp_dir)
         
         options.add_argument(f"--user-data-dir={temp_dir}")
         
-        # セッション競合を避けるための追加オプション
+        print(f"Chrome設定: プロファイル={temp_dir}, デバッグポート={debug_port}")
+        
+        # セッション競合を避けるための追加オプション（並行実行対応）
         options.add_argument("--disable-background-timer-throttling")
         options.add_argument("--disable-backgrounding-occluded-windows")
         options.add_argument("--disable-renderer-backgrounding")
         options.add_argument("--disable-features=TranslateUI")
         options.add_argument("--disable-ipc-flooding-protection")
         
+        # 並行実行でのプロセス独立性を高める設定
+        options.add_argument("--disable-shared-memory")
+        options.add_argument("--disable-single-process")
+        options.add_argument("--process-per-site")
+        options.add_argument(f"--force-device-scale-factor=1")
+        
         # WebDriverManagerでChromeDriverを自動管理
         service = Service(ChromeDriverManager().install())
         
         # Chromeドライバーを起動
         driver = webdriver.Chrome(service=service, options=options)
-        driver.implicitly_wait(10)
+        driver.implicitly_wait(3)
         driver.set_window_size(1200, 800)
+        
+        # ドライバー固有の情報を保存（エラー時のクリーンアップ用）
+        driver._unique_id = unique_id
+        driver._debug_port = debug_port
+        driver._temp_dir = temp_dir
         
         # WebDriver検出回避の追加設定
         driver.execute_cdp_cmd('Network.setUserAgentOverride', {
@@ -253,17 +329,76 @@ def create_chrome_driver():
         })
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-        print("Chrome起動完了！")
-        error_reporter.add_success("driver_init", "Chrome起動完了")
+        print(f"Chrome起動完了！ID: {unique_id}, ポート: {debug_port}")
+        error_reporter.add_success("driver_init", f"Chrome起動完了 (ID: {unique_id}, ポート: {debug_port})")
         return driver
         
     except Exception as e:
         error_msg = f"Chromeの起動に失敗: {e}"
         print(f"❌ {error_msg}")
         error_reporter.add_error("driver_init", error_msg, e)
-        # 失敗時もクリーンアップを試行
-        kill_all_chromedrivers()
+        # 失敗時は作成されたドライバーのみクリーンアップ
+        if driver:
+            try:
+                cleanup_specific_driver(driver)
+            except:
+                pass
         return None
+
+
+def cleanup_specific_driver(driver):
+    """特定のドライバーとその関連プロセスをクリーンアップ"""
+    try:
+        if hasattr(driver, '_unique_id'):
+            print(f"ドライバー個別クリーンアップ開始: ID={driver._unique_id}")
+            
+            # ドライバーを閉じる
+            try:
+                driver.quit()
+                print(f"ドライバー終了完了: ID={driver._unique_id}")
+            except:
+                pass
+            
+            # 一時ディレクトリを削除
+            if hasattr(driver, '_temp_dir') and os.path.exists(driver._temp_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(driver._temp_dir)
+                    print(f"一時ディレクトリ削除: {driver._temp_dir}")
+                except Exception as e:
+                    print(f"一時ディレクトリ削除失敗: {e}")
+            
+            # 特定のポートのプロセスを終了
+            if hasattr(driver, '_debug_port'):
+                try:
+                    if PSUTIL_AVAILABLE:
+                        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+                            try:
+                                for conn in proc.info['connections'] or []:
+                                    if conn.laddr.port == driver._debug_port:
+                                        print(f"ポート{driver._debug_port}使用プロセス終了: PID={proc.pid}")
+                                        proc.kill()
+                                        break
+                            except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+                                continue
+                except Exception as e:
+                    print(f"ポート特定プロセス終了失敗: {e}")
+                    
+            print(f"個別クリーンアップ完了: ID={driver._unique_id}")
+        else:
+            # fallback: 通常のドライバー終了
+            try:
+                driver.quit()
+            except:
+                pass
+                
+    except Exception as e:
+        print(f"個別クリーンアップエラー: {e}")
+        # 最後の手段として通常終了を試行
+        try:
+            driver.quit()
+        except:
+            pass
 
 
 def check_login_status(driver):
@@ -274,12 +409,12 @@ def check_login_status(driver):
         
         # ホームページにアクセス
         driver.get("https://twitter.com/home")
-        time.sleep(3)
+        time.sleep(1)
         
         # ログイン済みかどうかを判定する要素をチェック
         try:
             # アカウント切り替えボタンが存在するかチェック（ログイン済みの場合のみ表示）
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="SideNav_AccountSwitcher_Button"]'))
             )
             print("✅ 既にログイン済みです")
@@ -289,7 +424,7 @@ def check_login_status(driver):
         except:
             # ツイート入力エリアが存在するかチェック（別の判定方法）
             try:
-                WebDriverWait(driver, 5).until(
+                WebDriverWait(driver, 3).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
                 )
                 print("✅ 既にログイン済みです（ツイートエリア確認）")
@@ -335,18 +470,18 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         error_reporter.add_success("login", f"ログインプロセス開始 (ユーザー: {username})")
         
         driver.get("https://twitter.com/login")
-        time.sleep(3)
+        time.sleep(1)
         
         # ユーザー名入力
         print("ユーザー名を入力...")
         try:
-            username_input = WebDriverWait(driver, 5).until(
+            username_input = WebDriverWait(driver, 3).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[autocomplete="username"]'))
             )
             username_input.clear()
             username_input.send_keys(username)
             username_input.send_keys(Keys.RETURN)
-            time.sleep(1)
+            time.sleep(0.3)
             error_reporter.add_success("login", "ユーザー名入力完了")
         except Exception as e:
             error_msg = f"ユーザー名入力エラー: {e}"
@@ -355,7 +490,7 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         
         # 電話番号/メール確認画面が出る場合の対処
         try:
-            phone_input = WebDriverWait(driver, 2).until(
+            phone_input = WebDriverWait(driver, 1).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, 'input[data-testid="ocfEnterTextTextInput"]'))
             )
             error_msg = "電話番号/メール確認が必要です。手動で入力してください..."
@@ -368,13 +503,13 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         # パスワード入力
         print("パスワードを入力...")
         try:
-            password_input = WebDriverWait(driver, 5).until(
+            password_input = WebDriverWait(driver, 3).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'input[type="password"]'))
             )
             password_input.clear()
             password_input.send_keys(password)
             password_input.send_keys(Keys.RETURN)
-            time.sleep(2)
+            time.sleep(0.5)
             error_reporter.add_success("login", "パスワード入力完了")
         except Exception as e:
             error_msg = f"パスワード入力エラー: {e}"
@@ -384,7 +519,7 @@ def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
         # ログイン成功確認
         print("ログイン確認中...")
         try:
-            WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="SideNav_AccountSwitcher_Button"]'))
             )
             print("✅ ログイン成功！")
@@ -480,7 +615,7 @@ def input_text_with_clipboard(driver, element, text):
         
         # 要素をクリックしてフォーカス
         element.click()
-        time.sleep(0.5)
+        time.sleep(0.2)
         
         # 既存のテキストをクリア
         try:
@@ -489,9 +624,9 @@ def input_text_with_clipboard(driver, element, text):
                 element.send_keys(Keys.CONTROL + 'a')
             else:  # Mac/Linux
                 element.send_keys(Keys.COMMAND + 'a')
-            time.sleep(0.2)
+            time.sleep(0.1)
             element.send_keys(Keys.DELETE)
-            time.sleep(0.2)
+            time.sleep(0.1)
         except:
             pass
         
@@ -531,7 +666,7 @@ def input_text_with_clipboard(driver, element, text):
             if copy_success:
                 # フォーカスを戻してペースト
                 element.click()
-                time.sleep(0.3)
+                time.sleep(0.1)
                 
                 # ペースト実行
                 if os.name == 'nt':  # Windows
@@ -539,7 +674,7 @@ def input_text_with_clipboard(driver, element, text):
                 else:  # Mac/Linux
                     element.send_keys(Keys.COMMAND + 'v')
                 
-                time.sleep(1)
+                time.sleep(0.3)
                 
                 # 入力確認
                 current_text = element.text or element.get_attribute('value') or ''
@@ -579,9 +714,9 @@ def input_text_with_clipboard(driver, element, text):
             """, text)
             
             if copy_success:
-                time.sleep(0.5)
+                time.sleep(0.2)
                 element.click()
-                time.sleep(0.3)
+                time.sleep(0.1)
                 
                 # ペースト実行
                 if os.name == 'nt':  # Windows
@@ -589,7 +724,7 @@ def input_text_with_clipboard(driver, element, text):
                 else:  # Mac/Linux
                     element.send_keys(Keys.COMMAND + 'v')
                 
-                time.sleep(1)
+                time.sleep(0.3)
                 
                 # 入力確認
                 current_text = element.text or element.get_attribute('value') or ''
@@ -640,7 +775,7 @@ def input_text_with_clipboard(driver, element, text):
             
             result = driver.execute_script(script, element, text)
             print(f"DOM操作結果: {result[:50]}...")
-            time.sleep(1)
+            time.sleep(0.3)
             
             # 入力確認
             current_text = element.text or element.get_attribute('value') or ''
@@ -662,7 +797,7 @@ def input_text_with_clipboard(driver, element, text):
                 
                 # 要素をクリックしてフォーカス
                 element.click()
-                time.sleep(0.5)
+                time.sleep(0.2)
                 
                 # ペースト実行
                 if os.name == 'nt':  # Windows
@@ -670,7 +805,7 @@ def input_text_with_clipboard(driver, element, text):
                 else:  # Mac/Linux
                     element.send_keys(Keys.COMMAND + 'v')
                 
-                time.sleep(1)
+                time.sleep(0.3)
                 
                 # 入力確認
                 current_text = element.text or element.get_attribute('value') or ''
@@ -767,7 +902,7 @@ def input_text_with_events_improved(driver, element, text):
             
             result = driver.execute_script(script, element, text)
             print(f"JavaScript直接設定結果: {result[:50]}...")
-            time.sleep(1)
+            time.sleep(0.3)
             
             # 入力確認
             current_text = element.text or element.get_attribute('value') or ''
@@ -783,16 +918,16 @@ def input_text_with_events_improved(driver, element, text):
             print("フォールバック2: ゆっくり文字入力")
             element.clear()
             element.click()
-            time.sleep(0.5)
+            time.sleep(0.2)
             
             # 文字を少しずつ入力
             chunk_size = 10  # 10文字ずつ入力
             for i in range(0, len(text), chunk_size):
                 chunk = text[i:i+chunk_size]
                 element.send_keys(chunk)
-                time.sleep(0.1)  # 各チャンクの間に遅延
+                time.sleep(0.05)  # 各チャンクの間に遅延
             
-            time.sleep(1)
+            time.sleep(0.3)
             
             # 入力確認
             current_text = element.text or element.get_attribute('value') or ''
@@ -846,11 +981,16 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
         print(f"  絶対パス: {abs_image_path}")
         error_reporter.add_success("tweet_with_image", f"画像ファイル確認完了: {abs_image_path}")
         
-        # ホームページへ移動
-        print("ホームページへ移動...")
-        driver.get("https://twitter.com/home")
-        time.sleep(3)
-        error_reporter.add_success("tweet_with_image", "ホームページアクセス完了")
+        # ホームページへ移動（既にホームページにいない場合のみ）
+        current_url = driver.current_url
+        if "/home" not in current_url:
+            print("ホームページへ移動...")
+            driver.get("https://twitter.com/home")
+            time.sleep(1)
+            error_reporter.add_success("tweet_with_image", "ホームページアクセス完了")
+        else:
+            print("既にホームページにいるため移動をスキップ")
+            error_reporter.add_success("tweet_with_image", "ホームページ移動スキップ（既に移動済み）")
         
         # ツイート入力エリアをクリック
         print("入力エリアを探しています...")
@@ -930,7 +1070,7 @@ def post_tweet_with_image_improved(driver, message=DEFAULT_MESSAGE, image_path=D
             error_reporter.add_error("tweet_with_image", error_msg, e)
             print("テキストのみで投稿を続行します...")
         
-        time.sleep(2)
+        time.sleep(0.5)
         
         # 投稿ボタンをクリック
         print("投稿ボタンを探しています...")
@@ -976,11 +1116,16 @@ def post_tweet_improved(driver, message=DEFAULT_MESSAGE):
         print(f"ツイート投稿中: {message}")
         error_reporter.add_success("tweet_text_only", f"テキストツイート開始: {message}")
         
-        # ホームページへ移動
-        print("ホームページへ移動...")
-        driver.get("https://twitter.com/home")
-        time.sleep(3)
-        error_reporter.add_success("tweet_text_only", "ホームページアクセス完了")
+        # ホームページへ移動（既にホームページにいない場合のみ）
+        current_url = driver.current_url
+        if "/home" not in current_url:
+            print("ホームページへ移動...")
+            driver.get("https://twitter.com/home")
+            time.sleep(1)
+            error_reporter.add_success("tweet_text_only", "ホームページアクセス完了")
+        else:
+            print("既にホームページにいるため移動をスキップ")
+            error_reporter.add_success("tweet_text_only", "ホームページ移動スキップ（既に移動済み）")
         
         # ツイート入力エリアをクリック
         print("入力エリアを探しています...")
@@ -1168,18 +1313,18 @@ def main_improved(message=None, image_path=None, text_only=False, encoded_messag
         return False
         
     finally:
-        # ブラウザを閉じる（必要に応じてコメントアウト）
+        # 個別ドライバーのクリーンアップ（全体プロセスキルは行わない）
         if driver:
             try:
-                driver.quit()
-                print("ブラウザを閉じました")
-                error_reporter.add_success("cleanup", "ブラウザクリーンアップ完了")
+                cleanup_specific_driver(driver)
+                error_reporter.add_success("cleanup", "個別ドライバークリーンアップ完了")
             except Exception as e:
-                error_reporter.add_warning("cleanup", f"ブラウザクリーンアップエラー: {e}")
-        
-        # すべてのChromeDriverプロセスを強制終了
-        print("すべてのChromeDriverプロセスを強制終了...")
-        kill_all_chromedrivers()
+                error_reporter.add_warning("cleanup", f"個別ドライバークリーンアップエラー: {e}")
+                # エラー時のみ全体クリーンアップ
+                try:
+                    kill_all_chromedrivers()
+                except:
+                    pass
 
 
 def main(message=None, image_path=None, text_only=False, encoded_message=None):

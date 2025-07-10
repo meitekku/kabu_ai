@@ -8,7 +8,7 @@ import Image from 'next/image';
 
 const HeaderContent = ({ isRoot, pathname }: { isRoot: boolean, pathname: string }) => {
   const commonClasses = "logo pl-4 text-center w-full text-xl";
-  const icon = <Image src='/logo.png' alt='' width={92} height={40} />;
+  const icon = <Image src='/logo.webp' alt='' width={100} height={50} />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center">
       {pathname.includes('/admin/') ? (

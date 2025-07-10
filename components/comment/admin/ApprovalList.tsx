@@ -194,7 +194,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       const response = await fetch('/api/admin/accept_ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'update', table: 'post', data: { accept: 1 }, conditions: { id } }),
+        body: JSON.stringify({ type: 'update', table: 'post', data: { accept: 1, site: 70 }, conditions: { id } }),
       });
       const result = await response.json();
       if (result.success) await fetchData();
