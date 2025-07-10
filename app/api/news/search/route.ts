@@ -64,8 +64,16 @@ export async function POST(req: Request) {
     const values: (string | number | boolean | null)[] = [];
 
     if (site_type !== undefined) {
-      conditions.push('p.site = ?');
-      values.push(site_type);
+      if (Array.isArray(site_type)) {
+        // 配列の場合、IN句を使用
+        const placeholders = site_type.map(() => '?').join(',');
+        conditions.push(`p.site IN (${placeholders})`);
+        values.push(...site_type);
+      } else {
+        // 単一値の場合は完全一致
+        conditions.push('p.site = ?');
+        values.push(site_type);
+      }
     }
 
     if (pickup) {

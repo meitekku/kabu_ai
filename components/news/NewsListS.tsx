@@ -18,7 +18,7 @@ interface NewsItem {
 
 interface NewsListSProps {
   limit?: number;
-  site?: number;
+  site?: number | number[];
   more?: boolean;
 }
 
@@ -41,7 +41,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ 
-            site_type: Number(site),
+            site_type: Array.isArray(site) ? site : Number(site),
             limit: Number(limit),
             page: currentPage
           }),
