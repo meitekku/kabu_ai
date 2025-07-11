@@ -7,9 +7,31 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: ESLint check
+        run: npm run lint
+
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: lint-and-typecheck
     steps:
       - uses: actions/checkout@v4
 
@@ -73,14 +95,8 @@ jobs:
             rm -rf .next
             npm ci || echo "npm install failed, continuing..."
             
-            # TypeScriptとESLintチェック（エラー時は停止）
+            # ビルド実行（TypeScriptとESLintチェックは既に完了済み）
             set -e
-            echo "Checking TypeScript errors..."
-            npx tsc --noEmit --skipLibCheck
-            
-            echo "Running ESLint..."
-            npm run lint
-            
             echo "Building application..."
             npm run build
             set +e  # 以降のエラーでは停止しない
