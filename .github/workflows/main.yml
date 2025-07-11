@@ -69,10 +69,21 @@ jobs:
             pm2 stop kabu_ai || true
             pm2 delete kabu_ai || true
 
-            # キャッシュ削除、依存再インストール、ビルド
+            # キャッシュ削除、依存再インストール
             rm -rf .next
             npm ci || echo "npm install failed, continuing..."
-            npm run build || echo "Build failed, trying to restart with existing version..."
+            
+            # TypeScriptとESLintチェック（エラー時は停止）
+            set -e
+            echo "Checking TypeScript errors..."
+            npx tsc --noEmit --skipLibCheck
+            
+            echo "Running ESLint..."
+            npm run lint
+            
+            echo "Building application..."
+            npm run build
+            set +e  # 以降のエラーでは停止しない
 
             # Python仮想環境のセットアップ
             if [ ! -d "venv" ]; then

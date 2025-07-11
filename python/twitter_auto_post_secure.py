@@ -311,6 +311,32 @@ def create_chrome_driver():
         options.add_argument(f"--force-device-scale-factor=1")
         
         # WebDriverManagerでChromeDriverを自動管理
+        # 本番環境でのChrome binary pathを環境変数で優先設定
+        chrome_binary = os.getenv('CHROME_BINARY_PATH')
+        
+        if not chrome_binary:
+            # 環境変数が未設定の場合のみ自動検索
+            import platform
+            system = platform.system().lower()
+            
+            # 最も一般的なパスを最初にチェック（高速化）
+            if system == 'linux':
+                chrome_paths = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome']
+            elif system == 'darwin':
+                chrome_paths = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+            else:
+                chrome_paths = []
+            
+            # 最初に見つかったパスを使用（高速化）
+            for path in chrome_paths:
+                if os.path.exists(path):
+                    chrome_binary = path
+                    break
+        
+        if chrome_binary:
+            options.binary_location = chrome_binary
+            print(f"Chrome binary: {chrome_binary}")
+        
         service = Service(ChromeDriverManager().install())
         
         # Chromeドライバーを起動
