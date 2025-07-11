@@ -86,11 +86,39 @@ async function executePythonScript(
   textOnly: boolean = false
 ): Promise<{ success: boolean; report?: PythonErrorReport }> {
   return new Promise((resolve, reject) => {
+    console.log('🔍 === Python実行デバッグ開始 ===');
+    console.log('🔍 現在の作業ディレクトリ:', process.cwd());
+    console.log('🔍 Node.js バージョン:', process.version);
+    console.log('🔍 プラットフォーム:', process.platform);
+    console.log('🔍 アーキテクチャ:', process.arch);
+    
     // Pythonスクリプトのパス（プロジェクトディレクトリ直下のpythonフォルダ）
     const scriptPath = path.join(process.cwd(), 'python', 'twitter_auto_post_secure.py');
+    console.log('🔍 Pythonスクリプトパス:', scriptPath);
+    
+    // スクリプトファイルの存在確認
+    try {
+      const fs = require('fs');
+      if (fs.existsSync(scriptPath)) {
+        console.log('✅ Pythonスクリプトファイルが存在します');
+        const stats = fs.statSync(scriptPath);
+        console.log('🔍 ファイルサイズ:', stats.size, 'bytes');
+        console.log('🔍 最終更新日:', stats.mtime);
+      } else {
+        console.log('❌ Pythonスクリプトファイルが見つかりません');
+      }
+    } catch (error) {
+      console.log('🔍 ファイル存在確認エラー:', error);
+    }
     
     // コマンドライン引数を構築
     const args: string[] = [];
+    console.log('🔍 === 引数構築開始 ===');
+    console.log('🔍 message:', message);
+    console.log('🔍 encodedMessage:', encodedMessage);
+    console.log('🔍 hasEmoji:', hasEmoji);
+    console.log('🔍 imagePath:', imagePath);
+    console.log('🔍 textOnly:', textOnly);
     
     // 絵文字が含まれている場合は、エンコードされたメッセージを使用
     if (hasEmoji && encodedMessage) {
@@ -118,8 +146,24 @@ async function executePythonScript(
     }
     
     
+    console.log('🔍 構築された引数:', args);
+    console.log('🔍 === Python実行開始 ===');
+    
+    // 環境変数を設定
+    const env = {
+      ...process.env,
+      CHROME_BINARY_PATH: '/usr/bin/google-chrome-stable',
+      PYTHONPATH: process.cwd(),
+      PYTHONUNBUFFERED: '1'
+    };
+    console.log('🔍 Python環境変数:', {
+      CHROME_BINARY_PATH: env.CHROME_BINARY_PATH,
+      PYTHONPATH: env.PYTHONPATH,
+      PYTHONUNBUFFERED: env.PYTHONUNBUFFERED
+    });
+    
     // Pythonスクリプトを実行
-    const pythonProcess = spawn('python', [scriptPath, ...args]);
+    const pythonProcess = spawn('python', [scriptPath, ...args], { env });
     
     let stdout = '';
     let stderr = '';
@@ -127,27 +171,44 @@ async function executePythonScript(
     // 標準出力を収集
     pythonProcess.stdout.on('data', (data) => {
       const output = data.toString();
+      console.log('🔍 Python stdout:', output);
       stdout += output;
     });
     
     // エラー出力を収集
     pythonProcess.stderr.on('data', (data) => {
       const output = data.toString();
+      console.log('🔍 Python stderr:', output);
       stderr += output;
     });
     
     // プロセス終了時の処理
     pythonProcess.on('close', (code) => {
+      console.log('🔍 === Python実行終了 ===');
+      console.log('🔍 終了コード:', code);
+      console.log('🔍 stdout 長さ:', stdout.length);
+      console.log('🔍 stderr 長さ:', stderr.length);
+      
+      if (stdout.length > 0) {
+        console.log('🔍 stdout の最初の500文字:', stdout.substring(0, 500));
+      }
+      if (stderr.length > 0) {
+        console.log('🔍 stderr の最初の500文字:', stderr.substring(0, 500));
+      }
+      
       // JSONレポートを抽出
       const report = extractJsonReport(stdout);
+      console.log('🔍 JSONレポート抽出結果:', report ? 'success' : 'failed');
       
       if (report) {
         // 詳細レポートをコンソールに出力
         logDetailedReport(report);
         
         // レポートの final_result を基に成功/失敗を判定
+        console.log('🔍 レポートの最終結果:', report.final_result);
         resolve({ success: report.final_result, report });
       } else {
+        console.log('🔍 JSONレポートが取得できないため、終了コードで判定します');
         
         // JSONレポートが取得できない場合は終了コードで判定
         const success = code === 0;

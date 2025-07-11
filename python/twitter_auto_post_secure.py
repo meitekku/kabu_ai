@@ -8,6 +8,8 @@ import base64
 import urllib.parse
 import subprocess
 import signal
+import sys
+import selenium
 try:
     import psutil
     PSUTIL_AVAILABLE = True
@@ -253,6 +255,11 @@ def create_chrome_driver():
     """Chromeドライバーを直接起動（個別プロセス管理）"""
     driver = None
     try:
+        print("🔍 === Chrome起動デバッグ開始 ===")
+        print(f"🔍 作業ディレクトリ: {os.getcwd()}")
+        print(f"🔍 Python実行パス: {sys.executable}")
+        print(f"🔍 環境変数PATH: {os.environ.get('PATH', 'NOT SET')}")
+        
         print("Chromeを起動中（並行実行対応）...")
         error_reporter.add_success("driver_init", "Chrome起動プロセス開始")
         
@@ -311,34 +318,76 @@ def create_chrome_driver():
         options.add_argument(f"--force-device-scale-factor=1")
         
         # WebDriverManagerでChromeDriverを自動管理
+        print("🔍 === Chrome binary検索開始 ===")
+        
         # 本番環境でのChrome binary pathを環境変数で優先設定
         chrome_binary = os.getenv('CHROME_BINARY_PATH')
+        print(f"🔍 環境変数CHROME_BINARY_PATH: {chrome_binary}")
         
         if not chrome_binary:
             # 環境変数が未設定の場合のみ自動検索
             import platform
             system = platform.system().lower()
+            print(f"🔍 検出されたOS: {system}")
             
             # 最も一般的なパスを最初にチェック（高速化）
             if system == 'linux':
-                chrome_paths = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome']
+                chrome_paths = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium']
             elif system == 'darwin':
                 chrome_paths = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
             else:
                 chrome_paths = []
             
+            print(f"🔍 検索対象のパス: {chrome_paths}")
+            
             # 最初に見つかったパスを使用（高速化）
             for path in chrome_paths:
+                print(f"🔍 パス確認中: {path}")
                 if os.path.exists(path):
                     chrome_binary = path
+                    print(f"🔍 発見: {path}")
                     break
+                else:
+                    print(f"🔍 見つからない: {path}")
         
         if chrome_binary:
             options.binary_location = chrome_binary
-            print(f"Chrome binary: {chrome_binary}")
+            print(f"✅ Chrome binary設定: {chrome_binary}")
+            # Chrome バイナリのバージョン確認
+            try:
+                import subprocess
+                result = subprocess.run([chrome_binary, '--version'], capture_output=True, text=True, timeout=10)
+                print(f"🔍 Chrome バージョン: {result.stdout.strip()}")
+            except Exception as e:
+                print(f"⚠️ Chrome バージョン確認エラー: {e}")
+        else:
+            print("❌ Chrome binary が見つかりません")
+            
+            # 追加の調査
+            print("🔍 === 追加調査 ===")
+            try:
+                result = subprocess.run(['which', 'google-chrome'], capture_output=True, text=True, timeout=10)
+                print(f"🔍 which google-chrome: {result.stdout.strip()}")
+            except Exception as e:
+                print(f"🔍 which google-chrome エラー: {e}")
+                
+            try:
+                result = subprocess.run(['which', 'google-chrome-stable'], capture_output=True, text=True, timeout=10)
+                print(f"🔍 which google-chrome-stable: {result.stdout.strip()}")
+            except Exception as e:
+                print(f"🔍 which google-chrome-stable エラー: {e}")
+                
+            try:
+                result = subprocess.run(['ls', '-la', '/usr/bin/google*'], capture_output=True, text=True, timeout=10)
+                print(f"🔍 /usr/bin/google*: {result.stdout.strip()}")
+            except Exception as e:
+                print(f"🔍 /usr/bin/google* エラー: {e}")
         
+        print("🔍 === ChromeDriver管理開始 ===")
         service = Service(ChromeDriverManager().install())
+        print(f"🔍 ChromeDriver path: {service.path}")
         
+        print("🔍 === Chrome起動試行 ===")
         # Chromeドライバーを起動
         driver = webdriver.Chrome(service=service, options=options)
         driver.implicitly_wait(3)
@@ -355,13 +404,41 @@ def create_chrome_driver():
         })
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-        print(f"Chrome起動完了！ID: {unique_id}, ポート: {debug_port}")
+        print(f"✅ Chrome起動完了！ID: {unique_id}, ポート: {debug_port}")
+        print("🔍 === Chrome起動デバッグ完了 ===")
         error_reporter.add_success("driver_init", f"Chrome起動完了 (ID: {unique_id}, ポート: {debug_port})")
         return driver
         
     except Exception as e:
         error_msg = f"Chromeの起動に失敗: {e}"
         print(f"❌ {error_msg}")
+        print(f"🔍 エラーの詳細: {traceback.format_exc()}")
+        
+        # 環境の詳細情報を出力
+        print("🔍 === エラー時の環境情報 ===")
+        print(f"🔍 現在の作業ディレクトリ: {os.getcwd()}")
+        print(f"🔍 Python バージョン: {sys.version}")
+        print(f"🔍 selenium バージョン: {selenium.__version__}")
+        
+        try:
+            from webdriver_manager.chrome import ChromeDriverManager
+            print(f"🔍 webdriver-manager バージョン: {ChromeDriverManager().get_driver_version_from_os()}")
+        except Exception as version_error:
+            print(f"🔍 webdriver-manager バージョン取得エラー: {version_error}")
+            
+        # 利用可能なブラウザを確認
+        print("🔍 === 利用可能なブラウザ確認 ===")
+        browsers_to_check = ['google-chrome', 'google-chrome-stable', 'chromium-browser', 'chromium', 'firefox']
+        for browser in browsers_to_check:
+            try:
+                result = subprocess.run(['which', browser], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    print(f"🔍 {browser}: {result.stdout.strip()}")
+                else:
+                    print(f"🔍 {browser}: 見つかりません")
+            except Exception as check_error:
+                print(f"🔍 {browser} 確認エラー: {check_error}")
+        
         error_reporter.add_error("driver_init", error_msg, e)
         # 失敗時は作成されたドライバーのみクリーンアップ
         if driver:
