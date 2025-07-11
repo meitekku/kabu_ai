@@ -45,6 +45,7 @@ export async function GET(
     response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
     return response;
   } catch (error) {
+    console.error('Error in GET handler:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
