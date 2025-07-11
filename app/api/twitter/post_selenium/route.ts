@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
 // リクエストボディの型定義
 interface TweetRequest {
@@ -98,7 +99,6 @@ async function executePythonScript(
     
     // スクリプトファイルの存在確認
     try {
-      const fs = require('fs');
       if (fs.existsSync(scriptPath)) {
         console.log('✅ Pythonスクリプトファイルが存在します');
         const stats = fs.statSync(scriptPath);
