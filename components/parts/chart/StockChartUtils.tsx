@@ -145,7 +145,7 @@ export const captureAllChartPositions = (
       }
     });
     const defaultIndices = getDefaultTooltipIndices(data);
-    const chartHeight = window.innerWidth >= 768 ? 192 : 128;
+    const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? 192 : 128;
     const zones = calculateTooltipZones(
       defaultIndices.map(index => data[index]),
       newPositions,

@@ -162,6 +162,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
   ).current;
 
   const handleContentChange = (id: number, newContent: string) => {
+    if (typeof document === 'undefined') return;
     const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
     const start = textarea?.selectionStart;
     const end = textarea?.selectionEnd;
@@ -223,9 +224,13 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
 
   const handleCopy = (id: number) => {
     const text = `${editedTitles[id] || ''}\n\n${editedContents[id] || ''}`;
-    navigator.clipboard.writeText(text)
-      .then(() => alert('クリップボードにコピーしました'))
-      .catch(() => alert('コピーに失敗しました'));
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text)
+        .then(() => alert('クリップボードにコピーしました'))
+        .catch(() => alert('コピーに失敗しました'));
+    } else {
+      alert('クリップボード機能がサポートされていません');
+    }
   };
 
   const toggleChart = (id: number) => {

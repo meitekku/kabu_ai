@@ -138,37 +138,43 @@ export default function PromptPage() {
 
   // すべてのtextareaの高さを調整する関数をuseCallbackでメモ化
   const adjustAllTextareas = useCallback(() => {
-    const textareas = document.querySelectorAll('textarea');
-    textareas.forEach((textarea) => {
-      adjustTextareaHeight(textarea as HTMLTextAreaElement);
-    });
+    if (typeof document !== 'undefined') {
+      const textareas = document.querySelectorAll('textarea');
+      textareas.forEach((textarea) => {
+        adjustTextareaHeight(textarea as HTMLTextAreaElement);
+      });
+    }
   }, []);
 
   // LocalStorageから開閉状態を読み込む
   const loadCollapsedState = useCallback(() => {
-    try {
-      const saved = localStorage.getItem('prompt-collapsed-state');
-      if (saved) {
-        setCollapsedItems(JSON.parse(saved));
-      } else {
-        // デフォルトで全て閉じる
-        const defaultState = items.reduce((acc, item) => {
-          acc[item.id] = true;
-          return acc;
-        }, {} as { [key: number]: boolean });
-        setCollapsedItems(defaultState);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('prompt-collapsed-state');
+        if (saved) {
+          setCollapsedItems(JSON.parse(saved));
+        } else {
+          // デフォルトで全て閉じる
+          const defaultState = items.reduce((acc, item) => {
+            acc[item.id] = true;
+            return acc;
+          }, {} as { [key: number]: boolean });
+          setCollapsedItems(defaultState);
+        }
+      } catch (error) {
+        console.error('Failed to load collapsed state:', error);
       }
-    } catch (error) {
-      console.error('Failed to load collapsed state:', error);
     }
   }, [items]);
 
   // LocalStorageに開閉状態を保存する
   const saveCollapsedState = (newState: { [key: number]: boolean }) => {
-    try {
-      localStorage.setItem('prompt-collapsed-state', JSON.stringify(newState));
-    } catch (error) {
-      console.error('Failed to save collapsed state:', error);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('prompt-collapsed-state', JSON.stringify(newState));
+      } catch (error) {
+        console.error('Failed to save collapsed state:', error);
+      }
     }
   };
 
@@ -182,7 +188,7 @@ export default function PromptPage() {
     saveCollapsedState(newState);
     
     // 展開する場合、textareaの高さを再計算
-    if (collapsedItems[id]) {
+    if (collapsedItems[id] && typeof document !== 'undefined') {
       setTimeout(() => {
         const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
         if (textarea) {

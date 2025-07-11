@@ -15,7 +15,9 @@ export interface SNSShareButtonSetProps {
 const TwitterShareButton: React.FC<ShareButtonProps> = ({ url, text = '' }) => {
   const handleShare = () => {
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(shareUrl, '_blank');
+    }
   };
 
   return (
@@ -33,7 +35,9 @@ const TwitterShareButton: React.FC<ShareButtonProps> = ({ url, text = '' }) => {
 const FacebookShareButton: React.FC<ShareButtonProps> = ({ url }) => {
   const handleShare = () => {
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(shareUrl, '_blank');
+    }
   };
 
   return (
@@ -56,7 +60,9 @@ const FacebookShareButton: React.FC<ShareButtonProps> = ({ url }) => {
 const LineShareButton: React.FC<ShareButtonProps> = ({ url }) => {
   const handleShare = () => {
     const shareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}`;
-    window.open(shareUrl, '_blank');
+    if (typeof window !== 'undefined') {
+      window.open(shareUrl, '_blank');
+    }
   };
 
   return (

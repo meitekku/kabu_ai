@@ -57,9 +57,17 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
+        if (typeof window === 'undefined') {
+          reject(new Error('画像処理はブラウザ環境でのみ利用可能です'));
+          return;
+        }
         const img = new window.Image();
         img.src = event.target!.result as string;
         img.onload = () => {
+          if (typeof document === 'undefined') {
+            reject(new Error('画像処理はブラウザ環境でのみ利用可能です'));
+            return;
+          }
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d')!;
           

@@ -51,20 +51,24 @@ export const exportAsImage = async (
     const container = chartContainerRef.current;
     
     // フォントの読み込みを待つ
-    await document.fonts.ready;
+    if (typeof document !== 'undefined') {
+      await document.fonts.ready;
+    }
     
     // レンダリングの完了を待つ
-    await new Promise(resolve => {
-      requestAnimationFrame(() => {
+    if (typeof requestAnimationFrame !== 'undefined') {
+      await new Promise(resolve => {
         requestAnimationFrame(() => {
-          setTimeout(resolve, 500);
+          requestAnimationFrame(() => {
+            setTimeout(resolve, 500);
+          });
         });
       });
-    });
+    }
 
     // 上段と下段のチャートの高さを計算（ヘッダーの高さを増加）
-    const upperHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-    const lowerHeight = window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
+    const upperHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+    const lowerHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
     const headerHeight = company_name && companyInfo ? 80 : 0; // 高さを増加（60→80）
     const totalHeight = upperHeight + lowerHeight + headerHeight + 8;
 

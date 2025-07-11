@@ -159,7 +159,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   // tooltip座標を再計算する関数
   const recalculateTooltipZones = useCallback(() => {
-    const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+    const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
     const zones = calculateTooltipZones(
       data,
       actualChartPositionsRef.current,
@@ -331,14 +331,14 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         <div 
           className="rounded"
           style={{
-            height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
+            height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
             backgroundColor: colors.loadingBg
           }}
         ></div>
         <div 
           className="rounded mt-2"
           style={{
-            height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
+            height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
             backgroundColor: colors.loadingBg
           }}
         ></div>
@@ -381,7 +381,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         ref={upperChartRef}
         className="relative"
         style={{
-          height: `${window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
+          height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
           backgroundColor: colors.background
         }}
       >
@@ -429,7 +429,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
           
           // チャートの高さを取得
-          const chartHeight = window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+          const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
           
           // ロウソク足の中心座標を計算
           let candleX;
@@ -492,7 +492,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                         if (!item.articles?.length) return;
                         const article = item.articles[0];
                         const articleCode = item.code || code;
-                        window.location.href = `/${articleCode}/news/article/${article.id}`;
+                        if (typeof window !== 'undefined') {
+                          window.location.href = `/${articleCode}/news/article/${article.id}`;
+                        }
                       }}
                     >
                       {formatArticleTitle(item.articles[0]?.title || '')}
@@ -619,7 +621,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
-                window.location.href = `/${articleCode}/news/article/${article.id}`;
+                if (typeof window !== 'undefined') {
+                  window.location.href = `/${articleCode}/news/article/${article.id}`;
+                }
               }
             }}
           >
@@ -690,7 +694,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       <div 
         className="relative -mt-1"
         style={{
-          height: `${window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
+          height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
           backgroundColor: colors.background
         }}
       >
@@ -728,7 +732,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               if (e.activePayload?.[0]?.payload?.articles && e.activePayload[0].payload.articles.length > 0) {
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
-                window.location.href = `/${articleCode}/news/article/${article.id}`;
+                if (typeof window !== 'undefined') {
+                  window.location.href = `/${articleCode}/news/article/${article.id}`;
+                }
               }
             }}
           >

@@ -68,23 +68,29 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    if (typeof document !== 'undefined') {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('mousedown', handleClickOutside);
+      }
     };
   }, []);
 
   const loadSearchHistory = () => {
-    try {
-      const history = localStorage.getItem(HISTORY_KEY);
-      if (history) {
-        const parsedHistory = JSON.parse(history);
-        const sortedHistory = parsedHistory.sort((a: SearchHistory, b: SearchHistory) => b.timestamp - a.timestamp);
-        setSearchHistory(sortedHistory);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        const history = localStorage.getItem(HISTORY_KEY);
+        if (history) {
+          const parsedHistory = JSON.parse(history);
+          const sortedHistory = parsedHistory.sort((a: SearchHistory, b: SearchHistory) => b.timestamp - a.timestamp);
+          setSearchHistory(sortedHistory);
+        }
+      } catch (error) {
+        console.error('Failed to load search history:', error);
       }
-    } catch (error) {
-      console.error('Failed to load search history:', error);
     }
   };
 
@@ -97,10 +103,12 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     ].slice(0, MAX_HISTORY_ITEMS);
 
     setSearchHistory(newHistory);
-    try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-    } catch (error) {
-      console.error('Failed to save search history:', error);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+      } catch (error) {
+        console.error('Failed to save search history:', error);
+      }
     }
   };
 

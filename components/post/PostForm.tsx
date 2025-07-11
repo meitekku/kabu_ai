@@ -319,8 +319,10 @@ export default function PostForm({
     // クリップボードにコピー
     const textToCopy = `${formData.title}\n\n${formData.content}`;
     try {
-      await navigator.clipboard.writeText(textToCopy);
-      console.log('コンテンツをコピーしました');
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(textToCopy);
+        console.log('コンテンツをコピーしました');
+      }
     } catch (err) {
       console.error('コピーに失敗しました:', err);
     }
@@ -443,15 +445,19 @@ export default function PostForm({
   // タイトルと内容をコピーする関数を追加
   const handleCopy = () => {
     const textToCopy = `${formData.title}\n\n${formData.content}`;
-    navigator.clipboard.writeText(textToCopy)
-      .then(() => {
-        setMessage('タイトルと内容をコピーしました');
-        setMessageOpacity(1);
-      })
-      .catch(err => {
-        setMessage('コピーに失敗しました');
-        console.error('Copy failed: ', err);
-      });
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+          setMessage('タイトルと内容をコピーしました');
+          setMessageOpacity(1);
+        })
+        .catch(err => {
+          setMessage('コピーに失敗しました');
+          console.error('Copy failed: ', err);
+        });
+    } else {
+      setMessage('クリップボード機能がサポートされていません');
+    }
   };
 
   if (isLoading) {

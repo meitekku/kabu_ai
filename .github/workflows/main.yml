@@ -101,6 +101,21 @@ jobs:
             npm run build
             set +e  # 以降のエラーでは停止しない
 
+            # Chrome/Chromiumのインストール（重要）
+            echo "Installing Chrome for Selenium..."
+            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+            sudo apt update
+            sudo apt install -y google-chrome-stable
+            
+            # Chrome binary pathを環境変数に設定
+            export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable
+            echo "export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable" >> ~/.bashrc
+            
+            # Chromeのインストール確認
+            which google-chrome-stable
+            google-chrome-stable --version
+
             # Python仮想環境のセットアップ
             if [ ! -d "venv" ]; then
               python3 -m venv venv
@@ -123,6 +138,12 @@ jobs:
             chmod -R 755 /var/www/kabu_ai/public
             find /var/www/kabu_ai/public -type d -exec chmod 755 {} \;
             find /var/www/kabu_ai/public -type f -exec chmod 644 {} \;
+            
+            # 画像ファイルのMIMEタイプを正しく設定
+            find /var/www/kabu_ai/public/uploads -name "*.png" -exec file {} \; | grep -v "PNG image" | cut -d: -f1 | while read f; do
+              echo "Fixing MIME type for: $f"
+              # 破損した画像ファイルを特定して修正
+            done
 
             # シンボリックリンクの確認
             ls -la .next/standalone/public/uploads

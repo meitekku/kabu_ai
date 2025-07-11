@@ -21,9 +21,11 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = React.memo
 
   // localStorageから保存された日数を取得
   useEffect(() => {
-    const savedDays = localStorage.getItem('selectedDays');
-    if (savedDays) {
-      setSelectedDays(savedDays);
+    if (typeof localStorage !== 'undefined') {
+      const savedDays = localStorage.getItem('selectedDays');
+      if (savedDays) {
+        setSelectedDays(savedDays);
+      }
     }
   }, []);
 
@@ -36,26 +38,32 @@ const TodayArticleCopyButton: React.FC<TodayArticleCopyButtonProps> = React.memo
     // タイトルと内容を結合してクリップボードにコピー
     const textToCopy = articles.map(article => `${article.title}\n${article.content}`).join('\n\n');
     
-    navigator.clipboard.writeText(textToCopy)
-      .then(() => {
-        toast.success('すべての記事をクリップボードにコピーしました');
-        setCopied(true);
-        
-        // 3秒後に元の状態に戻す
-        setTimeout(() => {
-          setCopied(false);
-        }, 3000);
-      })
-      .catch((err) => {
-        console.error('クリップボードへのコピーに失敗しました:', err);
-        toast.error('コピーに失敗しました');
-      });
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+          toast.success('すべての記事をクリップボードにコピーしました');
+          setCopied(true);
+          
+          // 3秒後に元の状態に戻す
+          setTimeout(() => {
+            setCopied(false);
+          }, 3000);
+        })
+        .catch((err) => {
+          console.error('クリップボードへのコピーに失敗しました:', err);
+          toast.error('コピーに失敗しました');
+        });
+    } else {
+      toast.error('クリップボード機能がサポートされていません');
+    }
   }, [articles]);
 
   const handleDaysChange = React.useCallback((value: string) => {
     setSelectedDays(value);
     // localStorageに選択値を保存
-    localStorage.setItem('selectedDays', value);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('selectedDays', value);
+    }
     
     if (onDaysChange) {
       onDaysChange(parseInt(value));

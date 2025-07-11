@@ -7,17 +7,20 @@ export default function MobileTopAd() {
 
   useEffect(() => {
     const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
+      if (typeof window !== 'undefined') {
+        setIsMobile(window.innerWidth < 768); // md breakpoint
+      }
     };
 
     checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-
-    return () => window.removeEventListener('resize', checkIfMobile);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', checkIfMobile);
+      return () => window.removeEventListener('resize', checkIfMobile);
+    }
   }, []);
 
   useEffect(() => {
-    if (isMobile) {
+    if (isMobile && typeof window !== 'undefined') {
       try {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
       } catch (err) {

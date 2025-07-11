@@ -12,10 +12,12 @@ declare global {
 
 export default function GoogleAdsense() {
   useEffect(() => {
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (err) {
-      console.error('Google Adsense error:', err);
+    if (typeof window !== 'undefined') {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (err) {
+        console.error('Google Adsense error:', err);
+      }
     }
   }, []);
 
