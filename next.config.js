@@ -29,7 +29,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // API経由でのアップロードファイル配信用 - パスを変更
         source: '/api/routes/:path*',
         headers: [
           {

@@ -18,20 +18,19 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   const { code } = await params;
   
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/${code}/company_info`, {
-      cache: 'no-store'
-    });
+    // 本番環境では内部API呼び出しを避け、直接データベースアクセス
+    const { Database } = await import('@/lib/database/Mysql');
+    const db = Database.getInstance();
     
-    if (response.ok) {
-      const data = await response.json();
-      const companyName = data.company_name;
-      
+    const [company] = await db.select('SELECT name FROM company WHERE code = ?', [code]);
+    
+    if (company && company.name) {
       return {
         title: PAGE_METADATA.title
-          .replace('{companyName}', companyName)
+          .replace('{companyName}', company.name)
           .replace('{code}', code),
         description: PAGE_METADATA.description
-          .replace('{companyName}', companyName)
+          .replace('{companyName}', company.name)
           .replace('{code}', code),
       };
     }

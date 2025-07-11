@@ -14,7 +14,6 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    // パスの組み立て
     const resolvedParams = await params;
     const relativePath = resolvedParams.path.join('/');
     const possiblePaths = [
@@ -23,7 +22,6 @@ export async function GET(
       path.join('/var/www/kabu_ai/.next/standalone/public/uploads', relativePath)
     ];
 
-    // ファイルを探す
     let fileBuffer = null;
     let foundPath = null;
 
@@ -39,20 +37,14 @@ export async function GET(
       return new NextResponse('Image not found', { status: 404 });
     }
 
-    // 適切なContent-Typeを設定
     const ext = path.extname(foundPath).toLowerCase();
     const contentType = getContentType(ext);
 
-    return new NextResponse(fileBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
+    const response = new NextResponse(fileBuffer);
+    response.headers.set('Content-Type', contentType);
+    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return response;
   } catch (error) {
-    console.error('Error serving image:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error details:', errorMessage);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

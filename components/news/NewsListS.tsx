@@ -96,25 +96,20 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
   const extractImageFromContent = (content: string | null): string | null => {
     if (!content) return null;
     
-    console.log('🖼️ [NewsListS] Extracting image from content:', content.substring(0, 200) + '...');
-    
     // まず通常のsrc属性を確認
     const srcMatch = content.match(/<img[^>]+src=['"]([^'"]+)['"][^>]*>/);
     if (srcMatch) {
       const srcUrl = srcMatch[1];
-      console.log('🖼️ [NewsListS] Found src:', srcUrl);
       
       // Next.js最適化URLの場合、元のURLを抽出
       if (srcUrl.includes('/_next/image?url=')) {
         const urlMatch = srcUrl.match(/url=([^&]+)/);
         if (urlMatch) {
           const decodedUrl = decodeURIComponent(urlMatch[1]);
-          console.log('🖼️ [NewsListS] Decoded Next.js URL:', decodedUrl);
           return decodedUrl;
         }
       }
       
-      console.log('🖼️ [NewsListS] Using original src:', srcUrl);
       return srcUrl;
     }
     
@@ -123,22 +118,18 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
     if (srcsetMatch) {
       const srcsetValue = srcsetMatch[1];
       const firstUrl = srcsetValue.split(' ')[0];
-      console.log('🖼️ [NewsListS] Found srcset first URL:', firstUrl);
       
       if (firstUrl.includes('/_next/image?url=')) {
         const urlMatch = firstUrl.match(/url=([^&]+)/);
         if (urlMatch) {
           const decodedUrl = decodeURIComponent(urlMatch[1]);
-          console.log('🖼️ [NewsListS] Decoded srcset URL:', decodedUrl);
           return decodedUrl;
         }
       }
       
-      console.log('🖼️ [NewsListS] Using original srcset URL:', firstUrl);
       return firstUrl;
     }
     
-    console.log('🖼️ [NewsListS] No image found in content');
     return null;
   };
 
@@ -147,7 +138,6 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
       <div className="space-y-4">
         {news.map((item) => {
           const imageUrl = item.image_path || extractImageFromContent(item.content);
-          console.log('🖼️ [NewsListS] Final image URL for item', item.id, ':', imageUrl);
           
           return (
             <div key={item.id} className="border-b border-gray-100 pb-4">
@@ -184,13 +174,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
                       fill
                       className="object-cover rounded"
                       sizes="80px"
-                      onLoad={() => {
-                        console.log('🖼️ [NewsListS] Next.js Image loaded successfully:', imageUrl);
-                      }}
                       onError={(e) => {
-                        console.error('🖼️ [NewsListS] Next.js Image failed to load:', imageUrl);
-                        console.error('🖼️ [NewsListS] Falling back to regular img tag');
-                        
                         // Hide the Next.js Image and show fallback
                         e.currentTarget.style.display = 'none';
                         const fallbackImg = e.currentTarget.parentElement?.querySelector('.fallback-img') as HTMLImageElement;
@@ -207,11 +191,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
                       src={imageUrl}
                       alt={item.title || ''}
                       style={{ display: 'none' }}
-                      onLoad={() => {
-                        console.log('🖼️ [NewsListS] Fallback img loaded successfully:', imageUrl);
-                      }}
                       onError={(e) => {
-                        console.error('🖼️ [NewsListS] Both Next.js Image and fallback img failed to load:', imageUrl);
                         e.currentTarget.style.display = 'none';
                       }}
                     />
