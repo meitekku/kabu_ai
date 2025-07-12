@@ -199,11 +199,45 @@ def decode_emoji_message(encoded_message):
             error_reporter.add_error("decode_message", f"デコードエラー: {e}, {e2}", e)
             return None
 
+def cleanup_old_chrome_temp_dirs():
+    """古いChrome一時ディレクトリをクリーンアップ"""
+    try:
+        import tempfile
+        import time
+        
+        temp_base = tempfile.gettempdir()
+        current_time = time.time()
+        cleaned_count = 0
+        
+        # chrome_twitter_で始まるディレクトリを探す
+        for item in os.listdir(temp_base):
+            if item.startswith('chrome_twitter_'):
+                item_path = os.path.join(temp_base, item)
+                if os.path.isdir(item_path):
+                    try:
+                        # 1時間以上古いディレクトリを削除
+                        stat = os.stat(item_path)
+                        if current_time - stat.st_mtime > 3600:  # 3600秒 = 1時間
+                            import shutil
+                            shutil.rmtree(item_path)
+                            cleaned_count += 1
+                    except Exception:
+                        pass  # 削除に失敗しても続行
+        
+        if cleaned_count > 0:
+            print(f"古いChrome一時ディレクトリをクリーンアップ: {cleaned_count}個")
+            
+    except Exception as e:
+        print(f"一時ディレクトリクリーンアップエラー: {e}")
+
 def kill_all_chromedrivers():
     """すべてのChromeDriverプロセスを強制終了（緊急時・エラー時専用）"""
     try:
         print("ChromeDriverプロセスをクリーンアップ中...")
         killed_count = 0
+        
+        # 古い一時ディレクトリもクリーンアップ
+        cleanup_old_chrome_temp_dirs()
         
         # psutilが利用可能な場合の詳細検索
         if PSUTIL_AVAILABLE:
@@ -260,6 +294,9 @@ def create_chrome_driver():
         print(f"🔍 Python実行パス: {sys.executable}")
         print(f"🔍 環境変数PATH: {os.environ.get('PATH', 'NOT SET')}")
         
+        # 起動前に古い一時ディレクトリをクリーンアップ
+        cleanup_old_chrome_temp_dirs()
+        
         print("Chromeを起動中（並行実行対応）...")
         error_reporter.add_success("driver_init", "Chrome起動プロセス開始")
         
@@ -283,22 +320,40 @@ def create_chrome_driver():
         # ユーザーエージェントを設定
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名 + ポート）
+        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名 + ポート + タイムスタンプ）
         import uuid
         import random
+        import time
+        import tempfile
+        
+        # より確実にユニークなIDを生成
         unique_id = str(uuid.uuid4())[:8]
+        timestamp = str(int(time.time() * 1000))  # ミリ秒単位のタイムスタンプ
         
         # ランダムなリモートデバッグポートを設定（並行実行対応）
-        debug_port = random.randint(9222, 9322)
+        debug_port = random.randint(9222, 9999)
         options.add_argument(f"--remote-debugging-port={debug_port}")
         
+        # 一時ディレクトリを使用してより確実にユニークなパスを作成
         if os.name == 'nt':  # Windows
-            temp_dir = os.path.join(os.environ.get('TEMP'), f'chrome_twitter_profile_{unique_id}_{debug_port}')
+            base_temp_dir = os.environ.get('TEMP', tempfile.gettempdir())
         else:  # macOS/Linux
-            temp_dir = os.path.join('/tmp', f'chrome_twitter_profile_{unique_id}_{debug_port}')
+            base_temp_dir = tempfile.gettempdir()
         
-        if not os.path.exists(temp_dir):
-            os.makedirs(temp_dir)
+        temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{unique_id}_{timestamp}_{debug_port}')
+        
+        # 既存のディレクトリがある場合は削除
+        if os.path.exists(temp_dir):
+            try:
+                import shutil
+                shutil.rmtree(temp_dir)
+                print(f"既存の一時ディレクトリを削除: {temp_dir}")
+            except Exception as e:
+                print(f"一時ディレクトリ削除エラー: {e}")
+                # 削除に失敗した場合は別のディレクトリ名を生成
+                temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{uuid.uuid4().hex[:12]}_{int(time.time() * 1000000)}')
+        
+        os.makedirs(temp_dir, exist_ok=True)
         
         options.add_argument(f"--user-data-dir={temp_dir}")
         
