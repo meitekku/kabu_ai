@@ -1,5 +1,6 @@
 # twitter_auto_post_secure.py
 # 環境変数から認証情報を読み取るバージョン + 詳細エラーレポート機能 + 絵文字対応 + テキスト入力修正版（コピペ動作対応）
+# 本番環境でのChrome起動エラー修正版
 
 import os
 import json
@@ -320,44 +321,78 @@ def create_chrome_driver():
         # ユーザーエージェントを設定
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
-        # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名 + ポート + タイムスタンプ）
-        import uuid
-        import random
-        import time
-        import tempfile
+        # 本番環境かどうかを判定
+        import socket
+        hostname = socket.gethostname()
+        is_production = not (
+            "localhost" in hostname.lower() or 
+            hostname.lower() in ["localhost", "127.0.0.1"] or
+            os.getenv("NODE_ENV") == "development" or
+            os.getenv("ENVIRONMENT") == "development" or
+            os.getenv("ENVIRONMENT") == "local"
+        )
         
-        # より確実にユニークなIDを生成
-        unique_id = str(uuid.uuid4())[:8]
-        timestamp = str(int(time.time() * 1000))  # ミリ秒単位のタイムスタンプ
-        
-        # ランダムなリモートデバッグポートを設定（並行実行対応）
-        debug_port = random.randint(9222, 9999)
-        options.add_argument(f"--remote-debugging-port={debug_port}")
-        
-        # 一時ディレクトリを使用してより確実にユニークなパスを作成
-        if os.name == 'nt':  # Windows
-            base_temp_dir = os.environ.get('TEMP', tempfile.gettempdir())
-        else:  # macOS/Linux
-            base_temp_dir = tempfile.gettempdir()
-        
-        temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{unique_id}_{timestamp}_{debug_port}')
-        
-        # 既存のディレクトリがある場合は削除
-        if os.path.exists(temp_dir):
-            try:
-                import shutil
-                shutil.rmtree(temp_dir)
-                print(f"既存の一時ディレクトリを削除: {temp_dir}")
-            except Exception as e:
-                print(f"一時ディレクトリ削除エラー: {e}")
-                # 削除に失敗した場合は別のディレクトリ名を生成
-                temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{uuid.uuid4().hex[:12]}_{int(time.time() * 1000000)}')
-        
-        os.makedirs(temp_dir, exist_ok=True)
-        
-        options.add_argument(f"--user-data-dir={temp_dir}")
-        
-        print(f"Chrome設定: プロファイル={temp_dir}, デバッグポート={debug_port}")
+        # 本番環境の場合は、ユーザーデータディレクトリを使用しない
+        if is_production:
+            print("🔍 本番環境検出: ユーザーデータディレクトリをスキップ")
+            # 本番環境では --user-data-dir を指定しない
+            # 代わりに、プロファイルをクリーンに保つオプションを追加
+            options.add_argument("--incognito")  # シークレットモード
+            options.add_argument("--disable-plugins")
+            options.add_argument("--disable-images")  # 画像読み込みを無効化（高速化）
+            options.add_argument("--disable-javascript")  # 必要に応じて
+            options.add_argument("--disable-gpu")
+            options.add_argument("--disable-software-rasterizer")
+            
+            # リモートデバッグポートも使用しない
+            print("🔍 本番環境: リモートデバッグポートを使用しません")
+        else:
+            # 開発環境の場合は従来通り
+            print("🔍 開発環境検出: 一時プロファイルディレクトリを作成")
+            
+            # 一時プロファイルディレクトリを設定（ユニークなディレクトリ名 + ポート + タイムスタンプ）
+            import uuid
+            import random
+            import time
+            import tempfile
+            
+            # より確実にユニークなIDを生成
+            unique_id = str(uuid.uuid4())[:8]
+            timestamp = str(int(time.time() * 1000))  # ミリ秒単位のタイムスタンプ
+            
+            # ランダムなリモートデバッグポートを設定（並行実行対応）
+            debug_port = random.randint(9222, 9999)
+            options.add_argument(f"--remote-debugging-port={debug_port}")
+            
+            # 一時ディレクトリを使用してより確実にユニークなパスを作成
+            if os.name == 'nt':  # Windows
+                base_temp_dir = os.environ.get('TEMP', tempfile.gettempdir())
+            else:  # macOS/Linux
+                base_temp_dir = tempfile.gettempdir()
+            
+            temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{unique_id}_{timestamp}_{debug_port}')
+            
+            # 既存のディレクトリがある場合は削除
+            if os.path.exists(temp_dir):
+                try:
+                    import shutil
+                    shutil.rmtree(temp_dir)
+                    print(f"既存の一時ディレクトリを削除: {temp_dir}")
+                except Exception as e:
+                    print(f"一時ディレクトリ削除エラー: {e}")
+                    # 削除に失敗した場合は別のディレクトリ名を生成
+                    temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{uuid.uuid4().hex[:12]}_{int(time.time() * 1000000)}')
+            
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            options.add_argument(f"--user-data-dir={temp_dir}")
+            
+            print(f"Chrome設定: プロファイル={temp_dir}, デバッグポート={debug_port}")
+            
+            # ドライバー固有の情報を保存（エラー時のクリーンアップ用）
+            driver._unique_id = unique_id
+            driver._debug_port = debug_port
+            driver._temp_dir = temp_dir
         
         # セッション競合を避けるための追加オプション（並行実行対応）
         options.add_argument("--disable-background-timer-throttling")
@@ -458,20 +493,15 @@ def create_chrome_driver():
         driver.implicitly_wait(3)
         driver.set_window_size(1200, 800)
         
-        # ドライバー固有の情報を保存（エラー時のクリーンアップ用）
-        driver._unique_id = unique_id
-        driver._debug_port = debug_port
-        driver._temp_dir = temp_dir
-        
         # WebDriver検出回避の追加設定
         driver.execute_cdp_cmd('Network.setUserAgentOverride', {
             "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-        print(f"✅ Chrome起動完了！ID: {unique_id}, ポート: {debug_port}")
+        print(f"✅ Chrome起動完了！")
         print("🔍 === Chrome起動デバッグ完了 ===")
-        error_reporter.add_success("driver_init", f"Chrome起動完了 (ID: {unique_id}, ポート: {debug_port})")
+        error_reporter.add_success("driver_init", f"Chrome起動完了")
         return driver
         
     except Exception as e:
