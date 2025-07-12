@@ -324,6 +324,11 @@ def create_chrome_driver():
         chrome_binary = os.getenv('CHROME_BINARY_PATH')
         print(f"🔍 環境変数CHROME_BINARY_PATH: {chrome_binary}")
         
+        # 環境変数が設定されていても、そのパスが存在しない場合は自動検索に回す
+        if chrome_binary and not os.path.exists(chrome_binary):
+            print(f"⚠️ 環境変数のパスが存在しません: {chrome_binary}")
+            chrome_binary = None
+        
         if not chrome_binary:
             # 環境変数が未設定の場合のみ自動検索
             import platform
@@ -334,7 +339,12 @@ def create_chrome_driver():
             if system == 'linux':
                 chrome_paths = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium']
             elif system == 'darwin':
-                chrome_paths = ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome']
+                chrome_paths = [
+                    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                    '/usr/local/bin/google-chrome',
+                    '/opt/homebrew/bin/google-chrome',
+                    '/Applications/Chromium.app/Contents/MacOS/Chromium'
+                ]
             else:
                 chrome_paths = []
             
@@ -421,7 +431,7 @@ def create_chrome_driver():
         print(f"🔍 selenium バージョン: {selenium.__version__}")
         
         try:
-            from webdriver_manager.chrome import ChromeDriverManager
+            # ChromeDriverManager is already imported at the top, so we can use it directly
             print(f"🔍 webdriver-manager バージョン: {ChromeDriverManager().get_driver_version_from_os()}")
         except Exception as version_error:
             print(f"🔍 webdriver-manager バージョン取得エラー: {version_error}")
@@ -510,9 +520,14 @@ def check_login_status(driver):
         print("ログイン状態をチェック中...")
         error_reporter.add_success("login_check", "ログイン状態チェック開始")
         
-        # ホームページにアクセス
-        driver.get("https://twitter.com/home")
-        time.sleep(1)
+        # ホームページにアクセス（既にホームページにいない場合のみ）
+        current_url = driver.current_url
+        if "/home" not in current_url:
+            print("ホームページへ移動...")
+            driver.get("https://twitter.com/home")
+            time.sleep(1)
+        else:
+            print("既にホームページにいるため移動をスキップ")
         
         # ログイン済みかどうかを判定する要素をチェック
         try:
