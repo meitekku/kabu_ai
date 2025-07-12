@@ -313,6 +313,10 @@ def create_chrome_driver():
         options.add_argument("--no-first-run")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--no-sandbox")
+
+        options.add_argument("--disable-session-crashed-bubble")
+        options.add_argument("--disable-infobars")
+        options.add_argument("--disable-restore-session-state")
         
         # 文字化け対策：言語設定を追加
         options.add_argument("--lang=ja")
@@ -340,18 +344,24 @@ def create_chrome_driver():
         else:  # macOS/Linux
             base_temp_dir = tempfile.gettempdir()
         
-        temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{unique_id}_{timestamp}_{debug_port}')
+        temp_dir = tempfile.mkdtemp(prefix=f'chrome_twitter_{unique_id}_', dir=base_temp_dir)
         
         # 既存のディレクトリがある場合は削除
-        if os.path.exists(temp_dir):
-            try:
-                import shutil
-                shutil.rmtree(temp_dir)
-                print(f"既存の一時ディレクトリを削除: {temp_dir}")
-            except Exception as e:
-                print(f"一時ディレクトリ削除エラー: {e}")
-                # 削除に失敗した場合は別のディレクトリ名を生成
-                temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{uuid.uuid4().hex[:12]}_{int(time.time() * 1000000)}')
+        try:
+            for item in os.listdir(base_temp_dir):
+                if item.startswith('chrome_twitter_'):
+                    old_dir = os.path.join(base_temp_dir, item)
+                    if os.path.isdir(old_dir):
+                        # 作成から1時間以上経過したディレクトリを削除
+                        try:
+                            stat = os.stat(old_dir)
+                            if time.time() - stat.st_mtime > 3600:
+                                shutil.rmtree(old_dir, ignore_errors=True)
+                                print(f"古い一時ディレクトリを削除: {old_dir}")
+                        except:
+                            pass
+        except Exception as e:
+            print(f"古いディレクトリのクリーンアップエラー: {e}")
         
         os.makedirs(temp_dir, exist_ok=True)
         
