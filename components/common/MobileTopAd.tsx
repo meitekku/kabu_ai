@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
+declare global {
+  interface Window {
+    adsbygoogle: Array<{
+      [key: string]: unknown;
+    }>;
+  }
+}
+
 export default function MobileTopAd() {
   const [isMobile, setIsMobile] = useState(false);
 
