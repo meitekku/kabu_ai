@@ -26,18 +26,11 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <Script
-          id="adsbygoogle-init"
-          strategy="beforeInteractive"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5634065252713097"
+          crossOrigin="anonymous"
+          strategy="lazyOnload"
         />
-        <Script id="adsense-init">
-          {`
-            (adsbygoogle = window.adsbygoogle || []).push({
-              google_ad_client: "ca-pub-5634065252713097",
-              enable_page_level_ads: true
-            });
-          `}
-        </Script>
       </head>
       <body>
         <MobileTopAd />
