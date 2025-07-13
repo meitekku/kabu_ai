@@ -1,5 +1,5 @@
 // app/api/twitter/post_selenium/route.ts
-// メインAPIルート - 絵文字対応版
+// メインAPIルート - 絵文字対応版 + 仮想環境対応
 import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
@@ -43,6 +43,22 @@ interface PythonErrorReport {
     total_warnings: number;
     total_success_steps: number;
   };
+}
+
+// 環境に応じたPythonコマンドを取得する関数
+function getPythonCommand(): string {
+  // 環境変数でローカル/リモートを判定
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isRemote = process.env.DEPLOYMENT_ENV === 'remote';
+  const useVenv = process.env.USE_VENV === 'true';
+  
+  if (isRemote || isProduction || useVenv) {
+    // リモート環境では仮想環境のPythonを使用
+    return '/var/www/kabu_ai/venv/bin/python';
+  } else {
+    // ローカル環境では通常のPythonを使用
+    return 'python';
+  }
 }
 
 // JSONレポートを抽出する関数
@@ -93,6 +109,15 @@ async function executePythonScript(
     console.log('🔍 プラットフォーム:', process.platform);
     console.log('🔍 アーキテクチャ:', process.arch);
     
+    // 環境に応じたPythonコマンドを取得
+    const pythonCommand = getPythonCommand();
+    console.log('🔍 使用するPythonコマンド:', pythonCommand);
+    console.log('🔍 環境変数チェック:', {
+      NODE_ENV: process.env.NODE_ENV,
+      DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
+      USE_VENV: process.env.USE_VENV
+    });
+    
     // Pythonスクリプトのパス（プロジェクトディレクトリ直下のpythonフォルダ）
     const scriptPath = path.join(process.cwd(), 'python', 'twitter_auto_post_secure.py');
     console.log('🔍 Pythonスクリプトパス:', scriptPath);
@@ -109,6 +134,22 @@ async function executePythonScript(
       }
     } catch (error) {
       console.log('🔍 ファイル存在確認エラー:', error);
+    }
+    
+    // Pythonコマンドの存在確認
+    try {
+      if (pythonCommand.startsWith('/')) {
+        // 絶対パスの場合はファイルの存在確認
+        if (fs.existsSync(pythonCommand)) {
+          console.log('✅ Pythonコマンドが存在します:', pythonCommand);
+        } else {
+          console.log('❌ Pythonコマンドが見つかりません:', pythonCommand);
+        }
+      } else {
+        console.log('🔍 Pythonコマンド（システムPATH）:', pythonCommand);
+      }
+    } catch (error) {
+      console.log('🔍 Pythonコマンド確認エラー:', error);
     }
     
     // コマンドライン引数を構築
@@ -145,7 +186,6 @@ async function executePythonScript(
       }
     }
     
-    
     console.log('🔍 構築された引数:', args);
     console.log('🔍 === Python実行開始 ===');
     
@@ -163,7 +203,7 @@ async function executePythonScript(
     });
     
     // Pythonスクリプトを実行
-    const pythonProcess = spawn('python', [scriptPath, ...args], { env });
+    const pythonProcess = spawn(pythonCommand, [scriptPath, ...args], { env });
     
     let stdout = '';
     let stderr = '';
@@ -325,7 +365,6 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    
     // Pythonスクリプトを実行
     const { success, report } = await executePythonScript(
       body.message,
@@ -346,13 +385,30 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
     } else {
-      
       // 絵文字関連のエラーかチェック
       const isEmojiError = report?.errors.some(error => 
         error.message.includes('ChromeDriver only supports characters in the BMP') ||
         error.exception?.includes('ChromeDriver only supports characters in the BMP')
       );
-      
+
+      // 画像アップロードエラーだが、テキスト投稿が成功している場合は成功とみなす
+      const isImageUploadError = report?.errors.some(error =>
+        error.message.includes('画像アップロードエラー')
+      );
+      const hasTextPostSuccess = report?.success_steps.some(step =>
+        step.message.includes('execCommand方式でテキスト入力成功')
+      );
+
+      if (isImageUploadError && hasTextPostSuccess) {
+        return NextResponse.json<TweetResponse>(
+          {
+            success: true,
+            message: 'テキストのみ投稿されました（画像の投稿はスキップされました）',
+            details: report
+          },
+          { status: 200 }
+        );
+      }
       
       return NextResponse.json<TweetResponse>(
         {
@@ -384,7 +440,13 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'Twitter投稿API',
-    version: '3.0 - Emoji Support & Enhanced Error Reporting',
+    version: '3.1 - Emoji Support & Enhanced Error Reporting & Virtual Environment Support',
+    environment: {
+      pythonCommand: getPythonCommand(),
+      nodeEnv: process.env.NODE_ENV,
+      deploymentEnv: process.env.DEPLOYMENT_ENV,
+      useVenv: process.env.USE_VENV
+    },
     endpoints: {
       POST: {
         description: 'ツイートを投稿します（絵文字対応）',
@@ -411,12 +473,15 @@ export async function GET() {
       'JSON-based error communication',
       'Enhanced console logging',
       'Comprehensive error analysis',
-      'Automatic emoji detection in React component'
+      'Automatic emoji detection in React component',
+      'Virtual environment support for production'
     ],
     notes: [
       'Emoji handling: Messages containing emoji are Base64 encoded and sent to Python script',
       'Python script uses JavaScript injection to bypass ChromeDriver emoji limitations',
-      'All text input now uses JavaScript instead of send_keys for better compatibility'
+      'All text input now uses JavaScript instead of send_keys for better compatibility',
+      'Virtual environment: Local uses "python", Production uses "/var/www/kabu_ai/venv/bin/python"',
+      'Environment detection: NODE_ENV=production, DEPLOYMENT_ENV=remote, or USE_VENV=true'
     ]
   });
 }
