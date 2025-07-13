@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 declare global {
   interface Window {
@@ -11,19 +11,22 @@ declare global {
 }
 
 export default function GoogleAdsense() {
+  const adsRef = useRef<HTMLModElement>(null);
+
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
+    try {
+      if (typeof window !== 'undefined' && adsRef.current) {
         (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        console.error('Google Adsense error:', err);
       }
+    } catch (err) {
+      console.error('Google Adsense error:', err);
     }
   }, []);
 
   return (
     <div className="w-full my-4">
       <ins
+        ref={adsRef}
         className="adsbygoogle"
         style={{ display: 'block' }}
         data-ad-client="ca-pub-5634065252713097"

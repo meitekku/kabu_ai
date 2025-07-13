@@ -1,213 +1,238 @@
 import os
-import sys
 import time
-import uuid
-import random
-import tempfile
 import subprocess
-import traceback
+import platform
+import random
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import WebDriverException
 
-try:
-    import psutil
-    PSUTIL_AVAILABLE = True
-except ImportError:
-    PSUTIL_AVAILABLE = False
-    print("⚠️ psutil がインストールされていません。'pip install psutil' でインストールしてください。")
-    print("   ChromeDriverプロセスの自動終了機能が制限されます。")
+# グローバル変数でドライバーIDを管理
+DRIVER_REGISTRY = {}
 
-def cleanup_old_chrome_temp_dirs():
-    """古いChrome一時ディレクトリをクリーンアップ"""
-    try:
-        temp_base = tempfile.gettempdir()
-        current_time = time.time()
-        cleaned_count = 0
-        
-        for item in os.listdir(temp_base):
-            if item.startswith('chrome_twitter_'):
-                item_path = os.path.join(temp_base, item)
-                if os.path.isdir(item_path):
-                    try:
-                        stat = os.stat(item_path)
-                        if current_time - stat.st_mtime > 3600:  # 3600秒 = 1時間
-                            import shutil
-                            shutil.rmtree(item_path)
-                            cleaned_count += 1
-                    except:
-                        pass
-        
-        if cleaned_count > 0:
-            print(f"古いChrome一時ディレクトリをクリーンアップ: {cleaned_count}個")
-            
-    except Exception as e:
-        print(f"一時ディレクトリクリーンアップエラー: {e}")
+def generate_driver_id():
+    """一意のドライバーIDを生成"""
+    return f"{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
 
-def kill_all_chromedrivers():
-    """すべてのChromeDriverプロセスを強制終了（緊急時・エラー時専用）"""
-    try:
-        print("ChromeDriverプロセスをクリーンアップ中...")
-        killed_count = 0
-        
-        cleanup_old_chrome_temp_dirs()
-        
-        if PSUTIL_AVAILABLE:
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    proc_name = proc.info['name'].lower()
-                    cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else ''
-                    
-                    if ('chromedriver' in proc_name or 
-                        'chromedriver' in cmdline.lower() or
-                        (proc_name == 'chrome' and '--test-type' in cmdline)):
-                        
-                        print(f"ChromeDriverプロセス終了: PID={proc.info['pid']}, 名前={proc_name}")
-                        proc.kill()
-                        killed_count += 1
-                        
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    pass
-        
-        if os.name == 'nt':  # Windows
-            try:
-                result = subprocess.run(['taskkill', '/F', '/IM', 'chromedriver.exe'], 
-                                     capture_output=True, text=True)
-                if result.returncode == 0:
-                    print("WindowsでChromeDriverプロセスを終了しました")
-            except Exception as e:
-                print(f"Windows taskkill エラー: {e}")
-        else:  # macOS/Linux
-            try:
-                result = subprocess.run(['pkill', '-f', 'chromedriver'], 
-                                     capture_output=True, text=True)
-                if result.returncode == 0:
-                    print("macOS/LinuxでChromeDriverプロセスを終了しました")
-            except Exception as e:
-                print(f"macOS/Linux pkill エラー: {e}")
-        
-        print(f"緊急ChromeDriverプロセスクリーンアップ完了: {killed_count}個のプロセスを終了")
-        
-    except Exception as e:
-        print(f"ChromeDriverクリーンアップエラー: {e}")
+def register_driver(driver, driver_id=None):
+    """ドライバーを登録"""
+    if not driver_id:
+        driver_id = generate_driver_id()
+    DRIVER_REGISTRY[driver_id] = driver
+    driver._custom_id = driver_id
+    return driver_id
+
+def unregister_driver(driver_id):
+    """ドライバーの登録を解除"""
+    if driver_id in DRIVER_REGISTRY:
+        del DRIVER_REGISTRY[driver_id]
 
 def create_chrome_driver():
-    """Chromeドライバーを直接起動（個別プロセス管理）"""
-    driver = None
+    """Chrome WebDriverを作成する"""
     try:
         print("🔍 === Chrome起動デバッグ開始 ===")
         
-        cleanup_old_chrome_temp_dirs()
+        options = webdriver.ChromeOptions()
         
-        options = Options()
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-automation")
-        options.add_argument("--no-first-run")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--lang=ja")
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        # 基本オプション
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
         
-        # 追加: プロセス終了時に確実にクリーンアップするための設定
-        options.add_argument("--disable-gpu")
-        options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--headless=new")
-        options.add_argument("--remote-debugging-pipe")  # パイプモードを使用
-        
-        # ユニークな一時ディレクトリとデバッグポートを設定
-        unique_id = str(uuid.uuid4())[:8]
-        timestamp = str(int(time.time() * 1000))
-        debug_port = random.randint(9222, 9999)
-        options.add_argument(f"--remote-debugging-port={debug_port}")
-        
-        base_temp_dir = tempfile.gettempdir()
-        temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{unique_id}_{timestamp}_{debug_port}')
-        
-        if os.path.exists(temp_dir):
-            try:
-                import shutil
-                shutil.rmtree(temp_dir)
-            except:
-                temp_dir = os.path.join(base_temp_dir, f'chrome_twitter_{uuid.uuid4().hex[:12]}_{int(time.time() * 1000000)}')
-        
-        os.makedirs(temp_dir, exist_ok=True)
-        options.add_argument(f"--user-data-dir={temp_dir}")
-        
-        # Chrome binary の設定
-        chrome_binary = os.getenv('CHROME_BINARY_PATH')
-        if chrome_binary and os.path.exists(chrome_binary):
-            options.binary_location = chrome_binary
-        
-        service = Service(ChromeDriverManager().install())
-        
-        driver = webdriver.Chrome(service=service, options=options)
-        driver.implicitly_wait(3)
-        driver.set_window_size(1200, 800)
-        
-        driver._unique_id = unique_id
-        driver._debug_port = debug_port
-        driver._temp_dir = temp_dir
-        
-        driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-            "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        # 言語設定（日本語）
+        options.add_argument('--lang=ja-JP')
+        options.add_experimental_option('prefs', {
+            'intl.accept_languages': 'ja,ja-JP,en-US,en'
         })
-        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-        print(f"✅ Chrome起動完了！ID: {unique_id}, ポート: {debug_port}")
+        # ポップアップとプロンプトを無効化
+        options.add_argument('--disable-popup-blocking')
+        options.add_argument('--disable-notifications')
+        
+        # GPUとWebGLの設定
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-software-rasterizer')
+        
+        # User-Agentを設定
+        options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # ウィンドウサイズを設定
+        options.add_argument('--window-size=1280,800')
+        
+        # その他の最適化
+        options.add_argument('--disable-features=IsolateOrigins,site-per-process')
+        
+        # ヘッドレスモードの判定
+        if os.environ.get('HEADLESS', '').lower() == 'true':
+            options.add_argument('--headless=new')
+        
+        # 一意のポート番号を生成
+        port = 9222 + random.randint(0, 999)
+        options.add_argument(f'--remote-debugging-port={port}')
+        
+        # WebDriverを作成
+        driver = webdriver.Chrome(options=options)
+        
+        # ページロードタイムアウトを設定
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+        
+        # Webdriverプロパティを削除（検出回避）
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': '''
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+            '''
+        })
+        
+        # ドライバーを登録
+        driver_id = register_driver(driver)
+        
+        print(f"✅ Chrome起動完了！ID: {driver_id[:8]}, ポート: {port}")
         return driver
         
     except Exception as e:
-        print(f"❌ Chromeの起動に失敗: {e}")
-        print(f"🔍 エラーの詳細: {traceback.format_exc()}")
-        if driver:
-            try:
-                cleanup_specific_driver(driver)
-            except:
-                pass
+        print(f"❌ Chrome起動エラー: {e}")
         return None
 
 def cleanup_specific_driver(driver):
-    """特定のドライバーとその関連プロセスをクリーンアップ"""
+    """特定のWebDriverインスタンスをクリーンアップ"""
+    if driver is None:
+        return
+    
     try:
-        if hasattr(driver, '_unique_id'):
-            print(f"ドライバー個別クリーンアップ開始: ID={driver._unique_id}")
-            
-            try:
-                driver.quit()
-            except:
-                pass
-            
-            if hasattr(driver, '_temp_dir') and os.path.exists(driver._temp_dir):
-                try:
-                    import shutil
-                    shutil.rmtree(driver._temp_dir)
-                except Exception as e:
-                    print(f"一時ディレクトリ削除失敗: {e}")
-            
-            if hasattr(driver, '_debug_port') and PSUTIL_AVAILABLE:
-                try:
-                    for proc in psutil.process_iter(['pid', 'name', 'connections']):
-                        try:
-                            for conn in proc.info['connections'] or []:
-                                if conn.laddr.port == driver._debug_port:
-                                    print(f"ポート{driver._debug_port}使用プロセス終了: PID={proc.pid}")
-                                    proc.kill()
-                                    break
-                        except:
-                            continue
-                except Exception as e:
-                    print(f"ポート特定プロセス終了失敗: {e}")
-        else:
-            try:
-                driver.quit()
-            except:
-                pass
-                
-    except Exception as e:
-        print(f"個別クリーンアップエラー: {e}")
+        driver_id = getattr(driver, '_custom_id', 'unknown')
+        print(f"ドライバー個別クリーンアップ開始: ID={driver_id[:8] if driver_id != 'unknown' else 'unknown'}")
+        
+        # セッションIDを取得
+        session_id = driver.session_id if hasattr(driver, 'session_id') else None
+        
+        # ドライバーを終了
         try:
             driver.quit()
+            print("✅ driver.quit() 成功")
+        except Exception as e:
+            print(f"⚠️ driver.quit() エラー: {e}")
+        
+        # 登録解除
+        if driver_id != 'unknown':
+            unregister_driver(driver_id)
+        
+        # psutilが利用可能な場合、関連プロセスを終了
+        try:
+            import psutil
+            
+            # ChromeDriverプロセスを探して終了
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    pinfo = proc.info
+                    if pinfo['name'] and 'chromedriver' in pinfo['name'].lower():
+                        # セッションIDがコマンドラインに含まれているか確認
+                        if session_id and pinfo['cmdline']:
+                            cmdline_str = ' '.join(pinfo['cmdline'])
+                            if session_id in cmdline_str:
+                                proc.terminate()
+                                proc.wait(timeout=5)
+                                print(f"✅ 関連ChromeDriverプロセス (PID: {pinfo['pid']}) を終了")
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+                    
+        except ImportError:
+            pass  # psutilがインストールされていない場合は無視
+        
+    except Exception as e:
+        print(f"⚠️ ドライバークリーンアップエラー: {e}")
+
+def kill_all_chromedrivers():
+    """すべてのChromeDriveプロセスを強制終了"""
+    try:
+        print("全ChromeDriverプロセスの終了開始...")
+        
+        # 登録されているすべてのドライバーを終了
+        for driver_id, driver in list(DRIVER_REGISTRY.items()):
+            try:
+                driver.quit()
+            except:
+                pass
+            unregister_driver(driver_id)
+        
+        # プラットフォームに応じてコマンドを実行
+        system = platform.system()
+        
+        if system == "Windows":
+            # Windows
+            subprocess.run(['taskkill', '/F', '/IM', 'chromedriver.exe'], 
+                         capture_output=True, text=True)
+            subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'], 
+                         capture_output=True, text=True)
+        elif system == "Darwin":
+            # macOS
+            subprocess.run(['pkill', '-f', 'chromedriver'], 
+                         capture_output=True, text=True)
+            subprocess.run(['pkill', '-f', 'Google Chrome'], 
+                         capture_output=True, text=True)
+        else:
+            # Linux
+            subprocess.run(['pkill', '-f', 'chromedriver'], 
+                         capture_output=True, text=True)
+            subprocess.run(['pkill', '-f', 'chrome'], 
+                         capture_output=True, text=True)
+        
+        print("✅ 全ChromeDriverプロセスを終了しました")
+        
+    except Exception as e:
+        print(f"⚠️ ChromeDriverプロセス終了エラー: {e}")
+
+def get_chrome_binary_path():
+    """Chromeの実行ファイルパスを取得"""
+    system = platform.system()
+    
+    if system == "Windows":
+        paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expanduser(r"~\AppData\Local\Google\Chrome\Application\chrome.exe")
+        ]
+    elif system == "Darwin":  # macOS
+        paths = [
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        ]
+    else:  # Linux
+        paths = [
+            "/usr/bin/google-chrome",
+            "/usr/bin/google-chrome-stable",
+            "/usr/bin/chromium",
+            "/usr/bin/chromium-browser",
+            "/snap/bin/chromium"
+        ]
+    
+    # 環境変数から取得
+    env_path = os.environ.get('CHROME_BINARY_PATH')
+    if env_path and os.path.exists(env_path):
+        return env_path
+    
+    # 各パスをチェック
+    for path in paths:
+        if os.path.exists(path):
+            return path
+    
+    # whichコマンドで探す（Unix系のみ）
+    if system != "Windows":
+        try:
+            result = subprocess.run(['which', 'google-chrome'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                return result.stdout.strip()
         except:
-            pass 
+            pass
+    
+    return None
+
+# 終了時のクリーンアップ用
+import atexit
+atexit.register(kill_all_chromedrivers)

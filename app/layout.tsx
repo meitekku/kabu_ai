@@ -1,6 +1,7 @@
 import '@/app/globals.css'
 import LayoutClient from '@/components/layout/LayoutClient'
 import MobileTopAd from '@/components/common/MobileTopAd'
+import Script from 'next/script'
 
 export const metadata = {
   title: {
@@ -23,6 +24,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5634065252713097"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body>
         <MobileTopAd />
         <LayoutClient>
