@@ -1,6 +1,6 @@
 import '@/app/globals.css'
 import LayoutClient from '@/components/layout/LayoutClient'
-import GoogleAdsense from '@/components/common/GoogleAdsense'
+import MobileTopAd from '@/components/common/MobileTopAd'
 import Script from 'next/script'
 
 export const metadata = {
@@ -32,7 +32,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <GoogleAdsense type="mobile-top" />
+        <MobileTopAd />
         <LayoutClient>
           {children}
         </LayoutClient>

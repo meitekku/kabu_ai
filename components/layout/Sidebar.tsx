@@ -4,7 +4,7 @@ import GoogleAdsense from '@/components/common/GoogleAdsense'
 export default function Sidebar() {
   return (
     <div className="space-y-6">
-      <GoogleAdsense type="sidebar" />
+      <GoogleAdsense />
       <RankingTableClient 
         title="アクセスランキング"
         tableName="ranking_yahoo_post"
