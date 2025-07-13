@@ -15,29 +15,18 @@ export default function GoogleAdsense() {
 
   useEffect(() => {
     try {
-      // 開発環境でのデバッグ情報
-      const isProduction = process.env.NODE_ENV === 'production';
-      if (!isProduction) {
-        console.log('GoogleAdsense: Running in development mode - ads will not display');
-        return;
-      }
-
+      // AdSenseの初期化確認
       if (typeof window === 'undefined') {
         console.log('GoogleAdsense: Window object not available');
         return;
       }
 
-      if (!adsRef.current) {
-        console.log('GoogleAdsense: Ad container not found');
+      if (!window.adsbygoogle) {
+        console.error('GoogleAdsense: adsbygoogle not initialized');
         return;
       }
 
-      // AdSenseの初期化
-      if (!window.adsbygoogle) {
-        console.log('GoogleAdsense: Initializing adsbygoogle array');
-        window.adsbygoogle = [];
-      }
-
+      // 広告の表示を試行
       window.adsbygoogle.push({});
       console.log('GoogleAdsense: Ad push completed');
     } catch (err) {
@@ -45,24 +34,16 @@ export default function GoogleAdsense() {
     }
   }, []);
 
-  if (process.env.NODE_ENV !== 'production') {
-    return (
-      <div className="w-full my-4 p-4 border-2 border-dashed border-gray-300 text-center text-gray-500">
-        Ad Space (Development Mode)
-      </div>
-    );
-  }
-
   return (
     <div className="w-full my-4">
       <ins
         ref={adsRef}
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', textAlign: 'center' }}
+        data-ad-layout="in-article"
+        data-ad-format="fluid"
         data-ad-client="ca-pub-5634065252713097"
         data-ad-slot="2001556735"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
       />
     </div>
   );
