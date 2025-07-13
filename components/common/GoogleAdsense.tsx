@@ -15,13 +15,43 @@ export default function GoogleAdsense() {
 
   useEffect(() => {
     try {
-      if (typeof window !== 'undefined' && adsRef.current) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      // 開発環境でのデバッグ情報
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (!isProduction) {
+        console.log('GoogleAdsense: Running in development mode - ads will not display');
+        return;
       }
+
+      if (typeof window === 'undefined') {
+        console.log('GoogleAdsense: Window object not available');
+        return;
+      }
+
+      if (!adsRef.current) {
+        console.log('GoogleAdsense: Ad container not found');
+        return;
+      }
+
+      // AdSenseの初期化
+      if (!window.adsbygoogle) {
+        console.log('GoogleAdsense: Initializing adsbygoogle array');
+        window.adsbygoogle = [];
+      }
+
+      window.adsbygoogle.push({});
+      console.log('GoogleAdsense: Ad push completed');
     } catch (err) {
-      console.error('Google Adsense error:', err);
+      console.error('GoogleAdsense error:', err);
     }
   }, []);
+
+  if (process.env.NODE_ENV !== 'production') {
+    return (
+      <div className="w-full my-4 p-4 border-2 border-dashed border-gray-300 text-center text-gray-500">
+        Ad Space (Development Mode)
+      </div>
+    );
+  }
 
   return (
     <div className="w-full my-4">
