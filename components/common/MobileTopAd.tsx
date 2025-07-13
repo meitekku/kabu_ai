@@ -41,13 +41,17 @@ export default function MobileTopAd() {
 
   return (
     <div className="w-full my-4 md:hidden">
+      <script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5634065252713097"
+        crossOrigin="anonymous"
+      />
+      {/* smartpohone top ad */}
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'inline-block', width: '300px', height: '50px' }}
         data-ad-client="ca-pub-5634065252713097"
         data-ad-slot="9265803239"
-        data-ad-format="auto"
-        data-full-width-responsive="true"
       />
     </div>
   );

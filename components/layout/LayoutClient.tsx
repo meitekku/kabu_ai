@@ -5,7 +5,6 @@ import Footer from '@/components/layout/Footer'
 import GlobalNavigation from '@/components/navigation/GlobalNavigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { usePathname } from 'next/navigation'
-import MobileTopAd from '../common/MobileTopAd'
 
 export default function LayoutClient({
   children,
@@ -20,7 +19,6 @@ export default function LayoutClient({
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
       <Header />
-      <MobileTopAd />
       <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6">
         <div className="flex flex-col md:flex-row gap-10">
           <main className={mainClassName}>
