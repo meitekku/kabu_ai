@@ -49,7 +49,7 @@ export default function MobileTopAd() {
       {/* smartpohone top ad */}
       <ins
         className="adsbygoogle"
-        style={{ display: 'inline-block', width: '300px', height: '50px' }}
+        style={{ display: 'block', width: 'auto', height: '50px' }}
         data-ad-client="ca-pub-5634065252713097"
         data-ad-slot="9265803239"
       />
