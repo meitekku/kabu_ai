@@ -110,6 +110,12 @@ def create_chrome_driver():
         options.add_argument("--lang=ja")
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
+        # 追加: プロセス終了時に確実にクリーンアップするための設定
+        options.add_argument("--disable-gpu")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_argument("--headless=new")  # 新しいヘッドレスモード
+        options.add_argument("--remote-debugging-pipe")  # パイプモードを使用
+        
         # ユニークな一時ディレクトリとデバッグポートを設定
         unique_id = str(uuid.uuid4())[:8]
         timestamp = str(int(time.time() * 1000))
