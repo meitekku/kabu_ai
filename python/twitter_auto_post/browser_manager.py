@@ -113,7 +113,7 @@ def create_chrome_driver():
         # 追加: プロセス終了時に確実にクリーンアップするための設定
         options.add_argument("--disable-gpu")
         options.add_argument("--disable-software-rasterizer")
-        options.add_argument("--headless=new")  # 新しいヘッドレスモード
+        options.add_argument("--headless=new")
         options.add_argument("--remote-debugging-pipe")  # パイプモードを使用
         
         # ユニークな一時ディレクトリとデバッグポートを設定
