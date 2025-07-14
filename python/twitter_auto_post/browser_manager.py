@@ -80,6 +80,23 @@ def create_chrome_driver():
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
         
+        # 本番環境では追加の設定を行う
+        if is_production:
+            # 本番環境専用の設定
+            options.add_argument('--no-first-run')
+            options.add_argument('--disable-default-apps')
+            options.add_argument('--disable-extensions')
+            options.add_argument('--disable-plugins')
+            options.add_argument('--disable-web-security')
+            options.add_argument('--disable-features=VizDisplayCompositor')
+            options.add_argument('--disable-ipc-flooding-protection')
+            # 一時ディレクトリを明示的に設定
+            import tempfile
+            temp_dir = tempfile.mkdtemp(prefix='chrome_temp_')
+            options.add_argument(f'--temp-profile')
+            options.add_argument(f'--user-data-dir={temp_dir}')
+            print(f"🔍 本番環境: 一時プロファイルディレクトリ = {temp_dir}")
+        
         # 言語設定（日本語）
         options.add_argument('--lang=ja-JP')
         options.add_experimental_option('prefs', {
@@ -106,13 +123,33 @@ def create_chrome_driver():
         # ヘッドレスモードの判定
         if os.environ.get('HEADLESS', '').lower() == 'true':
             options.add_argument('--headless=new')
+            print("🔍 ヘッドレスモード有効")
         
         # 一意のポート番号を生成
         port = 9222 + random.randint(0, 999)
         options.add_argument(f'--remote-debugging-port={port}')
+        print(f"🔍 デバッグポート: {port}")
+        
+        # 全てのChrome/ChromeDriverプロセスを強制終了
+        if is_production:
+            print("🔍 本番環境: 既存のChrome/ChromeDriverプロセスを強制終了")
+            try:
+                subprocess.run(['pkill', '-f', 'chrome'], capture_output=True, text=True)
+                subprocess.run(['pkill', '-f', 'chromedriver'], capture_output=True, text=True)
+                time.sleep(1)  # プロセス終了待機
+                print("✅ 既存のプロセスを強制終了完了")
+            except Exception as e:
+                print(f"⚠️ プロセス終了エラー: {e}")
+        
+        # デバッグ: 現在のオプションを表示
+        print("🔍 Chrome起動オプション一覧:")
+        for i, arg in enumerate(options.arguments):
+            print(f"  {i+1}: {arg}")
         
         # WebDriverを作成
+        print("🔍 WebDriverを作成中...")
         driver = webdriver.Chrome(options=options)
+        print("✅ WebDriver作成成功")
         
         # ページロードタイムアウトを設定
         driver.set_page_load_timeout(30)
@@ -130,10 +167,11 @@ def create_chrome_driver():
         # ドライバーを登録
         driver_id = register_driver(driver)
         
-        # グローバル変数に保存
-        REUSABLE_DRIVER = driver
+        # グローバル変数に保存（開発環境のみ）
+        if not is_production:
+            REUSABLE_DRIVER = driver
         
-        print(f"✅ Chrome起動完了！ID: {driver_id[:8]}, ポート: {port}, プロファイル: {PROFILE_PATH}")
+        print(f"✅ Chrome起動完了！ID: {driver_id[:8]}, ポート: {port}")
         return driver
         
     except Exception as e:
