@@ -52,9 +52,16 @@ def create_chrome_driver():
         
         options = webdriver.ChromeOptions()
         
-        # プロファイルパスを設定（固定）
+        # プロファイルパスを設定（本番環境では一意化）
         if PROFILE_PATH is None:
-            PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+            if os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production':
+                # 本番環境では一意のプロファイルを使用
+                import uuid
+                unique_id = str(uuid.uuid4())[:8]
+                PROFILE_PATH = os.path.join('/tmp', f'twitter_chrome_profile_{unique_id}')
+            else:
+                # 開発環境では固定プロファイルを使用
+                PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
         
         options.add_argument(f'--user-data-dir={PROFILE_PATH}')
         options.add_argument('--profile-directory=Default')
