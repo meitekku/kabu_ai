@@ -11,6 +11,10 @@ from selenium.common.exceptions import WebDriverException
 # グローバル変数でドライバーIDを管理
 DRIVER_REGISTRY = {}
 
+# 再利用可能なドライバーの管理
+REUSABLE_DRIVER = None
+PROFILE_PATH = None
+
 def generate_driver_id():
     """一意のドライバーIDを生成"""
     return f"{int(time.time() * 1000)}_{random.randint(1000, 9999)}"
@@ -29,11 +33,31 @@ def unregister_driver(driver_id):
         del DRIVER_REGISTRY[driver_id]
 
 def create_chrome_driver():
-    """Chrome WebDriverを作成する"""
+    """Chrome WebDriverを作成する（プロファイル再利用）"""
+    global REUSABLE_DRIVER, PROFILE_PATH
+    
+    # 既存のドライバーが有効か確認
+    if REUSABLE_DRIVER is not None:
+        try:
+            # 簡単なテストを実行してドライバーが生きているか確認
+            REUSABLE_DRIVER.current_url
+            print("✅ 既存のChromeドライバーを再利用")
+            return REUSABLE_DRIVER
+        except:
+            print("⚠️ 既存のドライバーが無効、新しいドライバーを作成")
+            REUSABLE_DRIVER = None
+    
     try:
         print("🔍 === Chrome起動デバッグ開始 ===")
         
         options = webdriver.ChromeOptions()
+        
+        # プロファイルパスを設定（固定）
+        if PROFILE_PATH is None:
+            PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+        
+        options.add_argument(f'--user-data-dir={PROFILE_PATH}')
+        options.add_argument('--profile-directory=Default')
         
         # 基本オプション
         options.add_argument('--no-sandbox')
@@ -92,7 +116,10 @@ def create_chrome_driver():
         # ドライバーを登録
         driver_id = register_driver(driver)
         
-        print(f"✅ Chrome起動完了！ID: {driver_id[:8]}, ポート: {port}")
+        # グローバル変数に保存
+        REUSABLE_DRIVER = driver
+        
+        print(f"✅ Chrome起動完了！ID: {driver_id[:8]}, ポート: {port}, プロファイル: {PROFILE_PATH}")
         return driver
         
     except Exception as e:
@@ -100,8 +127,15 @@ def create_chrome_driver():
         return None
 
 def cleanup_specific_driver(driver):
-    """特定のWebDriverインスタンスをクリーンアップ"""
+    """特定のWebDriverインスタンスをクリーンアップ（プロファイル再利用版）"""
+    global REUSABLE_DRIVER
+    
     if driver is None:
+        return
+    
+    # 再利用可能なドライバーの場合はクリーンアップしない
+    if driver == REUSABLE_DRIVER:
+        print("✅ 再利用可能なドライバーはクリーンアップをスキップ")
         return
     
     try:
@@ -148,9 +182,20 @@ def cleanup_specific_driver(driver):
         print(f"⚠️ ドライバークリーンアップエラー: {e}")
 
 def kill_all_chromedrivers():
-    """すべてのChromeDriveプロセスを強制終了"""
+    """すべてのChromeDriveプロセスを強制終了（プロファイル再利用版）"""
+    global REUSABLE_DRIVER
+    
     try:
         print("全ChromeDriverプロセスの終了開始...")
+        
+        # 再利用可能なドライバーをクリーンアップ
+        if REUSABLE_DRIVER is not None:
+            try:
+                REUSABLE_DRIVER.quit()
+                print("✅ 再利用可能なドライバーを終了")
+            except:
+                pass
+            REUSABLE_DRIVER = None
         
         # 登録されているすべてのドライバーを終了
         for driver_id, driver in list(DRIVER_REGISTRY.items()):
@@ -232,6 +277,12 @@ def get_chrome_binary_path():
             pass
     
     return None
+
+def force_cleanup_all():
+    """強制的にすべてのドライバーをクリーンアップ"""
+    global REUSABLE_DRIVER
+    REUSABLE_DRIVER = None
+    kill_all_chromedrivers()
 
 # 終了時のクリーンアップ用
 import atexit
