@@ -36,35 +36,42 @@ def create_chrome_driver():
     """Chrome WebDriverを作成する（プロファイル再利用）"""
     global REUSABLE_DRIVER, PROFILE_PATH
     
-    # 既存のドライバーが有効か確認
-    if REUSABLE_DRIVER is not None:
-        try:
-            # 簡単なテストを実行してドライバーが生きているか確認
-            REUSABLE_DRIVER.current_url
-            print("✅ 既存のChromeドライバーを再利用")
-            return REUSABLE_DRIVER
-        except:
-            print("⚠️ 既存のドライバーが無効、新しいドライバーを作成")
-            REUSABLE_DRIVER = None
+    # 本番環境では再利用しない（プロファイル競合を避けるため）
+    if os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production':
+        print("🔍 本番環境: ドライバー再利用をスキップ")
+        REUSABLE_DRIVER = None
+    else:
+        # 既存のドライバーが有効か確認
+        if REUSABLE_DRIVER is not None:
+            try:
+                # 簡単なテストを実行してドライバーが生きているか確認
+                REUSABLE_DRIVER.current_url
+                print("✅ 既存のChromeドライバーを再利用")
+                return REUSABLE_DRIVER
+            except Exception as e:
+                print(f"⚠️ 既存のドライバーが無効、新しいドライバーを作成: {e}")
+                REUSABLE_DRIVER = None
     
     try:
         print("🔍 === Chrome起動デバッグ開始 ===")
         
         options = webdriver.ChromeOptions()
         
-        # プロファイルパスを設定（本番環境では一意化）
-        if PROFILE_PATH is None:
-            if os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production':
-                # 本番環境では一意のプロファイルを使用
-                import uuid
-                unique_id = str(uuid.uuid4())[:8]
-                PROFILE_PATH = os.path.join('/tmp', f'twitter_chrome_profile_{unique_id}')
-            else:
-                # 開発環境では固定プロファイルを使用
-                PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+        # 本番環境ではプロファイルを使用しない
+        is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
+        print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        options.add_argument(f'--user-data-dir={PROFILE_PATH}')
-        options.add_argument('--profile-directory=Default')
+        if not is_production:
+            # 開発環境のみプロファイルを使用
+            if PROFILE_PATH is None:
+                PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+                print(f"🔍 開発環境: 固定プロファイルパス = {PROFILE_PATH}")
+            
+            options.add_argument(f'--user-data-dir={PROFILE_PATH}')
+            options.add_argument('--profile-directory=Default')
+            print(f"🔍 Chrome起動オプション: --user-data-dir={PROFILE_PATH}")
+        else:
+            print("🔍 本番環境: プロファイルを使用せず起動")
         
         # 基本オプション
         options.add_argument('--no-sandbox')
