@@ -299,6 +299,125 @@ def clean_old_profiles():
     except Exception as e:
         print(f"⚠️ プロファイルクリーンアップエラー: {e}")
 
+def diagnose_chrome_environment():
+    """Chrome環境の詳細な診断"""
+    print("🔍 === Chrome環境診断開始 ===")
+    
+    # 1. 環境変数の確認
+    print("🔍 環境変数:")
+    env_vars = ['DISPLAY', 'CHROME_BINARY_PATH', 'CHROME_FLAGS', 'CHROME_DEVEL_SANDBOX', 'CHROME_DISABLE_SANDBOX']
+    for var in env_vars:
+        value = os.environ.get(var, 'Not set')
+        print(f"  {var}={value}")
+    
+    # 2. Chrome実行ファイルの確認
+    chrome_paths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/chromium',
+        '/usr/bin/chromium-browser',
+        '/snap/bin/chromium'
+    ]
+    
+    print("\n🔍 Chrome実行ファイルの確認:")
+    for path in chrome_paths:
+        if os.path.exists(path):
+            try:
+                result = subprocess.run([path, '--version'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    print(f"  ✅ {path}: {result.stdout.strip()}")
+                else:
+                    print(f"  ❌ {path}: バージョン取得失敗")
+            except:
+                print(f"  ❌ {path}: 実行失敗")
+        else:
+            print(f"  ❌ {path}: 存在しない")
+    
+    # 3. 権限の確認
+    print("\n🔍 権限の確認:")
+    try:
+        # /tmp の書き込み権限
+        test_file = '/tmp/chrome_test_write'
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        print("  ✅ /tmp書き込み権限: OK")
+    except:
+        print("  ❌ /tmp書き込み権限: NG")
+    
+    # 4. プロセス一覧の確認
+    print("\n🔍 現在のChromeプロセス:")
+    try:
+        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            chrome_processes = [line for line in result.stdout.split('\n') if 'chrome' in line.lower()]
+            if chrome_processes:
+                for proc in chrome_processes[:5]:  # 最大5つまで表示
+                    print(f"  {proc}")
+            else:
+                print("  ✅ Chrome関連プロセスなし")
+    except:
+        print("  ❌ プロセス一覧取得失敗")
+    
+    # 5. ロックファイルの確認
+    print("\n🔍 ロックファイルの確認:")
+    lock_patterns = [
+        '/tmp/.org.chromium.*',
+        '/tmp/.com.google.Chrome.*',
+        '/tmp/chrome_*',
+        '/dev/shm/chrome_*'
+    ]
+    
+    for pattern in lock_patterns:
+        try:
+            import glob
+            lock_files = glob.glob(pattern)
+            if lock_files:
+                print(f"  ⚠️ {pattern}: {len(lock_files)}個のファイル")
+                for lock_file in lock_files[:3]:  # 最大3つまで表示
+                    print(f"    {lock_file}")
+            else:
+                print(f"  ✅ {pattern}: なし")
+        except:
+            print(f"  ❌ {pattern}: 確認失敗")
+    
+    # 6. システムリソースの確認
+    print("\n🔍 システムリソース:")
+    try:
+        # メモリ使用量
+        result = subprocess.run(['free', '-h'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print("  メモリ使用量:")
+            for line in result.stdout.split('\n')[:3]:
+                if line.strip():
+                    print(f"    {line}")
+    except:
+        print("  ❌ メモリ情報取得失敗")
+    
+    # 7. セキュリティ制限の確認
+    print("\n🔍 セキュリティ制限:")
+    try:
+        # AppArmor
+        result = subprocess.run(['aa-status'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print("  ✅ AppArmor有効")
+        else:
+            print("  ✅ AppArmor無効")
+    except:
+        print("  ✅ AppArmor確認できず")
+    
+    try:
+        # SELinux
+        result = subprocess.run(['getenforce'], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print(f"  ✅ SELinux: {result.stdout.strip()}")
+        else:
+            print("  ✅ SELinux無効")
+    except:
+        print("  ✅ SELinux確認できず")
+    
+    print("🔍 === Chrome環境診断完了 ===\n")
+
 def create_chrome_driver():
     """Chrome WebDriverを作成する（Ubuntu環境対応版・改良版）"""
     global REUSABLE_DRIVER, PROFILE_PATH
@@ -313,6 +432,9 @@ def create_chrome_driver():
     
     try:
         print("🔍 === Chrome起動デバッグ開始 (Ubuntu特化版) ===")
+        
+        # まず詳細な診断を実行
+        diagnose_chrome_environment()
         
         # まず既存のChromeプロセスを終了（Ubuntu用の強化版）
         if platform.system() == "Linux":
@@ -330,14 +452,46 @@ def create_chrome_driver():
         # Ubuntu環境では複数の起動方法を試行
         startup_methods = []
         
-        # 方法1: プロファイルを完全に使わない（最も確実）
+        # 方法1: 完全に分離された環境でのChrome起動
+        startup_methods.append({
+            'name': 'Docker-like Isolation',
+            'use_profile': False,
+            'use_unshare': True,
+            'options': ['--no-default-browser-check', '--no-first-run', '--disable-user-media-security=true']
+        })
+        
+        # 方法2: Xvfb仮想ディスプレイを使用
+        startup_methods.append({
+            'name': 'Xvfb Virtual Display',
+            'use_profile': False,
+            'use_xvfb': True,
+            'options': ['--no-default-browser-check', '--no-first-run']
+        })
+        
+        # 方法3: 完全に別のユーザー名前空間
+        startup_methods.append({
+            'name': 'User Namespace',
+            'use_profile': True,
+            'use_user_namespace': True,
+            'options': []
+        })
+        
+        # 方法4: Chrome起動前に環境をリセット
+        startup_methods.append({
+            'name': 'Environment Reset',
+            'use_profile': False,
+            'reset_environment': True,
+            'options': ['--no-default-browser-check', '--no-first-run']
+        })
+        
+        # 方法5: 従来の方法（プロファイルを完全に使わない）
         startup_methods.append({
             'name': 'No Profile (最も確実)',
             'use_profile': False,
             'options': ['--no-default-browser-check', '--no-first-run', '--disable-user-media-security=true']
         })
         
-        # 方法2: 一時プロファイルを使用
+        # 方法6: 一時プロファイルを使用
         startup_methods.append({
             'name': 'Temporary Profile',
             'use_profile': True,
@@ -345,7 +499,7 @@ def create_chrome_driver():
             'options': []
         })
         
-        # 方法3: 複数のプロファイルパスを試行
+        # 方法7: 複数のプロファイルパスを試行
         startup_methods.append({
             'name': 'Multiple Profile Paths',
             'use_profile': True,
@@ -353,7 +507,7 @@ def create_chrome_driver():
             'options': []
         })
         
-        # 方法4: Incognito モード
+        # 方法8: Incognito モード
         startup_methods.append({
             'name': 'Incognito Mode',
             'use_profile': False,
@@ -368,6 +522,52 @@ def create_chrome_driver():
             
             for attempt in range(max_retries):
                 try:
+                    # 特別な環境設定
+                    chrome_env = os.environ.copy()
+                    chrome_command = None
+                    
+                    # 方法1: unshareを使用した分離環境
+                    if method.get('use_unshare'):
+                        print("🔍 unshareを使用した分離環境でChrome起動")
+                        chrome_command = ['unshare', '--mount', '--pid', '--fork']
+                        chrome_env.pop('DISPLAY', None)  # DISPLAYを削除
+                        chrome_env['CHROME_DEVEL_SANDBOX'] = '/usr/lib/chromium-browser/chrome-sandbox'
+                    
+                    # 方法2: Xvfb仮想ディスプレイ
+                    elif method.get('use_xvfb'):
+                        print("🔍 Xvfb仮想ディスプレイを使用")
+                        # Xvfbを起動
+                        xvfb_display = f":{random.randint(10, 99)}"
+                        try:
+                            xvfb_process = subprocess.Popen(['Xvfb', xvfb_display, '-screen', '0', '1280x800x24'])
+                            time.sleep(2)  # Xvfbが起動するまで待機
+                            chrome_env['DISPLAY'] = xvfb_display
+                            print(f"🔍 Xvfb起動完了: DISPLAY={xvfb_display}")
+                        except Exception as e:
+                            print(f"⚠️ Xvfb起動失敗: {e}")
+                    
+                    # 方法3: ユーザー名前空間
+                    elif method.get('use_user_namespace'):
+                        print("🔍 ユーザー名前空間を使用")
+                        chrome_command = ['unshare', '--user', '--map-root-user']
+                    
+                    # 方法4: 環境リセット
+                    elif method.get('reset_environment'):
+                        print("🔍 環境をリセット")
+                        # 環境変数を最小限に
+                        chrome_env = {
+                            'PATH': os.environ.get('PATH', ''),
+                            'HOME': os.environ.get('HOME', ''),
+                            'USER': os.environ.get('USER', ''),
+                            'LANG': 'C',
+                            'LC_ALL': 'C'
+                        }
+                        # 一時的にすべてのChromeロックファイルを削除
+                        subprocess.run(['find', '/tmp', '-name', '*chrome*', '-type', 'f', '-delete'], 
+                                     capture_output=True, timeout=10)
+                        subprocess.run(['find', '/dev/shm', '-name', '*chrome*', '-type', 'f', '-delete'], 
+                                     capture_output=True, timeout=10)
+                    
                     options = webdriver.ChromeOptions()
                     
                     # プロファイル設定
@@ -493,7 +693,21 @@ def create_chrome_driver():
                             options.binary_location = chrome_binary
                             print(f"🔍 Chrome実行パス: {chrome_binary}")
                     
-                    driver = webdriver.Chrome(options=options)
+                    # 特別なコマンドがある場合
+                    if chrome_command:
+                        print(f"🔍 特別なコマンドで起動: {' '.join(chrome_command)}")
+                        # 環境変数を設定してWebDriverを作成
+                        original_env = os.environ.copy()
+                        os.environ.update(chrome_env)
+                        try:
+                            driver = webdriver.Chrome(options=options)
+                        finally:
+                            # 環境変数を復元
+                            os.environ.clear()
+                            os.environ.update(original_env)
+                    else:
+                        driver = webdriver.Chrome(options=options)
+                    
                     print("✅ WebDriver作成成功")
                     
                     # ページロードタイムアウトを設定
