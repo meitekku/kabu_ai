@@ -3,6 +3,9 @@ import time
 import subprocess
 import platform
 import random
+import tempfile
+import shutil
+import uuid
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -32,16 +35,146 @@ def unregister_driver(driver_id):
     if driver_id in DRIVER_REGISTRY:
         del DRIVER_REGISTRY[driver_id]
 
+def force_remove_directory(path):
+    """ディレクトリを強制的に削除"""
+    if not os.path.exists(path):
+        return True
+    
+    try:
+        # まずロックファイルを削除
+        lock_files = ['SingletonLock', 'SingletonSocket', 'SingletonCookie']
+        for lock_file in lock_files:
+            lock_path = os.path.join(path, lock_file)
+            if os.path.exists(lock_path):
+                try:
+                    os.remove(lock_path)
+                    print(f"✅ ロックファイル削除: {lock_file}")
+                except:
+                    pass
+        
+        # プラットフォーム別の削除方法
+        if platform.system() == "Windows":
+            # Windowsの場合
+            subprocess.run(['cmd', '/c', 'rmdir', '/s', '/q', path], 
+                          shell=True, capture_output=True, timeout=10)
+            # 追加でPowerShellを使用
+            if os.path.exists(path):
+                subprocess.run(['powershell', '-Command', f'Remove-Item -Path "{path}" -Recurse -Force'], 
+                              capture_output=True, timeout=10)
+        else:
+            # Unix系の場合
+            subprocess.run(['rm', '-rf', path], capture_output=True, timeout=10)
+            # 追加で強制削除
+            if os.path.exists(path):
+                subprocess.run(['find', path, '-type', 'f', '-exec', 'rm', '-f', '{}', '+'], 
+                              capture_output=True, timeout=10)
+                subprocess.run(['find', path, '-type', 'd', '-exec', 'rmdir', '{}', '+'], 
+                              capture_output=True, timeout=10)
+        
+        # まだ存在する場合はshutilで削除
+        if os.path.exists(path):
+            shutil.rmtree(path, ignore_errors=True)
+        
+        # 最終確認
+        return not os.path.exists(path)
+        
+    except Exception as e:
+        print(f"❌ ディレクトリ削除エラー: {e}")
+        return False
+
+def kill_chrome_processes():
+    """Chrome関連のプロセスをより確実に終了"""
+    print("🔍 Chrome関連プロセスの終了開始...")
+    
+    try:
+        # プラットフォーム別のプロセス終了
+        system = platform.system()
+        
+        if system == "Windows":
+            # Windows
+            processes = ['chrome.exe', 'chromedriver.exe', 'Google Chrome']
+            for proc in processes:
+                subprocess.run(['taskkill', '/F', '/IM', proc], 
+                             capture_output=True, text=True, timeout=5)
+                subprocess.run(['wmic', 'process', 'where', f'name="{proc}"', 'delete'], 
+                             capture_output=True, text=True, timeout=5)
+        else:
+            # Unix系
+            # より強力なkillコマンド
+            kill_patterns = [
+                'chrome',
+                'google-chrome',
+                'chromium',
+                'chromedriver',
+                'Google Chrome',
+                'Chromium'
+            ]
+            
+            for pattern in kill_patterns:
+                # SIGKILL (-9) で強制終了
+                subprocess.run(['pkill', '-9', '-f', pattern], 
+                             capture_output=True, text=True, timeout=5)
+                subprocess.run(['killall', '-9', pattern], 
+                             capture_output=True, text=True, timeout=5)
+            
+            # プロセスIDを直接取得して終了
+            try:
+                result = subprocess.run(['pgrep', '-f', 'chrome'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    pids = result.stdout.strip().split('\n')
+                    for pid in pids:
+                        if pid:
+                            subprocess.run(['kill', '-9', pid], 
+                                         capture_output=True, timeout=5)
+            except:
+                pass
+        
+        # プロセス終了を待機
+        time.sleep(5)
+        print("✅ Chrome関連プロセスの終了完了")
+        
+    except Exception as e:
+        print(f"⚠️ プロセス終了エラー: {e}")
+
+def clean_old_profiles():
+    """古いプロファイルディレクトリをクリーンアップ"""
+    try:
+        temp_dir = tempfile.gettempdir()
+        patterns = ['twitter_chrome_*', 'chrome_profile_*', '.org.chromium.*']
+        
+        for pattern in patterns:
+            import glob
+            old_profiles = glob.glob(os.path.join(temp_dir, pattern))
+            for profile in old_profiles:
+                try:
+                    force_remove_directory(profile)
+                    print(f"✅ 古いプロファイル削除: {profile}")
+                except:
+                    pass
+    except Exception as e:
+        print(f"⚠️ プロファイルクリーンアップエラー: {e}")
+
 def create_chrome_driver():
     """Chrome WebDriverを作成する（プロファイル再利用）"""
     global REUSABLE_DRIVER, PROFILE_PATH
     
-    # 全環境でドライバー再利用を無効化（プロファイル競合を避けるため）
-    print("🔍 ドライバー再利用を無効化（毎回新しいドライバーで競合を回避）")
-    REUSABLE_DRIVER = None
+    # 既存のドライバーをクリーンアップ
+    if REUSABLE_DRIVER:
+        try:
+            REUSABLE_DRIVER.quit()
+        except:
+            pass
+        REUSABLE_DRIVER = None
     
     try:
         print("🔍 === Chrome起動デバッグ開始 ===")
+        
+        # まず既存のChromeプロセスを終了
+        kill_chrome_processes()
+        
+        # 古いプロファイルをクリーンアップ
+        clean_old_profiles()
         
         options = webdriver.ChromeOptions()
         
@@ -49,60 +182,37 @@ def create_chrome_driver():
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        # プロファイルパスを毎回新しく生成（再利用を無効化）
-        PROFILE_PATH = None  # 強制的にリセット
+        # より一意なプロファイルパスを生成
+        unique_id = str(uuid.uuid4())
+        timestamp = int(time.time() * 1000000)  # マイクロ秒単位
+        process_id = os.getpid()
+        random_suffix = random.randint(10000, 99999)
         
         if is_production:
-            # 本番環境では毎回新しい一意のプロファイルを作成
-            import uuid
-            import tempfile
-            unique_id = str(uuid.uuid4())[:8]
-            process_id = os.getpid()
+            # 本番環境
             temp_base = tempfile.gettempdir()
-            PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_{unique_id}_{process_id}_{int(time.time())}')
+            PROFILE_PATH = os.path.join(temp_base, f'chrome_profile_{unique_id}_{timestamp}_{process_id}_{random_suffix}')
             print(f"🔍 本番環境: 新しい一意プロファイルパス = {PROFILE_PATH}")
         else:
-            # 開発環境では固定プロファイルを使用
-            PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
-            print(f"🔍 開発環境: 固定プロファイルパス = {PROFILE_PATH}")
+            # 開発環境では固定プロファイルを使用（ただし既存のものは削除）
+            base_profile = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+            PROFILE_PATH = f"{base_profile}_{timestamp}"
+            print(f"🔍 開発環境: プロファイルパス = {PROFILE_PATH}")
         
-        # プロファイルディレクトリが既に存在する場合の処理
+        # プロファイルディレクトリが既に存在する場合は強制削除
         if os.path.exists(PROFILE_PATH):
-            print(f"⚠️ プロファイルディレクトリが既に存在: {PROFILE_PATH}")
-            try:
-                import shutil
-                # より強力な削除方法
-                if platform.system() == "Windows":
-                    subprocess.run(['rmdir', '/s', '/q', PROFILE_PATH], shell=True, capture_output=True)
-                else:
-                    subprocess.run(['rm', '-rf', PROFILE_PATH], capture_output=True)
-                
-                if os.path.exists(PROFILE_PATH):
-                    shutil.rmtree(PROFILE_PATH, ignore_errors=True)
-                
-                print(f"✅ 既存のプロファイルディレクトリを削除: {PROFILE_PATH}")
-            except Exception as e:
-                print(f"❌ プロファイルディレクトリ削除エラー: {e}")
-                # エラー時は別のパスを生成
-                import uuid
-                unique_id = str(uuid.uuid4())[:8]
-                process_id = os.getpid()
-                PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_fallback_{unique_id}_{process_id}')
-                print(f"🔍 フォールバックプロファイルパス: {PROFILE_PATH}")
+            print(f"⚠️ 既存のプロファイルディレクトリを削除: {PROFILE_PATH}")
+            if not force_remove_directory(PROFILE_PATH):
+                # 削除できない場合は別のパスを使用
+                PROFILE_PATH = f"{PROFILE_PATH}_alt_{random.randint(1000, 9999)}"
+                print(f"🔍 代替プロファイルパス: {PROFILE_PATH}")
         
-        # プロファイルディレクトリが確実に存在しないことを確認
-        if os.path.exists(PROFILE_PATH):
-            print(f"❌ プロファイルディレクトリがまだ存在します: {PROFILE_PATH}")
-            # 最終手段: 全く別のパスを使用
-            import tempfile
-            PROFILE_PATH = tempfile.mkdtemp(prefix='chrome_profile_emergency_')
-            print(f"🔍 緊急用プロファイルパス: {PROFILE_PATH}")
-        else:
-            print(f"✅ プロファイルディレクトリの確認完了: {PROFILE_PATH}")
+        # プロファイルディレクトリを作成
+        os.makedirs(PROFILE_PATH, exist_ok=True)
         
+        # Chromeオプション設定
         options.add_argument(f'--user-data-dir={PROFILE_PATH}')
         options.add_argument('--profile-directory=Default')
-        print(f"🔍 Chrome起動オプション: --user-data-dir={PROFILE_PATH}")
         
         # 基本オプション
         options.add_argument('--no-sandbox')
@@ -111,31 +221,29 @@ def create_chrome_driver():
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
         
-        # 本番環境では追加の設定を行う
-        if is_production:
-            # 本番環境専用の設定
-            options.add_argument('--no-first-run')
-            options.add_argument('--disable-default-apps')
-            options.add_argument('--disable-extensions')
-            options.add_argument('--disable-plugins')
-            options.add_argument('--disable-web-security')
-            options.add_argument('--disable-features=VizDisplayCompositor')
-            options.add_argument('--disable-ipc-flooding-protection')
-            print("🔍 本番環境: 専用設定を適用")
+        # クラッシュ関連の設定を追加
+        options.add_argument('--disable-features=RendererCodeIntegrity')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-plugins')
+        options.add_argument('--disable-images')
+        options.add_argument('--disable-javascript')  # 必要に応じて削除
+        
+        # プロセス分離を無効化（リソース節約）
+        options.add_argument('--single-process')
+        options.add_argument('--disable-features=site-per-process')
+        
+        # その他の安定性向上オプション
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        options.add_argument('--disable-renderer-backgrounding')
         
         # 言語設定（日本語）
         options.add_argument('--lang=ja-JP')
         options.add_experimental_option('prefs', {
-            'intl.accept_languages': 'ja,ja-JP,en-US,en'
+            'intl.accept_languages': 'ja,ja-JP,en-US,en',
+            'profile.default_content_setting_values.notifications': 2,
+            'profile.default_content_settings.popups': 0
         })
-        
-        # ポップアップとプロンプトを無効化
-        options.add_argument('--disable-popup-blocking')
-        options.add_argument('--disable-notifications')
-        
-        # GPUとWebGLの設定
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-software-rasterizer')
         
         # User-Agentを設定
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
@@ -143,71 +251,35 @@ def create_chrome_driver():
         # ウィンドウサイズを設定
         options.add_argument('--window-size=1280,800')
         
-        # その他の最適化
-        options.add_argument('--disable-features=IsolateOrigins,site-per-process')
-        
         # ヘッドレスモードの判定
         if os.environ.get('HEADLESS', '').lower() == 'true':
             options.add_argument('--headless=new')
             print("🔍 ヘッドレスモード有効")
         
-        # 一意のポート番号を生成
-        port = 9222 + random.randint(0, 999)
+        # 一意のポート番号を生成（より広い範囲から）
+        port = 9222 + random.randint(0, 9999)
         options.add_argument(f'--remote-debugging-port={port}')
         print(f"🔍 デバッグポート: {port}")
         
-        # 全てのChrome/ChromeDriverプロセスを強制終了（強化版）
-        print("🔍 既存のChrome/ChromeDriverプロセスを強制終了")
-        try:
-            # より強力なプロセス終了
-            kill_commands = [
-                ['pkill', '-9', '-f', 'google-chrome'],
-                ['pkill', '-9', '-f', 'chrome'],
-                ['pkill', '-9', '-f', 'chromedriver'],
-                ['pkill', '-9', '-f', 'Chrome'],
-                ['killall', '-9', 'Google Chrome'],
-                ['killall', '-9', 'chrome'],
-                ['killall', '-9', 'chromedriver']
-            ]
-            
-            for cmd in kill_commands:
-                try:
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-                    if result.returncode == 0:
-                        print(f"✅ コマンド成功: {' '.join(cmd)}")
-                except Exception as e:
-                    print(f"⚠️ コマンド失敗: {' '.join(cmd)} - {e}")
-            
-            # プロセス終了待機を増やす
-            time.sleep(3)
-            print("✅ 既存のプロセスを強制終了完了")
-            
-            # /tmp の古いChromeプロファイルを掃除
-            try:
-                import glob
-                old_profiles = glob.glob('/tmp/twitter_chrome_profile_*')
-                for profile in old_profiles:
-                    try:
-                        import shutil
-                        shutil.rmtree(profile)
-                        print(f"✅ 古いプロファイルを削除: {profile}")
-                    except:
-                        pass
-            except Exception as e:
-                print(f"⚠️ 古いプロファイル掃除エラー: {e}")
-                
-        except Exception as e:
-            print(f"⚠️ プロセス終了エラー: {e}")
-        
-        # デバッグ: 現在のオプションを表示
-        print("🔍 Chrome起動オプション一覧:")
-        for i, arg in enumerate(options.arguments):
-            print(f"  {i+1}: {arg}")
-        
-        # WebDriverを作成
         print("🔍 WebDriverを作成中...")
-        driver = webdriver.Chrome(options=options)
-        print("✅ WebDriver作成成功")
+        
+        # リトライ機能を追加
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                driver = webdriver.Chrome(options=options)
+                print("✅ WebDriver作成成功")
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ WebDriver作成失敗 (試行 {attempt + 1}/{max_retries}): {e}")
+                    time.sleep(3)
+                    # プロファイルパスを変更して再試行
+                    PROFILE_PATH = f"{PROFILE_PATH}_retry{attempt + 1}"
+                    options.arguments = [arg for arg in options.arguments if not arg.startswith('--user-data-dir=')]
+                    options.add_argument(f'--user-data-dir={PROFILE_PATH}')
+                else:
+                    raise
         
         # ページロードタイムアウトを設定
         driver.set_page_load_timeout(30)
@@ -234,6 +306,9 @@ def create_chrome_driver():
         
     except Exception as e:
         print(f"❌ Chrome起動エラー: {e}")
+        # エラー時はプロファイルディレクトリを削除
+        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
+            force_remove_directory(PROFILE_PATH)
         return None
 
 def cleanup_specific_driver(driver):
@@ -266,34 +341,17 @@ def cleanup_specific_driver(driver):
         if driver_id != 'unknown':
             unregister_driver(driver_id)
         
-        # psutilが利用可能な場合、関連プロセスを終了
-        try:
-            import psutil
-            
-            # ChromeDriverプロセスを探して終了
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    pinfo = proc.info
-                    if pinfo['name'] and 'chromedriver' in pinfo['name'].lower():
-                        # セッションIDがコマンドラインに含まれているか確認
-                        if session_id and pinfo['cmdline']:
-                            cmdline_str = ' '.join(pinfo['cmdline'])
-                            if session_id in cmdline_str:
-                                proc.terminate()
-                                proc.wait(timeout=5)
-                                print(f"✅ 関連ChromeDriverプロセス (PID: {pinfo['pid']}) を終了")
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
-                    
-        except ImportError:
-            pass  # psutilがインストールされていない場合は無視
+        # プロファイルディレクトリを削除
+        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
+            time.sleep(2)  # プロセス終了を待つ
+            force_remove_directory(PROFILE_PATH)
         
     except Exception as e:
         print(f"⚠️ ドライバークリーンアップエラー: {e}")
 
 def kill_all_chromedrivers():
     """すべてのChromeDriveプロセスを強制終了（プロファイル再利用版）"""
-    global REUSABLE_DRIVER
+    global REUSABLE_DRIVER, PROFILE_PATH
     
     try:
         print("全ChromeDriverプロセスの終了開始...")
@@ -315,27 +373,16 @@ def kill_all_chromedrivers():
                 pass
             unregister_driver(driver_id)
         
-        # プラットフォームに応じてコマンドを実行
-        system = platform.system()
+        # Chrome関連プロセスを終了
+        kill_chrome_processes()
         
-        if system == "Windows":
-            # Windows
-            subprocess.run(['taskkill', '/F', '/IM', 'chromedriver.exe'], 
-                         capture_output=True, text=True)
-            subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'], 
-                         capture_output=True, text=True)
-        elif system == "Darwin":
-            # macOS
-            subprocess.run(['pkill', '-f', 'chromedriver'], 
-                         capture_output=True, text=True)
-            subprocess.run(['pkill', '-f', 'Google Chrome'], 
-                         capture_output=True, text=True)
-        else:
-            # Linux
-            subprocess.run(['pkill', '-f', 'chromedriver'], 
-                         capture_output=True, text=True)
-            subprocess.run(['pkill', '-f', 'chrome'], 
-                         capture_output=True, text=True)
+        # プロファイルディレクトリを削除
+        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
+            force_remove_directory(PROFILE_PATH)
+            PROFILE_PATH = None
+        
+        # 古いプロファイルもクリーンアップ
+        clean_old_profiles()
         
         print("✅ 全ChromeDriverプロセスを終了しました")
         
@@ -390,8 +437,9 @@ def get_chrome_binary_path():
 
 def force_cleanup_all():
     """強制的にすべてのドライバーをクリーンアップ"""
-    global REUSABLE_DRIVER
+    global REUSABLE_DRIVER, PROFILE_PATH
     REUSABLE_DRIVER = None
+    PROFILE_PATH = None
     kill_all_chromedrivers()
 
 # 終了時のクリーンアップ用

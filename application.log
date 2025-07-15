@@ -37,3 +37,7 @@
 2025-07-13T09:38:46.527Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-07-13T09:38:53.258Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
 2025-07-13T09:50:52.662Z [ERROR]: --- [18] Error in main block --- Error: read ETIMEDOUT
+2025-07-15T04:55:46.703Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-07-15T04:55:46.891Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-07-15T04:55:47.140Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
+2025-07-15T04:55:47.538Z [ERROR]: --- [18] Error in main block --- Error: read ECONNRESET
