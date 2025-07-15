@@ -82,7 +82,7 @@ def create_chrome_driver():
         
         # 本番環境では追加の設定を行う
         if is_production:
-            # 本番環境専用の設定
+            # 本番環境専用の設定 - user-data-dirは完全に使わない
             options.add_argument('--no-first-run')
             options.add_argument('--disable-default-apps')
             options.add_argument('--disable-extensions')
@@ -90,12 +90,8 @@ def create_chrome_driver():
             options.add_argument('--disable-web-security')
             options.add_argument('--disable-features=VizDisplayCompositor')
             options.add_argument('--disable-ipc-flooding-protection')
-            # 一時ディレクトリを明示的に設定
-            import tempfile
-            temp_dir = tempfile.mkdtemp(prefix='chrome_temp_')
-            options.add_argument(f'--temp-profile')
-            options.add_argument(f'--user-data-dir={temp_dir}')
-            print(f"🔍 本番環境: 一時プロファイルディレクトリ = {temp_dir}")
+            options.add_argument('--incognito')  # シークレットモードで起動
+            print("🔍 本番環境: シークレットモード（プロファイルなし）で起動")
         
         # 言語設定（日本語）
         options.add_argument('--lang=ja-JP')
