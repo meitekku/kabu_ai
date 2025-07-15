@@ -64,37 +64,68 @@ def find_tweet_button(driver):
     return None
 
 def check_login_status(driver):
-    """ログイン状態をチェックする"""
+    """ログイン状態をチェックする（セッション管理強化版）"""
     try:
         print("ログイン状態をチェック中...")
         
-        current_url = driver.current_url
-        if "/home" not in current_url:
-            driver.get("https://twitter.com/home")
-            time.sleep(1)
-        
+        # セッション有効性を確認
         try:
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="SideNav_AccountSwitcher_Button"]'))
-            )
-            print("✅ 既にログイン済みです")
-            return True
-        except:
-            try:
-                WebDriverWait(driver, 3).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
-                )
-                print("✅ 既にログイン済みです（ツイートエリア確認）")
-                return True
-            except:
-                pass
-        
-        current_url = driver.current_url
-        if "login" in current_url or "i/flow/login" in current_url:
-            print("❌ ログインが必要です")
+            current_url = driver.current_url
+            print(f"🔍 現在のURL: {current_url}")
+        except Exception as e:
+            print(f"❌ セッション切断検出: {e}")
             return False
         
+        # ホームページに移動（セッション確認のため）
         try:
+            if "/home" not in current_url:
+                print("🔍 ホームページに移動中...")
+                driver.get("https://twitter.com/home")
+                time.sleep(3)  # 読み込み時間を増やす
+                
+                # ページ読み込み完了を待機
+                WebDriverWait(driver, 30).until(
+                    lambda d: d.execute_script("return document.readyState") == "complete"
+                )
+        except Exception as e:
+            print(f"❌ ホームページ移動失敗: {e}")
+            return False
+        
+        # ログイン状態の確認（複数の方法を試行）
+        login_indicators = [
+            # 方法1: アカウント切り替えボタン
+            '[data-testid="SideNav_AccountSwitcher_Button"]',
+            # 方法2: ツイートエリア
+            '[data-testid="tweetTextarea_0"]',
+            # 方法3: メニューボタン
+            '[data-testid="SideNav_NewTweet_Button"]',
+            # 方法4: ホームタイムライン
+            '[data-testid="primaryColumn"]'
+        ]
+        
+        for i, selector in enumerate(login_indicators):
+            try:
+                print(f"🔍 ログイン確認方法 {i+1}: {selector}")
+                element = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+                )
+                if element.is_displayed():
+                    print("✅ 既にログイン済みです")
+                    return True
+            except Exception as e:
+                print(f"  ❌ 方法 {i+1} 失敗: {e}")
+                continue
+        
+        # URLベースのログイン確認
+        try:
+            current_url = driver.current_url
+            print(f"🔍 URL再確認: {current_url}")
+            
+            if "login" in current_url or "i/flow/login" in current_url:
+                print("❌ ログインが必要です（URLベース）")
+                return False
+            
+            # ログインボタンの存在確認
             login_elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'ログイン') or contains(text(), 'Log in') or contains(text(), 'Sign in')]")
             if login_elements:
                 print("❌ ログインが必要です（ログインボタン検出）")
