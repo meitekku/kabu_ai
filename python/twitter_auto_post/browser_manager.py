@@ -543,8 +543,76 @@ def diagnose_system_restrictions():
     
     print("🔍 === システム制限診断完了 ===\n")
 
+def create_simple_stable_chrome():
+    """シンプルで安定したChrome起動（根本的解決版）"""
+    print("🔍 === シンプル安定Chrome起動を試行 ===")
+    
+    try:
+        # 1. ChromeDriverのサービスを明示的に作成
+        from selenium.webdriver.chrome.service import Service
+        service = Service()
+        
+        # 2. 最小限の安定したオプション設定
+        options = webdriver.ChromeOptions()
+        
+        # 基本的なサンドボックス回避（必須）
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-setuid-sandbox')
+        
+        # セッション安定化（重要）
+        options.add_argument('--disable-gpu')
+        options.add_argument('--headless=new')
+        
+        # プロファイル競合回避（重要）
+        options.add_argument('--no-first-run')
+        options.add_argument('--no-default-browser-check')
+        
+        # V8 Proxy resolverエラー回避（重要）
+        # --single-processを削除して、通常のマルチプロセス動作を使用
+        options.add_argument('--disable-web-security')
+        options.add_argument('--disable-features=VizDisplayCompositor')
+        
+        # メモリ使用量削減
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-plugins')
+        options.add_argument('--disable-images')
+        
+        # デバッグポートを動的に設定
+        debug_port = 9222 + random.randint(0, 1000)
+        options.add_argument(f'--remote-debugging-port={debug_port}')
+        
+        # ウィンドウサイズを設定
+        options.add_argument('--window-size=1280,800')
+        
+        # User-Agentを設定
+        options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Chrome実行パスを設定
+        chrome_binary = get_chrome_binary_path()
+        if chrome_binary:
+            options.binary_location = chrome_binary
+            print(f"🔍 Chrome実行パス: {chrome_binary}")
+        
+        print(f"🔍 デバッグポート: {debug_port}")
+        print("🔍 シンプル設定でChrome起動...")
+        
+        # ChromeDriverを起動
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        # セッション管理設定
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+        
+        print("✅ シンプル安定Chrome起動成功！")
+        return driver
+        
+    except Exception as e:
+        print(f"❌ シンプル安定Chrome起動失敗: {e}")
+        return None
+
 def create_apparmor_bypass_chrome():
-    """AppArmorの制限を回避してChromeを起動する（セッション管理強化版）"""
+    """AppArmorの制限を回避してChromeを起動する（改良版）"""
     print("🔍 === AppArmorバイパス方法を試行 ===")
     
     try:
@@ -565,7 +633,15 @@ def create_apparmor_bypass_chrome():
             except:
                 pass
         
-        # 2. Chrome起動オプションを調整（セッション管理重視）
+        # 2. まずシンプルな方法を試行
+        driver = create_simple_stable_chrome()
+        if driver:
+            print("✅ AppArmorバイパス成功！")
+            return driver
+        
+        # 3. シンプルな方法が失敗した場合の代替手段
+        print("🔍 代替手段を試行...")
+        
         options = webdriver.ChromeOptions()
         
         # 基本的なサンドボックス回避
@@ -575,64 +651,9 @@ def create_apparmor_bypass_chrome():
         
         # セッション安定化のためのオプション
         options.add_argument('--disable-gpu')
-        options.add_argument('--disable-software-rasterizer')
-        options.add_argument('--disable-background-timer-throttling')
-        options.add_argument('--disable-renderer-backgrounding')
-        options.add_argument('--disable-backgrounding-occluded-windows')
-        options.add_argument('--disable-features=VizDisplayCompositor')
-        options.add_argument('--disable-web-security')
-        options.add_argument('--disable-features=site-per-process')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-plugins')
-        
-        # セッション管理重視のオプション
+        options.add_argument('--headless=new')
         options.add_argument('--no-first-run')
         options.add_argument('--no-default-browser-check')
-        options.add_argument('--disable-default-apps')
-        options.add_argument('--disable-popup-blocking')
-        options.add_argument('--disable-translate')
-        options.add_argument('--disable-backgrounding-occluded-windows')
-        options.add_argument('--disable-ipc-flooding-protection')
-        options.add_argument('--disable-client-side-phishing-detection')
-        options.add_argument('--disable-component-update')
-        options.add_argument('--disable-domain-reliability')
-        options.add_argument('--disable-sync')
-        options.add_argument('--disable-features=TranslateUI')
-        options.add_argument('--disable-features=MediaRouter')
-        options.add_argument('--disable-hang-monitor')
-        options.add_argument('--disable-prompt-on-repost')
-        options.add_argument('--disable-component-extensions-with-background-pages')
-        
-        # プロセス管理オプション
-        options.add_argument('--single-process')
-        options.add_argument('--no-zygote')
-        
-        # ヘッドレスモード（安定性重視）
-        options.add_argument('--headless=new')
-        
-        # デバッグポートを動的に設定
-        debug_port = 9222 + random.randint(0, 1000)
-        options.add_argument(f'--remote-debugging-port={debug_port}')
-        
-        # ウィンドウサイズを設定
-        options.add_argument('--window-size=1280,800')
-        
-        # User-Agentを設定
-        options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
-        # プロファイルを設定（セッション管理のため）
-        global PROFILE_PATH
-        unique_id = str(uuid.uuid4())
-        timestamp = int(time.time() * 1000000)
-        PROFILE_PATH = f"/tmp/chrome_session_{unique_id}_{timestamp}"
-        
-        # プロファイルディレクトリを作成
-        if os.path.exists(PROFILE_PATH):
-            force_remove_directory(PROFILE_PATH)
-        os.makedirs(PROFILE_PATH, exist_ok=True)
-        
-        options.add_argument(f'--user-data-dir={PROFILE_PATH}')
-        options.add_argument('--profile-directory=Default')
         
         # 環境変数を設定
         env = os.environ.copy()
@@ -646,9 +667,7 @@ def create_apparmor_bypass_chrome():
             options.binary_location = chrome_binary
             print(f"🔍 Chrome実行パス: {chrome_binary}")
         
-        print(f"🔍 プロファイルパス: {PROFILE_PATH}")
-        print(f"🔍 デバッグポート: {debug_port}")
-        print("🔍 AppArmorバイパス設定でChrome起動...")
+        print("🔍 代替手段でChrome起動...")
         
         # 環境変数を一時的に設定
         original_env = os.environ.copy()
@@ -658,17 +677,8 @@ def create_apparmor_bypass_chrome():
             driver = webdriver.Chrome(options=options)
             
             # セッション管理設定
-            driver.set_page_load_timeout(60)  # 60秒に延長
-            driver.implicitly_wait(20)        # 20秒に延長
-            
-            # セッション安定化のための初期化
-            try:
-                driver.execute_script("window.navigator.webdriver = undefined;")
-                driver.execute_cdp_cmd('Network.setUserAgentOverride', {
-                    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                })
-            except:
-                pass
+            driver.set_page_load_timeout(30)
+            driver.implicitly_wait(10)
             
             print("✅ AppArmorバイパス成功！")
             return driver
@@ -680,13 +690,10 @@ def create_apparmor_bypass_chrome():
     
     except Exception as e:
         print(f"❌ AppArmorバイパス失敗: {e}")
-        # エラー時はプロファイルを削除
-        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
-            force_remove_directory(PROFILE_PATH)
         return None
 
 def create_direct_chrome_process():
-    """WebDriverを使わずに直接Chromeプロセスを起動"""
+    """WebDriverを使わずに直接Chromeプロセスを起動（改良版）"""
     print("🔍 === 直接Chrome起動を試行 ===")
     
     try:
@@ -695,7 +702,7 @@ def create_direct_chrome_process():
             print("❌ Chrome実行ファイルが見つかりません")
             return None
         
-        # Chrome起動コマンド
+        # Chrome起動コマンド（シンプル版）
         cmd = [
             chrome_binary,
             '--no-sandbox',
@@ -706,8 +713,8 @@ def create_direct_chrome_process():
             '--remote-debugging-port=9222',
             '--disable-web-security',
             '--disable-features=VizDisplayCompositor',
-            '--single-process',
-            '--no-zygote',
+            '--no-first-run',
+            '--no-default-browser-check',
             '--disable-extensions',
             '--disable-plugins',
             '--disable-images',
@@ -719,7 +726,7 @@ def create_direct_chrome_process():
         
         # Chrome プロセスを起動
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(3)  # Chromeが起動するまで待機
+        time.sleep(5)  # Chromeが起動するまで待機
         
         # プロセスが生きているか確認
         if process.poll() is None:
@@ -728,7 +735,6 @@ def create_direct_chrome_process():
             # リモートデバッグポートに接続
             try:
                 from selenium.webdriver.chrome.options import Options
-                from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
                 
                 # リモートChromeに接続
                 options = Options()
@@ -751,6 +757,85 @@ def create_direct_chrome_process():
             
     except Exception as e:
         print(f"❌ 直接Chrome起動失敗: {e}")
+        return None
+
+def create_chrome_with_unique_profile():
+    """完全に一意のプロファイルでChromeを起動"""
+    print("🔍 === 一意プロファイルでChrome起動 ===")
+    
+    try:
+        # 完全に一意のプロファイルディレクトリを作成
+        import tempfile
+        import shutil
+        
+        # 一時ディレクトリを作成
+        temp_dir = tempfile.mkdtemp(prefix='chrome_unique_')
+        print(f"🔍 一時プロファイルディレクトリ: {temp_dir}")
+        
+        try:
+            options = webdriver.ChromeOptions()
+            
+            # 基本的なサンドボックス回避
+            options.add_argument('--no-sandbox')
+            options.add_argument('--disable-dev-shm-usage')
+            options.add_argument('--disable-setuid-sandbox')
+            
+            # セッション安定化
+            options.add_argument('--disable-gpu')
+            options.add_argument('--headless=new')
+            options.add_argument('--no-first-run')
+            options.add_argument('--no-default-browser-check')
+            
+            # 一意のプロファイルディレクトリを使用
+            options.add_argument(f'--user-data-dir={temp_dir}')
+            
+            # その他の設定
+            options.add_argument('--disable-extensions')
+            options.add_argument('--disable-plugins')
+            options.add_argument('--disable-images')
+            options.add_argument('--window-size=1280,800')
+            
+            # Chrome実行パスを設定
+            chrome_binary = get_chrome_binary_path()
+            if chrome_binary:
+                options.binary_location = chrome_binary
+                print(f"🔍 Chrome実行パス: {chrome_binary}")
+            
+            # ChromeDriverを起動
+            driver = webdriver.Chrome(options=options)
+            
+            # セッション管理設定
+            driver.set_page_load_timeout(30)
+            driver.implicitly_wait(10)
+            
+            print("✅ 一意プロファイルでChrome起動成功！")
+            
+            # クリーンアップ関数を設定
+            def cleanup():
+                try:
+                    driver.quit()
+                except:
+                    pass
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except:
+                    pass
+            
+            # ドライバーにクリーンアップ関数を追加
+            driver._cleanup_temp_dir = cleanup
+            
+            return driver
+            
+        except Exception as e:
+            # エラー時は一時ディレクトリを削除
+            try:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            except:
+                pass
+            raise e
+            
+    except Exception as e:
+        print(f"❌ 一意プロファイルでChrome起動失敗: {e}")
         return None
 
 def create_chrome_driver():
@@ -787,8 +872,28 @@ def create_chrome_driver():
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        # 最初にAppArmorバイパスを試行
-        print("🔍 === 最初にAppArmorバイパスを試行 ===")
+        # 最初にシンプル安定Chrome起動を試行
+        print("🔍 === 最初にシンプル安定Chrome起動を試行 ===")
+        driver = create_simple_stable_chrome()
+        if driver:
+            driver_id = register_driver(driver)
+            if not is_production:
+                REUSABLE_DRIVER = driver
+            print(f"✅ シンプル安定Chrome起動成功！ID: {driver_id[:8]}")
+            return driver
+        
+        # 次に一意プロファイルでChrome起動を試行
+        print("🔍 === 次に一意プロファイルでChrome起動を試行 ===")
+        driver = create_chrome_with_unique_profile()
+        if driver:
+            driver_id = register_driver(driver)
+            if not is_production:
+                REUSABLE_DRIVER = driver
+            print(f"✅ 一意プロファイルでChrome起動成功！ID: {driver_id[:8]}")
+            return driver
+        
+        # 次にAppArmorバイパスを試行
+        print("🔍 === 次にAppArmorバイパスを試行 ===")
         driver = create_apparmor_bypass_chrome()
         if driver:
             driver_id = register_driver(driver)
@@ -797,8 +902,8 @@ def create_chrome_driver():
             print(f"✅ AppArmorバイパス成功！ID: {driver_id[:8]}")
             return driver
         
-        # 次に直接Chrome起動を試行
-        print("🔍 === 次に直接Chrome起動を試行 ===")
+        # 最後に直接Chrome起動を試行
+        print("🔍 === 最後に直接Chrome起動を試行 ===")
         driver = create_direct_chrome_process()
         if driver:
             driver_id = register_driver(driver)
@@ -1501,14 +1606,31 @@ def create_browser_driver_with_fallback():
     """複数のブラウザーを試行してWebDriverを作成（包括的フォールバック）"""
     print("🔍 === ブラウザードライバー作成 (包括的フォールバック付き) ===")
     
-    # 1. まずChromeを試行
+    # 1. 最優先: シンプル安定Chrome起動
+    print("🔍 === 1. シンプル安定Chrome起動 ===")
+    simple_driver = create_simple_stable_chrome()
+    if simple_driver:
+        driver_id = register_driver(simple_driver)
+        print(f"✅ シンプル安定Chrome起動成功！ID: {driver_id[:8]}")
+        return simple_driver
+    
+    # 2. 一意プロファイルでChrome起動
+    print("🔍 === 2. 一意プロファイルでChrome起動 ===")
+    unique_driver = create_chrome_with_unique_profile()
+    if unique_driver:
+        driver_id = register_driver(unique_driver)
+        print(f"✅ 一意プロファイルでChrome起動成功！ID: {driver_id[:8]}")
+        return unique_driver
+    
+    # 3. 従来のChrome起動を試行
+    print("🔍 === 3. 従来のChrome起動 ===")
     chrome_driver = create_chrome_driver()
     if chrome_driver:
         return chrome_driver
     
     print("⚠️ Chrome起動に失敗しました。代替ブラウザーを試行します...")
     
-    # 2. Firefoxを試行
+    # 4. Firefoxを試行
     try:
         firefox_driver = create_firefox_driver()
         if firefox_driver:
@@ -1517,35 +1639,21 @@ def create_browser_driver_with_fallback():
     except Exception as e:
         print(f"❌ Firefox起動エラー: {e}")
     
-    # 3. 代替ブラウザーツールを試行
+    # 5. 代替ブラウザーツールを試行
     print("🔍 代替ブラウザーツールを試行します...")
     alternative_browser = create_alternative_browser()
     if alternative_browser:
         print("✅ 代替ブラウザーツールで成功しました")
         return alternative_browser
     
-    # 4. すべて失敗した場合の最終手段
-    print("❌ すべてのブラウザーでの起動に失敗しました")
-    
-    # 最終的なChrome起動の代替オプション
-    print("🔍 最終手段: 最小限の設定でChromeを再試行...")
+    # 6. 最終手段: 絶対最小限のChrome設定
+    print("🔍 最終手段: 絶対最小限の設定でChromeを再試行...")
     try:
         options = webdriver.ChromeOptions()
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--headless=new')
         options.add_argument('--disable-gpu')
-        options.add_argument('--remote-debugging-port=9222')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-plugins')
-        options.add_argument('--disable-images')
-        options.add_argument('--disable-javascript')
-        options.add_argument('--single-process')
-        options.add_argument('--no-zygote')
-        options.add_argument('--disable-background-timer-throttling')
-        options.add_argument('--disable-renderer-backgrounding')
-        options.add_argument('--disable-backgrounding-occluded-windows')
-        options.add_argument('--disable-features=site-per-process')
         
         # Chrome実行パスを設定
         if platform.system() == "Linux":
