@@ -57,21 +57,42 @@ def create_chrome_driver():
         
         options = webdriver.ChromeOptions()
         
-        # 本番環境ではプロファイルを使用しない
+        # プロファイルパスを設定（環境に応じて）
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        if not is_production:
-            # 開発環境のみプロファイルを使用
-            if PROFILE_PATH is None:
+        if PROFILE_PATH is None:
+            if is_production:
+                # 本番環境では毎回新しい一意のプロファイルを作成
+                import uuid
+                import tempfile
+                unique_id = str(uuid.uuid4())[:8]
+                temp_base = tempfile.gettempdir()
+                PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_profile_{unique_id}_{int(time.time())}')
+                print(f"🔍 本番環境: 新しい一意プロファイルパス = {PROFILE_PATH}")
+            else:
+                # 開発環境では固定プロファイルを使用
                 PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
                 print(f"🔍 開発環境: 固定プロファイルパス = {PROFILE_PATH}")
-            
-            options.add_argument(f'--user-data-dir={PROFILE_PATH}')
-            options.add_argument('--profile-directory=Default')
-            print(f"🔍 Chrome起動オプション: --user-data-dir={PROFILE_PATH}")
-        else:
-            print("🔍 本番環境: プロファイルを使用せず起動")
+        
+        # プロファイルディレクトリが既に使用中の場合は削除
+        if os.path.exists(PROFILE_PATH):
+            print(f"⚠️ プロファイルディレクトリが既に存在: {PROFILE_PATH}")
+            try:
+                import shutil
+                shutil.rmtree(PROFILE_PATH)
+                print(f"✅ 既存のプロファイルディレクトリを削除: {PROFILE_PATH}")
+            except Exception as e:
+                print(f"❌ プロファイルディレクトリ削除エラー: {e}")
+                if is_production:
+                    # 本番環境では別の一意パスを生成
+                    unique_id = str(uuid.uuid4())[:8]
+                    PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_profile_{unique_id}_{int(time.time())}_retry')
+                    print(f"🔍 新しいプロファイルパス生成: {PROFILE_PATH}")
+        
+        options.add_argument(f'--user-data-dir={PROFILE_PATH}')
+        options.add_argument('--profile-directory=Default')
+        print(f"🔍 Chrome起動オプション: --user-data-dir={PROFILE_PATH}")
         
         # 基本オプション
         options.add_argument('--no-sandbox')
@@ -82,7 +103,7 @@ def create_chrome_driver():
         
         # 本番環境では追加の設定を行う
         if is_production:
-            # 本番環境専用の設定 - user-data-dirは完全に使わない
+            # 本番環境専用の設定
             options.add_argument('--no-first-run')
             options.add_argument('--disable-default-apps')
             options.add_argument('--disable-extensions')
@@ -90,8 +111,7 @@ def create_chrome_driver():
             options.add_argument('--disable-web-security')
             options.add_argument('--disable-features=VizDisplayCompositor')
             options.add_argument('--disable-ipc-flooding-protection')
-            options.add_argument('--incognito')  # シークレットモードで起動
-            print("🔍 本番環境: シークレットモード（プロファイルなし）で起動")
+            print("🔍 本番環境: 専用設定を適用")
         
         # 言語設定（日本語）
         options.add_argument('--lang=ja-JP')
