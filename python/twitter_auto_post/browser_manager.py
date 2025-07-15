@@ -36,21 +36,9 @@ def create_chrome_driver():
     """Chrome WebDriverを作成する（プロファイル再利用）"""
     global REUSABLE_DRIVER, PROFILE_PATH
     
-    # 本番環境では再利用しない（プロファイル競合を避けるため）
-    if os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production':
-        print("🔍 本番環境: ドライバー再利用をスキップ")
-        REUSABLE_DRIVER = None
-    else:
-        # 既存のドライバーが有効か確認
-        if REUSABLE_DRIVER is not None:
-            try:
-                # 簡単なテストを実行してドライバーが生きているか確認
-                REUSABLE_DRIVER.current_url
-                print("✅ 既存のChromeドライバーを再利用")
-                return REUSABLE_DRIVER
-            except Exception as e:
-                print(f"⚠️ 既存のドライバーが無効、新しいドライバーを作成: {e}")
-                REUSABLE_DRIVER = None
+    # 全環境でドライバー再利用を無効化（プロファイル競合を避けるため）
+    print("🔍 ドライバー再利用を無効化（毎回新しいドライバーで競合を回避）")
+    REUSABLE_DRIVER = None
     
     try:
         print("🔍 === Chrome起動デバッグ開始 ===")
@@ -61,34 +49,56 @@ def create_chrome_driver():
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        if PROFILE_PATH is None:
-            if is_production:
-                # 本番環境では毎回新しい一意のプロファイルを作成
-                import uuid
-                import tempfile
-                unique_id = str(uuid.uuid4())[:8]
-                temp_base = tempfile.gettempdir()
-                PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_profile_{unique_id}_{int(time.time())}')
-                print(f"🔍 本番環境: 新しい一意プロファイルパス = {PROFILE_PATH}")
-            else:
-                # 開発環境では固定プロファイルを使用
-                PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
-                print(f"🔍 開発環境: 固定プロファイルパス = {PROFILE_PATH}")
+        # プロファイルパスを毎回新しく生成（再利用を無効化）
+        PROFILE_PATH = None  # 強制的にリセット
         
-        # プロファイルディレクトリが既に使用中の場合は削除
+        if is_production:
+            # 本番環境では毎回新しい一意のプロファイルを作成
+            import uuid
+            import tempfile
+            unique_id = str(uuid.uuid4())[:8]
+            process_id = os.getpid()
+            temp_base = tempfile.gettempdir()
+            PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_{unique_id}_{process_id}_{int(time.time())}')
+            print(f"🔍 本番環境: 新しい一意プロファイルパス = {PROFILE_PATH}")
+        else:
+            # 開発環境では固定プロファイルを使用
+            PROFILE_PATH = os.path.join(os.path.expanduser('~'), '.twitter_chrome_profile')
+            print(f"🔍 開発環境: 固定プロファイルパス = {PROFILE_PATH}")
+        
+        # プロファイルディレクトリが既に存在する場合の処理
         if os.path.exists(PROFILE_PATH):
             print(f"⚠️ プロファイルディレクトリが既に存在: {PROFILE_PATH}")
             try:
                 import shutil
-                shutil.rmtree(PROFILE_PATH)
+                # より強力な削除方法
+                if platform.system() == "Windows":
+                    subprocess.run(['rmdir', '/s', '/q', PROFILE_PATH], shell=True, capture_output=True)
+                else:
+                    subprocess.run(['rm', '-rf', PROFILE_PATH], capture_output=True)
+                
+                if os.path.exists(PROFILE_PATH):
+                    shutil.rmtree(PROFILE_PATH, ignore_errors=True)
+                
                 print(f"✅ 既存のプロファイルディレクトリを削除: {PROFILE_PATH}")
             except Exception as e:
                 print(f"❌ プロファイルディレクトリ削除エラー: {e}")
-                if is_production:
-                    # 本番環境では別の一意パスを生成
-                    unique_id = str(uuid.uuid4())[:8]
-                    PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_profile_{unique_id}_{int(time.time())}_retry')
-                    print(f"🔍 新しいプロファイルパス生成: {PROFILE_PATH}")
+                # エラー時は別のパスを生成
+                import uuid
+                unique_id = str(uuid.uuid4())[:8]
+                process_id = os.getpid()
+                PROFILE_PATH = os.path.join(temp_base, f'twitter_chrome_fallback_{unique_id}_{process_id}')
+                print(f"🔍 フォールバックプロファイルパス: {PROFILE_PATH}")
+        
+        # プロファイルディレクトリが確実に存在しないことを確認
+        if os.path.exists(PROFILE_PATH):
+            print(f"❌ プロファイルディレクトリがまだ存在します: {PROFILE_PATH}")
+            # 最終手段: 全く別のパスを使用
+            import tempfile
+            PROFILE_PATH = tempfile.mkdtemp(prefix='chrome_profile_emergency_')
+            print(f"🔍 緊急用プロファイルパス: {PROFILE_PATH}")
+        else:
+            print(f"✅ プロファイルディレクトリの確認完了: {PROFILE_PATH}")
         
         options.add_argument(f'--user-data-dir={PROFILE_PATH}')
         options.add_argument('--profile-directory=Default')
@@ -146,16 +156,48 @@ def create_chrome_driver():
         options.add_argument(f'--remote-debugging-port={port}')
         print(f"🔍 デバッグポート: {port}")
         
-        # 全てのChrome/ChromeDriverプロセスを強制終了
-        if is_production:
-            print("🔍 本番環境: 既存のChrome/ChromeDriverプロセスを強制終了")
+        # 全てのChrome/ChromeDriverプロセスを強制終了（強化版）
+        print("🔍 既存のChrome/ChromeDriverプロセスを強制終了")
+        try:
+            # より強力なプロセス終了
+            kill_commands = [
+                ['pkill', '-9', '-f', 'google-chrome'],
+                ['pkill', '-9', '-f', 'chrome'],
+                ['pkill', '-9', '-f', 'chromedriver'],
+                ['pkill', '-9', '-f', 'Chrome'],
+                ['killall', '-9', 'Google Chrome'],
+                ['killall', '-9', 'chrome'],
+                ['killall', '-9', 'chromedriver']
+            ]
+            
+            for cmd in kill_commands:
+                try:
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                    if result.returncode == 0:
+                        print(f"✅ コマンド成功: {' '.join(cmd)}")
+                except Exception as e:
+                    print(f"⚠️ コマンド失敗: {' '.join(cmd)} - {e}")
+            
+            # プロセス終了待機を増やす
+            time.sleep(3)
+            print("✅ 既存のプロセスを強制終了完了")
+            
+            # /tmp の古いChromeプロファイルを掃除
             try:
-                subprocess.run(['pkill', '-f', 'chrome'], capture_output=True, text=True)
-                subprocess.run(['pkill', '-f', 'chromedriver'], capture_output=True, text=True)
-                time.sleep(1)  # プロセス終了待機
-                print("✅ 既存のプロセスを強制終了完了")
+                import glob
+                old_profiles = glob.glob('/tmp/twitter_chrome_profile_*')
+                for profile in old_profiles:
+                    try:
+                        import shutil
+                        shutil.rmtree(profile)
+                        print(f"✅ 古いプロファイルを削除: {profile}")
+                    except:
+                        pass
             except Exception as e:
-                print(f"⚠️ プロセス終了エラー: {e}")
+                print(f"⚠️ 古いプロファイル掃除エラー: {e}")
+                
+        except Exception as e:
+            print(f"⚠️ プロセス終了エラー: {e}")
         
         # デバッグ: 現在のオプションを表示
         print("🔍 Chrome起動オプション一覧:")
