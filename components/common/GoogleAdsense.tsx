@@ -4,17 +4,10 @@ export default function GoogleAdsense() {
   return (
     <div className="w-full my-4" dangerouslySetInnerHTML={{
       __html: `
-        <!-- ランキング上部広告 -->
-        <ins class="adsbygoogle"
-          style="display:block"
-          data-ad-client="ca-pub-5634065252713097"
-          data-ad-slot="9265803239"
-          data-ad-format="auto"
-          data-full-width-responsive="true">
-        </ins>
-        <script>
-          (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
+        <a href="https://px.a8.net/svt/ejp?a8mat=459YIW+A6R1F6+1WP2+NXU8H" rel="nofollow">
+          <img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=250727432616&wid=001&eno=01&mid=s00000008903004021000&mc=1">
+        </a>
+        <img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=459YIW+A6R1F6+1WP2+NXU8H" alt="">
       `
     }} />
   );

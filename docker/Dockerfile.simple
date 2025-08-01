@@ -1,0 +1,53 @@
+FROM python:3.11-slim
+
+# システムパッケージの更新と最小限のパッケージをインストール
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    unzip \
+    gnupg \
+    ca-certificates \
+    xvfb \
+    tor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Google Chrome の安定版をインストール
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && rm -rf /var/lib/apt/lists/*
+
+# ChromeDriverのインストール（簡略版）
+RUN CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE") \
+    && wget -O /tmp/chromedriver.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip" \
+    && unzip /tmp/chromedriver.zip -d /tmp/ \
+    && mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver \
+    && chmod +x /usr/local/bin/chromedriver \
+    && rm -rf /tmp/chromedriver.zip /tmp/chromedriver-linux64
+
+# 作業ディレクトリの設定
+WORKDIR /app
+
+# Pythonの依存関係ファイルをコピー
+COPY requirements.txt .
+
+# Python依存関係のインストール
+RUN pip install --no-cache-dir -r requirements.txt
+
+# アプリケーションファイルをコピー
+COPY twitter_auto_post_secure.py .
+COPY python/ ./python/
+
+# 必要なディレクトリを作成
+RUN mkdir -p /app/logs /app/uploads /app/persistent_profile
+
+# 環境変数の設定
+ENV DISPLAY=:99
+ENV PYTHONUNBUFFERED=1
+
+# ポート公開
+EXPOSE 5000
+
+# アプリケーション起動
+CMD ["sh", "-c", "Xvfb :99 -screen 0 1920x1080x24 & tor & sleep 5 && python twitter_auto_post_secure.py"]

@@ -11,6 +11,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
+from .proxy_manager import ProxyManager, ProxyConfig, get_proxy_manager
+from typing import Optional
 
 # グローバル変数でドライバーIDを管理
 DRIVER_REGISTRY = {}
@@ -18,6 +20,7 @@ DRIVER_REGISTRY = {}
 # 再利用可能なドライバーの管理
 REUSABLE_DRIVER = None
 PROFILE_PATH = None
+PERSISTENT_PROFILE_PATH = None
 
 def generate_driver_id():
     """一意のドライバーIDを生成"""
@@ -543,9 +546,12 @@ def diagnose_system_restrictions():
     
     print("🔍 === システム制限診断完了 ===\n")
 
-def create_simple_stable_chrome():
-    """シンプルで安定したChrome起動（根本的解決版）"""
+def create_simple_stable_chrome(proxy_config: Optional[ProxyConfig] = None):
+    """シンプルで安定したChrome起動（根本的解決版・プロキシ対応）"""
     print("🔍 === シンプル安定Chrome起動を試行 ===")
+    
+    if proxy_config:
+        print(f"🔍 プロキシ使用: {proxy_config.host}:{proxy_config.port}")
     
     try:
         # 1. ChromeDriverのサービスを明示的に作成
@@ -554,6 +560,12 @@ def create_simple_stable_chrome():
         
         # 2. 最小限の安定したオプション設定
         options = webdriver.ChromeOptions()
+        
+        # プロキシ設定を追加
+        if proxy_config:
+            proxy_url = proxy_config.to_selenium_format()
+            options.add_argument(f'--proxy-server={proxy_url}')
+            print(f"🔍 プロキシサーバー設定: {proxy_url}")
         
         # 基本的なサンドボックス回避（必須）
         options.add_argument('--no-sandbox')
@@ -838,6 +850,245 @@ def create_chrome_with_unique_profile():
         print(f"❌ 一意プロファイルでChrome起動失敗: {e}")
         return None
 
+def get_persistent_profile_path():
+    """永続化プロファイルのパスを取得"""
+    global PERSISTENT_PROFILE_PATH
+    if PERSISTENT_PROFILE_PATH is None:
+        # プロジェクトルートに永続プロファイルディレクトリを作成
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        PERSISTENT_PROFILE_PATH = os.path.join(project_root, 'twitter_chrome_profile')
+        
+        # ディレクトリが存在しない場合は作成
+        if not os.path.exists(PERSISTENT_PROFILE_PATH):
+            os.makedirs(PERSISTENT_PROFILE_PATH, exist_ok=True)
+            print(f"✅ 永続プロファイルディレクトリを作成: {PERSISTENT_PROFILE_PATH}")
+    
+    return PERSISTENT_PROFILE_PATH
+
+def cleanup_chrome_locks(profile_path):
+    """Chromeプロファイルのロックファイルをクリーンアップ"""
+    try:
+        lock_files = [
+            'SingletonLock',
+            'SingletonSocket', 
+            'SingletonCookie',
+            'lockfile'
+        ]
+        
+        for lock_file in lock_files:
+            lock_path = os.path.join(profile_path, lock_file)
+            if os.path.exists(lock_path):
+                try:
+                    os.remove(lock_path)
+                    print(f"✅ ロックファイル削除: {lock_file}")
+                except:
+                    pass
+                    
+    except Exception as e:
+        print(f"⚠️ ロックファイルクリーンアップエラー: {e}")
+
+def delete_chrome_profile_for_auth_reset():
+    """メール2段階認証回避のためにChromeプロファイルを完全削除"""
+    try:
+        print("🗑️ === メール認証回避のためプロファイル削除 ===")
+        
+        profile_path = get_persistent_profile_path()
+        print(f"🗑️ 削除対象プロファイル: {profile_path}")
+        
+        if os.path.exists(profile_path):
+            # まずChromeプロセスを完全終了
+            print("🔄 Chromeプロセス完全終了中...")
+            kill_all_chromedrivers()
+            time.sleep(3)
+            
+            # プロファイルを完全削除
+            success = force_remove_directory(profile_path)
+            
+            if success:
+                print("✅ プロファイル削除成功")
+                print("💡 次回ログイン時は新しい認証状態で開始されます")
+                return True
+            else:
+                print("⚠️ プロファイル削除に一部失敗")
+                return False
+        else:
+            print("✅ プロファイルが存在しないため削除不要")
+            return True
+            
+    except Exception as e:
+        print(f"❌ プロファイル削除エラー: {e}")
+        return False
+
+def create_chrome_with_persistent_profile(headless=True, anti_detection=False):
+    """永続プロファイル付きでChromeを起動（認証状態保持・指紋変更強化版）"""
+    print("🔍 === 永続プロファイル付きChrome起動 ===")
+    
+    try:
+        profile_path = get_persistent_profile_path()
+        print(f"🔍 永続プロファイルパス: {profile_path}")
+        
+        # ロックファイルをクリーンアップ
+        cleanup_chrome_locks(profile_path)
+        
+        options = webdriver.ChromeOptions()
+        
+        # 永続プロファイルを使用
+        options.add_argument(f'--user-data-dir={profile_path}')
+        options.add_argument('--profile-directory=Default')
+        
+        # 基本的なサンドボックス回避
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-setuid-sandbox')
+        
+        # セッション安定化と認証状態保持
+        options.add_argument('--disable-gpu')
+        if headless:
+            options.add_argument('--headless=new')
+            print("🔍 ヘッドレスモード有効")
+        else:
+            print("🔍 ヘッドレスモード無効（手動ログイン用）")
+        options.add_argument('--no-first-run')
+        options.add_argument('--no-default-browser-check')
+        
+        # セッション復元設定（認証状態保持のため）
+        options.add_argument('--restore-last-session')
+        options.add_argument('--disable-session-crashed-bubble')
+        options.add_argument('--disable-infobars')
+        options.add_argument('--disable-translate')
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-renderer-backgrounding')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        
+        # 検出回避強化（anti_detection=True時）
+        if anti_detection:
+            print("🔧 ブラウザ指紋変更・検出回避モード有効")
+            
+            # ブラウザ指紋を変更
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+            ]
+            selected_ua = random.choice(user_agents)
+            options.add_argument(f'--user-agent={selected_ua}')
+            print(f"🔧 User-Agent変更: {selected_ua[:50]}...")
+            
+            # 言語設定をランダム化
+            languages = ['en-US,en', 'en-GB,en', 'fr-FR,fr', 'de-DE,de', 'es-ES,es']
+            selected_lang = random.choice(languages)
+            options.add_argument(f'--lang={selected_lang.split(",")[0]}')
+            
+            # 追加の検出回避オプション
+            options.add_argument('--disable-blink-features=AutomationControlled')
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option('useAutomationExtension', False)
+            
+            # WebRTC IP漏洩防止
+            options.add_argument('--disable-webrtc')
+            options.add_argument('--disable-webrtc-multiple-routes')
+            options.add_argument('--disable-webrtc-hw-decoding')
+            options.add_argument('--disable-webrtc-hw-encoding')
+            
+            # フォント列挙防止
+            options.add_argument('--disable-font-subpixel-positioning')
+            
+            # Canvas指紋変更
+            options.add_argument('--disable-canvas-aa')
+            options.add_argument('--disable-2d-canvas-clip-aa')
+            
+            # 時間精度を下げる
+            options.add_argument('--enable-features=BlinkGenPropertyTrees,TranslateUI')
+            
+            # プリファレンス設定で追加の指紋変更
+            prefs = {
+                'intl.accept_languages': selected_lang,
+                'profile.default_content_setting_values.notifications': 2,
+                'profile.default_content_settings.popups': 0,
+                'profile.managed_default_content_settings.images': 1,
+                'webrtc.ip_handling_policy': 'disable_non_proxied_udp',
+                'webrtc.multiple_routes_enabled': False,
+                'webrtc.nonproxied_udp_enabled': False
+            }
+            options.add_experimental_option('prefs', prefs)
+            
+        else:
+            # 通常モード
+            options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # その他の設定
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-plugins')
+        if headless:
+            options.add_argument('--disable-images')
+        
+        # ウィンドウサイズをランダム化（anti_detection時）
+        if anti_detection:
+            widths = [1280, 1366, 1440, 1536, 1920]
+            heights = [720, 768, 900, 864, 1080]
+            width = random.choice(widths)
+            height = random.choice(heights)
+            options.add_argument(f'--window-size={width},{height}')
+            print(f"🔧 ウィンドウサイズ変更: {width}x{height}")
+        else:
+            options.add_argument('--window-size=1280,800')
+        
+        # デバッグポートを動的に設定
+        debug_port = 9222 + random.randint(0, 1000)
+        options.add_argument(f'--remote-debugging-port={debug_port}')
+        
+        # Chrome実行パスを設定
+        chrome_binary = get_chrome_binary_path()
+        if chrome_binary:
+            options.binary_location = chrome_binary
+            print(f"🔍 Chrome実行パス: {chrome_binary}")
+        
+        print(f"🔍 デバッグポート: {debug_port}")
+        print("🔍 永続プロファイル設定でChrome起動...")
+        
+        # ChromeDriverを起動
+        driver = webdriver.Chrome(options=options)
+        
+        # 検出回避のJavaScript実行（anti_detection時）
+        if anti_detection:
+            try:
+                # webdriver プロパティを削除
+                driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+                
+                # プラグイン情報を偽装
+                driver.execute_script("""
+                    Object.defineProperty(navigator, 'plugins', {
+                        get: () => [1, 2, 3, 4, 5]
+                    });
+                """)
+                
+                # 言語設定を変更
+                driver.execute_script(f"""
+                    Object.defineProperty(navigator, 'languages', {{
+                        get: () => ['{selected_lang.split(",")[0]}', '{selected_lang.split(",")[1] if "," in selected_lang else "en"}']
+                    }});
+                """)
+                
+                print("🔧 JavaScript指紋変更実行完了")
+                
+            except Exception as js_error:
+                print(f"⚠️ JavaScript指紋変更エラー: {js_error}")
+        
+        # セッション管理設定
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+        
+        if anti_detection:
+            print("✅ 指紋変更強化版Chrome起動成功！")
+        else:
+            print("✅ 永続プロファイル付きChrome起動成功！")
+        return driver
+        
+    except Exception as e:
+        print(f"❌ 永続プロファイル付きChrome起動失敗: {e}")
+        return None
+
 def create_chrome_driver():
     """Chrome WebDriverを作成する（Ubuntu環境対応版・改良版）"""
     global REUSABLE_DRIVER, PROFILE_PATH
@@ -872,14 +1123,24 @@ def create_chrome_driver():
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        # 最初にシンプル安定Chrome起動を試行
-        print("🔍 === 最初にシンプル安定Chrome起動を試行 ===")
-        driver = create_simple_stable_chrome()
+        # 最初に永続プロファイル付きChrome起動を試行
+        print("🔍 === 最初に永続プロファイル付きChrome起動を試行 ===")
+        driver = create_chrome_with_persistent_profile()
         if driver:
             driver_id = register_driver(driver)
             if not is_production:
                 REUSABLE_DRIVER = driver
-            print(f"✅ シンプル安定Chrome起動成功！ID: {driver_id[:8]}")
+            print(f"✅ 永続プロファイル付きChrome起動成功！ID: {driver_id[:8]}")
+            return driver
+        
+        # 次にプロキシローテーション付きChrome起動を試行
+        print("🔍 === 次にプロキシローテーション付きChrome起動を試行 ===")
+        driver = create_chrome_with_proxy_rotation()
+        if driver:
+            driver_id = register_driver(driver)
+            if not is_production:
+                REUSABLE_DRIVER = driver
+            print(f"✅ プロキシローテーション付きChrome起動成功！ID: {driver_id[:8]}")
             return driver
         
         # 次に一意プロファイルでChrome起動を試行
@@ -1602,12 +1863,46 @@ def get_firefox_binary_path():
     
     return None
 
+def create_chrome_with_proxy_rotation():
+    """プロキシローテーション付きChromeドライバーを作成"""
+    print("🔍 === プロキシローテーション付きChrome起動 ===")
+    
+    proxy_manager = get_proxy_manager()
+    
+    # IP変更を試行
+    success, new_proxy = proxy_manager.change_ip()
+    
+    if success and new_proxy:
+        print(f"✅ プロキシ変更成功: {new_proxy.host}:{new_proxy.port}")
+        
+        # プロキシ設定付きでChromeを起動
+        driver = create_simple_stable_chrome(new_proxy)
+        if driver:
+            driver._proxy_config = new_proxy  # プロキシ情報を保存
+            print(f"✅ プロキシ付きChrome起動成功")
+            return driver
+        else:
+            print("❌ プロキシ付きChrome起動失敗")
+    else:
+        print("⚠️ プロキシ変更に失敗、通常のChromeで起動")
+    
+    # プロキシなしでフォールバック
+    return create_simple_stable_chrome()
+
 def create_browser_driver_with_fallback():
     """複数のブラウザーを試行してWebDriverを作成（包括的フォールバック）"""
     print("🔍 === ブラウザードライバー作成 (包括的フォールバック付き) ===")
     
-    # 1. 最優先: シンプル安定Chrome起動
-    print("🔍 === 1. シンプル安定Chrome起動 ===")
+    # 1. 最優先: プロキシローテーション付きChrome起動
+    print("🔍 === 1. プロキシローテーション付きChrome起動 ===")
+    proxy_driver = create_chrome_with_proxy_rotation()
+    if proxy_driver:
+        driver_id = register_driver(proxy_driver)
+        print(f"✅ プロキシ付きChrome起動成功！ID: {driver_id[:8]}")
+        return proxy_driver
+    
+    # 2. シンプル安定Chrome起動
+    print("🔍 === 2. シンプル安定Chrome起動 ===")
     simple_driver = create_simple_stable_chrome()
     if simple_driver:
         driver_id = register_driver(simple_driver)

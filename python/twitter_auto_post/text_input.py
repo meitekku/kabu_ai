@@ -13,9 +13,9 @@ def input_text_with_clipboard(driver, element, text):
         # 既存のテキストをクリア
         try:
             if os.name == 'nt':  # Windows
-                element.send_keys(Keys.CONTROL + 'a')
+                element.send_keys(Keys.CONTROL, 'a')
             else:  # Mac/Linux
-                element.send_keys(Keys.COMMAND + 'a')
+                element.send_keys(Keys.COMMAND, 'a')
             time.sleep(0.1)
             element.send_keys(Keys.DELETE)
             time.sleep(0.1)
@@ -46,9 +46,9 @@ def input_text_with_clipboard(driver, element, text):
                 time.sleep(0.1)
                 
                 if os.name == 'nt':
-                    element.send_keys(Keys.CONTROL + 'v')
+                    element.send_keys(Keys.CONTROL, 'v')
                 else:
-                    element.send_keys(Keys.COMMAND + 'v')
+                    element.send_keys(Keys.COMMAND, 'v')
                 
                 time.sleep(0.3)
                 
@@ -75,9 +75,9 @@ def input_text_with_clipboard(driver, element, text):
                 time.sleep(0.1)
                 
                 if os.name == 'nt':
-                    element.send_keys(Keys.CONTROL + 'v')
+                    element.send_keys(Keys.CONTROL, 'v')
                 else:
-                    element.send_keys(Keys.COMMAND + 'v')
+                    element.send_keys(Keys.COMMAND, 'v')
                 
                 time.sleep(0.3)
                 
@@ -139,9 +139,9 @@ def input_text_with_clipboard(driver, element, text):
             time.sleep(0.2)
             
             if os.name == 'nt':
-                element.send_keys(Keys.CONTROL + 'v')
+                element.send_keys(Keys.CONTROL, 'v')
             else:
-                element.send_keys(Keys.COMMAND + 'v')
+                element.send_keys(Keys.COMMAND, 'v')
             
             time.sleep(0.3)
             

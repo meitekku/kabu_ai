@@ -9,13 +9,6 @@ interface TwitterPythonButtonProps {
   onError?: (error: string) => void;
 }
 
-interface SaveImageResponse {
-  success: boolean;
-  path?: string;
-  absolutePath?: string;
-  filename?: string;
-  error?: string;
-}
 
 interface TweetResponse {
   success: boolean;
@@ -85,21 +78,6 @@ export default function TwitterPythonButton({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 絵文字を含むテキストをエンコード（BMP外の文字を処理）
-  const encodeEmojiText = (text: string): string => {
-    // 絵文字を含むテキストをBase64エンコード
-    // Pythonスクリプト側でデコードして処理する
-    return btoa(encodeURIComponent(text).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-      return String.fromCharCode(parseInt(p1, 16));
-    }));
-  };
-
-  // 絵文字の存在をチェック
-  const containsEmoji = (text: string): boolean => {
-    // 絵文字の正規表現パターン（より包括的）
-    const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]/gu;
-    return emojiRegex.test(text);
-  };
 
   // 手動で画像を選択
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,35 +102,6 @@ export default function TwitterPythonButton({
     }
   };
 
-  // 画像をサーバーに保存
-  const saveImageToServer = async (dataUrl: string): Promise<string | null> => {
-    try {
-      setProcessingStatus('画像をサーバーに保存中...');
-      
-      const response = await fetch('/api/twitter/post_selenium/save-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageData: dataUrl
-        }),
-      });
-      
-      const result: SaveImageResponse = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || '画像の保存に失敗しました');
-      }
-      
-      // Pythonスクリプト用の絶対パスを返す
-      return result.absolutePath || null;
-      
-    } catch (err) {
-      console.error('画像保存エラー:', err);
-      throw err;
-    }
-  };
 
   // ツイートを投稿
   const handlePost = async () => {
@@ -163,53 +112,104 @@ export default function TwitterPythonButton({
       setLastResponse(null);
       
       const tweetMessage = `${title}\n${content}`;
-      let imagePath: string | undefined;
       
-      // 画像がある場合はサーバーに保存
-      if (imageUrl) {
-        try {
-          const savedPath = await saveImageToServer(imageUrl);
-          if (savedPath) {
-            imagePath = savedPath;
-            setProcessingStatus(`画像を保存しました`);
+      // Dockerコンテナが起動しているかチェック
+      setProcessingStatus('Dockerコンテナの状態を確認中...');
+      let dockerHealthCheck;
+      try {
+        // Next.js APIルート経由でDockerにアクセス（ブラウザーのセキュリティ制限を回避）
+        const dockerUrl = '/api/docker-proxy/health';
+        dockerHealthCheck = await fetch(dockerUrl, {
+          method: 'GET',
+          cache: 'no-cache',
+          headers: {
+            'Accept': 'application/json',
           }
-        } catch (err) {
-          const errorMsg = err instanceof Error ? err.message : '画像の保存に失敗しました';
-          setError(errorMsg);
-          if (onError) onError(errorMsg);
-          setIsLoading(false);
-          return;
+        });
+        if (!dockerHealthCheck.ok) {
+          throw new Error('Dockerコンテナが応答しません');
         }
+      } catch (err) {
+        console.error('Docker health check error:', err);
+        let errorMsg;
+        if (err instanceof TypeError && err.message.includes('fetch')) {
+          errorMsg = `ネットワークエラー: ブラウザーがlocalhostへの接続をブロックしています。HTTPSページからHTTPエンドポイントへのアクセスが制限されている可能性があります。`;
+        } else {
+          errorMsg = `Dockerコンテナエラー: ${err instanceof Error ? err.message : 'Unknown error'}. docker-compose up -d で起動してください。`;
+        }
+        setError(errorMsg);
+        if (onError) onError(errorMsg);
+        setIsLoading(false);
+        return;
       }
       
-      // Pythonスクリプトを実行してツイート投稿
-      setProcessingStatus('Pythonスクリプトを実行中...');
-      
-      // 絵文字が含まれているかチェック
-      const hasEmoji = containsEmoji(tweetMessage);
-      if (hasEmoji) {
-        console.log('絵文字を検出しました。特別な処理を使用します。');
+      // ログイン状態を確認
+      setProcessingStatus('ログイン状態を確認中...');
+      try {
+        const loginResponse = await fetch('/api/docker-proxy/login', {
+          method: 'POST',
+          cache: 'no-cache',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
+        });
+        const loginResult = await loginResponse.json();
+        if (!loginResult.success) {
+          throw new Error('Twitterログインに失敗しました');
+        }
+        setProcessingStatus('ログイン成功');
+      } catch (err) {
+        const errorMsg = 'Twitterログインに失敗しました';
+        setError(errorMsg);
+        if (onError) onError(errorMsg);
+        setIsLoading(false);
+        return;
       }
       
-      const requestBody = {
-        message: tweetMessage,
-        // 絵文字が含まれている場合は、エンコードしたメッセージも送信
-        encodedMessage: hasEmoji ? encodeEmojiText(tweetMessage) : undefined,
-        hasEmoji: hasEmoji,
-        imagePath: imagePath,
-        textOnly: !imagePath
-      };
+      // ツイート投稿処理
+      setProcessingStatus('ツイートを投稿中...');
       
-      const response = await fetch('/api/twitter/post_selenium', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let postBody;
+      let requestOptions;
       
-      const result: TweetResponse = await response.json();
-      setLastResponse(result);
+      if (imageUrl) {
+        // 画像付きの場合: multipart/form-data を使用
+        const formData = new FormData();
+        formData.append('text', tweetMessage);
+        
+        // Data URLから Blob を作成
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'image.png', { type: blob.type || 'image/png' });
+        formData.append('image', file);
+        
+        requestOptions = {
+          method: 'POST',
+          cache: 'no-cache',
+          headers: {
+            'Accept': 'application/json',
+          },
+          body: formData
+        };
+      } else {
+        // テキストのみの場合: JSON を使用
+        postBody = {
+          text: tweetMessage
+        };
+        requestOptions = {
+          method: 'POST',
+          cache: 'no-cache',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(postBody)
+        };
+      }
+      
+      const response = await fetch('/api/docker-proxy/post', requestOptions);
+      const result = await response.json();
       
       if (!result.success) {
         throw new Error(result.error || '投稿に失敗しました');
@@ -217,6 +217,44 @@ export default function TwitterPythonButton({
       
       setProcessingStatus('投稿完了！');
       setError(null);
+      
+      // 成功レスポンスを整形
+      setLastResponse({
+        success: true,
+        message: result.message,
+        details: {
+          final_result: true,
+          timestamp: new Date().toISOString(),
+          errors: [],
+          warnings: [],
+          success_steps: [
+            {
+              step: 'docker_health',
+              message: 'Dockerコンテナ起動確認完了',
+              timestamp: new Date().toISOString(),
+              type: 'success'
+            },
+            {
+              step: 'twitter_login',
+              message: 'Twitterログイン成功',
+              timestamp: new Date().toISOString(),
+              type: 'success'
+            },
+            {
+              step: 'tweet_post',
+              message: imageUrl ? '画像付きツイート投稿成功' : 'テキストツイート投稿成功',
+              timestamp: new Date().toISOString(),
+              type: 'success'
+            }
+          ],
+          summary: {
+            total_errors: 0,
+            total_warnings: 0,
+            total_success_steps: 3
+          }
+        }
+      });
+      
       setTimeout(() => {
         setProcessingStatus('');
       }, 3000);
@@ -229,6 +267,33 @@ export default function TwitterPythonButton({
       const errorMsg = err instanceof Error ? err.message : '投稿に失敗しました';
       setError(errorMsg);
       setProcessingStatus('');
+      
+      // エラーレスポンスを整形
+      setLastResponse({
+        success: false,
+        error: errorMsg,
+        details: {
+          final_result: false,
+          timestamp: new Date().toISOString(),
+          errors: [
+            {
+              step: 'tweet_post',
+              message: errorMsg,
+              timestamp: new Date().toISOString(),
+              type: 'error',
+              exception: errorMsg
+            }
+          ],
+          warnings: [],
+          success_steps: [],
+          summary: {
+            total_errors: 1,
+            total_warnings: 0,
+            total_success_steps: 0
+          }
+        }
+      });
+      
       if (onError) onError(errorMsg);
     } finally {
       setIsLoading(false);

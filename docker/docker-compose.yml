@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  twitter-auto-post:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: twitter-auto-post-secure
+    environment:
+      - TWITTER_USERNAME=${TWITTER_USERNAME:-meiteko_stock}
+      - TWITTER_PASSWORD=${TWITTER_PASSWORD:-***REMOVED_DB_PASSWORD***}
+      - TWITTER_EMAIL=${TWITTER_EMAIL:-meiteko.stock@gmail.com}
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+      - DISPLAY=:99
+    env_file:
+      - .env
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    privileged: true
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+      - 1.0.0.1
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+    sysctls:
+      - net.ipv4.conf.all.route_localnet=1
+      - net.ipv4.ip_forward=1
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+      - ./persistent_profile:/app/persistent_profile
+      - /dev/shm:/dev/shm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    networks:
+      - twitter-net
+    labels:
+      - "com.docker.compose.project=twitter-auto-post"
+      - "com.docker.compose.service=twitter-auto-post"
+
+  redis:
+    image: redis:7-alpine
+    container_name: twitter-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    # ネットワーク設定を統一
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - twitter-net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.2'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  twitter-net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "true"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.bridge.host_binding_ipv4: "0.0.0.0"
+      com.docker.network.driver.mtu: "1500"
+      com.docker.network.bridge.default_bridge: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+          ip_range: 172.20.0.0/24

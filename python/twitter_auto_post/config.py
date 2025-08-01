@@ -1,5 +1,6 @@
 import os
 import socket
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 from .error_reporter import ErrorReporter
@@ -36,7 +37,7 @@ def get_twitter_credentials():
         else:
             # 本番環境: 固定の認証情報
             username = 'smartaiinvest@gmail.com'
-            password = 'sarukiki1'
+            password = 'sarukiki1@'
             print(f"📝 本番環境: 固定認証情報を使用")
             
         return username, password
@@ -49,6 +50,60 @@ def get_twitter_credentials():
 TWITTER_USERNAME, TWITTER_PASSWORD = get_twitter_credentials()
 DEFAULT_MESSAGE = "画像付き自動投稿テスト: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 DEFAULT_IMAGE_PATH = os.getenv('DEFAULT_IMAGE_PATH', 'test.png')
+
+def get_post_count_state_file():
+    """投稿回数管理ファイルのパスを取得"""
+    # Docker環境では書き込み可能なディレクトリを使用
+    if os.path.exists('/tmp/twitter_state'):
+        return '/tmp/twitter_state/post_count_state.json'
+    # フォールバック: /tmpディレクトリを使用
+    return '/tmp/post_count_state.json'
+
+def get_post_count():
+    """現在の投稿回数を取得"""
+    state_file = get_post_count_state_file()
+    try:
+        if os.path.exists(state_file):
+            with open(state_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('count', 0)
+        return 0
+    except Exception as e:
+        print(f"投稿回数取得エラー: {e}")
+        return 0
+
+def increment_post_count():
+    """投稿回数をインクリメント"""
+    state_file = get_post_count_state_file()
+    try:
+        count = get_post_count() + 1
+        data = {
+            'count': count,
+            'last_updated': datetime.now().isoformat()
+        }
+        with open(state_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"📊 投稿回数を更新: {count}")
+        return count
+    except Exception as e:
+        print(f"投稿回数更新エラー: {e}")
+        return 0
+
+def reset_post_count():
+    """投稿回数をリセット"""
+    state_file = get_post_count_state_file()
+    try:
+        data = {
+            'count': 0,
+            'last_updated': datetime.now().isoformat()
+        }
+        with open(state_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print("📊 投稿回数をリセットしました")
+        return 0
+    except Exception as e:
+        print(f"投稿回数リセットエラー: {e}")
+        return 0
 
 def validate_credentials():
     """認証情報が設定されているか確認（localhost環境のみ）"""

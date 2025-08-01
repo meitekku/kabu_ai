@@ -2,14 +2,6 @@
 
 import { useEffect, useState } from 'react';
 
-declare global {
-  interface Window {
-    adsbygoogle: Array<{
-      [key: string]: unknown;
-    }>;
-  }
-}
-
 export default function MobileTopAd() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -27,32 +19,16 @@ export default function MobileTopAd() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isMobile && typeof window !== 'undefined') {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        console.error('Google Adsense error:', err);
-      }
-    }
-  }, [isMobile]);
-
   if (!isMobile) return null;
 
   return (
-    <div className="w-full my-4 md:hidden">
-      <script
-        async
-        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5634065252713097"
-        crossOrigin="anonymous"
-      />
-      {/* smartpohone top ad */}
-      <ins
-        className="adsbygoogle"
-        style={{ display: 'block', width: 'auto', height: '50px' }}
-        data-ad-client="ca-pub-5634065252713097"
-        data-ad-slot="9265803239"
-      />
-    </div>
+    <div className="w-full my-4 md:hidden" dangerouslySetInnerHTML={{
+      __html: `
+        <a href="https://px.a8.net/svt/ejp?a8mat=459YIW+A6R1F6+1WP2+NXU8H" rel="nofollow">
+          <img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=250727432616&wid=001&eno=01&mid=s00000008903004021000&mc=1">
+        </a>
+        <img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=459YIW+A6R1F6+1WP2+NXU8H" alt="">
+      `
+    }} />
   );
 } 
