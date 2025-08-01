@@ -186,7 +186,7 @@ export default function TwitterPythonButton({
         
         requestOptions = {
           method: 'POST',
-          cache: 'no-cache',
+          cache: 'no-cache' as RequestCache,
           headers: {
             'Accept': 'application/json',
           },
@@ -199,7 +199,7 @@ export default function TwitterPythonButton({
         };
         requestOptions = {
           method: 'POST',
-          cache: 'no-cache',
+          cache: 'no-cache' as RequestCache,
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
