@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // DockerのAPIエンドポイントにプロキシ
     const dockerResponse = await fetch('http://localhost:5000/login', {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 }
 
 // OPTIONSリクエストの対応
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {

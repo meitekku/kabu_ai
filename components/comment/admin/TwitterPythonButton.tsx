@@ -159,7 +159,7 @@ export default function TwitterPythonButton({
           throw new Error('Twitterログインに失敗しました');
         }
         setProcessingStatus('ログイン成功');
-      } catch (err) {
+      } catch {
         const errorMsg = 'Twitterログインに失敗しました';
         setError(errorMsg);
         if (onError) onError(errorMsg);

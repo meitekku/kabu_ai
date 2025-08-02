@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || '';
     
     let dockerBody;
-    let dockerHeaders: Record<string, string> = {
+    const dockerHeaders: Record<string, string> = {
       'Accept': 'application/json',
     };
 
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 }
 
 // OPTIONSリクエストの対応
-export async function OPTIONS(request: NextRequest) {
+export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
     headers: {
