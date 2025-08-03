@@ -27,19 +27,6 @@ export const metadata = {
       }
     ],
   },
-  twitter: {
-    card: 'summary',
-    title: '株AI',
-    description: '株式投資に関する情報を提供するサイトです',
-    images: [
-      {
-        url: 'https://kabu-ai.jp/only_icon.png',
-        width: 365,
-        height: 365,
-        alt: '株AI',
-      }
-    ],
-  },
 }
 
 export default function RootLayout({
