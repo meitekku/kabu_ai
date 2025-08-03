@@ -1,10 +1,10 @@
 import RankingTableClient from '@/components/common/RankingTableClient'
-import GoogleAdsense from '@/components/common/GoogleAdsense'
+import RandomAd from '@/components/common/RandomAd'
 
 export default function Sidebar() {
   return (
     <div className="space-y-6">
-      <GoogleAdsense />
+      <RandomAd />
       <RankingTableClient 
         title="アクセスランキング"
         tableName="ranking_yahoo_post"

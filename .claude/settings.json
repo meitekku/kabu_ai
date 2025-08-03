@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date): Stop hook executed\" >> /Users/takahashimika/Dropbox/web_kabu_ai/hook_log.txt && osascript -e 'display notification \"タスクが完了しました\" with title \"Claude Code\" subtitle \"作業完了\" sound name \"Glass\"'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command", 
+            "command": "echo \"$(date): PostToolUse hook executed\" >> /Users/takahashimika/Dropbox/web_kabu_ai/hook_log.txt && osascript -e 'display notification \"ファイルが編集されました\" with title \"Claude Code\" subtitle \"ファイル変更\" sound name \"Purr\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
