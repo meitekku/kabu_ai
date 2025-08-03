@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <head>
+      <body>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-JDHZGRWL1V"
           strategy="afterInteractive"
@@ -22,8 +22,6 @@ export default function RootLayout({
         <Script id="google-analytics" strategy="afterInteractive">
           {gtag}
         </Script>
-      </head>
-      <body>
         <MobileTopAd />
         <LayoutClient>
           {children}
