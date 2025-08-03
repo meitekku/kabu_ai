@@ -23,7 +23,12 @@ export const metadata = {
     card: 'summary',
     title: '株AI',
     description: '株式投資に関する情報を提供するサイトです',
-    images: '/only_icon.png',
+    images: {
+      url: '/only_icon.png',
+      width: 400,
+      height: 400,
+      alt: '株AI',
+    },
   },
 }
 
