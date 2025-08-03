@@ -17,10 +17,10 @@ export const metadata = {
     title: '株AI',
     description: '株式投資に関する情報を提供するサイトです',
     type: 'website',
-    url: 'https://web-kabu-ai.vercel.app',
+    url: 'https://kabu-ai.jp',
     images: [
       {
-        url: 'https://web-kabu-ai.vercel.app/only_icon.png',
+        url: 'https://kabu-ai.jp/only_icon.png',
         width: 365,
         height: 365,
         alt: '株AI',
