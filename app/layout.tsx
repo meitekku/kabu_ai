@@ -1,33 +1,11 @@
 import '@/app/globals.css'
 import LayoutClient from '@/components/layout/LayoutClient'
 import MobileTopAd from '@/components/common/MobileTopAd'
+import { metadata } from './metadata'
+import { gtag } from './metadata'
+import Script from 'next/script'
 
-export const metadata = {
-  title: {
-    default: '株AI',
-    template: '%s | 株AI'
-  },
-  description: '株式投資に関する情報を提供するサイトです。ランキングや分析データを確認できます。',
-  keywords: ['株式', '投資', 'ランキング', '株価', 'AI'],
-  icons: {
-    icon: '/only_icon.png',
-    apple: '/only_icon.png',
-  },
-  openGraph: {
-    title: '株AI',
-    description: '株式投資に関する情報を提供するサイトです',
-    type: 'website',
-    url: 'https://kabu-ai.jp',
-    images: [
-      {
-        url: 'https://kabu-ai.jp/only_icon.png',
-        width: 365,
-        height: 365,
-        alt: '株AI',
-      }
-    ],
-  },
-}
+export { metadata }
 
 export default function RootLayout({
   children,
@@ -36,6 +14,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-JDHZGRWL1V"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {gtag}
+        </Script>
+      </head>
       <body>
         <MobileTopAd />
         <LayoutClient>
