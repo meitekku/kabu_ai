@@ -21,6 +21,8 @@ export async function POST(
     const limit = body.limit || 10;
     const days = body.days || 1;
     const excludeId = body.excludeId; // New parameter to exclude specific article ID
+    const page = body.page || 1; // ページ番号 (1から始まる)
+    const offset = (page - 1) * limit; // オフセット計算
 
     if (!code) {
       return NextResponse.json(
@@ -41,7 +43,22 @@ export async function POST(
     let query: string;
     let queryParams: (string | number)[];
 
+    // 総件数を取得するクエリ
+    let countQuery: string;
+    let countParams: (string | number)[];
+
     if (code === 'all') {
+      countQuery = `SELECT COUNT(DISTINCT p.id) as total
+                   FROM post p
+                   LEFT JOIN post_code pc ON p.id = pc.post_id
+                   WHERE 
+                    p.accept > 0
+                    AND p.site >= 0
+                    AND DATE(p.created_at) >= ?
+                    AND DATE(p.created_at) <= ?
+                    ${excludeId ? 'AND p.id != ?' : ''}`;
+      countParams = excludeId ? [startDateStr, todayStr, excludeId] : [startDateStr, todayStr];
+      
       query = `SELECT DISTINCT p.id, pc.code, p.title, p.content, p.created_at, ps.status
                FROM post p
                LEFT JOIN post_code pc ON p.id = pc.post_id
@@ -53,9 +70,17 @@ export async function POST(
                 AND DATE(p.created_at) <= ?
                 ${excludeId ? 'AND p.id != ?' : ''}
                ORDER BY p.created_at DESC
-               LIMIT 100`;
-      queryParams = excludeId ? [startDateStr, todayStr, excludeId] : [startDateStr, todayStr];
+               LIMIT ? OFFSET ?`;
+      queryParams = excludeId ? [startDateStr, todayStr, excludeId, limit, offset] : [startDateStr, todayStr, limit, offset];
     } else {
+      countQuery = `SELECT COUNT(DISTINCT p.id) as total
+                   FROM post p
+                   JOIN post_code pc ON p.id = pc.post_id
+                   WHERE pc.code = ?
+                   AND p.accept = 1
+                   ${excludeId ? 'AND p.id != ?' : ''}`;
+      countParams = excludeId ? [code, excludeId] : [code];
+      
       query = `SELECT DISTINCT p.id, pc.code, p.title, p.created_at, ps.status
                FROM post p
                JOIN post_code pc ON p.id = pc.post_id
@@ -64,9 +89,16 @@ export async function POST(
                AND p.accept = 1
                ${excludeId ? 'AND p.id != ?' : ''}
                ORDER BY p.created_at DESC
-               LIMIT ?`;
-      queryParams = excludeId ? [code, excludeId, limit] : [code, limit];
+               LIMIT ? OFFSET ?`;
+      queryParams = excludeId ? [code, excludeId, limit, offset] : [code, limit, offset];
     }
+    
+    // 総件数を取得
+    const countResult = await db.select<{ total: number }>(countQuery, countParams);
+    const totalItems = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalItems / limit);
+    
+    // ニュースデータを取得
     const news = await db.select<NewsRecord>(query, queryParams);
     
     // created_atのフォーマットを修正
@@ -82,7 +114,17 @@ export async function POST(
       }).replace(/\//g, '-')
     }));
 
-    return NextResponse.json({ success: true, data: formattedNews });
+    // ページネーション情報を含むレスポンス
+    return NextResponse.json({ 
+      success: true, 
+      data: formattedNews,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems,
+        limit
+      }
+    });
   } catch (error) {
     console.error('News API Error:', error);
     return NextResponse.json(

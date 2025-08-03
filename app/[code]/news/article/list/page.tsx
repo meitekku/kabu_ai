@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import React from 'react';
 
@@ -24,22 +24,26 @@ interface StatusLabels {
   }
 }
 
-interface NewsListProps {
-  num?: string;
-  title?: string;
-  excludeId?: string;
-  h3Title?: string;
-  showMoreButton?: boolean;
+interface PaginationData {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
 }
 
-const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreButton = false }: NewsListProps) => {
+export default function NewsListPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const code = params.code as string;
-  const limit = parseInt(num);
-
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0
+  });
 
   // ステータスラベルの定義
   const statusLabels = React.useMemo<StatusLabels>(() => ({
@@ -54,7 +58,6 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   const fetchNews = React.useCallback(async () => {
     if (!code) return;
     
-    console.log('fetchNews called with:', { code, limit, excludeId });
     try {
       setLoading(true);
       const response = await fetch(`/api/${code}/news`, {
@@ -62,7 +65,11 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ code, limit, excludeId }),
+        body: JSON.stringify({ 
+          code, 
+          limit: 20, 
+          page: currentPage 
+        }),
       });
 
       if (!response.ok) {
@@ -70,32 +77,22 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
       }
       const data = await response.json();
       setNews(data.data || []);
-      // データ取得後にcreated_atを表示
-      (data.data || []).forEach((item: NewsItem) => {
-        console.log('created_at:', item.created_at);
+      setPagination(data.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalItems: 0
       });
       setError(null);
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
-  }, [code, limit, excludeId]);
+  }, [code, currentPage]);
 
-  // 初回マウント時とcode/limitが変更された時のみ実行
   useEffect(() => {
-    console.log('useEffect triggered with:', { code, limit });
     fetchNews();
-  }, [fetchNews, code, limit]);
-
-  // ニュースデータが更新されたときにcreated_atを表示
-  useEffect(() => {
-    news.forEach(item => {
-      console.log('created_at:', item.created_at);
-    });
-  }, [news]);
-
+  }, [fetchNews]);
 
   // ステータスからラベルを生成する関数
   const renderStatusLabels = React.useCallback((statusJson?: string) => {
@@ -139,7 +136,72 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
     }
   }, [statusLabels]);
 
-  if (loading) return null;
+  // ページネーションのリンクを生成
+  const generatePaginationLinks = () => {
+    const links = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+    
+    // 調整: 最後のページ付近の場合
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // 前のページ
+    if (currentPage > 1) {
+      links.push(
+        <Link
+          key="prev"
+          href={`/${code}/news/article/list?page=${currentPage - 1}`}
+          className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
+        >
+          前へ
+        </Link>
+      );
+    }
+
+    // ページ番号
+    for (let i = startPage; i <= endPage; i++) {
+      links.push(
+        <Link
+          key={i}
+          href={`/${code}/news/article/list?page=${i}`}
+          className={`px-3 py-2 text-sm border border-gray-300 rounded-md ${
+            i === currentPage
+              ? 'bg-blue-500 text-white border-blue-500'
+              : 'bg-white hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </Link>
+      );
+    }
+
+    // 次のページ
+    if (currentPage < pagination.totalPages) {
+      links.push(
+        <Link
+          key="next"
+          href={`/${code}/news/article/list?page=${currentPage + 1}`}
+          className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
+        >
+          次へ
+        </Link>
+      );
+    }
+
+    return links;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="text-gray-500">読み込み中...</div>
+      </div>
+    );
+  }
+
   if (error) {
     return <div className="text-red-500 p-4">Error: {error}</div>;
   }
@@ -150,12 +212,9 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
 
   return (
     <div>
-      {h3Title && (
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
-      )}
-      {title && (
-        <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{title}</h2>
-      )}
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+        ニュース一覧 (全{pagination.totalItems}件)
+      </h1>
       
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
@@ -165,7 +224,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
             className="block"
           >
             <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-              <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
+              <CardContent className="py-3 px-2">
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-gray-500">
@@ -173,28 +232,22 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>
-                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title}</div>
+                  <div className="font-bold text-base text-gray-900 mt-1">{item.title}</div>
                 </div>
               </CardContent>
             </Card>
           </Link>
         ))}
       </div>
-      
-      {showMoreButton && code && (
-        <div className="text-right">
-          <Link 
-            href={`/${code}/news/article/list`}
-            className="font-bold hover:text-red-700 text-sm"
-          >
-            もっとみる ›
-          </Link>
+
+      {/* ページネーション */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-8 flex justify-center">
+          <div className="flex gap-2">
+            {generatePaginationLinks()}
+          </div>
         </div>
       )}
     </div>
   );
-});
-
-NewsList.displayName = 'NewsList';
-
-export default NewsList;
+}

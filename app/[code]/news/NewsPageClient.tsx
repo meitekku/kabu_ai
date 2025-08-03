@@ -32,7 +32,7 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
         width={"100%"}
         maxNewsTooltips={4}
       />
-      <NewsList title="最新ニュース" />
+      <NewsList title="最新ニュース" showMoreButton={true} />
     </div>
   );
 };
