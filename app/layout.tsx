@@ -17,18 +17,28 @@ export const metadata = {
     title: '株AI',
     description: '株式投資に関する情報を提供するサイトです',
     type: 'website',
-    images: '/only_icon.png',
+    url: 'https://web-kabu-ai.vercel.app',
+    images: [
+      {
+        url: 'https://web-kabu-ai.vercel.app/only_icon.png',
+        width: 365,
+        height: 365,
+        alt: '株AI',
+      }
+    ],
   },
   twitter: {
     card: 'summary',
     title: '株AI',
     description: '株式投資に関する情報を提供するサイトです',
-    images: {
-      url: '/only_icon.png',
-      width: 400,
-      height: 400,
-      alt: '株AI',
-    },
+    images: [
+      {
+        url: 'https://web-kabu-ai.vercel.app/only_icon.png',
+        width: 365,
+        height: 365,
+        alt: '株AI',
+      }
+    ],
   },
 }
 
@@ -39,15 +49,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <head>
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="株AI" />
-        <meta name="twitter:description" content="株式投資に関する情報を提供するサイトです" />
-        <meta name="twitter:image" content="/only_icon.png" />
-        <meta name="twitter:image:width" content="400" />
-        <meta name="twitter:image:height" content="400" />
-        <meta name="twitter:image:alt" content="株AI" />
-      </head>
       <body>
         <MobileTopAd />
         <LayoutClient>
