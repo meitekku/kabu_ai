@@ -94,7 +94,7 @@ export async function POST(
     }
     
     // 総件数を取得
-    const countResult = await db.select<{ total: number }>(countQuery, countParams);
+    const countResult = await db.select<RowDataPacket & { total: number }>(countQuery, countParams);
     const totalItems = countResult[0]?.total || 0;
     const totalPages = Math.ceil(totalItems / limit);
     
