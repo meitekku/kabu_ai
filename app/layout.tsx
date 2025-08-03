@@ -39,6 +39,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
+      <head>
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="株AI" />
+        <meta name="twitter:description" content="株式投資に関する情報を提供するサイトです" />
+        <meta name="twitter:image" content="/only_icon.png" />
+        <meta name="twitter:image:width" content="400" />
+        <meta name="twitter:image:height" content="400" />
+        <meta name="twitter:image:alt" content="株AI" />
+      </head>
       <body>
         <MobileTopAd />
         <LayoutClient>
