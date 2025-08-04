@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     locale: 'ja_JP',
     images: [
       {
-        url: 'https://kabu-ai.jp/only_icon.png?v=3',
+        url: 'https://kabu-ai.jp/only_icon.png?v=4',
         width: 365,
         height: 365,
         alt: '株AI',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '株AI',
     description: '株式投資に関する情報を提供するサイトです。ランキングや分析データを確認できます。',
-    images: ['https://kabu-ai.jp/only_icon.png?v=3'],
+    images: ['https://kabu-ai.jp/only_icon.png?v=4'],
     creator: '@kabu_ai_jp',
     site: '@kabu_ai_jp',
   },
