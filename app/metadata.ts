@@ -13,23 +13,28 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: '株AI',
-    description: '株式投資に関する情報を提供するサイトです',
+    description: '株式投資に関する情報を提供するサイトです。ランキングや分析データを確認できます。',
     type: 'website',
     url: 'https://kabu-ai.jp',
+    siteName: '株AI',
+    locale: 'ja_JP',
     images: [
       {
-        url: 'https://kabu-ai.jp/only_icon.png',
+        url: 'https://kabu-ai.jp/only_icon.png?v=2',
         width: 365,
         height: 365,
         alt: '株AI',
+        type: 'image/png',
       }
     ],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: '株AI',
-    description: '株式投資に関する情報を提供するサイトです',
-    images: ['https://kabu-ai.jp/only_icon.png'],
+    description: '株式投資に関する情報を提供するサイトです。ランキングや分析データを確認できます。',
+    images: ['https://kabu-ai.jp/only_icon.png?v=2'],
+    creator: '@kabu_ai_jp',
+    site: '@kabu_ai_jp',
   },
   other: {
     'google-analytics': 'G-JDHZGRWL1V',
