@@ -113,102 +113,60 @@ export default function TwitterPythonButton({
       
       const tweetMessage = `${title}\n${content}`;
       
-      // Dockerコンテナが起動しているかチェック
-      setProcessingStatus('Dockerコンテナの状態を確認中...');
-      let dockerHealthCheck;
-      try {
-        // Next.js APIルート経由でDockerにアクセス（ブラウザーのセキュリティ制限を回避）
-        const dockerUrl = '/api/docker-proxy/health';
-        dockerHealthCheck = await fetch(dockerUrl, {
-          method: 'GET',
-          cache: 'no-cache',
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-        if (!dockerHealthCheck.ok) {
-          throw new Error('Dockerコンテナが応答しません');
-        }
-      } catch (err) {
-        console.error('Docker health check error:', err);
-        let errorMsg;
-        if (err instanceof TypeError && err.message.includes('fetch')) {
-          errorMsg = `ネットワークエラー: ブラウザーがlocalhostへの接続をブロックしています。HTTPSページからHTTPエンドポイントへのアクセスが制限されている可能性があります。`;
-        } else {
-          errorMsg = `Dockerコンテナエラー: ${err instanceof Error ? err.message : 'Unknown error'}. docker-compose up -d で起動してください。`;
-        }
-        setError(errorMsg);
-        if (onError) onError(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-      
-      // ログイン状態を確認
-      setProcessingStatus('ログイン状態を確認中...');
-      try {
-        const loginResponse = await fetch('/api/docker-proxy/login', {
-          method: 'POST',
-          cache: 'no-cache',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          }
-        });
-        const loginResult = await loginResponse.json();
-        if (!loginResult.success) {
-          throw new Error('Twitterログインに失敗しました');
-        }
-        setProcessingStatus('ログイン成功');
-      } catch {
-        const errorMsg = 'Twitterログインに失敗しました';
-        setError(errorMsg);
-        if (onError) onError(errorMsg);
-        setIsLoading(false);
-        return;
-      }
-      
       // ツイート投稿処理
       setProcessingStatus('ツイートを投稿中...');
       
-      let postBody;
-      let requestOptions;
+      let imagePath = undefined;
       
+      // 画像がある場合は先に画像をアップロード
       if (imageUrl) {
-        // 画像付きの場合: multipart/form-data を使用
-        const formData = new FormData();
-        formData.append('text', tweetMessage);
-        
-        // Data URLから Blob を作成
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'image.png', { type: blob.type || 'image/png' });
-        formData.append('image', file);
-        
-        requestOptions = {
-          method: 'POST',
-          cache: 'no-cache' as RequestCache,
-          headers: {
-            'Accept': 'application/json',
-          },
-          body: formData
-        };
-      } else {
-        // テキストのみの場合: JSON を使用
-        postBody = {
-          text: tweetMessage
-        };
-        requestOptions = {
-          method: 'POST',
-          cache: 'no-cache' as RequestCache,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(postBody)
-        };
+        setProcessingStatus('画像をアップロード中...');
+        try {
+          // Data URLから Blob を作成
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'image.png', { type: blob.type || 'image/png' });
+          
+          // 画像を一時的にアップロード
+          const uploadFormData = new FormData();
+          uploadFormData.append('image', file);
+          
+          const uploadResponse = await fetch('/api/upload-temp-image', {
+            method: 'POST',
+            body: uploadFormData
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error('画像のアップロードに失敗しました');
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          imagePath = uploadResult.filePath;
+        } catch (err) {
+          console.error('Image upload error:', err);
+          // 画像アップロードが失敗した場合はテキストのみで投稿
+          setProcessingStatus('画像アップロードに失敗しました。テキストのみで投稿します...');
+        }
       }
       
-      const response = await fetch('/api/docker-proxy/post', requestOptions);
+      // リクエストボディを作成
+      const postBody = {
+        message: tweetMessage,
+        textOnly: !imagePath,
+        ...(imagePath && { imagePath })
+      };
+      
+      const requestOptions = {
+        method: 'POST',
+        cache: 'no-cache' as RequestCache,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(postBody)
+      };
+      
+      const response = await fetch('/api/twitter/post_selenium', requestOptions);
       const result = await response.json();
       
       if (!result.success) {
@@ -218,31 +176,19 @@ export default function TwitterPythonButton({
       setProcessingStatus('投稿完了！');
       setError(null);
       
-      // 成功レスポンスを整形
+      // 成功レスポンスを整形（Seleniumエンドポイントからの詳細レスポンスを使用）
       setLastResponse({
         success: true,
-        message: result.message,
-        details: {
+        message: result.message || 'ツイート投稿が完了しました',
+        details: result.details || {
           final_result: true,
           timestamp: new Date().toISOString(),
           errors: [],
           warnings: [],
           success_steps: [
             {
-              step: 'docker_health',
-              message: 'Dockerコンテナ起動確認完了',
-              timestamp: new Date().toISOString(),
-              type: 'success'
-            },
-            {
-              step: 'twitter_login',
-              message: 'Twitterログイン成功',
-              timestamp: new Date().toISOString(),
-              type: 'success'
-            },
-            {
               step: 'tweet_post',
-              message: imageUrl ? '画像付きツイート投稿成功' : 'テキストツイート投稿成功',
+              message: imagePath ? '画像付きツイート投稿成功' : 'テキストツイート投稿成功',
               timestamp: new Date().toISOString(),
               type: 'success'
             }
@@ -250,7 +196,7 @@ export default function TwitterPythonButton({
           summary: {
             total_errors: 0,
             total_warnings: 0,
-            total_success_steps: 3
+            total_success_steps: 1
           }
         }
       });

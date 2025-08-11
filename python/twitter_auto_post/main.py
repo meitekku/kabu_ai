@@ -6,7 +6,7 @@ from datetime import datetime
 
 from .error_reporter import ErrorReporter
 from .config import DEFAULT_MESSAGE, DEFAULT_IMAGE_PATH, is_localhost_environment, get_post_count, increment_post_count, reset_post_count
-from .browser_manager import create_chrome_driver, cleanup_specific_driver, kill_all_chromedrivers
+from .browser_manager import create_chrome_driver, cleanup_specific_driver
 from .twitter_actions import check_login_status, twitter_login, post_tweet
 from .proxy_manager import get_proxy_manager, get_tor_manager
 
@@ -32,7 +32,6 @@ def decode_emoji_message(encoded_message):
 def main(message=None, image_path=None, text_only=False, encoded_message=None, keep_browser=True):
     """メイン処理 - 成功時True、失敗時Falseを返す"""
     driver = None
-    start_time = time.time()  # 処理開始時間を記録
     try:
         error_reporter.add_success("main", "メイン処理開始")
         
@@ -48,12 +47,7 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
         if message is None:
             message = DEFAULT_MESSAGE
         
-        # localhost環境の場合はメッセージを100文字に制限
-        if is_localhost_environment() and message and len(message) > 100:
-            original_message = message
-            message = message[:100] + "..."
-            print(f"📝 localhost/開発環境のため、メッセージを100文字に制限")
-            error_reporter.add_warning("main", f"localhost環境のため文字数制限適用: {len(original_message)}文字 → {len(message)}文字")
+        # 文字数制限は適用しない
         
         # 画像パスが指定されていない場合はデフォルトを使用
         if image_path is None and not text_only:
@@ -124,28 +118,20 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
         if is_logged_in:
             # 現在の投稿回数を取得（再取得して最新の値を使用）
             current_count = get_post_count()
-            print(f"📊 現在の投稿回数: {current_count}")
             
             # 1回目は投稿画面で終了、2回目以降は実際に投稿
             actually_post = current_count > 0
             
-            # 投稿メッセージに処理時間情報を追加
-            elapsed_time = time.time() - start_time
-            if actually_post:
-                # 2回目以降は実際に投稿するので、処理時間を含める
-                time_info = f"\n⏱️ 処理時間: {elapsed_time:.2f}秒 (投稿回数: {current_count + 1}回目)"
-                enhanced_message = message + time_info
-            else:
-                # 1回目は投稿画面準備のみ
-                enhanced_message = message
+            # 実際の投稿かどうかに関わらず、メッセージはそのまま使用
+            enhanced_message = message
             
             success = post_tweet(driver, enhanced_message, None if text_only else image_path, actually_post=actually_post)
             
             if success:
                 # 投稿回数をインクリメント
-                new_count = increment_post_count()
-                print(f"✅ 処理が正常に完了しました (投稿回数: {new_count})")
-                error_reporter.add_success("main", f"全処理正常完了 (投稿回数: {new_count})")
+                increment_post_count()
+                print("✅ 処理が正常に完了しました")
+                error_reporter.add_success("main", "全処理正常完了")
                 error_reporter.set_final_result(True)
                 return True
             else:
@@ -161,20 +147,15 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
                 
                 if is_logged_in_retry:
                     print("🔄 再ログイン成功。投稿を再試行...")
-                    # 再試行時も処理時間を更新
-                    elapsed_time_retry = time.time() - start_time
-                    if actually_post:
-                        time_info_retry = f"\n⏱️ 処理時間: {elapsed_time_retry:.2f}秒 (投稿回数: {current_count + 1}回目・再試行)"
-                        enhanced_message_retry = message + time_info_retry
-                    else:
-                        enhanced_message_retry = message
+                    # 再試行でもメッセージはそのまま使用
+                    enhanced_message_retry = message
                     success_retry = post_tweet(driver, enhanced_message_retry, None if text_only else image_path, actually_post=actually_post)
                     
                     if success_retry:
                         # 投稿回数をインクリメント
-                        new_count = increment_post_count()
-                        print(f"✅ 再試行で処理が正常に完了しました (投稿回数: {new_count})")
-                        error_reporter.add_success("main", f"再試行成功、全処理正常完了 (投稿回数: {new_count})")
+                        increment_post_count()
+                        print("✅ 再試行で処理が正常に完了しました")
+                        error_reporter.add_success("main", "再試行成功、全処理正常完了")
                         error_reporter.set_final_result(True)
                         return True
                     else:
@@ -210,10 +191,7 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
                 error_reporter.add_success("cleanup", "個別ドライバークリーンアップ完了")
             except Exception as e:
                 error_reporter.add_warning("cleanup", f"個別ドライバークリーンアップエラー: {e}")
-                try:
-                    kill_all_chromedrivers()
-                except:
-                    pass
+                print("⚠️ 個別クリーンアップに失敗しましたが、既存Chromeに影響しないため続行します")
         elif driver and keep_browser:
             print("🔄 ブラウザを保持します（次回投稿で再利用）")
 
@@ -271,7 +249,6 @@ def print_usage():
     print("投稿回数管理:")
     print("  🔢 1回目: 投稿画面で終了（投稿ボタンは押さない）")
     print("  🔢 2回目以降: 実際に投稿実行（高速化処理適用）")
-    print("  ⏱️ 処理時間測定: 2回目以降の投稿で処理時間を投稿内容に含める")
     print("  📊 投稿回数リセット: reset_tweet_count() 関数を使用")
     print("  📊 投稿回数確認: get_tweet_count() 関数を使用")
     print("  🚀 高速化: 2回目以降はIP変更・ページ遷移を最小化")

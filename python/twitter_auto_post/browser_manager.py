@@ -13,6 +13,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import WebDriverException
 from .proxy_manager import ProxyManager, ProxyConfig, get_proxy_manager
 from typing import Optional
+import requests
+import json
 
 # グローバル変数でドライバーIDを管理
 DRIVER_REGISTRY = {}
@@ -865,6 +867,114 @@ def get_persistent_profile_path():
     
     return PERSISTENT_PROFILE_PATH
 
+def create_isolated_twitter_profile():
+    """既存Chromeと競合しない独立したTwitter投稿用プロファイルを作成"""
+    print("🔍 === 独立したTwitter投稿用プロファイル作成 ===")
+    
+    # 一意のプロファイル名を生成
+    timestamp = int(time.time())
+    profile_name = f"twitter_post_{timestamp}_{random.randint(1000, 9999)}"
+    
+    # 一時ディレクトリまたはプロジェクト内にプロファイルを作成
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    base_profile_dir = os.path.join(project_root, 'twitter_profiles')
+    
+    # ベースディレクトリが存在しない場合は作成
+    if not os.path.exists(base_profile_dir):
+        os.makedirs(base_profile_dir, exist_ok=True)
+        print(f"✅ Twitter投稿用プロファイルベースディレクトリを作成: {base_profile_dir}")
+    
+    profile_path = os.path.join(base_profile_dir, profile_name)
+    
+    try:
+        os.makedirs(profile_path, exist_ok=True)
+        print(f"✅ 独立プロファイルを作成: {profile_path}")
+        return profile_path
+    except Exception as e:
+        print(f"❌ 独立プロファイル作成エラー: {e}")
+        # フォールバック: 一時ディレクトリを使用
+        import tempfile
+        profile_path = tempfile.mkdtemp(prefix='twitter_post_')
+        print(f"🔄 フォールバック: 一時プロファイルを使用: {profile_path}")
+        return profile_path
+
+def create_chrome_for_twitter_post():
+    """Twitter投稿専用のChromeインスタンスを作成（既存Chromeに影響しない）"""
+    print("🔍 === Twitter投稿専用Chrome作成 ===")
+    
+    try:
+        # 独立したプロファイルを作成
+        profile_path = create_isolated_twitter_profile()
+        
+        options = webdriver.ChromeOptions()
+        
+        # 独立プロファイルを使用
+        options.add_argument(f'--user-data-dir={profile_path}')
+        options.add_argument('--profile-directory=Default')
+        
+        # 既存Chromeとのポート競合を避ける
+        debug_port = 9300 + random.randint(0, 100)  # 通常の9222から離れたポート
+        options.add_argument(f'--remote-debugging-port={debug_port}')
+        
+        # 基本的なサンドボックス回避
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-setuid-sandbox')
+        
+        # セッション安定化
+        options.add_argument('--disable-gpu')
+        
+        # 環境変数でヘッドレスモードを制御
+        env_headless = os.environ.get('HEADLESS', '').lower() == 'true'
+        
+        if env_headless:
+            options.add_argument('--headless=new')
+            print("🔍 ヘッドレスモード有効")
+        else:
+            print("🔍 ヘッドレスモード無効（手動ログイン対応）")
+        
+        options.add_argument('--no-first-run')
+        options.add_argument('--no-default-browser-check')
+        
+        # その他の設定
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-plugins')
+        if env_headless:
+            options.add_argument('--disable-images')
+        
+        # ウィンドウサイズを設定
+        options.add_argument('--window-size=1280,800')
+        
+        # User-Agentを設定
+        options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Chrome実行パスを設定
+        chrome_binary = get_chrome_binary_path()
+        if chrome_binary:
+            options.binary_location = chrome_binary
+            print(f"🔍 Chrome実行パス: {chrome_binary}")
+        
+        print(f"🔍 デバッグポート: {debug_port}")
+        print(f"🔍 プロファイルパス: {profile_path}")
+        print("🔍 Twitter投稿専用Chrome起動...")
+        
+        # ChromeDriverを起動
+        driver = webdriver.Chrome(options=options)
+        
+        # セッション管理設定
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
+        
+        # ドライバーにプロファイルパスを保存（後でクリーンアップ用）
+        driver._twitter_profile_path = profile_path
+        
+        print("✅ Twitter投稿専用Chrome起動成功！")
+        return driver
+        
+    except Exception as e:
+        print(f"❌ Twitter投稿専用Chrome起動失敗: {e}")
+        return None
+
 def cleanup_chrome_locks(profile_path):
     """Chromeプロファイルのロックファイルをクリーンアップ"""
     try:
@@ -896,10 +1006,10 @@ def delete_chrome_profile_for_auth_reset():
         print(f"🗑️ 削除対象プロファイル: {profile_path}")
         
         if os.path.exists(profile_path):
-            # まずChromeプロセスを完全終了
-            print("🔄 Chromeプロセス完全終了中...")
-            kill_all_chromedrivers()
-            time.sleep(3)
+            # Twitter投稿専用プロファイルのクリーンアップ（既存Chromeには影響なし）
+            print("🔄 Twitter投稿プロファイルクリーンアップ中...")
+            cleanup_twitter_post_profiles()
+            time.sleep(2)
             
             # プロファイルを完全削除
             success = force_remove_directory(profile_path)
@@ -919,7 +1029,7 @@ def delete_chrome_profile_for_auth_reset():
         print(f"❌ プロファイル削除エラー: {e}")
         return False
 
-def create_chrome_with_persistent_profile(headless=True, anti_detection=False):
+def create_chrome_with_persistent_profile(headless=False, anti_detection=False):
     """永続プロファイル付きでChromeを起動（認証状態保持・指紋変更強化版）"""
     print("🔍 === 永続プロファイル付きChrome起動 ===")
     
@@ -943,7 +1053,12 @@ def create_chrome_with_persistent_profile(headless=True, anti_detection=False):
         
         # セッション安定化と認証状態保持
         options.add_argument('--disable-gpu')
-        if headless:
+        
+        # 環境変数でヘッドレスモードを制御
+        env_headless = os.environ.get('HEADLESS', '').lower() == 'true'
+        use_headless = headless or env_headless
+        
+        if use_headless:
             options.add_argument('--headless=new')
             print("🔍 ヘッドレスモード有効")
         else:
@@ -1090,7 +1205,7 @@ def create_chrome_with_persistent_profile(headless=True, anti_detection=False):
         return None
 
 def create_chrome_driver():
-    """Chrome WebDriverを作成する（Ubuntu環境対応版・改良版）"""
+    """Chrome WebDriverを作成する（クリーンスタート版）"""
     global REUSABLE_DRIVER, PROFILE_PATH
     
     # 既存のドライバーをクリーンアップ
@@ -1102,30 +1217,19 @@ def create_chrome_driver():
         REUSABLE_DRIVER = None
     
     try:
-        print("🔍 === Chrome起動デバッグ開始 (Ubuntu特化版) ===")
-        
-        # まず詳細な診断を実行
-        diagnose_chrome_environment()
-        
-        # システムレベルの制限も診断
-        diagnose_system_restrictions()
-        
-        # まず既存のChromeプロセスを終了（Ubuntu用の強化版）
-        if platform.system() == "Linux":
-            kill_chrome_processes_ubuntu()
-        else:
-            kill_chrome_processes()
-        
-        # 古いプロファイルをクリーンアップ
-        clean_old_profiles()
+        print("🔍 === Chrome起動デバッグ開始 (クリーンスタート版) ===")
         
         # 環境判定
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: NODE_ENV={os.environ.get('NODE_ENV')}, ENVIRONMENT={os.environ.get('ENVIRONMENT')}, is_production={is_production}")
         
-        # 最初に永続プロファイル付きChrome起動を試行
-        print("🔍 === 最初に永続プロファイル付きChrome起動を試行 ===")
-        driver = create_chrome_with_persistent_profile()
+        # 投稿専用のChromeインスタンスを作成（既存Chromeには影響しない）
+        print("🔍 === 投稿専用Chromeインスタンス作成 ===")
+        print("💡 既存のChromeブラウザは保持されます")
+        
+        # 最初にTwitter投稿専用Chrome起動を試行
+        print("🔍 === Twitter投稿専用Chrome起動を試行 ===")
+        driver = create_chrome_for_twitter_post()
         if driver:
             driver_id = register_driver(driver)
             if not is_production:
@@ -1665,7 +1769,10 @@ def cleanup_specific_driver(driver):
     
     try:
         driver_id = getattr(driver, '_custom_id', 'unknown')
-        print(f"ドライバー個別クリーンアップ開始: ID={driver_id[:8] if driver_id != 'unknown' else 'unknown'}")
+        print(f"🧹 Twitter投稿専用ドライバーのクリーンアップ開始: ID={driver_id[:8] if driver_id != 'unknown' else 'unknown'}")
+        
+        # Twitter投稿専用プロファイルのパスを取得
+        twitter_profile_path = getattr(driver, '_twitter_profile_path', None)
         
         # ドライバーを終了
         try:
@@ -1678,13 +1785,65 @@ def cleanup_specific_driver(driver):
         if driver_id != 'unknown':
             unregister_driver(driver_id)
         
-        # プロファイルディレクトリを削除
-        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
+        # Twitter投稿専用プロファイルを削除
+        if twitter_profile_path and os.path.exists(twitter_profile_path):
+            print(f"🗑️ Twitter投稿専用プロファイルを削除中: {twitter_profile_path}")
             time.sleep(2)  # プロセス終了を待つ
+            
+            try:
+                force_remove_directory(twitter_profile_path)
+                print("✅ Twitter投稿専用プロファイル削除完了")
+            except Exception as e:
+                print(f"⚠️ プロファイル削除エラー: {e}")
+        
+        # 通常のプロファイルディレクトリも削除（フォールバック用）
+        if PROFILE_PATH and os.path.exists(PROFILE_PATH):
+            time.sleep(1)
             force_remove_directory(PROFILE_PATH)
+        
+        print("✅ Twitter投稿専用ドライバーのクリーンアップ完了")
         
     except Exception as e:
         print(f"⚠️ ドライバークリーンアップエラー: {e}")
+
+def cleanup_twitter_post_profiles():
+    """古いTwitter投稿専用プロファイルをクリーンアップ"""
+    try:
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        base_profile_dir = os.path.join(project_root, 'twitter_profiles')
+        
+        if not os.path.exists(base_profile_dir):
+            return
+        
+        print("🧹 古いTwitter投稿専用プロファイルのクリーンアップ中...")
+        
+        # 1時間以上古いプロファイルを削除
+        max_age = 60 * 60  # 1時間をミリ秒で
+        now = time.time()
+        cleaned_count = 0
+        
+        for profile_name in os.listdir(base_profile_dir):
+            if profile_name.startswith('twitter_post_'):
+                profile_path = os.path.join(base_profile_dir, profile_name)
+                
+                try:
+                    stat = os.stat(profile_path)
+                    age = now - stat.st_mtime
+                    
+                    if age > max_age:
+                        force_remove_directory(profile_path)
+                        cleaned_count += 1
+                        print(f"🗑️ 古いプロファイル削除: {profile_name}")
+                except Exception as e:
+                    print(f"⚠️ プロファイル削除エラー ({profile_name}): {e}")
+        
+        if cleaned_count > 0:
+            print(f"✅ {cleaned_count}個の古いプロファイルを削除しました")
+        else:
+            print("✅ クリーンアップ対象のプロファイルはありませんでした")
+            
+    except Exception as e:
+        print(f"⚠️ プロファイルクリーンアップエラー: {e}")
 
 def kill_all_chromedrivers():
     """すべてのChromeDriveプロセスを強制終了"""
@@ -1967,12 +2126,283 @@ def create_browser_driver_with_fallback():
         return None
 
 def force_cleanup_all():
-    """強制的にすべてのドライバーをクリーンアップ"""
+    """Twitter投稿専用ドライバーをクリーンアップ（既存Chromeに影響なし）"""
     global REUSABLE_DRIVER, PROFILE_PATH
+    
+    # 個別のTwitter投稿ドライバーをクリーンアップ
+    if REUSABLE_DRIVER:
+        try:
+            cleanup_specific_driver(REUSABLE_DRIVER)
+        except:
+            pass
+    
     REUSABLE_DRIVER = None
     PROFILE_PATH = None
-    kill_all_chromedrivers()
+    
+    # Twitter投稿専用プロファイルのクリーンアップ
+    cleanup_twitter_post_profiles()
 
-# 終了時のクリーンアップ用
+def find_existing_chrome_debug_port():
+    """既存のChromeプロセスのデバッグポートを見つける"""
+    try:
+        # Chromeプロセスをチェック
+        if platform.system() == "Darwin":  # macOS
+            result = subprocess.run(['ps', 'aux'], capture_output=True, text=True)
+            processes = result.stdout.split('\n')
+            
+            for process in processes:
+                if 'Google Chrome' in process and '--remote-debugging-port=' in process:
+                    # デバッグポートを抽出
+                    parts = process.split('--remote-debugging-port=')
+                    if len(parts) > 1:
+                        port_part = parts[1].split()[0]
+                        try:
+                            return int(port_part)
+                        except ValueError:
+                            continue
+        else:  # Linux/Windows
+            result = subprocess.run(['ps', 'aux'], capture_output=True, text=True)
+            processes = result.stdout.split('\n')
+            
+            for process in processes:
+                if ('chrome' in process.lower() or 'google-chrome' in process.lower()) and '--remote-debugging-port=' in process:
+                    # デバッグポートを抽出
+                    parts = process.split('--remote-debugging-port=')
+                    if len(parts) > 1:
+                        port_part = parts[1].split()[0]
+                        try:
+                            return int(port_part)
+                        except ValueError:
+                            continue
+    except Exception as e:
+        print(f"Debug port detection error: {e}")
+    
+    return None
+
+def check_chrome_debug_available(port=9222):
+    """Chromeデバッグポートが利用可能かチェック"""
+    try:
+        response = requests.get(f'http://localhost:{port}/json/version', timeout=5)
+        return response.status_code == 200
+    except Exception:
+        return False
+
+def get_chrome_tabs(port=9222):
+    """Chromeのタブ一覧を取得"""
+    try:
+        response = requests.get(f'http://localhost:{port}/json', timeout=5)
+        if response.status_code == 200:
+            return response.json()
+        return []
+    except Exception as e:
+        print(f"Failed to get Chrome tabs: {e}")
+        return []
+
+def connect_to_existing_chrome(port=None):
+    """既存のChromeブラウザに接続"""
+    print("🔍 === 既存のChromeブラウザへの接続を試行 ===")
+    
+    # デバッグポートを探す
+    if port is None:
+        port = find_existing_chrome_debug_port()
+        if port is None:
+            # デフォルトポートをチェック
+            common_ports = [9222, 9223, 9224, 9225]
+            for test_port in common_ports:
+                if check_chrome_debug_available(test_port):
+                    port = test_port
+                    break
+    
+    if port is None:
+        print("❌ リモートデバッグポートで起動されているChromeが見つかりません")
+        print("📝 次のコマンドでChromeを起動してください:")
+        if platform.system() == "Darwin":  # macOS
+            print('open -n -a "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir=~/chrome-debug')
+        else:  # Linux
+            print('google-chrome --remote-debugging-port=9222 --user-data-dir=~/chrome-debug &')
+        return None
+    
+    try:
+        print(f"🔍 ポート {port} で既存のChromeに接続中...")
+        
+        # Chrome DevTools Protocol 経由で接続
+        options = Options()
+        options.add_experimental_option("debuggerAddress", f"localhost:{port}")
+        
+        # 追加の安定化オプション
+        options.add_argument("--no-first-run")
+        options.add_argument("--no-default-browser-check")
+        options.add_argument("--disable-extensions")
+        
+        driver = webdriver.Chrome(options=options)
+        
+        # 接続確認
+        current_url = driver.current_url
+        print(f"✅ 既存のChromeに接続成功")
+        print(f"📍 現在のURL: {current_url}")
+        
+        # ドライバーを登録
+        driver_id = register_driver(driver)
+        print(f"🆔 ドライバーID: {driver_id[:8]}")
+        
+        return driver
+        
+    except Exception as e:
+        print(f"❌ 既存のChromeへの接続失敗: {e}")
+        print("💡 Chromeがリモートデバッグモードで起動されているか確認してください")
+        return None
+
+def open_twitter_in_new_tab(driver):
+    """新しいタブでTwitterを開く"""
+    print("🔍 === 新しいタブでTwitterを開く ===")
+    
+    try:
+        # 現在のウィンドウハンドルを保存
+        original_window = driver.current_window_handle
+        
+        # 新しいタブを作成
+        driver.execute_script("window.open('https://twitter.com', '_blank');")
+        
+        # 新しいタブに切り替え
+        windows = driver.window_handles
+        for window in windows:
+            if window != original_window:
+                driver.switch_to.window(window)
+                break
+        
+        # Twitterにアクセス
+        print("📍 Twitterにアクセス中...")
+        driver.get("https://twitter.com")
+        
+        # ページの読み込みを待機
+        time.sleep(5)
+        
+        current_url = driver.current_url
+        print(f"✅ 新しいタブでTwitterを開きました")
+        print(f"📍 現在のURL: {current_url}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ 新しいタブでのTwitter表示失敗: {e}")
+        return False
+
+def check_twitter_login_status(driver):
+    """Twitterのログイン状態をチェック"""
+    print("🔍 === Twitterログイン状態をチェック ===")
+    
+    try:
+        # ページが完全に読み込まれるまで待機
+        time.sleep(3)
+        
+        current_url = driver.current_url
+        print(f"📍 現在のURL: {current_url}")
+        
+        # ログイン済みかどうかをURLで判定
+        if 'home' in current_url or 'twitter.com/home' in current_url:
+            print("✅ ログイン済みです")
+            return True
+        
+        # ログインページの要素をチェック
+        try:
+            # ログインフォームが存在するかチェック
+            login_elements = driver.find_elements("xpath", "//input[@name='text' or @name='session[username_or_email]']")
+            if login_elements:
+                print("❌ ログインが必要です")
+                return False
+        except:
+            pass
+        
+        # ナビゲーションバーの存在をチェック
+        try:
+            nav_elements = driver.find_elements("xpath", "//nav[@role='navigation']")
+            if nav_elements:
+                print("✅ ログイン済みです（ナビゲーション確認）")
+                return True
+        except:
+            pass
+        
+        # ツイート作成ボタンの存在をチェック
+        try:
+            tweet_button = driver.find_elements("xpath", "//a[@href='/compose/tweet'] | //div[@data-testid='SideNav_NewTweet_Button']")
+            if tweet_button:
+                print("✅ ログイン済みです（ツイートボタン確認）")
+                return True
+        except:
+            pass
+        
+        print("❓ ログイン状態が不明です")
+        return False
+        
+    except Exception as e:
+        print(f"❌ ログイン状態チェック失敗: {e}")
+        return False
+
+def wait_for_user_login(driver, timeout=300):
+    """ユーザーの手動ログインを待機"""
+    print("🔍 === ユーザーのログインを待機 ===")
+    print("👆 ブラウザでTwitterにログインしてください")
+    print(f"⏱️  最大 {timeout} 秒間待機します")
+    
+    start_time = time.time()
+    
+    while time.time() - start_time < timeout:
+        try:
+            # ログイン状態をチェック
+            if check_twitter_login_status(driver):
+                print("✅ ログインが確認されました！")
+                return True
+            
+            # 10秒間隔でチェック
+            print(f"⏳ ログイン待機中... (残り {timeout - int(time.time() - start_time)} 秒)")
+            time.sleep(10)
+            
+        except KeyboardInterrupt:
+            print("\n❌ ユーザーによって中断されました")
+            return False
+        except Exception as e:
+            print(f"⚠️ ログイン待機中にエラー: {e}")
+            time.sleep(5)
+    
+    print(f"❌ {timeout} 秒でタイムアウトしました")
+    return False
+
+def create_chrome_with_existing_browser():
+    """既存のChromeブラウザを使用してTwitter投稿用のセッションを作成"""
+    print("🔍 === 既存のChromeブラウザを使用したセッション作成 ===")
+    
+    # 既存のChromeに接続を試行
+    driver = connect_to_existing_chrome()
+    if not driver:
+        return None
+    
+    try:
+        # 新しいタブでTwitterを開く
+        if not open_twitter_in_new_tab(driver):
+            print("❌ Twitterタブの作成に失敗")
+            return None
+        
+        # ログイン状態をチェック
+        if not check_twitter_login_status(driver):
+            print("📝 ログインが必要です")
+            print("👆 ブラウザタブでTwitterにログインしてください")
+            
+            # ユーザーのログインを待機
+            if not wait_for_user_login(driver):
+                print("❌ ログインがタイムアウトまたは失敗しました")
+                return None
+        
+        print("✅ 既存のChromeブラウザでのTwitterセッション作成完了")
+        return driver
+        
+    except Exception as e:
+        print(f"❌ セッション作成エラー: {e}")
+        try:
+            driver.quit()
+        except:
+            pass
+        return None
+
+# 終了時のクリーンアップ用（Twitter投稿専用のみ、既存Chromeに影響なし）
 import atexit
-atexit.register(kill_all_chromedrivers)
+atexit.register(force_cleanup_all)

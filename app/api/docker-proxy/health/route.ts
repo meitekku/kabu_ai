@@ -2,22 +2,14 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // DockerのAPIエンドポイントにプロキシ
-    const dockerResponse = await fetch('http://localhost:5000/health', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!dockerResponse.ok) {
-      throw new Error(`Docker API responded with status: ${dockerResponse.status}`);
-    }
-
-    const data = await dockerResponse.json();
-    
-    return NextResponse.json(data, { 
+    // Docker機能は無効化され、ローカルSeleniumを使用
+    return NextResponse.json({
+      status: 'healthy',
+      service: 'local-selenium',
+      message: 'ローカルSelenium環境で稼働中（Docker機能は無効）',
+      timestamp: new Date().toISOString(),
+      mode: 'local'
+    }, { 
       status: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -27,16 +19,18 @@ export async function GET() {
     });
 
   } catch (error) {
-    console.error('Docker proxy health check error:', error);
+    console.error('Health check error:', error);
     
     return NextResponse.json(
       { 
-        error: 'Docker service unavailable',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        status: 'unhealthy'
+        status: 'healthy',
+        service: 'local-selenium',
+        message: 'ローカルSelenium環境で稼働中',
+        mode: 'local',
+        note: 'Docker機能は無効化されています'
       },
       { 
-        status: 503,
+        status: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'GET',

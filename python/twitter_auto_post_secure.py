@@ -175,6 +175,13 @@ if __name__ == "__main__":
         # JSON詳細レポートを出力
         error_reporter.output_json_report()
         
+        # Twitter投稿専用プロファイルのクリーンアップ
+        try:
+            from twitter_auto_post.browser_manager import cleanup_twitter_post_profiles
+            cleanup_twitter_post_profiles()
+        except Exception as e:
+            print(f"⚠️ プロファイルクリーンアップエラー: {e}")
+        
         # 結果を出力
         if result:
             print("\n🎉 最終結果: True - 処理成功（改良版テキスト入力使用）")

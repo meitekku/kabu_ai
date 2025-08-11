@@ -29,16 +29,14 @@ is_localhost_environment = is_localhost
 def get_twitter_credentials():
     """環境に応じてTwitter認証情報を取得"""
     try:
+        # 常に環境変数から取得
+        username = os.getenv('TWITTER_USERNAME', 'default_username')
+        password = os.getenv('TWITTER_PASSWORD', 'default_password')
+        
         if is_localhost():
-            # localhost環境: 環境変数から取得
-            username = os.getenv('TWITTER_USERNAME', 'default_username')
-            password = os.getenv('TWITTER_PASSWORD', 'default_password')
             print(f"📝 localhost環境: 環境変数から認証情報を取得")
         else:
-            # 本番環境: 固定の認証情報
-            username = 'smartaiinvest@gmail.com'
-            password = 'sarukiki1@'
-            print(f"📝 本番環境: 固定認証情報を使用")
+            print(f"📝 本番環境: 環境変数から認証情報を取得")
             
         return username, password
     except Exception as e:
@@ -69,7 +67,6 @@ def get_post_count():
                 return data.get('count', 0)
         return 0
     except Exception as e:
-        print(f"投稿回数取得エラー: {e}")
         return 0
 
 def increment_post_count():
@@ -83,10 +80,8 @@ def increment_post_count():
         }
         with open(state_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        print(f"📊 投稿回数を更新: {count}")
         return count
     except Exception as e:
-        print(f"投稿回数更新エラー: {e}")
         return 0
 
 def reset_post_count():
@@ -99,10 +94,8 @@ def reset_post_count():
         }
         with open(state_file, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        print("📊 投稿回数をリセットしました")
         return 0
     except Exception as e:
-        print(f"投稿回数リセットエラー: {e}")
         return 0
 
 def validate_credentials():

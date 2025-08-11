@@ -41,3 +41,9 @@ next-env.d.ts
 /public/post_images/*
 
 /lib/generated/prisma
+
+# temporary file uploads
+/temp/
+
+# twitter posting profiles
+/twitter_profiles/
