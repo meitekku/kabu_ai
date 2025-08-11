@@ -7,6 +7,7 @@ interface TwitterPythonButtonProps {
   chartImageUrl?: string; // チャート画像のURL（data URL）
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  useSystemProfile?: boolean; // システムプロファイルを使用するかどうか
 }
 
 
@@ -50,7 +51,8 @@ export default function TwitterPythonButton({
   content, 
   chartImageUrl, 
   onSuccess,
-  onError 
+  onError,
+  useSystemProfile = false
 }: TwitterPythonButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -153,6 +155,7 @@ export default function TwitterPythonButton({
       const postBody = {
         message: tweetMessage,
         textOnly: !imagePath,
+        useSystemProfile: useSystemProfile,
         ...(imagePath && { imagePath })
       };
       
@@ -270,7 +273,7 @@ export default function TwitterPythonButton({
             disabled={isLoading}
             className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
           >
-            {isLoading ? '処理中...' : 'Python投稿'}
+            {isLoading ? '処理中...' : useSystemProfile ? '手動ログイン投稿' : 'Python投稿'}
           </button>
           
           {error && (

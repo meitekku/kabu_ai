@@ -89,6 +89,105 @@ def force_remove_directory(path):
         print(f"❌ ディレクトリ削除エラー: {e}")
         return False
 
+def kill_chrome_processes_cross_platform():
+    """クロスプラットフォーム対応のChrome関連プロセス強制終了"""
+    print("🔍 Chrome関連プロセスの強制終了開始 (クロスプラットフォーム版)...")
+    
+    system = platform.system()
+    
+    if system == "Darwin":  # macOS
+        kill_chrome_processes_macos()
+    elif system == "Linux":
+        kill_chrome_processes_ubuntu()
+    elif system == "Windows":
+        kill_chrome_processes_windows()
+    else:
+        print(f"⚠️ 未対応のOS: {system}")
+
+def kill_chrome_processes_macos():
+    """macOS環境でChrome関連プロセスを確実に終了"""
+    print("🔍 Chrome関連プロセスの終了開始 (macOS版)...")
+    
+    try:
+        # Chrome関連のプロセス名
+        chrome_processes = [
+            'Google Chrome',
+            'Google Chrome Helper',
+            'Chromium',
+            'chrome',
+            'chromedriver'
+        ]
+        
+        # 1. pkillでChrome関連プロセスを終了
+        for proc_name in chrome_processes:
+            try:
+                # まずSIGTERMで優雅に終了を試行
+                subprocess.run(['pkill', '-f', proc_name], 
+                             capture_output=True, text=True, timeout=5)
+                time.sleep(1)
+                # 次にSIGKILLで強制終了
+                subprocess.run(['pkill', '-9', '-f', proc_name], 
+                             capture_output=True, text=True, timeout=5)
+                print(f"✅ プロセス終了試行: {proc_name}")
+            except Exception as e:
+                print(f"⚠️ プロセス終了エラー ({proc_name}): {e}")
+        
+        # 2. 特定のChromeバイナリを個別に終了
+        chrome_binaries = [
+            '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            '/Applications/Chromium.app/Contents/MacOS/Chromium'
+        ]
+        
+        for binary_path in chrome_binaries:
+            try:
+                # pgrep でプロセスIDを取得
+                result = subprocess.run(['pgrep', '-f', binary_path], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 and result.stdout:
+                    pids = result.stdout.strip().split('\n')
+                    for pid in pids:
+                        if pid:
+                            try:
+                                pid_int = int(pid)
+                                # SIGTERM → SIGKILL の順で終了
+                                os.kill(pid_int, signal.SIGTERM)
+                                time.sleep(0.5)
+                                os.kill(pid_int, signal.SIGKILL)
+                                print(f"✅ バイナリプロセス終了: PID {pid}")
+                            except:
+                                pass
+            except Exception as e:
+                print(f"⚠️ バイナリプロセス終了エラー ({binary_path}): {e}")
+        
+        print("✅ Chrome関連プロセスの終了完了 (macOS)")
+        
+    except Exception as e:
+        print(f"⚠️ macOS Chrome プロセス終了エラー: {e}")
+
+def kill_chrome_processes_windows():
+    """Windows環境でChrome関連プロセスを確実に終了"""
+    print("🔍 Chrome関連プロセスの終了開始 (Windows版)...")
+    
+    try:
+        chrome_processes = [
+            'chrome.exe',
+            'chromedriver.exe',
+            'chromium.exe'
+        ]
+        
+        for proc_name in chrome_processes:
+            try:
+                subprocess.run(['taskkill', '/F', '/IM', proc_name], 
+                             capture_output=True, text=True, timeout=10)
+                print(f"✅ プロセス終了試行: {proc_name}")
+            except Exception as e:
+                print(f"⚠️ プロセス終了エラー ({proc_name}): {e}")
+        
+        print("✅ Chrome関連プロセスの終了完了 (Windows)")
+        
+    except Exception as e:
+        print(f"⚠️ Windows Chrome プロセス終了エラー: {e}")
+
 def kill_chrome_processes_ubuntu():
     """Ubuntu環境でChrome関連のプロセスをより確実に終了（改良版）"""
     print("🔍 Chrome関連プロセスの終了開始 (Ubuntu改良版)...")
@@ -1202,6 +1301,125 @@ def create_chrome_with_persistent_profile(headless=False, anti_detection=False):
         
     except Exception as e:
         print(f"❌ 永続プロファイル付きChrome起動失敗: {e}")
+        return None
+
+def get_system_default_chrome_profile_path():
+    """システムのデフォルトChromeプロファイルのパスを取得"""
+    import os
+    import platform
+    
+    system = platform.system()
+    home = os.path.expanduser("~")
+    
+    if system == "Darwin":  # macOS
+        profile_path = os.path.join(home, "Library", "Application Support", "Google", "Chrome")
+    elif system == "Linux":
+        profile_path = os.path.join(home, ".config", "google-chrome")
+    elif system == "Windows":
+        # WindowsのLOCALAPPDATAパス
+        profile_path = os.path.join(home, "AppData", "Local", "Google", "Chrome", "User Data")
+    else:
+        # その他のシステムの場合はLinuxのパスを使用
+        profile_path = os.path.join(home, ".config", "google-chrome")
+    
+    print(f"🔍 システムのデフォルトChromeプロファイル: {profile_path}")
+    
+    # プロファイルが存在するかチェック
+    if os.path.exists(profile_path):
+        print(f"✅ デフォルトChromeプロファイル存在確認")
+        return profile_path
+    else:
+        print(f"❌ デフォルトChromeプロファイルが見つかりません: {profile_path}")
+        return None
+
+def create_chrome_driver_with_system_profile():
+    """システムのデフォルトChromeプロファイルを使用してChrome WebDriverを作成"""
+    print("🔍 === システムデフォルトプロファイルでChrome起動開始 ===")
+    
+    # システムのデフォルトプロファイルパスを取得
+    system_profile_path = get_system_default_chrome_profile_path()
+    if not system_profile_path:
+        print("❌ システムのデフォルトプロファイルが見つかりません")
+        return None
+    
+    try:
+        # 環境判定
+        is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
+        print(f"🔍 環境判定: is_production={is_production}")
+        
+        options = webdriver.ChromeOptions()
+        
+        # システムのデフォルトプロファイルを使用
+        options.add_argument(f'--user-data-dir={system_profile_path}')
+        options.add_argument('--profile-directory=Default')
+        
+        # 新しいウィンドウで起動（既存のChromeに影響しない）
+        options.add_argument('--new-window')
+        
+        # デバッグポートは既存Chromeとは別のポートを使用
+        debug_port = 9350 + random.randint(0, 50)
+        options.add_argument(f'--remote-debugging-port={debug_port}')
+        
+        # その他のオプション
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        
+        # システムプロファイル使用時は手動ログインのためGUIモード強制
+        print("🔍 システムプロファイル使用: 手動ログインのためGUIモード強制")
+        print("💡 ヘッドレスモードは無効にします（手動ログイン対応）")
+        
+        # Chromeのバイナリパスを設定（OS別）
+        system = platform.system()
+        if system == "Darwin":  # macOS
+            chrome_binary_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        else:
+            chrome_binary_path = os.environ.get('CHROME_BINARY_PATH', '/usr/bin/google-chrome-stable')
+        
+        if os.path.exists(chrome_binary_path):
+            options.binary_location = chrome_binary_path
+            print(f"🔍 Chromeバイナリ: {chrome_binary_path}")
+        else:
+            print(f"⚠️ Chromeバイナリが見つかりません: {chrome_binary_path}")
+            # macOSの場合は別のパスも試す
+            if system == "Darwin":
+                alt_paths = [
+                    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+                    '/Applications/Chromium.app/Contents/MacOS/Chromium'
+                ]
+                for alt_path in alt_paths:
+                    if os.path.exists(alt_path):
+                        options.binary_location = alt_path
+                        print(f"🔍 代替Chromeバイナリを発見: {alt_path}")
+                        break
+        
+        # ChromeDriverサービスを作成
+        try:
+            service = Service()
+            print("✅ ChromeDriverサービス作成完了")
+        except Exception as service_error:
+            print(f"❌ ChromeDriverサービス作成失敗: {service_error}")
+            return None
+        
+        # WebDriverを起動
+        print("🔍 WebDriver起動中...")
+        driver = webdriver.Chrome(service=service, options=options)
+        
+        # User-Agentを設定
+        driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
+        print("✅ システムデフォルトプロファイルでChrome起動成功！")
+        
+        # ドライバーを登録
+        driver_id = register_driver(driver)
+        print(f"🔍 ドライバーID登録: {driver_id}")
+        
+        return driver
+        
+    except Exception as e:
+        print(f"❌ システムデフォルトプロファイルでChrome起動失敗: {e}")
         return None
 
 def create_chrome_driver():

@@ -33,7 +33,7 @@ export async function POST() {
       }
     } catch (error) {
       // ディレクトリが存在しない場合は無視
-      if ((error as any).code !== 'ENOENT') {
+      if ((error as { code?: string }).code !== 'ENOENT') {
         throw error;
       }
     }
@@ -76,11 +76,11 @@ export async function GET() {
           const stats = await stat(filePath);
           fileCount++;
           totalSize += stats.size;
-        } catch (error) {
+        } catch {
           // ファイル処理エラーは無視
         }
       }
-    } catch (error) {
+    } catch {
       // ディレクトリが存在しない場合は無視
     }
     

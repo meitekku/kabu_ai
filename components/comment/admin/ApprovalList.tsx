@@ -38,6 +38,7 @@ interface ApprovalItem {
 interface ApprovalListProps {
   items: ApprovalItem[];
   fetchData: () => Promise<void>;
+  useSystemProfile?: boolean; // システムプロファイルを使用するかどうか
 }
 
 const AutoResizeTextarea: React.FC<{
@@ -73,7 +74,7 @@ const AutoResizeTextarea: React.FC<{
   );
 };
 
-const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
+const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystemProfile = false }) => {
   // タイトル入力用 refs
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const chartRefs = useRef<Record<number, StockChartRef | null>>({});
@@ -380,6 +381,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   chartImageUrl={chartImages[item.id]}
                   onSuccess={() => handleAccept(item.id)}
                   onError={(error) => handlePythonPostError(item.id, error)}
+                  useSystemProfile={useSystemProfile}
                 />
                 
                 <div className="flex flex-col gap-2 mt-4">

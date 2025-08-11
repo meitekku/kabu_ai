@@ -81,21 +81,70 @@ def check_login_status(driver):
             print(f"❌ ドライバーセッション無効: {str(e)[:50]}...")
             return False
         
+        # ログインページやauth関連のページにいる場合は未ログイン
+        if any(keyword in current_url for keyword in ["login", "auth", "signin", "oauth"]):
+            print("🔍 ログインページまたは認証ページにいます - 未ログイン状態")
+            return False
+        
         # 既にTwitterホームにいる場合は認証済みとして扱う
-        if "/home" in current_url and "x.com" in current_url:
+        if "/home" in current_url and ("x.com" in current_url or "twitter.com" in current_url):
             print("✅ 既にTwitterホームページにアクセス済み（認証状態確認中）")
             # 追加確認：投稿ボタンの存在をチェック
             try:
-                tweet_button = driver.find_element(By.CSS_SELECTOR, '[data-testid="SideNav_NewTweet_Button"], [data-testid="tweetButton"]')
-                if tweet_button:
-                    print("✅ 投稿ボタン確認済み - ログイン状態OK")
+                # 複数のセレクタでツイートボタンを探す
+                tweet_button_selectors = [
+                    '[data-testid="SideNav_NewTweet_Button"]',
+                    '[data-testid="tweetButton"]',
+                    '[data-testid="tweetButtonInline"]',
+                    'a[href="/compose/tweet"]',
+                    'div[role="button"] span:contains("Post")',
+                    'div[role="button"] span:contains("ポスト")'
+                ]
+                
+                tweet_button_found = False
+                for selector in tweet_button_selectors:
+                    try:
+                        if ":contains" not in selector:
+                            tweet_button = driver.find_element(By.CSS_SELECTOR, selector)
+                            if tweet_button and tweet_button.is_displayed():
+                                tweet_button_found = True
+                                print(f"✅ 投稿ボタン確認済み: {selector}")
+                                break
+                    except:
+                        continue
+                
+                # XPathでも試す
+                if not tweet_button_found:
+                    try:
+                        xpath_selectors = [
+                            "//a[@href='/compose/tweet']",
+                            "//div[@role='button']//span[text()='Post']",
+                            "//div[@role='button']//span[text()='ポスト']",
+                            "//div[@role='button']//span[contains(text(), 'Tweet')]",
+                            "//div[@role='button']//span[contains(text(), 'ツイート')]"
+                        ]
+                        for xpath in xpath_selectors:
+                            try:
+                                tweet_button = driver.find_element(By.XPATH, xpath)
+                                if tweet_button and tweet_button.is_displayed():
+                                    tweet_button_found = True
+                                    print(f"✅ 投稿ボタン確認済み (XPath): {xpath}")
+                                    break
+                            except:
+                                continue
+                    except:
+                        pass
+                
+                if tweet_button_found:
+                    print("✅ ログイン状態確認完了 - 投稿可能状態")
                     return True
-            except:
-                print("⚠️ 投稿ボタンが見つからない - 詳細確認中...")
-                pass
+                else:
+                    print("⚠️ 投稿ボタンが見つかりません - さらに詳細確認中...")
+            except Exception as e:
+                print(f"⚠️ 投稿ボタンチェックエラー: {e}")
         
         # 新しいタブページの場合はTwitterホームに移動してチェック
-        if current_url == "chrome://new-tab-page/" or current_url == "data:,":
+        if current_url == "chrome://new-tab-page/" or current_url == "data:," or current_url == "about:blank":
             print("🔍 新しいタブページを検出、Twitterホームページに移動...")
             try:
                 driver.get("https://twitter.com/home")
@@ -180,6 +229,94 @@ def check_login_status(driver):
     except Exception as e:
         print(f"❌ ログイン状態チェック全体エラー: {str(e)[:50]}...")
         return False
+
+def wait_for_manual_login(driver, timeout=300):
+    """手動ログイン完了まで待機する関数"""
+    print("\n" + "="*50)
+    print("🔄 手動ログイン待機モードを開始...")
+    print("="*50)
+    print("📝 ブラウザで手動でTwitterにログインしてください")
+    print("💡 システムに保存されているログイン情報が自動的に表示されます")
+    print("⏰ ログイン完了まで最大5分間待機します")
+    print("🚫 このプログラムはログイン情報を自動入力しません")
+    print("-" * 50)
+    
+    start_time = time.time()
+    check_interval = 5  # 5秒ごとにチェック
+    last_url = ""
+    login_steps_shown = False
+    
+    # まずTwitterログインページに移動（既にログインページでない場合）
+    try:
+        current_url = driver.current_url
+        if "twitter.com" not in current_url and "x.com" not in current_url:
+            print("🌐 Twitterログインページに移動中...")
+            driver.get("https://twitter.com/login")
+            time.sleep(3)
+    except Exception as e:
+        print(f"⚠️ ログインページ移動エラー: {e}")
+    
+    while (time.time() - start_time) < timeout:
+        try:
+            # ログイン状態をチェック
+            if check_login_status(driver):
+                print("\n" + "="*50)
+                print("✅ 手動ログインが完了しました！")
+                print("🎉 Twitter投稿処理を続行します...")
+                print("="*50)
+                return True
+            
+            # 進捗表示（30秒ごと）
+            elapsed = int(time.time() - start_time)
+            remaining = timeout - elapsed
+            
+            if elapsed % 30 == 0 or elapsed < 10:  # 最初の10秒は頻繁に、その後は30秒ごと
+                print(f"⏳ ログイン待機中... ({elapsed}秒経過, 残り{remaining}秒)")
+            
+            # 現在のページ情報を表示
+            try:
+                current_url = driver.current_url
+                
+                # URLが変わった時のみ詳細を表示
+                if current_url != last_url:
+                    last_url = current_url
+                    
+                    if "login" in current_url or "auth" in current_url or "signin" in current_url:
+                        if not login_steps_shown:
+                            print("\n📍 Twitterログインページです")
+                            print("📋 ログイン手順:")
+                            print("   1. ユーザー名/メールアドレスを入力")
+                            print("   2. パスワードを入力") 
+                            print("   3. 必要に応じて2段階認証を完了")
+                            print("   4. ログイン完了まで待機...")
+                            print("-" * 30)
+                            login_steps_shown = True
+                    elif "home" in current_url:
+                        print("📍 Twitterホームページに到達 - ログイン状態確認中...")
+                    elif "suspend" in current_url:
+                        print("⚠️ アカウントが一時的に制限されている可能性があります")
+                    elif "account" in current_url and "locked" in current_url:
+                        print("⚠️ アカウントがロックされている可能性があります") 
+                    else:
+                        print(f"📍 現在のページ: {current_url[:60]}...")
+            except:
+                pass
+            
+            # 最後の1分間は10秒ごとにリマインダー
+            if remaining <= 60 and remaining % 10 == 0:
+                print(f"⏰ タイムアウトまで残り{remaining}秒 - ログインをお急ぎください")
+            
+            time.sleep(check_interval)
+            
+        except Exception as e:
+            print(f"⚠️ ログイン状態チェックエラー: {e}")
+            time.sleep(check_interval)
+    
+    print("\n" + "="*50)
+    print("❌ 手動ログイン待機がタイムアウトしました")
+    print("💡 再度お試しいただくか、ログイン状態を確認してください")
+    print("="*50)
+    return False
 
 def twitter_login(driver, username=TWITTER_USERNAME, password=TWITTER_PASSWORD):
     """Twitterにログイン（堅牢性重視版）"""

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // ディレクトリが存在しない場合は作成
     try {
       await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
+    } catch {
       // ディレクトリが既に存在する場合はエラーを無視
     }
 

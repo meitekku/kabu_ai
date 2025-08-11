@@ -12,6 +12,7 @@ interface TweetRequest {
   hasEmoji?: boolean;       // 絵文字が含まれているかのフラグ
   imagePath?: string;
   textOnly?: boolean;
+  useSystemProfile?: boolean; // システムプロファイルを使用するかどうか
 }
 
 // レスポンスの型定義
@@ -100,7 +101,8 @@ async function executePythonScript(
   encodedMessage?: string,
   hasEmoji?: boolean,
   imagePath?: string,
-  textOnly: boolean = false
+  textOnly: boolean = false,
+  useSystemProfile: boolean = false
 ): Promise<{ success: boolean; report?: PythonErrorReport }> {
   return new Promise((resolve, reject) => {
     console.log('🔍 === Python実行デバッグ開始 ===');
@@ -160,6 +162,12 @@ async function executePythonScript(
     console.log('🔍 hasEmoji:', hasEmoji);
     console.log('🔍 imagePath:', imagePath);
     console.log('🔍 textOnly:', textOnly);
+    console.log('🔍 useSystemProfile:', useSystemProfile);
+    
+    // システムプロファイルを使用する場合は--system-profileフラグを追加
+    if (useSystemProfile) {
+      args.push('--system-profile');
+    }
     
     // 絵文字が含まれている場合は、エンコードされたメッセージを使用
     if (hasEmoji && encodedMessage) {
@@ -371,7 +379,8 @@ export async function POST(request: NextRequest) {
       body.encodedMessage,
       body.hasEmoji,
       body.imagePath,
-      body.textOnly || false
+      body.textOnly || false,
+      body.useSystemProfile || false
     );
     
     // 結果に基づいてレスポンスを返す

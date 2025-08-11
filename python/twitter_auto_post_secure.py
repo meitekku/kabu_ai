@@ -11,9 +11,9 @@ from twitter_auto_post.main import main, decode_emoji_message
 # グローバルなエラーレポーター
 error_reporter = ErrorReporter()
 
-def main_wrapper(message=None, image_path=None, text_only=False, encoded_message=None):
+def main_wrapper(message=None, image_path=None, text_only=False, encoded_message=None, use_system_profile=False):
     """メイン処理（互換性維持用、内部的には改良版を呼び出し）"""
-    return main(message, image_path, text_only, encoded_message)
+    return main(message, image_path, text_only, encoded_message, use_system_profile=use_system_profile)
 
 def quick_tweet(message=None):
     """簡単にテキストツイートを投稿する関数 - 成功時True、失敗時Falseを返す（改良版）"""
@@ -51,6 +51,11 @@ def print_usage():
     print("エンコードメッセージ（絵文字対応）:")
     print("  python script.py --encoded-message \"base64エンコードされたメッセージ\"")
     print("  python script.py --encoded-message \"base64エンコードされたメッセージ\" --image \"path/to/image.jpg\"")
+    print()
+    print("システムプロファイル使用（ログイン済みChromeを使用）:")
+    print("  python script.py --system-profile")
+    print("  python script.py --system-profile --text-only \"メッセージ\"")
+    print("  python script.py --system-profile --image \"path/to/image.jpg\" \"メッセージ\"")
     print()
     print("自動判定（推奨）:")
     print("  python script.py \"テキストメッセージ\"")
@@ -142,6 +147,66 @@ if __name__ == "__main__":
                     print("📝 エンコードメッセージでテキスト投稿（改良版）")
                 
                 result = main_wrapper(encoded_message=encoded_message, image_path=image_path, text_only=(image_path is None))
+            
+        elif sys.argv[1] == "--system-profile":
+            # システムプロファイルモード
+            print("📝 システムプロファイル（ログイン済みChrome）を使用して投稿します")
+            
+            # 残りの引数を解析
+            remaining_args = sys.argv[2:]
+            message = None
+            image_path = None
+            text_only = False
+            
+            if len(remaining_args) == 0:
+                # 引数なし - デフォルト画像付き投稿
+                print("📝 デフォルト設定で画像付き投稿（システムプロファイル）")
+                result = main_wrapper(use_system_profile=True)
+                
+            elif remaining_args[0] == "--text-only":
+                # テキストのみモード
+                if len(remaining_args) > 1:
+                    message = " ".join(remaining_args[1:])
+                    print(f"📝 テキストのみ投稿（システムプロファイル）: {message}")
+                else:
+                    message = None
+                    print("📝 デフォルトメッセージでテキスト投稿（システムプロファイル）")
+                result = main_wrapper(message, text_only=True, use_system_profile=True)
+                
+            elif remaining_args[0] == "--image":
+                # 画像付きモード
+                if len(remaining_args) > 1:
+                    potential_image = remaining_args[1]
+                    if is_image_file(potential_image):
+                        image_path = potential_image
+                        if len(remaining_args) > 2:
+                            message = " ".join(remaining_args[2:])
+                        print(f"📝 画像付き投稿（システムプロファイル）: {image_path}, メッセージ: {message or 'デフォルト'}")
+                    else:
+                        # 第2引数が画像でない場合は、メッセージとして扱う
+                        message = " ".join(remaining_args[1:])
+                        print(f"📝 デフォルト画像で投稿（システムプロファイル）, メッセージ: {message}")
+                else:
+                    print("📝 デフォルト画像とメッセージで投稿（システムプロファイル）")
+                result = main_wrapper(message, image_path, use_system_profile=True)
+                
+            else:
+                # 自動判定モード
+                first_arg = remaining_args[0]
+                if is_image_file(first_arg):
+                    # 第1引数が画像ファイル → 画像付き投稿
+                    image_path = first_arg
+                    if len(remaining_args) > 1:
+                        message = " ".join(remaining_args[1:])
+                    else:
+                        message = None
+                    print(f"📝 画像付き投稿（システムプロファイル・自動判定）: {image_path}, メッセージ: {message or 'デフォルト'}")
+                    result = main_wrapper(message, image_path, use_system_profile=True)
+                else:
+                    # 第1引数が画像でない → テキストメッセージとして扱う
+                    message = " ".join(remaining_args)
+                    print(f"📝 テキスト投稿（システムプロファイル・自動判定）: {message}")
+                    result = main_wrapper(message, text_only=True, use_system_profile=True)
             
         else:
             # 自動判定モード（推奨）

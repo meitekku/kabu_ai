@@ -6,8 +6,8 @@ from datetime import datetime
 
 from .error_reporter import ErrorReporter
 from .config import DEFAULT_MESSAGE, DEFAULT_IMAGE_PATH, is_localhost_environment, get_post_count, increment_post_count, reset_post_count
-from .browser_manager import create_chrome_driver, cleanup_specific_driver
-from .twitter_actions import check_login_status, twitter_login, post_tweet
+from .browser_manager import create_chrome_driver, cleanup_specific_driver, create_chrome_driver_with_system_profile
+from .twitter_actions import check_login_status, twitter_login, post_tweet, wait_for_manual_login
 from .proxy_manager import get_proxy_manager, get_tor_manager
 
 error_reporter = ErrorReporter()
@@ -29,7 +29,7 @@ def decode_emoji_message(encoded_message):
             error_reporter.add_error("decode_message", f"デコードエラー: {e}, {e2}", e)
             return None
 
-def main(message=None, image_path=None, text_only=False, encoded_message=None, keep_browser=True):
+def main(message=None, image_path=None, text_only=False, encoded_message=None, keep_browser=True, use_system_profile=False):
     """メイン処理 - 成功時True、失敗時Falseを返す"""
     driver = None
     try:
@@ -84,20 +84,31 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
         else:
             print("🚀 2回目以降の実行: IP変更をスキップして高速化")
         
-        # 永続プロファイル付きChromeを起動（プロキシ設定は browser_manager で自動適用される）
-        from .browser_manager import create_chrome_with_persistent_profile
+        # ブラウザを起動（システムプロファイルまたは永続プロファイル）
+        if use_system_profile:
+            print("🔧 システムのデフォルトプロファイルでChrome起動...")
+            driver = create_chrome_driver_with_system_profile()
+            
+            if not driver:
+                print("⚠️ システムプロファイルでの起動失敗、永続プロファイルで試行...")
+                from .browser_manager import create_chrome_with_persistent_profile
+                driver = create_chrome_with_persistent_profile()
+        else:
+            # 永続プロファイル付きChromeを起動（プロキシ設定は browser_manager で自動適用される）
+            from .browser_manager import create_chrome_with_persistent_profile
+            
+            # 2回目以降は指紋変更強化モードを有効化
+            current_count = get_post_count()
+            anti_detection_mode = current_count > 0
+            
+            if anti_detection_mode:
+                print("🔧 指紋変更強化モードでChrome起動...")
+            
+            driver = create_chrome_with_persistent_profile(anti_detection=anti_detection_mode)
         
-        # 2回目以降は指紋変更強化モードを有効化
-        current_count = get_post_count()
-        anti_detection_mode = current_count > 0
-        
-        if anti_detection_mode:
-            print("🔧 指紋変更強化モードでChrome起動...")
-        
-        driver = create_chrome_with_persistent_profile(anti_detection=anti_detection_mode)
         if not driver:
             # フォールバックとして通常のChrome起動を試行
-            print("⚠️ 永続プロファイル付きChrome起動失敗、通常のChrome起動を試行...")
+            print("⚠️ プロファイル付きChrome起動失敗、通常のChrome起動を試行...")
             driver = create_chrome_driver()
             if not driver:
                 error_msg = "Chromeの起動に失敗しました"
@@ -112,7 +123,52 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
         # ログインが必要な場合のみログイン処理を実行
         if not is_logged_in:
             print("ログインが必要です。ログイン処理を開始します...")
-            is_logged_in = twitter_login(driver)
+            
+            # システムプロファイル使用時の処理
+            if use_system_profile:
+                print("🔧 システムプロファイル使用時 - ログイン状態を確認しました")
+                print("❌ システムプロファイルでログインされていませんでした")
+                print("🔄 新規プロファイルでブラウザを再起動します...")
+                
+                # 既存のドライバーを終了
+                try:
+                    cleanup_specific_driver(driver)
+                    driver = None
+                    error_reporter.add_success("profile_switch", "システムプロファイルのドライバーを終了")
+                except Exception as e:
+                    error_reporter.add_warning("profile_switch", f"ドライバー終了エラー: {e}")
+                    print(f"⚠️ ドライバー終了エラー: {e}")
+                
+                # 新規プロファイルでブラウザを再起動
+                print("🆕 完全に新規のプロファイルでブラウザを起動中...")
+                from .browser_manager import create_chrome_with_persistent_profile
+                
+                # 新規プロファイルで起動（use_system_profile=Falseに切り替え）
+                driver = create_chrome_with_persistent_profile(anti_detection=False)
+                if not driver:
+                    # さらにフォールバックで通常のChrome起動を試行
+                    print("⚠️ 新規プロファイル起動失敗、通常のChrome起動を試行...")
+                    driver = create_chrome_driver()
+                    
+                if not driver:
+                    error_msg = "新規プロファイルでのChrome起動に失敗しました"
+                    print(f"❌ {error_msg}")
+                    error_reporter.add_error("profile_switch", error_msg)
+                    error_reporter.set_final_result(False)
+                    return False
+                
+                print("✅ 新規プロファイルでのブラウザ起動成功")
+                error_reporter.add_success("profile_switch", "新規プロファイルでのブラウザ起動成功")
+                
+                # 新規プロファイルなので通常の自動ログイン処理を実行
+                # フラグも更新して、後続処理で新規プロファイルとして扱う
+                use_system_profile = False
+                print("🔧 新規プロファイル - 自動ログイン処理を開始します")
+                is_logged_in = twitter_login(driver)
+                
+            else:
+                print("🔧 通常モード - 自動ログイン処理")
+                is_logged_in = twitter_login(driver)
         
         # ログイン済みの場合、ツイート投稿
         if is_logged_in:
@@ -143,7 +199,18 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
                 is_logged_in_retry = check_login_status(driver)
                 if not is_logged_in_retry:
                     print("🔄 ログインが切れています。再ログインを試行...")
-                    is_logged_in_retry = twitter_login(driver)
+                    
+                    # システムプロファイル使用時は手動ログイン待機モード
+                    if use_system_profile:
+                        print("🔧 再ログイン - 手動ログイン待機モード")
+                        is_logged_in_retry = wait_for_manual_login(driver)
+                        if is_logged_in_retry:
+                            error_reporter.add_success("manual_retry_login", "手動再ログイン成功")
+                        else:
+                            error_reporter.add_error("manual_retry_login", "手動再ログイン失敗またはタイムアウト")
+                    else:
+                        print("🔧 再ログイン - 自動ログイン処理")
+                        is_logged_in_retry = twitter_login(driver)
                 
                 if is_logged_in_retry:
                     print("🔄 再ログイン成功。投稿を再試行...")
@@ -189,6 +256,19 @@ def main(message=None, image_path=None, text_only=False, encoded_message=None, k
             try:
                 cleanup_specific_driver(driver)
                 error_reporter.add_success("cleanup", "個別ドライバークリーンアップ完了")
+                
+                # システムプロファイルを使用していた場合は、より確実にブラウザプロセスをkill
+                if use_system_profile:
+                    print("🔧 システムプロファイル使用時の追加クリーンアップを実行中...")
+                    from .browser_manager import kill_chrome_processes_cross_platform
+                    try:
+                        kill_chrome_processes_cross_platform()
+                        error_reporter.add_success("cleanup", "システムプロファイル使用時の追加クリーンアップ完了")
+                        print("✅ システムプロファイル使用時の追加クリーンアップ完了")
+                    except Exception as cleanup_error:
+                        error_reporter.add_warning("cleanup", f"追加クリーンアップエラー: {cleanup_error}")
+                        print(f"⚠️ 追加クリーンアップでエラーが発生しましたが続行します: {cleanup_error}")
+                
             except Exception as e:
                 error_reporter.add_warning("cleanup", f"個別ドライバークリーンアップエラー: {e}")
                 print("⚠️ 個別クリーンアップに失敗しましたが、既存Chromeに影響しないため続行します")
