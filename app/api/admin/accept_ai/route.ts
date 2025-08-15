@@ -33,10 +33,44 @@ interface DatabaseResponse<T> {
   error?: string;
 }
 
+// サンプルデータクリーンアップ関数
+async function cleanupSampleData(db: ReturnType<typeof Database.getInstance>): Promise<void> {
+  try {
+    const sampleDataTitles = [
+      '【AI分析】注目銘柄の買い時シグナル発生',
+      '市場急落時の対応戦略｜AIが推奨する銘柄選定',
+      '週間パフォーマンス｜AI予測の的中率95%達成'
+    ];
+    
+    // タイトルベースでサンプルデータを削除
+    for (const title of sampleDataTitles) {
+      try {
+        await db.delete('DELETE FROM post WHERE title = ?', [title]);
+      } catch (error) {
+        console.log(`サンプルデータ削除エラー (${title}):`, error);
+      }
+    }
+    
+    // siteベースでもサンプルデータを削除
+    try {
+      await db.delete('DELETE FROM post WHERE site = ? OR site = ?', [999, 1]);
+    } catch (error) {
+      console.log('サンプルデータ削除エラー (site):', error);
+    }
+    
+    console.log('サンプルデータのクリーンアップが完了しました');
+  } catch (error) {
+    console.log('サンプルデータクリーンアップ中にエラーが発生しました:', error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const operation: DatabaseOperation<NewsItem> = await request.json();
     const db = Database.getInstance();
+
+    // API起動時にサンプルデータをクリーンアップ
+    await cleanupSampleData(db);
 
     switch (operation.type) {
       case 'select': {
@@ -85,14 +119,40 @@ export async function POST(request: NextRequest) {
 
           // 実データが存在する場合はサンプルデータを除外
           if (operation.table === 'post') {
-            // accept=0の実データ（site != 72 AND site != 999 AND site != 1）の存在をチェック
-            let realDataQuery = 'SELECT COUNT(*) as count FROM post WHERE site != ? AND site != ? AND site != ?';
-            const realDataParams = [72, 999, 1];
+            // サンプルデータのタイトルパターン
+            const sampleDataTitles = [
+              '【AI分析】注目銘柄の買い時シグナル発生',
+              '市場急落時の対応戦略｜AIが推奨する銘柄選定',
+              '週間パフォーマンス｜AI予測の的中率95%達成'
+            ];
+            
+            // 先にサンプルデータを強制削除（タイトルとsiteの両方で識別）
+            try {
+              // タイトルベースでサンプルデータを削除
+              for (const title of sampleDataTitles) {
+                await db.delete('DELETE FROM post WHERE title = ?', [title]);
+              }
+              // siteベースでもサンプルデータを削除
+              await db.delete('DELETE FROM post WHERE site = ? OR site = ?', [999, 1]);
+              console.log('既存のサンプルデータを削除しました');
+            } catch (error) {
+              console.log('サンプルデータの削除をスキップしました:', error);
+            }
+            
+            // accept=0の実データ（site != 72 AND タイトルがサンプルではない）の存在をチェック
+            let realDataQuery = 'SELECT COUNT(*) as count FROM post WHERE site != ?';
+            const realDataParams: (string | number | boolean | null)[] = [72];
+            
+            // サンプルデータタイトルを除外
+            for (const title of sampleDataTitles) {
+              realDataQuery += ' AND title != ?';
+              realDataParams.push(title);
+            }
             
             // accept条件がある場合は、それも含めてチェック
             if (operation.conditions && operation.conditions.accept !== undefined) {
               realDataQuery += ' AND accept = ?';
-              realDataParams.push(operation.conditions.accept);
+              realDataParams.push(Number(operation.conditions.accept));
             }
             
             const realDataResults = await db.select<CountResult>(realDataQuery, realDataParams);
@@ -101,21 +161,23 @@ export async function POST(request: NextRequest) {
             if (hasRealData) {
               console.log('実データが存在するため、サンプルデータを除外します');
               
-              // 実データがある場合はサンプルデータを除外
+              // 実データがある場合はサンプルデータを除外（タイトルベース）
+              for (const title of sampleDataTitles) {
+                if (operation.data.includes('code')) {
+                  conditionParts.push(`p.title != ?`);
+                } else {
+                  conditionParts.push(`title != ?`);
+                }
+                params.push(title);
+              }
+              
+              // siteベースでも除外
               if (operation.data.includes('code')) {
                 conditionParts.push(`p.site != ? AND p.site != ?`);
               } else {
                 conditionParts.push(`site != ? AND site != ?`);
               }
-              params.push(999, 1); // site=999とsite=1の両方を除外
-              
-              // 既存のサンプルデータを削除
-              try {
-                await db.delete('DELETE FROM post WHERE site = ? OR site = ?', [999, 1]);
-                console.log('既存のサンプルデータ（site=1, site=999）を削除しました');
-              } catch (error) {
-                console.log('サンプルデータの削除をスキップしました:', error);
-              }
+              params.push(999, 1);
             }
           }
 
@@ -153,14 +215,27 @@ export async function POST(request: NextRequest) {
           
           // データが0件の場合、データベース全体にデータが存在するかをチェック
           if (results.length === 0) {
-            // postテーブルに実データが存在するかをチェック（site != 72 AND site != 999 AND site != 1, accept=0の条件で）
-            let existingDataQuery = 'SELECT COUNT(*) as count FROM post WHERE site != ? AND site != ? AND site != ?';
-            const existingDataParams = [72, 999, 1];
+            // サンプルデータのタイトルパターン（再定義）
+            const sampleDataTitles = [
+              '【AI分析】注目銘柄の買い時シグナル発生',
+              '市場急落時の対応戦略｜AIが推奨する銘柄選定',
+              '週間パフォーマンス｜AI予測の的中率95%達成'
+            ];
+            
+            // postテーブルに実データが存在するかをチェック（site != 72 AND タイトルがサンプルではない）
+            let existingDataQuery = 'SELECT COUNT(*) as count FROM post WHERE site != ?';
+            const existingDataParams: (string | number | boolean | null)[] = [72];
+            
+            // サンプルデータタイトルを除外
+            for (const title of sampleDataTitles) {
+              existingDataQuery += ' AND title != ?';
+              existingDataParams.push(title);
+            }
             
             // accept条件がある場合は、それも含めてチェック
             if (operation.conditions && operation.conditions.accept !== undefined) {
               existingDataQuery += ' AND accept = ?';
-              existingDataParams.push(operation.conditions.accept);
+              existingDataParams.push(Number(operation.conditions.accept));
             }
             
             const existingDataResults = await db.select<CountResult>(existingDataQuery, existingDataParams);
