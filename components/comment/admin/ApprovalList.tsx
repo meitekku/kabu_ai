@@ -4,15 +4,10 @@ import React, { useState, useRef, useEffect, ChangeEvent } from 'react';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
 import TwitterPythonButton from './TwitterPythonButton'; // 新しく追加
-import Image from 'next/image';
+// Image importは削除（サンプル画像表示が不要のため）
 import StockChart, { StockChartRef } from '@/components/parts/chart/StockChart';
 
-// 薬の画像配列を定義
-const MEDICINE_IMAGES = [
-  { src: '/site_images/admin/messageImage_1749552408215.jpg', alt: 'エンレスト200mg' },
-  { src: '/site_images/admin/messageImage_1749552440144.jpg', alt: 'レンドルミン0.25mg' },
-  { src: '/site_images/admin/messageImage_1749552497655.jpg', alt: 'ジャディアンス10mg' },
-];
+// サンプル画像配列は削除（実データがある場合は不要）
 
 // debounce関数の定義
 function debounce(
@@ -94,7 +89,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
     const initialContents: Record<number, string> = {};
     const initialTitles: Record<number, string> = {};
     items.forEach(item => {
-      initialContents[item.id] = item.content;
+      initialContents[item.id] = item.content || '';  // 記事データのcontentを使用
       initialTitles[item.id] = item.title || '';
     });
     setEditedContents(initialContents);
@@ -383,14 +378,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
                   onError={(error) => handlePythonPostError(item.id, error)}
                   useSystemProfile={useSystemProfile}
                 />
-                
-                <div className="flex flex-col gap-2 mt-4">
-                  {MEDICINE_IMAGES.map((image, idx) => (
-                    <div key={idx} className="w-50 h-20 relative">
-                      <Image src={image.src} alt={image.alt} fill className="object-contain" sizes="(max-width: 200px) 100vw, 200px" />
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </li>

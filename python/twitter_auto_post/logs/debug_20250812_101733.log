@@ -1,0 +1,4 @@
+2025-08-12 10:17:33,837 - test - DEBUG - debug_config.py:82 - これはDEBUGレベル（ファイルのみ）
+2025-08-12 10:17:33,837 - test - INFO - debug_config.py:83 - これはINFOレベル（ファイル+コンソール）
+2025-08-12 10:17:33,837 - test - WARNING - debug_config.py:84 - これはWARNINGレベル（ファイル+コンソール）
+2025-08-12 10:17:33,837 - test - ERROR - debug_config.py:85 - これはERRORレベル（全出力先）

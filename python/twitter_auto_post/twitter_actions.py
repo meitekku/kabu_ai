@@ -532,7 +532,7 @@ def post_tweet(driver, message, image_path=None, actually_post=True):
             pass
         
         tweet_textarea.click()
-        time.sleep(0.3)  # 待機時間を短縮
+        time.sleep(0.1)  # 投稿画面での待機時間をさらに短縮
         
         # テキスト入力
         print("📝 テキスト入力中...")
@@ -546,7 +546,7 @@ def post_tweet(driver, message, image_path=None, actually_post=True):
                     EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="file"][accept*="image"]'))
                 )
                 file_input.send_keys(os.path.abspath(image_path))
-                time.sleep(2)  # 待機時間を短縮
+                time.sleep(1)  # 画像アップロードの待機時間を短縮
                 
                 # アップロード完了確認
                 WebDriverWait(driver, 3).until(

@@ -3,7 +3,7 @@ import socket
 import json
 from datetime import datetime
 from dotenv import load_dotenv
-from .error_reporter import ErrorReporter
+from error_reporter import ErrorReporter
 error_reporter = ErrorReporter()
 
 # .envファイルを読み込む（Next.jsの.env.localも読める）

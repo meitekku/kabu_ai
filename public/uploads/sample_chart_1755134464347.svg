@@ -1,0 +1,181 @@
+
+      <svg width="900" height="500" xmlns="http://www.w3.org/2000/svg">
+        <rect width="900" height="500" fill="#ffffff"/>
+        
+        <!-- グリッド線 -->
+        <defs>
+          <pattern id="grid" width="40" height="25" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 25" fill="none" stroke="#f0f0f0" stroke-width="1"/>
+          </pattern>
+          <linearGradient id="priceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:0.3" />
+            <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:0.05" />
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        
+        <!-- タイトル -->
+        <text x="450" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1976d2">
+          サンプル株式会社（1234） - リアルタイム株価
+        </text>
+        
+        <!-- 現在値表示 -->
+        <text x="450" y="50" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#4CAF50" font-weight="bold">
+          現在値: 2,696円 (+246円/ +10.0%)
+        </text>
+        
+        <!-- Y軸 -->
+        <line x1="60" y1="80" x2="60" y2="380" stroke="#333" stroke-width="2"/>
+        
+        <!-- X軸 -->
+        <line x1="60" y1="380" x2="780" y2="380" stroke="#333" stroke-width="2"/>
+        
+        <!-- Y軸ラベル -->
+        <text x="50" y="105" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">3,200</text>
+        <text x="50" y="130" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">3,000</text>
+        <text x="50" y="155" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">2,800</text>
+        <text x="50" y="180" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">2,600</text>
+        <text x="50" y="205" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">2,400</text>
+        <text x="50" y="230" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">2,200</text>
+        <text x="50" y="255" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">2,000</text>
+        <text x="50" y="280" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">1,800</text>
+        <text x="50" y="305" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#666">1,600</text>
+        
+        <!-- X軸ラベル -->
+        <text x="102" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">9:00</text>
+        <text x="198" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">10:00</text>
+        <text x="294" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">11:00</text>
+        <text x="390" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">12:00</text>
+        <text x="486" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">13:00</text>
+        <text x="582" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">14:00</text>
+        <text x="678" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666">15:00</text>
+        
+        <!-- 価格帯の背景 -->
+        <polygon fill="url(#priceGradient)" points="70,180.9723455293533 102,188.45178266569718 134,188.16252789518057 166,169.95796245893968 198,163.83150912450358 230,171.11580046604513 262,160.39827914572396 294,183.1092426087602 326,184.48248111611002 358,163.74260386647228 390,177.2629152246523 422,162.019464522806 454,171.59733828750723 486,156.66630027566694 518,150.49087267261606 550,152.64029010696038 582,150.54104481543988 614,172.13198615609508 646,168.29102828901685 678,144.64540921453556 710,380 70,380" opacity="0.6"/>
+        
+        <!-- 移動平均線 -->
+        <polyline fill="none" stroke="#FF9800" stroke-width="2" stroke-dasharray="5,5" points="
+          70,180.9723455293533 102,192.88458576561726 134,196.6321649961061 166,181.70786610335193 198,177.812095414012 230,186.07822526510594 262,175.0059936088969 294,196.05738310849333 326,194.61442882437728 358,170.15330206997973 390,179.3797153455503 422,159.65327911065728 454,164.95953163808446 486,146.34980788790733 518,137.41723608641223 550,137.9773383419839 582,135.59857568290226 614,158.2447659211791 646,156.69956097567703 678,136.385126075571
+        "/>
+        
+        <!-- 株価ライン -->
+        <polyline fill="none" stroke="#4CAF50" stroke-width="3" points="70,180.9723455293533 102,188.45178266569718 134,188.16252789518057 166,169.95796245893968 198,163.83150912450358 230,171.11580046604513 262,160.39827914572396 294,183.1092426087602 326,184.48248111611002 358,163.74260386647228 390,177.2629152246523 422,162.019464522806 454,171.59733828750723 486,156.66630027566694 518,150.49087267261606 550,152.64029010696038 582,150.54104481543988 614,172.13198615609508 646,168.29102828901685 678,144.64540921453556"/>
+        
+        <!-- データポイント -->
+        
+          <circle cx="70" cy="180.9723455293533" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,448円</title>
+          </circle>
+        
+          <circle cx="102" cy="188.45178266569718" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,397円</title>
+          </circle>
+        
+          <circle cx="134" cy="188.16252789518057" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,399円</title>
+          </circle>
+        
+          <circle cx="166" cy="169.95796245893968" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,523円</title>
+          </circle>
+        
+          <circle cx="198" cy="163.83150912450358" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,565円</title>
+          </circle>
+        
+          <circle cx="230" cy="171.11580046604513" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,515円</title>
+          </circle>
+        
+          <circle cx="262" cy="160.39827914572396" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,588円</title>
+          </circle>
+        
+          <circle cx="294" cy="183.1092426087602" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,433円</title>
+          </circle>
+        
+          <circle cx="326" cy="184.48248111611002" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,424円</title>
+          </circle>
+        
+          <circle cx="358" cy="163.74260386647228" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,565円</title>
+          </circle>
+        
+          <circle cx="390" cy="177.2629152246523" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,473円</title>
+          </circle>
+        
+          <circle cx="422" cy="162.019464522806" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,577円</title>
+          </circle>
+        
+          <circle cx="454" cy="171.59733828750723" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,512円</title>
+          </circle>
+        
+          <circle cx="486" cy="156.66630027566694" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,614円</title>
+          </circle>
+        
+          <circle cx="518" cy="150.49087267261606" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,656円</title>
+          </circle>
+        
+          <circle cx="550" cy="152.64029010696038" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,641円</title>
+          </circle>
+        
+          <circle cx="582" cy="150.54104481543988" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,655円</title>
+          </circle>
+        
+          <circle cx="614" cy="172.13198615609508" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,508円</title>
+          </circle>
+        
+          <circle cx="646" cy="168.29102828901685" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,534円</title>
+          </circle>
+        
+          <circle cx="678" cy="144.64540921453556" r="3" fill="#4CAF50" stroke="#ffffff" stroke-width="2">
+            <title>2,696円</title>
+          </circle>
+        
+        
+        <!-- 最新価格ポイント -->
+        <circle cx="678" cy="144.64540921453556" r="6" fill="#4CAF50" stroke="#ffffff" stroke-width="3"/>
+        
+        <!-- 情報パネル -->
+        <rect x="620" y="80" width="250" height="140" fill="white" stroke="#ddd" stroke-width="1" rx="8" opacity="0.95"/>
+        
+        <!-- 凡例 -->
+        <line x1="630" y1="100" x2="660" y2="100" stroke="#4CAF50" stroke-width="3"/>
+        <text x="670" y="105" font-family="Arial, sans-serif" font-size="12" fill="#333">現在価格</text>
+        
+        <line x1="630" y1="120" x2="660" y2="120" stroke="#FF9800" stroke-width="2" stroke-dasharray="3,3"/>
+        <text x="670" y="125" font-family="Arial, sans-serif" font-size="12" fill="#333">25日移動平均</text>
+        
+        <!-- 統計情報 -->
+        <text x="630" y="145" font-family="Arial, sans-serif" font-size="11" fill="#666">始値: 2,448円</text>
+        <text x="630" y="160" font-family="Arial, sans-serif" font-size="11" fill="#666">高値: 2,696円</text>
+        <text x="630" y="175" font-family="Arial, sans-serif" font-size="11" fill="#666">安値: 2,397円</text>
+        <text x="630" y="190" font-family="Arial, sans-serif" font-size="11" fill="#666">出来高: 1,234,567株</text>
+        <text x="630" y="205" font-family="Arial, sans-serif" font-size="11" fill="#666">時価総額: 1,250億円</text>
+        
+        <!-- 市場情報 -->
+        <rect x="620" y="240" width="250" height="100" fill="#f8f9fa" stroke="#ddd" stroke-width="1" rx="8"/>
+        <text x="630" y="260" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#333">市場情報</text>
+        <text x="630" y="280" font-family="Arial, sans-serif" font-size="11" fill="#666">• 日経平均: +1.2% (38,920円)</text>
+        <text x="630" y="295" font-family="Arial, sans-serif" font-size="11" fill="#666">• TOPIX: +0.8% (2,745pt)</text>
+        <text x="630" y="310" font-family="Arial, sans-serif" font-size="11" fill="#666">• 業種別: 情報通信業 +2.1%</text>
+        <text x="630" y="325" font-family="Arial, sans-serif" font-size="11" fill="#666">• 取引時間: 10:21</text>
+        
+        <!-- AI分析コメント -->
+        <rect x="70" y="420" width="600" height="60" fill="#e3f2fd" stroke="#1976d2" stroke-width="1" rx="8"/>
+        <text x="80" y="440" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1976d2">📊 AI分析レポート</text>
+        <text x="80" y="455" font-family="Arial, sans-serif" font-size="11" fill="#333">強気継続シグナル発生中。移動平均線上抜けによる上昇トレンド確認。</text>
+        <text x="80" y="470" font-family="Arial, sans-serif" font-size="11" fill="#333">目標価格: 3,100円 (推奨アクション: 買い増し)</text>
+      </svg>
+    

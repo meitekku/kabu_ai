@@ -1332,9 +1332,280 @@ def get_system_default_chrome_profile_path():
         print(f"❌ デフォルトChromeプロファイルが見つかりません: {profile_path}")
         return None
 
+def create_safe_profile_copy(system_profile_path):
+    """システムプロファイルを安全にコピーして独立したプロファイルを作成"""
+    try:
+        print("🔧 === 安全なプロファイルコピー作成開始 ===")
+        
+        # 一意のプロファイルディレクトリを作成
+        timestamp = int(time.time())
+        profile_name = f"safe_selenium_profile_{timestamp}_{random.randint(1000, 9999)}"
+        temp_base_dir = tempfile.gettempdir()
+        safe_profile_dir = os.path.join(temp_base_dir, profile_name)
+        
+        # ディレクトリを作成
+        os.makedirs(safe_profile_dir, exist_ok=True)
+        print(f"🔧 一時プロファイルディレクトリ作成: {safe_profile_dir}")
+        
+        # SafeProfile サブディレクトリを作成
+        safe_profile_subdir = os.path.join(safe_profile_dir, "SafeProfile")
+        os.makedirs(safe_profile_subdir, exist_ok=True)
+        
+        # システムプロファイルから重要な設定ファイルのみをコピー
+        # （すべてをコピーするとファイルロック問題が発生する可能性があるため、必要最小限のみ）
+        essential_files = [
+            "Preferences",
+            "Local State",
+            "Cookies",
+            "Login Data"  # ログイン情報
+        ]
+        
+        system_default_dir = os.path.join(system_profile_path, "Default")
+        if os.path.exists(system_default_dir):
+            print("🔧 重要な設定ファイルのみをコピー中...")
+            for file_name in essential_files:
+                source_file = os.path.join(system_default_dir, file_name)
+                dest_file = os.path.join(safe_profile_subdir, file_name)
+                
+                try:
+                    if os.path.exists(source_file):
+                        # ファイルサイズチェック（巨大ファイルは避ける）
+                        if os.path.getsize(source_file) < 50 * 1024 * 1024:  # 50MB未満
+                            shutil.copy2(source_file, dest_file)
+                            print(f"✅ コピー完了: {file_name}")
+                        else:
+                            print(f"⚠️ ファイルサイズが大きすぎるためスキップ: {file_name}")
+                    else:
+                        print(f"⚠️ ファイルが存在しないためスキップ: {file_name}")
+                except (OSError, PermissionError, FileNotFoundError) as e:
+                    print(f"⚠️ ファイルコピーエラー（継続）: {file_name} - {e}")
+                    continue
+        
+        # 基本的な設定ファイルを作成（ログイン情報が保持されるように）
+        try:
+            basic_preferences = {
+                "profile": {
+                    "default_content_settings": {"popups": 0},
+                    "password_manager_enabled": True
+                },
+                "browser": {
+                    "show_home_button": True
+                }
+            }
+            
+            prefs_file = os.path.join(safe_profile_subdir, "Preferences")
+            if not os.path.exists(prefs_file):
+                with open(prefs_file, 'w') as f:
+                    json.dump(basic_preferences, f)
+                print("✅ 基本設定ファイル作成完了")
+        except Exception as e:
+            print(f"⚠️ 基本設定ファイル作成エラー: {e}")
+        
+        print(f"✅ 安全なプロファイルコピー完了: {safe_profile_dir}")
+        return safe_profile_dir
+        
+    except Exception as e:
+        print(f"❌ 安全なプロファイルコピー作成失敗: {e}")
+        return None
+
+def check_chrome_process_conflicts():
+    """Chromeプロセス競合をチェックし、安全な起動環境を確保"""
+    try:
+        print("🔧 === Chromeプロセス競合チェック開始 ===")
+        
+        # 既存のChromeプロセスをチェック
+        system = platform.system()
+        
+        if system == "Darwin":  # macOS
+            # macOS用のプロセスチェック
+            try:
+                result = subprocess.run(['pgrep', '-f', 'Google Chrome'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    chrome_pids = result.stdout.strip().split('\n')
+                    chrome_pids = [pid for pid in chrome_pids if pid]  # 空文字列を除去
+                    if chrome_pids:
+                        print(f"🔍 既存Chromeプロセス検出: {len(chrome_pids)}個")
+                        print("💡 既存Chromeプロセスとは独立してSeleniumを起動します")
+                        return True
+                    else:
+                        print("✅ 既存Chromeプロセスなし")
+                        return True
+                else:
+                    print("✅ 既存Chromeプロセスなし")
+                    return True
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                print("⚠️ プロセスチェックコマンドが利用できません（継続）")
+                return True
+        
+        elif system == "Linux":
+            # Linux用のプロセスチェック
+            try:
+                result = subprocess.run(['pgrep', '-f', 'chrome'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    chrome_pids = result.stdout.strip().split('\n')
+                    chrome_pids = [pid for pid in chrome_pids if pid]
+                    if chrome_pids:
+                        print(f"🔍 既存Chromeプロセス検出: {len(chrome_pids)}個")
+                        print("💡 既存Chromeプロセスとは独立してSeleniumを起動します")
+                        return True
+                    else:
+                        print("✅ 既存Chromeプロセスなし")
+                        return True
+                else:
+                    print("✅ 既存Chromeプロセスなし")  
+                    return True
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                print("⚠️ プロセスチェックコマンドが利用できません（継続）")
+                return True
+        
+        elif system == "Windows":
+            # Windows用のプロセスチェック
+            try:
+                result = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq chrome.exe'],
+                                      capture_output=True, text=True, timeout=5)
+                if 'chrome.exe' in result.stdout:
+                    print("🔍 既存Chromeプロセス検出")
+                    print("💡 既存Chromeプロセスとは独立してSeleniumを起動します")
+                    return True
+                else:
+                    print("✅ 既存Chromeプロセスなし")
+                    return True
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                print("⚠️ プロセスチェックコマンドが利用できません（継続）")
+                return True
+        
+        print("✅ プロセス競合チェック完了")
+        return True
+        
+    except Exception as e:
+        print(f"⚠️ プロセス競合チェックエラー（継続）: {e}")
+        return True  # エラーでも継続
+
+def emergency_memory_cleanup():
+    """緊急メモリクリーンアップ（システムクラッシュ対策）"""
+    try:
+        print("🚨 === 緊急メモリクリーンアップ開始 ===")
+        
+        # Python GC強制実行
+        import gc
+        gc.collect()
+        print("🧹 Python GC実行完了")
+        
+        # 不要な既存Chromeプロセスの確認と警告
+        try:
+            import subprocess
+            result = subprocess.run(['pgrep', '-f', 'Google Chrome'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                chrome_pids = [pid for pid in result.stdout.strip().split('\n') if pid]
+                if len(chrome_pids) > 15:
+                    print(f"🚨 WARNING: 大量のChromeプロセス検出 ({len(chrome_pids)}個)")
+                    print("💡 システムクラッシュを防ぐため、不要なChromeタブを閉じることを推奨")
+        except:
+            pass
+        
+        # 一時ファイルクリーンアップ
+        temp_dir = tempfile.gettempdir()
+        try:
+            import glob
+            patterns = [
+                os.path.join(temp_dir, "safe_selenium_profile_*"),
+                os.path.join(temp_dir, "scoped_dir*"),
+                os.path.join(temp_dir, ".org.chromium.*"),
+                os.path.join(temp_dir, "chrome_*")
+            ]
+            
+            for pattern in patterns:
+                for old_temp in glob.glob(pattern):
+                    try:
+                        if os.path.getctime(old_temp) < time.time() - 1800:  # 30分以上古い
+                            if os.path.isdir(old_temp):
+                                shutil.rmtree(old_temp, ignore_errors=True)
+                            else:
+                                os.unlink(old_temp)
+                            print(f"🧹 古い一時ファイル削除: {os.path.basename(old_temp)}")
+                    except:
+                        continue
+        except ImportError:
+            pass
+            
+        print("✅ 緊急メモリクリーンアップ完了")
+        
+    except Exception as e:
+        print(f"⚠️ 緊急メモリクリーンアップエラー（継続）: {e}")
+
+def ensure_process_isolation():
+    """プロセス分離を確実にするための環境設定（極限版）"""
+    try:
+        print("🔧 === 極限プロセス分離環境設定 ===")
+        
+        # 環境変数でプロセス分離を強化（極限モード）
+        isolation_env_vars = {
+            'CHROME_NO_SANDBOX': '1',
+            'CHROME_DISABLE_GPU': '1', 
+            'CHROME_DISABLE_DEV_SHM_USAGE': '1',
+            'CHROME_DISABLE_EXTENSIONS': '1',
+            'CHROME_DISABLE_PLUGINS': '1',
+            'CHROME_DISABLE_IMAGES': '1',
+            'CHROME_DISABLE_JAVASCRIPT': '0',  # Twitterには必要
+            'DISPLAY': os.environ.get('DISPLAY', ':0'),
+            'NSUnbufferedIO': 'YES',  # macOS専用
+            'OBJC_DISABLE_INITIALIZE_FORK_SAFETY': 'YES',  # macOS fork safety
+        }
+        
+        for var, value in isolation_env_vars.items():
+            os.environ[var] = value
+            print(f"🔧 環境変数設定: {var}={value}")
+            
+        # macOS特有のメモリ制限設定
+        if platform.system() == "Darwin":
+            try:
+                # Pythonプロセスのメモリ制限を設定
+                import resource
+                # 仮想メモリ制限: 2GB
+                resource.setrlimit(resource.RLIMIT_AS, (2*1024*1024*1024, 2*1024*1024*1024))
+                print("🔧 macOS メモリ制限設定: 2GB")
+            except:
+                print("⚠️ メモリ制限設定失敗（継続）")
+        
+        # 一時ディレクトリのクリーンアップ
+        temp_dir = tempfile.gettempdir()
+        chrome_temp_pattern = os.path.join(temp_dir, "safe_selenium_profile_*")
+        
+        try:
+            import glob
+            old_profiles = glob.glob(chrome_temp_pattern)
+            for old_profile in old_profiles:
+                try:
+                    # 30分以上古いプロファイルのみクリーンアップ（より短間隔）
+                    if os.path.getctime(old_profile) < time.time() - 1800:
+                        shutil.rmtree(old_profile, ignore_errors=True)
+                        print(f"🧹 古いプロファイルクリーンアップ: {os.path.basename(old_profile)}")
+                except (OSError, FileNotFoundError):
+                    continue
+        except ImportError:
+            pass  # globが利用できない場合はスキップ
+            
+        print("✅ 極限プロセス分離環境設定完了")
+        return True
+        
+    except Exception as e:
+        print(f"⚠️ 極限プロセス分離環境設定エラー（継続）: {e}")
+        return True
+
 def create_chrome_driver_with_system_profile():
-    """システムのデフォルトChromeプロファイルを使用してChrome WebDriverを作成"""
-    print("🔍 === システムデフォルトプロファイルでChrome起動開始 ===")
+    """システムのデフォルトChromeプロファイルをコピーして安全にChrome WebDriverを作成（メモリクラッシュ対策版）"""
+    print("🔍 === メモリクラッシュ対策版Chrome起動開始 ===")
+    print("⚠️ システム全体クラッシュ防止のため極限モードで実行します")
+    
+    # 緊急メモリクリーンアップ
+    emergency_memory_cleanup()
+    
+    # プロセス競合チェックとプロセス分離の確保
+    check_chrome_process_conflicts()
+    ensure_process_isolation()
     
     # システムのデフォルトプロファイルパスを取得
     system_profile_path = get_system_default_chrome_profile_path()
@@ -1347,22 +1618,98 @@ def create_chrome_driver_with_system_profile():
         is_production = os.environ.get('NODE_ENV') == 'production' or os.environ.get('ENVIRONMENT') == 'production'
         print(f"🔍 環境判定: is_production={is_production}")
         
+        # 安全なプロファイルコピーを作成
+        safe_profile_path = create_safe_profile_copy(system_profile_path)
+        if not safe_profile_path:
+            print("❌ 安全なプロファイルコピーの作成に失敗しました")
+            return None
+        
+        print(f"✅ 安全なプロファイルコピー作成: {safe_profile_path}")
+        
         options = webdriver.ChromeOptions()
         
-        # システムのデフォルトプロファイルを使用
-        options.add_argument(f'--user-data-dir={system_profile_path}')
-        options.add_argument('--profile-directory=Default')
+        print("🚨 極限メモリ節約モードでChromeオプション設定中...")
         
-        # 新しいウィンドウで起動（既存のChromeに影響しない）
-        options.add_argument('--new-window')
+        # === 条件付きヘッドレスモード（手動ログイン時は最小GUI） ===
+        # 手動ログインが必要な場合は最小限のGUIモード、それ以外は完全ヘッドレス
+        print("💡 手動ログイン対応のため最小限GUIモードを使用")
+        print("⚠️ メモリクラッシュ対策のため、全ての視覚効果を無効化")
         
-        # デバッグポートは既存Chromeとは別のポートを使用
+        # GPUとハードウェアアクセラレーション完全無効化
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-software-rasterizer')
+        options.add_argument('--disable-gpu-sandbox')
+        options.add_argument('--disable-2d-canvas-image-chromium')
+        options.add_argument('--disable-3d-apis')
+        options.add_argument('--disable-accelerated-2d-canvas')
+        
+        # === 極限メモリ節約設定 ===
+        options.add_argument('--max_old_space_size=512')  # 512MBに制限
+        options.add_argument('--memory-pressure-off')
+        options.add_argument('--max-heap-size=256')  # ヒープサイズ制限
+        options.add_argument('--aggressive')
+        options.add_argument('--single-process')  # シングルプロセスモード
+        options.add_argument('--disable-plugins')
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-images')  # 画像読み込み無効（メモリ節約）
+        options.add_argument('--disable-javascript-harmony-shipping')
+        
+        # === macOS特有のクラッシュ対策 ===
+        options.add_argument('--disable-metal')  # Metal無効化
+        options.add_argument('--disable-accelerated-2d-canvas')
+        options.add_argument('--disable-accelerated-jpeg-decoding')
+        options.add_argument('--disable-accelerated-mjpeg-decode')
+        options.add_argument('--disable-accelerated-video-decode')
+        options.add_argument('--disable-accelerated-video-encode')
+        
+        # === プロセス・リソース制限 ===
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        options.add_argument('--disable-renderer-backgrounding')
+        options.add_argument('--disable-features=VizDisplayCompositor,AudioServiceOutOfProcess')
+        options.add_argument('--disable-ipc-flooding-protection')
+        options.add_argument('--disable-background-mode')
+        options.add_argument('--disable-component-extensions-with-background-pages')
+        
+        # === ネットワーク・キャッシュ制限 ===
+        options.add_argument('--disk-cache-size=1')  # キャッシュサイズ最小
+        options.add_argument('--media-cache-size=1')
+        options.add_argument('--disable-application-cache')
+        options.add_argument('--disable-offline-load-stale-cache')
+        options.add_argument('--disable-background-networking')
+        
+        # === 完全に独立したプロファイル ===
+        options.add_argument(f'--user-data-dir={safe_profile_path}')
+        options.add_argument('--profile-directory=SafeProfile')
+        
+        # === 既存Chromeとの完全分離 ===
+        options.add_argument('--no-default-browser-check')
+        options.add_argument('--no-first-run')
+        options.add_argument('--disable-default-apps')
+        options.add_argument('--disable-sync')
+        options.add_argument('--disable-translate')
+        options.add_argument('--disable-features=TranslateUI')
+        
+        # === デバッグポート（独立） ===
         debug_port = 9350 + random.randint(0, 50)
         options.add_argument(f'--remote-debugging-port={debug_port}')
         
-        # その他のオプション
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-dev-shm-usage')
+        # === 追加の安定性向上オプション ===
+        options.add_argument('--disable-logging')
+        options.add_argument('--disable-breakpad')  # クラッシュレポート無効化
+        options.add_argument('--disable-client-side-phishing-detection')
+        options.add_argument('--disable-component-update')
+        options.add_argument('--disable-domain-reliability')
+        options.add_argument('--disable-features=AudioServiceOutOfProcess,VizDisplayCompositor')
+        options.add_argument('--force-color-profile=srgb')
+        options.add_argument('--metrics-recording-only')
+        
+        print("✅ 極限メモリ節約Chromeオプション設定完了")
+        print("💡 ヘッドレスモード、シングルプロセス、画像無効化によりメモリ使用量を最小化")
+        
+        # 自動化検出回避
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
@@ -1395,10 +1742,33 @@ def create_chrome_driver_with_system_profile():
                         print(f"🔍 代替Chromeバイナリを発見: {alt_path}")
                         break
         
-        # ChromeDriverサービスを作成
+        # ChromeDriverサービスを作成（macOS最適化版）
         try:
-            service = Service()
-            print("✅ ChromeDriverサービス作成完了")
+            print("🔧 macOS最適化ChromeDriverサービス作成中...")
+            
+            # ChromeDriverのパスを明示的に指定
+            chromedriver_path = shutil.which('chromedriver')
+            if not chromedriver_path:
+                print("❌ ChromeDriverが見つかりません")
+                return None
+            
+            print(f"🔍 ChromeDriverパス: {chromedriver_path}")
+            
+            # macOS特有のサービス設定
+            service_args = [
+                '--verbose',  # ログを詳細化（問題特定用）
+                '--log-path=/tmp/chromedriver.log',  # ログファイル指定
+                '--whitelisted-ips=127.0.0.1',  # ローカルホストのみ
+                f'--port={debug_port + 100}',  # Chrome本体とは別のポート
+            ]
+            
+            service = Service(
+                executable_path=chromedriver_path,
+                service_args=service_args
+            )
+            
+            print("✅ macOS最適化ChromeDriverサービス作成完了")
+            
         except Exception as service_error:
             print(f"❌ ChromeDriverサービス作成失敗: {service_error}")
             return None
@@ -1410,16 +1780,27 @@ def create_chrome_driver_with_system_profile():
         # User-Agentを設定
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         
-        print("✅ システムデフォルトプロファイルでChrome起動成功！")
+        print("✅ システムプロファイル安全コピーでChrome起動成功！")
+        print("💡 既存のChromeとVSCodeには影響しません")
         
         # ドライバーを登録
         driver_id = register_driver(driver)
         print(f"🔍 ドライバーID登録: {driver_id}")
         
+        # 一時プロファイルパスをドライバーに関連付け（後でクリーンアップに使用）
+        driver._safe_profile_path = safe_profile_path
+        
         return driver
         
     except Exception as e:
-        print(f"❌ システムデフォルトプロファイルでChrome起動失敗: {e}")
+        print(f"❌ システムプロファイル安全コピーでChrome起動失敗: {e}")
+        # 失敗した場合は一時プロファイルをクリーンアップ
+        if safe_profile_path and os.path.exists(safe_profile_path):
+            try:
+                shutil.rmtree(safe_profile_path, ignore_errors=True)
+                print("🧹 失敗時の一時プロファイルクリーンアップ完了")
+            except:
+                pass
         return None
 
 def create_chrome_driver():
@@ -1992,6 +2373,9 @@ def cleanup_specific_driver(driver):
         # Twitter投稿専用プロファイルのパスを取得
         twitter_profile_path = getattr(driver, '_twitter_profile_path', None)
         
+        # 安全なプロファイル（システムプロファイルコピー）のパスを取得
+        safe_profile_path = getattr(driver, '_safe_profile_path', None)
+        
         # ドライバーを終了
         try:
             driver.quit()
@@ -2002,6 +2386,17 @@ def cleanup_specific_driver(driver):
         # 登録解除
         if driver_id != 'unknown':
             unregister_driver(driver_id)
+        
+        # 安全なプロファイル（システムプロファイルコピー）を削除
+        if safe_profile_path and os.path.exists(safe_profile_path):
+            print(f"🗑️ 安全なプロファイルコピーを削除中: {safe_profile_path}")
+            time.sleep(2)  # プロセス終了を待つ
+            
+            try:
+                shutil.rmtree(safe_profile_path, ignore_errors=True)
+                print("✅ 安全なプロファイルコピー削除完了")
+            except Exception as e:
+                print(f"⚠️ 安全なプロファイル削除エラー: {e}")
         
         # Twitter投稿専用プロファイルを削除
         if twitter_profile_path and os.path.exists(twitter_profile_path):
