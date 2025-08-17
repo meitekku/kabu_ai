@@ -1,0 +1,29 @@
+=== モバイルTwitterデバッグログ開始 ===
+開始時刻: 2025-08-17 17:55:36
+ログファイル: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_175536.log
+============================================================
+
+[17:55:36] [0.00s] [INFO] モバイルプロファイルディレクトリ: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[17:55:36] [0.00s] [INFO] 📱 モバイルブラウザ起動開始
+[17:55:38] [1.19s] [INFO] ✅ Playwright インスタンス作成完了
+[17:55:38] [1.19s] [INFO] ✅ 既存モバイルプロファイル発見: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[17:55:38] [1.19s] [INFO] モバイル引数設定完了: 26個
+[17:55:38] [1.19s] [INFO] モバイルコンテキスト作成中...
+[17:55:41] [4.63s] [INFO] ✅ モバイルコンテキスト作成完了
+[17:55:41] [4.63s] [INFO] 既存モバイルページを使用
+[17:55:41] [4.66s] [INFO] ✅ モバイル偽装スクリプト適用完了
+[17:55:41] [4.66s] [INFO] 📱 モバイルブラウザ起動成功
+[17:55:41] [4.66s] [INFO] 📱 モバイル版Twitterに移動開始
+[17:55:41] [4.66s] [INFO] アクセス先: https://mobile.twitter.com
+[17:55:43] [6.76s] [INFO] ✅ ページ移動完了
+[17:55:43] [6.76s] [INFO] モバイル風待機: 2.13秒
+[17:55:45] [8.90s] [ERROR] モバイルTwitter移動エラー: Page.title: Target page, context or browser has been closed
+[17:55:45] [8.90s] [INFO] 🧹 モバイルブラウザ クリーンアップ開始
+[17:55:46] [9.65s] [INFO] ✅ モバイルコンテキストクローズ完了
+[17:55:46] [9.68s] [INFO] ✅ Playwrightストップ完了
+
+=== モバイルTwitterデバッグログ終了 ===
+終了時刻: 2025-08-17 17:55:46
+総実行時間: 9.68秒
+============================================================
+[17:55:46] [9.68s] [INFO] 📋 詳細デバッグログ保存完了: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_175536.log

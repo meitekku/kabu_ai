@@ -80,7 +80,7 @@ def safe_manual_login_wait(driver, timeout=300):
         error_reporter.add_error("manual_login", str(e), e)
         return False
 
-def safe_post_text(driver, message, actually_post=False):
+def safe_post_text(driver, message, image_path=None, actually_post=False):
     """安全なテキスト投稿"""
     try:
         logger.info("投稿処理を開始...")
@@ -135,6 +135,70 @@ def safe_post_text(driver, message, actually_post=False):
         text_area.send_keys(message)
         time.sleep(2)
         
+        # 画像アップロード処理
+        if image_path:
+            logger.info(f"📷 画像アップロード開始: {image_path}")
+            try:
+                # 画像アップロードボタンを探す
+                media_selectors = [
+                    '[aria-label*="メディア"]',
+                    '[aria-label*="media"]', 
+                    '[aria-label*="Media"]',
+                    '[data-testid="attachments"]',
+                    '[data-testid="toolbarAddMedia"]',
+                    'input[type="file"][accept*="image"]'
+                ]
+                
+                media_button = None
+                for selector in media_selectors:
+                    try:
+                        elements = driver.find_elements("css selector", selector)
+                        if elements:
+                            media_button = elements[0]
+                            logger.info(f"✅ 画像アップロードボタン発見: {selector}")
+                            break
+                    except:
+                        continue
+                
+                if media_button:
+                    # メディアボタンをクリック
+                    media_button.click()
+                    time.sleep(1)
+                    
+                    # ファイル入力要素を探す
+                    file_input_selectors = [
+                        'input[type="file"]',
+                        'input[type="file"][accept*="image"]'
+                    ]
+                    
+                    file_input = None
+                    for selector in file_input_selectors:
+                        try:
+                            elements = driver.find_elements("css selector", selector)
+                            if elements:
+                                # 最後に追加されたファイル入力要素を使用
+                                file_input = elements[-1]
+                                logger.info(f"✅ ファイル入力要素発見: {selector}")
+                                break
+                        except:
+                            continue
+                    
+                    if file_input:
+                        # 画像ファイルをアップロード
+                        file_input.send_keys(image_path)
+                        logger.info(f"✅ 画像ファイル送信完了: {image_path}")
+                        time.sleep(3)  # アップロード完了待機
+                    else:
+                        logger.warning("⚠️ ファイル入力要素が見つかりません")
+                else:
+                    logger.warning("⚠️ 画像アップロードボタンが見つかりません")
+                    
+            except Exception as upload_error:
+                logger.error(f"❌ 画像アップロードエラー: {upload_error}")
+                # 画像アップロードに失敗してもテキスト投稿は続行
+        else:
+            logger.info("📝 テキストのみ投稿")
+        
         if actually_post:
             # 実際に投稿ボタンを押す
             submit_selectors = [
@@ -170,7 +234,7 @@ def safe_post_text(driver, message, actually_post=False):
         error_reporter.add_error("post_text", str(e), e)
         return False
 
-def safe_main(message=None, text_only=True, actually_post=False):
+def safe_main(message=None, image_path=None, text_only=True, actually_post=False):
     """安全なメイン処理"""
     try:
         error_reporter.add_success("safe_main", "安全なメイン処理開始")
@@ -180,7 +244,19 @@ def safe_main(message=None, text_only=True, actually_post=False):
             message = DEFAULT_MESSAGE
             
         logger.info(f"投稿メッセージ: {message[:50]}...")
+        logger.info(f"画像パス: {image_path if image_path else 'なし'}")
         logger.info(f"実際に投稿: {'はい' if actually_post else 'いいえ（テスト）'}")
+        
+        # 画像ファイルの存在確認
+        if image_path:
+            if not os.path.exists(image_path):
+                logger.error(f"画像ファイルが見つかりません: {image_path}")
+                raise Exception(f"画像ファイルが見つかりません: {image_path}")
+            else:
+                logger.info(f"✅ 画像ファイル確認: {image_path}")
+                # ファイルサイズも確認
+                file_size = os.path.getsize(image_path)
+                logger.info(f"✅ 画像ファイルサイズ: {file_size} bytes")
         
         # 安全なSeleniumマネージャーを使用
         with SafeSeleniumManager() as driver:
@@ -195,7 +271,7 @@ def safe_main(message=None, text_only=True, actually_post=False):
                 raise Exception("ログインに失敗しました")
                 
             # 投稿処理
-            success = safe_post_text(driver, message, actually_post)
+            success = safe_post_text(driver, message, image_path, actually_post)
             
             if success:
                 logger.info("✅ 処理が正常に完了しました")
@@ -214,13 +290,41 @@ def safe_main(message=None, text_only=True, actually_post=False):
 
 def parse_arguments():
     """コマンドライン引数を解析"""
+    # 🔍 引数デバッグログ追加
+    print("🔍 [ARG DEBUG] safe_main.py 引数解析開始")
+    print(f"🔍 [ARG DEBUG] sys.argv: {sys.argv}")
+    
     parser = argparse.ArgumentParser(description='安全なTwitter自動投稿システム')
     parser.add_argument('message', nargs='?', help='投稿メッセージ')
+    parser.add_argument('image_path', nargs='?', help='画像ファイルパス')
     parser.add_argument('--text-only', action='store_true', help='テキストのみ投稿')
     parser.add_argument('--actually-post', action='store_true', help='実際に投稿を実行')
     parser.add_argument('--test', action='store_true', help='テストモード（投稿ボタンは押さない）')
     
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    # 🔍 解析結果デバッグログ
+    print(f"🔍 [ARG DEBUG] 解析結果:")
+    print(f"  - message: '{args.message}'")
+    print(f"  - image_path: '{args.image_path}'")
+    print(f"  - text_only: {args.text_only}")
+    print(f"  - actually_post: {args.actually_post}")
+    print(f"  - test: {args.test}")
+    
+    if args.image_path:
+        print(f"🔍 [ARG DEBUG] 画像パス詳細:")
+        print(f"  - パス: '{args.image_path}'")
+        print(f"  - 存在確認: {os.path.exists(args.image_path)}")
+        if os.path.exists(args.image_path):
+            file_size = os.path.getsize(args.image_path)
+            print(f"  - ファイルサイズ: {file_size} bytes")
+        else:
+            print(f"  - 絶対パス: {os.path.abspath(args.image_path)}")
+            print(f"  - カレントディレクトリ: {os.getcwd()}")
+    else:
+        print(f"🔍 [ARG DEBUG] 画像パスなし")
+    
+    return args
 
 def main():
     """エントリーポイント"""
@@ -233,6 +337,9 @@ def main():
         # 投稿メッセージ
         message = args.message if args.message else DEFAULT_MESSAGE
         
+        # 画像パス
+        image_path = args.image_path if hasattr(args, 'image_path') else None
+        
         # 実際に投稿するかテストモードか
         actually_post = args.actually_post and not args.test
         
@@ -243,9 +350,15 @@ def main():
         else:
             print("📝 準備モード: 投稿準備まで行います")
             
+        if image_path:
+            print(f"📷 画像ファイル: {image_path}")
+        else:
+            print("📝 テキストのみ投稿")
+            
         # 安全なメイン処理を実行
         success = safe_main(
             message=message,
+            image_path=image_path,
             text_only=args.text_only,
             actually_post=actually_post
         )

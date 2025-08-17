@@ -88,29 +88,47 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < imageBase64Data.length; i++) {
         try {
           const base64Data = imageBase64Data[i];
+          debugLog(`🔍 [IMAGE DEBUG] 画像 ${i + 1}/${imageBase64Data.length} 処理開始`);
+          debugLog(`🔍 [IMAGE DEBUG] データ長: ${base64Data.length} 文字`);
+          debugLog(`🔍 [IMAGE DEBUG] データプレビュー: ${base64Data.substring(0, 100)}...`);
+          
           if (base64Data.startsWith('data:image/')) {
+            debugLog(`✅ [IMAGE DEBUG] 有効なdata URL形式確認`);
+            
+            // MIMEタイプを取得
+            const mimeMatch = base64Data.match(/data:([^;]*)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
+            debugLog(`📝 [IMAGE DEBUG] MIMEタイプ: ${mimeType}`);
+            
             // data URLから実際のbase64データを抽出
             const base64Content = base64Data.split(',')[1];
+            debugLog(`📝 [IMAGE DEBUG] base64コンテンツ長: ${base64Content.length} 文字`);
+            
             const buffer = Buffer.from(base64Content, 'base64');
+            debugLog(`📝 [IMAGE DEBUG] Buffer作成: ${buffer.length} bytes`);
             
             // 一意のファイル名を生成
             const fileName = `chart_${uuidv4()}.png`;
             const filePath = path.join(tempDir, fileName);
+            debugLog(`📝 [IMAGE DEBUG] 保存先: ${filePath}`);
             
             // ファイルに保存
             await writeFile(filePath, buffer);
             finalImagePaths.push(filePath);
-            debugLog(`base64画像保存完了: ${filePath}`);
+            debugLog(`✅ [IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
             const fs = require('fs');
             const stats = fs.statSync(filePath);
-            debugLog(`  ファイルサイズ: ${stats.size} bytes`);
+            debugLog(`📊 [IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
+            debugLog(`base64画像保存完了: ${filePath}`);
           } else {
-            debugLog(`無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
+            debugLog(`❌ [IMAGE DEBUG] 無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
+            debugLog(`❌ [IMAGE DEBUG] データ開始: ${base64Data.substring(0, 50)}...`, 'WARNING');
           }
         } catch (error) {
-          debugLog(`base64画像保存エラー: ${i + 1}枚目 - ${error}`, 'ERROR');
+          debugLog(`❌ [IMAGE DEBUG] 画像 ${i + 1} 処理エラー: ${error}`, 'ERROR');
+          debugLog(`❌ [IMAGE DEBUG] エラー詳細: ${error instanceof Error ? error.stack : String(error)}`, 'ERROR');
         }
       }
     }

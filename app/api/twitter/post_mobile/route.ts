@@ -88,45 +88,101 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < imageBase64Data.length; i++) {
         try {
           const base64Data = imageBase64Data[i];
+          debugLog(`📱 [MOBILE IMAGE DEBUG] 画像 ${i + 1}/${imageBase64Data.length} 処理開始`);
+          debugLog(`📱 [MOBILE IMAGE DEBUG] データ長: ${base64Data.length} 文字`);
+          debugLog(`📱 [MOBILE IMAGE DEBUG] データプレビュー: ${base64Data.substring(0, 100)}...`);
+          
           if (base64Data.startsWith('data:image/')) {
+            debugLog(`✅ [MOBILE IMAGE DEBUG] 有効なdata URL形式確認`);
+            
+            // MIMEタイプを取得
+            const mimeMatch = base64Data.match(/data:([^;]*)/);
+            const mimeType = mimeMatch ? mimeMatch[1] : 'unknown';
+            debugLog(`📝 [MOBILE IMAGE DEBUG] MIMEタイプ: ${mimeType}`);
+            
             // data URLから実際のbase64データを抽出
             const base64Content = base64Data.split(',')[1];
+            debugLog(`📝 [MOBILE IMAGE DEBUG] base64コンテンツ長: ${base64Content.length} 文字`);
+            
             const buffer = Buffer.from(base64Content, 'base64');
+            debugLog(`📝 [MOBILE IMAGE DEBUG] Buffer作成: ${buffer.length} bytes`);
             
             // 一意のファイル名を生成
             const fileName = `mobile_chart_${uuidv4()}.png`;
             const filePath = path.join(tempDir, fileName);
+            debugLog(`📝 [MOBILE IMAGE DEBUG] 保存先: ${filePath}`);
             
             // ファイルに保存
             await writeFile(filePath, buffer);
             finalImagePaths.push(filePath);
-            debugLog(`base64画像保存完了: ${filePath}`);
+            debugLog(`✅ [MOBILE IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
             const fs = require('fs');
             const stats = fs.statSync(filePath);
-            debugLog(`  ファイルサイズ: ${stats.size} bytes`);
+            debugLog(`📊 [MOBILE IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
+            debugLog(`base64画像保存完了: ${filePath}`);
           } else {
-            debugLog(`無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
+            debugLog(`❌ [MOBILE IMAGE DEBUG] 無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
+            debugLog(`❌ [MOBILE IMAGE DEBUG] データ開始: ${base64Data.substring(0, 50)}...`, 'WARNING');
           }
         } catch (error) {
-          debugLog(`base64画像保存エラー: ${i + 1}枚目 - ${error}`, 'ERROR');
+          debugLog(`❌ [MOBILE IMAGE DEBUG] 画像 ${i + 1} 処理エラー: ${error}`, 'ERROR');
+          debugLog(`❌ [MOBILE IMAGE DEBUG] エラー詳細: ${error instanceof Error ? error.stack : String(error)}`, 'ERROR');
         }
       }
     }
     
+    // 🔍 コマンド構築前の詳細ログ
+    debugLog(`📋 [CMD DEBUG] 最終コマンド構築開始`);
+    debugLog(`📋 [CMD DEBUG] 現在のpythonCmd: "${pythonCmd}"`);
+    debugLog(`📋 [CMD DEBUG] finalImagePaths.length: ${finalImagePaths.length}`);
+    debugLog(`📋 [CMD DEBUG] finalImagePaths内容:`, 'INFO');
+    finalImagePaths.forEach((path, index) => {
+      debugLog(`📋 [CMD DEBUG]   ${index + 1}. "${path}"`);
+    });
+    
     // 最終的な画像パスをコマンドに追加
     if (finalImagePaths.length > 0) {
-      pythonCmd += ` ${finalImagePaths.map((p: string) => `"${p}"`).join(' ')}`;
+      const imagePathsString = finalImagePaths.map((p: string) => `"${p}"`).join(' ');
+      debugLog(`📋 [CMD DEBUG] 追加する画像パス文字列: "${imagePathsString}"`);
+      
+      pythonCmd += ` ${imagePathsString}`;
+      debugLog(`📋 [CMD DEBUG] 画像パス追加後: "${pythonCmd}"`);
       debugLog(`最終画像パス追加: ${finalImagePaths.length}枚`);
+      
+      // 各ファイルの存在確認
+      debugLog(`📋 [CMD DEBUG] ファイル存在確認:`, 'INFO');
+      finalImagePaths.forEach((path, index) => {
+        try {
+          const fs = require('fs');
+          if (fs.existsSync(path)) {
+            const stats = fs.statSync(path);
+            debugLog(`📋 [CMD DEBUG]   ${index + 1}. ✅ "${path}" (${stats.size} bytes)`);
+          } else {
+            debugLog(`📋 [CMD DEBUG]   ${index + 1}. ❌ "${path}" (ファイルなし)`, 'ERROR');
+          }
+        } catch (e) {
+          debugLog(`📋 [CMD DEBUG]   ${index + 1}. ⚠️ "${path}" (確認エラー: ${e})`, 'WARNING');
+        }
+      });
+    } else {
+      debugLog(`📋 [CMD DEBUG] 画像パスなし - テキストのみ投稿`);
     }
     
     if (!actuallyPost) {
       pythonCmd += ' --test';
+      debugLog(`📋 [CMD DEBUG] テストモードフラグ追加後: "${pythonCmd}"`);
       debugLog('テストモードフラグを追加');
     } else {
+      debugLog(`📋 [CMD DEBUG] 実投稿モード - フラグ追加なし`);
       debugLog('実投稿モードで実行');
     }
+    
+    debugLog(`📋 [CMD DEBUG] === 最終コマンド ===`);
+    debugLog(`📋 [CMD DEBUG] "${pythonCmd}"`);
+    debugLog(`📋 [CMD DEBUG] コマンド長: ${pythonCmd.length} 文字`);
+    debugLog(`📋 [CMD DEBUG] ==================`)
 
     debugLog('📱 実行コマンド: ' + pythonCmd);
     

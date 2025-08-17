@@ -1,0 +1,242 @@
+=== モバイルTwitterデバッグログ開始 ===
+開始時刻: 2025-08-17 17:16:42
+ログファイル: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_171642.log
+============================================================
+
+[17:16:42] [0.00s] [INFO] モバイルプロファイルディレクトリ: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[17:16:42] [0.00s] [INFO] 📱 モバイルブラウザ起動開始
+[17:16:42] [0.69s] [INFO] ✅ Playwright インスタンス作成完了
+[17:16:42] [0.69s] [INFO] ✅ 既存モバイルプロファイル発見: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[17:16:42] [0.69s] [INFO] モバイル引数設定完了: 26個
+[17:16:42] [0.69s] [INFO] モバイルコンテキスト作成中...
+[17:16:45] [2.90s] [INFO] ✅ モバイルコンテキスト作成完了
+[17:16:45] [2.90s] [INFO] 既存モバイルページを使用
+[17:16:45] [2.92s] [INFO] ✅ モバイル偽装スクリプト適用完了
+[17:16:45] [2.92s] [INFO] 📱 モバイルブラウザ起動成功
+[17:16:45] [2.93s] [INFO] 📱 モバイル版Twitterに移動開始
+[17:16:45] [2.93s] [INFO] アクセス先: https://mobile.twitter.com
+[17:16:46] [4.60s] [INFO] ✅ ページ移動完了
+[17:16:46] [4.60s] [INFO] モバイル風待機: 1.80秒
+[17:16:48] [6.41s] [INFO] 現在のURL: https://x.com/
+[17:16:48] [6.41s] [INFO] ページタイトル: ホーム / X
+[17:16:48] [6.41s] [INFO] モバイルログイン状態チェック - URL: https://x.com/home
+[17:16:48] [6.46s] [INFO] ✅ モバイルログイン要素発見: nav[role="navigation"]
+[17:16:48] [6.48s] [INFO] ✅ モバイルログイン要素発見: [data-testid="primaryColumn"]
+[17:16:48] [6.49s] [INFO] ✅ モバイルログイン要素発見: [aria-label*="ホーム"], [aria-label*="Home"]
+[17:16:48] [6.49s] [INFO] ✅ モバイルログイン確認 (3個の要素)
+[17:16:48] [6.49s] [INFO] 📱 モバイルツイート投稿開始 (テスト: False)
+[17:16:48] [6.49s] [INFO] 投稿処理開始時のURL: https://x.com/home
+[17:16:48] [6.51s] [INFO] ページ上のボタン要素数: 8
+[17:16:48] [6.54s] [INFO] ボタン1: text='', aria-label='プロフィールメニュー めいめい＠株わかりやすくまとめ・解説', testid='DashButton_ProfileIcon_Link', href=''
+[17:16:48] [6.56s] [INFO] ボタン2: text='', aria-label='前', testid='', href=''
+[17:16:48] [6.70s] [INFO] ボタン3: text='', aria-label='次へ', testid='', href=''
+[17:16:48] [6.73s] [INFO] ボタン4: text='', aria-label='前', testid='', href=''
+[17:16:48] [6.75s] [INFO] ボタン5: text='', aria-label='次へ', testid='', href=''
+[17:16:49] [6.77s] [INFO] ボタン6: text='新しいポストを表示', aria-label='新しいポストがあります。新しいポストに移動するには、ピリオド', testid='', href=''
+[17:16:49] [6.79s] [INFO] ボタン7: text='', aria-label='ホームタイムラインに移動', testid='', href=''
+[17:16:49] [7.26s] [INFO] ボタン8: text='', aria-label='トレンドに移動', testid='', href=''
+[17:16:49] [7.38s] [INFO] モバイル投稿ボタン発見: [data-testid="FloatingActionButtons_Tweet_Button"]
+[17:16:49] [7.38s] [INFO] モバイル風待機: 2.01秒
+[17:16:51] [9.54s] [INFO] タップ成功
+[17:16:51] [9.54s] [INFO] モバイル風待機: 2.46秒
+[17:16:54] [12.02s] [INFO] モバイルテキストエリア発見: [data-testid="tweetTextarea_0"]
+[17:16:54] [12.02s] [INFO] 📝 テキスト入力開始前の状態チェック
+[17:16:54] [12.05s] [INFO] 📝 [TEXT_CHECK] テキスト入力開始前: テキスト長=0, 内容=''
+[17:16:54] [12.05s] [INFO] 🎯 [DEBUG] mobile_type開始: clear_first=False, text='【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:54] [12.06s] [INFO] モバイル風待機: 0.25秒
+[17:16:54] [12.32s] [INFO] 📝 JavaScript直接入力開始: '【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:54] [12.34s] [INFO] 🔧 [DEBUG] モバイルJS設定結果 - before: '', after: '【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:54] [12.34s] [INFO] ✅ JavaScript直接入力完了: '【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:54] [12.34s] [INFO] モバイル風待機: 0.48秒
+[17:16:55] [12.82s] [INFO] 🎯 [DEBUG] モバイル最終結果: '【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:55] [12.82s] [INFO] 📝 テキスト入力完了後の状態チェック
+[17:16:55] [12.83s] [INFO] 📝 [TEXT_CHECK] テキスト入力完了後: テキスト長=858, 内容='【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...'
+[17:16:55] [12.83s] [INFO] ✅ モバイルテキスト入力完了: 【三菱ＵＦＪフィナンシャル・グループ(8306)】6.01%上昇、日銀利上げ期待と米財務長官発言が追...
+[17:16:55] [12.83s] [INFO] 🚀 実投稿モード: 投稿ボタンを探します
+[17:16:55] [12.83s] [INFO] 📊 投稿ボタン探索開始 - ページ状態調査
+[17:16:55] [12.83s] [INFO] 現在のURL: https://x.com/compose/post
+[17:16:55] [12.83s] [INFO] ページタイトル: 新しいポストを作成 / X
+[17:16:55] [12.85s] [INFO] 📊 ページ上の全ボタン要素数: 12
+[17:16:55] [12.89s] [INFO]   ボタン1: visible=True, disabled=False
+[17:16:55] [12.89s] [INFO]     text='', aria-label='戻る'
+[17:16:55] [12.89s] [INFO]     testid='app-bar-back', type='button'
+[17:16:55] [12.89s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [12.95s] [INFO]   ボタン2: visible=True, disabled=False
+[17:16:55] [12.95s] [INFO]     text='下書き', aria-label=''
+[17:16:55] [12.95s] [INFO]     testid='unsentButton', type='button'
+[17:16:55] [12.95s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1vsu8ta r'
+[17:16:55] [13.00s] [INFO]   ボタン3: visible=True, disabled=True
+[17:16:55] [13.00s] [INFO]     text='ポストする', aria-label=''
+[17:16:55] [13.00s] [INFO]     testid='tweetButton', type='button'
+[17:16:55] [13.00s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1vsu8ta r'
+[17:16:55] [13.00s] [INFO]     🎯 投稿関連キーワード発見: ['Tweet']
+[17:16:55] [13.05s] [INFO]   ボタン4: visible=True, disabled=False
+[17:16:55] [13.05s] [INFO]     text='全員が返信できます', aria-label='全員が返信できます'
+[17:16:55] [13.05s] [INFO]     testid='', type='button'
+[17:16:55] [13.05s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1gdvury r'
+[17:16:55] [13.09s] [INFO]   ボタン5: visible=True, disabled=True
+[17:16:55] [13.09s] [INFO]     text='', aria-label='前'
+[17:16:55] [13.09s] [INFO]     testid='', type='button'
+[17:16:55] [13.09s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.13s] [INFO]   ボタン6: visible=True, disabled=False
+[17:16:55] [13.13s] [INFO]     text='', aria-label='画像や動画を追加'
+[17:16:55] [13.13s] [INFO]     testid='', type='button'
+[17:16:55] [13.13s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-14u3nlf r'
+[17:16:55] [13.16s] [INFO]   ボタン7: visible=True, disabled=False
+[17:16:55] [13.16s] [INFO]     text='', aria-label='GIF画像を追加'
+[17:16:55] [13.16s] [INFO]     testid='gifSearchButton', type='button'
+[17:16:55] [13.16s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.20s] [INFO]   ボタン8: visible=True, disabled=False
+[17:16:55] [13.20s] [INFO]     text='', aria-label='Grokでポストをブラッシュアップする'
+[17:16:55] [13.20s] [INFO]     testid='grokImgGen', type='button'
+[17:16:55] [13.20s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.23s] [INFO]   ボタン9: visible=True, disabled=False
+[17:16:55] [13.23s] [INFO]     text='', aria-label='投票を追加'
+[17:16:55] [13.23s] [INFO]     testid='createPollButton', type='button'
+[17:16:55] [13.23s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.27s] [INFO]   ボタン10: visible=True, disabled=False
+[17:16:55] [13.27s] [INFO]     text='', aria-label='ポストを予約'
+[17:16:55] [13.27s] [INFO]     testid='scheduleOption', type='button'
+[17:16:55] [13.27s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.31s] [INFO]   ボタン11: visible=True, disabled=True
+[17:16:55] [13.31s] [INFO]     text='', aria-label='位置情報を追加'
+[17:16:55] [13.31s] [INFO]     testid='geoButton', type='button'
+[17:16:55] [13.31s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.34s] [INFO]   ボタン12: visible=True, disabled=True
+[17:16:55] [13.34s] [INFO]     text='', aria-label='次へ'
+[17:16:55] [13.34s] [INFO]     testid='', type='button'
+[17:16:55] [13.34s] [INFO]     class='css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-1ii58gl r'
+[17:16:55] [13.34s] [INFO] 🔍 投稿ボタン探索開始: 26個のセレクタをテスト
+[17:16:55] [13.34s] [INFO]   セレクタ1/26: [data-testid="tweetButtonInline"]
+[17:16:55] [13.35s] [INFO]     マッチ数: 0個
+[17:16:55] [13.35s] [INFO]   セレクタ2/26: [data-testid="tweetButton"]
+[17:16:55] [13.35s] [INFO]     マッチ数: 1個
+[17:16:55] [13.37s] [INFO]   セレクタ3/26: button[data-testid="tweetButton"]
+[17:16:55] [13.37s] [INFO]     マッチ数: 1個
+[17:16:55] [13.38s] [INFO]   セレクタ4/26: button[data-testid="tweetButtonInline"]
+[17:16:55] [13.39s] [INFO]     マッチ数: 0個
+[17:16:55] [13.39s] [INFO]   セレクタ5/26: [role="button"][aria-label*="ツイート"]
+[17:16:55] [13.39s] [INFO]     マッチ数: 0個
+[17:16:55] [13.39s] [INFO]   セレクタ6/26: [role="button"][aria-label*="Tweet"]
+[17:16:55] [13.40s] [INFO]     マッチ数: 0個
+[17:16:55] [13.40s] [INFO]   セレクタ7/26: [role="button"][aria-label*="投稿"]
+[17:16:55] [13.40s] [INFO]     マッチ数: 0個
+[17:16:55] [13.40s] [INFO]   セレクタ8/26: [role="button"][aria-label*="Post"]
+[17:16:55] [13.41s] [INFO]     マッチ数: 0個
+[17:16:55] [13.41s] [INFO]   セレクタ9/26: button[aria-label*="ツイート"]
+[17:16:55] [13.41s] [INFO]     マッチ数: 0個
+[17:16:55] [13.41s] [INFO]   セレクタ10/26: button[aria-label*="Tweet"]
+[17:16:55] [13.42s] [INFO]     マッチ数: 0個
+[17:16:55] [13.42s] [INFO]   セレクタ11/26: button[aria-label*="投稿"]
+[17:16:55] [13.42s] [INFO]     マッチ数: 0個
+[17:16:55] [13.42s] [INFO]   セレクタ12/26: button[aria-label*="Post"]
+[17:16:55] [13.43s] [INFO]     マッチ数: 0個
+[17:16:55] [13.43s] [INFO]   セレクタ13/26: button:has-text("ツイート")
+[17:16:55] [13.43s] [INFO]     マッチ数: 0個
+[17:16:55] [13.43s] [INFO]   セレクタ14/26: button:has-text("Tweet")
+[17:16:55] [13.44s] [INFO]     マッチ数: 0個
+[17:16:55] [13.44s] [INFO]   セレクタ15/26: button:has-text("投稿")
+[17:16:55] [13.44s] [INFO]     マッチ数: 0個
+[17:16:55] [13.44s] [INFO]   セレクタ16/26: button:has-text("Post")
+[17:16:55] [13.45s] [INFO]     マッチ数: 0個
+[17:16:55] [13.45s] [INFO]   セレクタ17/26: button[class*="tweet"]
+[17:16:55] [13.45s] [INFO]     マッチ数: 0個
+[17:16:55] [13.45s] [INFO]   セレクタ18/26: button[class*="post"]
+[17:16:55] [13.46s] [INFO]     マッチ数: 0個
+[17:16:55] [13.46s] [INFO]   セレクタ19/26: button[class*="submit"]
+[17:16:55] [13.46s] [INFO]     マッチ数: 0個
+[17:16:55] [13.46s] [INFO]   セレクタ20/26: button[class*="primary"]
+[17:16:55] [13.47s] [INFO]     マッチ数: 0個
+[17:16:55] [13.47s] [INFO]   セレクタ21/26: button[style*="background"]
+[17:16:55] [13.48s] [INFO]     マッチ数: 12個
+[17:16:55] [13.51s] [INFO]       ボタン1: text='', aria-label='戻る', testid='app-bar-back'
+[17:16:55] [13.51s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.54s] [INFO]       ボタン2: text='下書き', aria-label='', testid='unsentButton'
+[17:16:55] [13.54s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.58s] [INFO]       ボタン4: text='全員が返信できます', aria-label='全員が返信できます', testid=''
+[17:16:55] [13.58s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.62s] [INFO]       ボタン6: text='', aria-label='画像や動画を追加', testid=''
+[17:16:55] [13.62s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.64s] [INFO]       ボタン7: text='', aria-label='GIF画像を追加', testid='gifSearchButton'
+[17:16:55] [13.64s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.67s] [INFO]       ボタン8: text='', aria-label='Grokでポストをブラッシュアップする', testid='grokImgGen'
+[17:16:55] [13.67s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.69s] [INFO]       ボタン9: text='', aria-label='投票を追加', testid='createPollButton'
+[17:16:55] [13.69s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.71s] [INFO]       ボタン10: text='', aria-label='ポストを予約', testid='scheduleOption'
+[17:16:55] [13.71s] [INFO]       ❌ 投稿ボタンではない
+[17:16:55] [13.73s] [INFO]   セレクタ22/26: button[style*="color"]
+[17:16:55] [13.74s] [INFO]     マッチ数: 12個
+[17:16:56] [13.77s] [INFO]       ボタン1: text='', aria-label='戻る', testid='app-bar-back'
+[17:16:56] [13.77s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.79s] [INFO]       ボタン2: text='下書き', aria-label='', testid='unsentButton'
+[17:16:56] [13.79s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.83s] [INFO]       ボタン4: text='全員が返信できます', aria-label='全員が返信できます', testid=''
+[17:16:56] [13.83s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.86s] [INFO]       ボタン6: text='', aria-label='画像や動画を追加', testid=''
+[17:16:56] [13.86s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.89s] [INFO]       ボタン7: text='', aria-label='GIF画像を追加', testid='gifSearchButton'
+[17:16:56] [13.89s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.91s] [INFO]       ボタン8: text='', aria-label='Grokでポストをブラッシュアップする', testid='grokImgGen'
+[17:16:56] [13.91s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.94s] [INFO]       ボタン9: text='', aria-label='投票を追加', testid='createPollButton'
+[17:16:56] [13.94s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.96s] [INFO]       ボタン10: text='', aria-label='ポストを予約', testid='scheduleOption'
+[17:16:56] [13.96s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [13.99s] [INFO]   セレクタ23/26: input[type="submit"]
+[17:16:56] [13.99s] [INFO]     マッチ数: 0個
+[17:16:56] [13.99s] [INFO]   セレクタ24/26: button[type="submit"]
+[17:16:56] [14.00s] [INFO]     マッチ数: 0個
+[17:16:56] [14.00s] [INFO]   セレクタ25/26: [role="button"]
+[17:16:56] [14.02s] [INFO]     マッチ数: 12個
+[17:16:56] [14.05s] [INFO]       ボタン1: text='', aria-label='戻る', testid='app-bar-back'
+[17:16:56] [14.05s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.08s] [INFO]       ボタン2: text='下書き', aria-label='', testid='unsentButton'
+[17:16:56] [14.08s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.12s] [INFO]       ボタン4: text='全員が返信できます', aria-label='全員が返信できます', testid=''
+[17:16:56] [14.12s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.15s] [INFO]       ボタン6: text='', aria-label='画像や動画を追加', testid=''
+[17:16:56] [14.15s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.17s] [INFO]       ボタン7: text='', aria-label='GIF画像を追加', testid='gifSearchButton'
+[17:16:56] [14.17s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.20s] [INFO]       ボタン8: text='', aria-label='Grokでポストをブラッシュアップする', testid='grokImgGen'
+[17:16:56] [14.20s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.22s] [INFO]       ボタン9: text='', aria-label='投票を追加', testid='createPollButton'
+[17:16:56] [14.22s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.25s] [INFO]       ボタン10: text='', aria-label='ポストを予約', testid='scheduleOption'
+[17:16:56] [14.25s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.27s] [INFO]   セレクタ26/26: button
+[17:16:56] [14.28s] [INFO]     マッチ数: 12個
+[17:16:56] [14.30s] [INFO]       ボタン1: text='', aria-label='戻る', testid='app-bar-back'
+[17:16:56] [14.30s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.33s] [INFO]       ボタン2: text='下書き', aria-label='', testid='unsentButton'
+[17:16:56] [14.33s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.37s] [INFO]       ボタン4: text='全員が返信できます', aria-label='全員が返信できます', testid=''
+[17:16:56] [14.37s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.40s] [INFO]       ボタン6: text='', aria-label='画像や動画を追加', testid=''
+[17:16:56] [14.40s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.43s] [INFO]       ボタン7: text='', aria-label='GIF画像を追加', testid='gifSearchButton'
+[17:16:56] [14.43s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.45s] [INFO]       ボタン8: text='', aria-label='Grokでポストをブラッシュアップする', testid='grokImgGen'
+[17:16:56] [14.45s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.48s] [INFO]       ボタン9: text='', aria-label='投票を追加', testid='createPollButton'
+[17:16:56] [14.48s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.50s] [INFO]       ボタン10: text='', aria-label='ポストを予約', testid='scheduleOption'
+[17:16:56] [14.50s] [INFO]       ❌ 投稿ボタンではない
+[17:16:56] [14.52s] [ERROR] ❌ 投稿ボタンが見つかりません
+[17:16:56] [14.52s] [INFO] 📊 投稿ボタン探索失敗 - 最終ページ状態:
+[17:16:56] [14.52s] [INFO]   URL: https://x.com/compose/post
+[17:16:56] [14.52s] [INFO]   タイトル: 新しいポストを作成 / X
+[17:16:56] [14.55s] [INFO]   ページサイズ: 356861 bytes
+[17:16:56] [14.56s] [INFO]   📝 ページに'tweet'文字列が存在
+[17:16:56] [14.56s] [INFO]   📝 ページに'ツイート'文字列が存在
+[17:16:56] [14.56s] [INFO]   📝 ページにtweetButtonが存在（非表示の可能性）
+[17:16:56] [14.56s] [INFO] 🧹 モバイルブラウザ クリーンアップ開始
+[17:16:57] [15.22s] [INFO] ✅ モバイルコンテキストクローズ完了
+[17:16:57] [15.23s] [INFO] ✅ Playwrightストップ完了
+
+=== モバイルTwitterデバッグログ終了 ===
+終了時刻: 2025-08-17 17:16:57
+総実行時間: 15.23秒
+============================================================
+[17:16:57] [15.23s] [INFO] 📋 詳細デバッグログ保存完了: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_171642.log

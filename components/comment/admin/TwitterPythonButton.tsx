@@ -84,9 +84,16 @@ export default function TwitterPythonButton({
 
   // チャート画像が渡された場合、それを使用
   useEffect(() => {
+    console.log('🔍 [FRONTEND DEBUG] useEffect - chartImageUrl変更検出');
+    console.log('🔍 [FRONTEND DEBUG] chartImageUrl存在:', !!chartImageUrl);
+    console.log('🔍 [FRONTEND DEBUG] chartImageUrl長さ:', chartImageUrl ? chartImageUrl.length : 0);
     if (chartImageUrl) {
+      console.log('🔍 [FRONTEND DEBUG] chartImageUrlプレビュー:', chartImageUrl.substring(0, 100) + '...');
       setImageUrl(chartImageUrl);
       setPreviewUrl(chartImageUrl);
+      console.log('✅ [FRONTEND DEBUG] imageUrl設定完了');
+    } else {
+      console.log('⚠️ [FRONTEND DEBUG] chartImageUrlが空です');
     }
   }, [chartImageUrl]);
 
@@ -571,25 +578,32 @@ export default function TwitterPythonButton({
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
       // デバッグ情報をコンソールに出力
-      console.log('🐛 [DEBUG] Python投稿開始');
-      console.log('🐛 [DEBUG] title:', title);
-      console.log('🐛 [DEBUG] content:', content);
-      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
-      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
-      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
-      console.log('🐛 [DEBUG] useSystemProfile:', useSystemProfile);
+      console.log('='.repeat(60));
+      console.log('🐛 [PYTHON DEBUG] 通常Python投稿開始');
+      console.log('='.repeat(60));
+      console.log('🐛 [PYTHON DEBUG] title:', title);
+      console.log('🐛 [PYTHON DEBUG] content:', content);
+      console.log('🐛 [PYTHON DEBUG] tweetMessage:', tweetMessage);
+      console.log('🐛 [PYTHON DEBUG] imageUrl存在:', !!imageUrl);
+      console.log('🐛 [PYTHON DEBUG] imageUrl長さ:', imageUrl ? imageUrl.length : 0);
+      if (imageUrl) {
+        console.log('🐛 [PYTHON DEBUG] imageUrlプレビュー:', imageUrl.substring(0, 100) + '...');
+        console.log('🐛 [PYTHON DEBUG] MIMEタイプ:', imageUrl.match(/data:([^;]*)/)?.[1] || 'unknown');
+      }
+      console.log('🐛 [PYTHON DEBUG] useSystemProfile:', useSystemProfile);
       
       // ツイート投稿処理
       setProcessingStatus(useSystemProfile ? 'ブラウザでの手動ログインをお待ちください。ログイン完了後に自動投稿されます...' : 'ツイートを投稿中...');
       
-      let imageBase64 = undefined;
+      let imageBase64Data: string[] = [];
       
       // 画像がある場合はbase64データを準備
       if (imageUrl) {
         setProcessingStatus('画像データを準備中...');
         try {
-          imageBase64 = imageUrl; // base64 data URLをそのまま使用
-          console.log('🐛 [DEBUG] Python imageBase64 prepared, length:', imageBase64.length);
+          imageBase64Data = [imageUrl]; // base64 data URLを配列形式で設定
+          console.log('🐛 [DEBUG] Python imageBase64Data prepared, length:', imageBase64Data.length, 'items');
+          console.log('🐛 [DEBUG] 画像データ詳細:', imageBase64Data[0] ? imageBase64Data[0].substring(0, 100) + '...' : 'なし');
           setProcessingStatus('画像データ準備完了。投稿処理中...');
         } catch (err) {
           console.error('Image data preparation error:', err);
@@ -601,10 +615,10 @@ export default function TwitterPythonButton({
       // リクエストボディを作成（実投稿モード）
       const postBody = {
         message: tweetMessage,
-        textOnly: !imageBase64,
+        textOnly: imageBase64Data.length === 0,
         useSystemProfile: useSystemProfile,
         actuallyPost: true, // 実投稿モードを明示的に指定
-        ...(imageBase64 && { imageBase64 })
+        imageBase64Data: imageBase64Data
       };
       
       const requestOptions = {

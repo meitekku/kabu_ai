@@ -921,20 +921,54 @@ def main():
         print("使用方法: python mobile_twitter_manager.py \"投稿メッセージ\" [画像パス1] [画像パス2] ... [--test]")
         return
     
+    # 🔍 引数デバッグログ追加
+    print("🔍 [ARG DEBUG] mobile_twitter_manager.py 引数解析開始")
+    print(f"🔍 [ARG DEBUG] 総引数数: {len(sys.argv)}")
+    for i, arg in enumerate(sys.argv):
+        print(f"🔍 [ARG DEBUG] sys.argv[{i}]: '{arg}'")
+    
     message = sys.argv[1]
     image_paths = []
     test_mode = True  # デフォルトはテストモード
     
+    print(f"🔍 [ARG DEBUG] メッセージ: '{message}'")
+    print(f"🔍 [ARG DEBUG] 追加引数処理開始: {len(sys.argv[2:])}個")
+    
     # 引数解析
-    for arg in sys.argv[2:]:
+    for i, arg in enumerate(sys.argv[2:]):
+        print(f"🔍 [ARG DEBUG] 引数{i+1}: '{arg}'")
+        
         if arg == "--test":
             test_mode = True
+            print(f"🔍 [ARG DEBUG] テストモードフラグ検出")
         elif arg == "--post":
             test_mode = False
-        elif os.path.exists(arg):
-            image_paths.append(arg)
+            print(f"🔍 [ARG DEBUG] 実投稿モードフラグ検出")
         else:
-            print(f"⚠️ ファイルが見つかりません: {arg}")
+            # ファイル存在チェック前にパス詳細を出力
+            print(f"🔍 [ARG DEBUG] ファイルパス候補: '{arg}'")
+            print(f"🔍 [ARG DEBUG] os.path.exists('{arg}'): {os.path.exists(arg)}")
+            
+            if os.path.exists(arg):
+                image_paths.append(arg)
+                # ファイル詳細情報
+                file_size = os.path.getsize(arg)
+                print(f"✅ [ARG DEBUG] 画像ファイル追加: '{arg}' ({file_size} bytes)")
+            else:
+                print(f"❌ [ARG DEBUG] ファイルが見つかりません: '{arg}'")
+                # 詳細なパス分析
+                print(f"🔍 [ARG DEBUG] パス分析:")
+                print(f"  - 絶対パス: {os.path.abspath(arg)}")
+                print(f"  - ディレクトリ部分: {os.path.dirname(arg)}")
+                print(f"  - ファイル名部分: {os.path.basename(arg)}")
+                print(f"  - カレントディレクトリ: {os.getcwd()}")
+    
+    print(f"🔍 [ARG DEBUG] 引数解析完了:")
+    print(f"  - メッセージ: '{message[:50]}{'...' if len(message) > 50 else ''}'")
+    print(f"  - 画像パス: {len(image_paths)}個")
+    print(f"  - テストモード: {test_mode}")
+    for i, path in enumerate(image_paths):
+        print(f"    {i+1}. '{path}'")
     
     print(f"📱 モバイル版Twitter投稿開始")
     print(f"メッセージ: {message}")
