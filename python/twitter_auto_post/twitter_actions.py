@@ -521,22 +521,10 @@ def post_tweet(driver, message, image_path=None, actually_post=True):
             EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-testid="tweetTextarea_0"]'))
         )
         
-        # 2回目以降の場合、既存のテキストをクリア
-        try:
-            existing_text = tweet_textarea.get_attribute('value') or tweet_textarea.text
-            if existing_text and existing_text.strip():
-                print("🔄 既存のテキストをクリア中...")
-                tweet_textarea.clear()
-                time.sleep(0.2)
-        except:
-            pass
+        # 既存のテキストクリア処理を削除（画像→テキストの順序により不要）
         
         tweet_textarea.click()
         time.sleep(0.1)  # 投稿画面での待機時間をさらに短縮
-        
-        # テキスト入力
-        print("📝 テキスト入力中...")
-        text_input_success = input_text_with_events(driver, tweet_textarea, message)
         
         # 画像アップロード（指定がある場合）
         if image_path and os.path.exists(image_path):
@@ -555,6 +543,10 @@ def post_tweet(driver, message, image_path=None, actually_post=True):
                 print("✅ 画像アップロード完了")
             except Exception as e:
                 print(f"❌ 画像アップロードエラー: {e}")
+        
+        # テキスト入力
+        print("📝 テキスト入力中...")
+        text_input_success = input_text_with_events(driver, tweet_textarea, message)
         
         time.sleep(0.2)  # 待機時間を短縮
         

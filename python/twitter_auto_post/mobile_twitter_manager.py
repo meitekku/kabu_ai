@@ -372,7 +372,7 @@ class MobileTwitterManager:
             self.debug_log(error_msg, "ERROR")
             return False
     
-    def upload_images_mobile(self, image_paths, original_text=None):
+    def upload_images_mobile(self, image_paths):
         """モバイル版で画像をアップロード（ファイルダイアログ回避強化版）"""
         try:
             for i, image_path in enumerate(image_paths):
@@ -383,8 +383,8 @@ class MobileTwitterManager:
                     self.debug_log(f"⚠️ 画像ファイルが見つかりません: {image_path}", "WARNING")
                     continue
                 
-                # ファイルアップロード前のテキスト状態を保存
-                current_text = self.check_text_content(step_name=f"プログラマティック画像アップロード前_{i+1}")
+                # 画像アップロード前の状態チェック（テキストはまだ入力されていない）
+                self.check_text_content(step_name=f"プログラマティック画像アップロード前_{i+1}")
                 
                 self.debug_log("📷 ファイルダイアログ回避モードで画像アップロード開始")
                 
@@ -551,19 +551,8 @@ class MobileTwitterManager:
                 # アップロード処理完了を待つ
                 self.human_delay(2000, 3000)
                 
-                # テキスト状態をチェックして復元が必要か確認
-                text_after_upload = self.check_text_content(step_name=f"プログラマティック画像アップロード後_{i+1}")
-                
-                # テキストが削除された場合の復元処理
-                if current_text and (not text_after_upload or len(text_after_upload.strip()) == 0):
-                    self.debug_log(f"⚠️ プログラマティック画像アップロードでテキストが削除されました。復元します", "WARNING")
-                    try:
-                        text_area = self.page.query_selector('[data-testid="tweetTextarea_0"], .public-DraftEditor-content, [contenteditable="true"], textarea, [role="textbox"]')
-                        if text_area:
-                            self.mobile_type(text_area, current_text, clear_first=False)
-                            self.debug_log("✅ テキスト復元完了")
-                    except Exception as e:
-                        self.debug_log(f"❌ テキスト復元エラー: {e}", "ERROR")
+                # 画像アップロード後の状態チェック（復元処理不要）
+                self.check_text_content(step_name=f"プログラマティック画像アップロード後_{i+1}")
                 
                 # 画像プレビューが表示されているか確認
                 preview_selectors = [
@@ -735,6 +724,13 @@ class MobileTwitterManager:
                 self.debug_log("❌ モバイルテキストエリアが見つかりません", "ERROR")
                 return False
             
+            # 画像がある場合は先にアップロード
+            if image_paths:
+                self.debug_log(f"📷 画像アップロード開始: {len(image_paths)}枚")
+                self.check_text_content(step_name="画像アップロード前")
+                self.upload_images_mobile(image_paths)
+                self.check_text_content(step_name="画像アップロード後")
+            
             # テキスト入力前の状態をチェック
             self.debug_log("📝 テキスト入力開始前の状態チェック")
             self.check_text_content(step_name="テキスト入力開始前")
@@ -747,13 +743,6 @@ class MobileTwitterManager:
             self.check_text_content(step_name="テキスト入力完了後")
             
             self.debug_log(f"✅ モバイルテキスト入力完了: {message[:50]}{'...' if len(message) > 50 else ''}")
-            
-            # 画像がある場合はアップロード
-            if image_paths:
-                self.debug_log(f"📷 画像アップロード開始: {len(image_paths)}枚")
-                self.check_text_content(step_name="画像アップロード前")
-                self.upload_images_mobile(image_paths, message)
-                self.check_text_content(step_name="画像アップロード後")
             
             # テストモードの場合は実際の投稿をスキップ
             if test_mode:
