@@ -233,15 +233,88 @@ export default function TwitterPythonButton({
       
       setLastResponse(result);
       
-      if (result.success) {
-        setProcessingStatus('✅ モバイル版投稿が正常に完了しました！');
+      // 🔒 モバイル版実投稿の成功を厳格にチェック（他の投稿方式と同様）
+      console.log('🔍 [MOBILE SUCCESS CHECK] モバイル版成功判定開始');
+      console.log('🔍 [MOBILE SUCCESS CHECK] result.success:', result.success);
+      console.log('🔍 [MOBILE SUCCESS CHECK] result.details?.final_result:', result.details?.final_result);
+      
+      const isActualPostSuccess = result.details && result.details.final_result;
+      
+      // モバイル版の成功ステップを確認（テストモードと実投稿モードの両方を考慮）
+      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
+        const isPostSuccess = step.message.includes('モバイル版投稿完了成功') || 
+                             step.message.includes('モバイル版実投稿成功') ||
+                             step.message.includes('モバイルツイート投稿完了') ||
+                             step.message.includes('投稿完了成功') ||
+                             step.message.includes('実投稿') ||
+                             step.message.includes('ツイート投稿完了');
+        console.log('🔍 [MOBILE SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
+        return isPostSuccess;
+      });
+      
+      console.log('🔍 [MOBILE SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
+      console.log('🔍 [MOBILE SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
+      console.log('🔍 [MOBILE SUCCESS CHECK] 最終判定:', isActualPostSuccess && hasActualPostStep);
+      
+      if (result.success && isActualPostSuccess && hasActualPostStep) {
+        // 実投稿が確実に成功した場合のみサイト投稿を実行
+        setProcessingStatus('✅ モバイル版実投稿が正常に完了しました！');
+        setError(null);
+        
+        // 実投稿成功レスポンスを整形
+        setLastResponse({
+          success: true,
+          message: 'モバイル版実投稿が完了しました',
+          details: result.details
+        });
+        
+        setTimeout(() => {
+          setProcessingStatus('');
+        }, 3000);
+        
+        // 実投稿成功時のみonSuccessを呼ぶ
         if (onSuccess) {
+          console.log('✅ [MOBILE SUCCESS] モバイル版実投稿成功：サイト投稿を実行します');
           onSuccess();
         }
+      } else if (result.success && (!isActualPostSuccess || !hasActualPostStep)) {
+        // API処理は成功したが、実投稿は未実行の場合
+        setProcessingStatus('📱 モバイル版処理完了（投稿は未実行）');
+        setError('モバイル版実投稿が実行されませんでした');
+        
+        setLastResponse({
+          success: false,
+          error: 'モバイル版実投稿が実行されませんでした',
+          details: result.details || {
+            final_result: false,
+            timestamp: new Date().toISOString(),
+            errors: [
+              {
+                step: 'mobile_post_verification',
+                message: 'モバイル版実投稿ステップが確認できませんでした',
+                timestamp: new Date().toISOString(),
+                type: 'verification_error'
+              }
+            ],
+            warnings: [],
+            success_steps: [],
+            summary: {
+              total_errors: 1,
+              total_warnings: 0,
+              total_success_steps: 0
+            }
+          }
+        });
+        
+        console.log('⚠️ [MOBILE SUCCESS] モバイル版実投稿未確認：サイト投稿は実行されません');
+        if (onError) onError('モバイル版実投稿が実行されませんでした');
       } else {
+        // API処理自体が失敗した場合
         const errorMsg = result.error || 'モバイル版投稿に失敗しました';
         setError(errorMsg);
         setProcessingStatus(`❌ モバイル版エラー: ${errorMsg}`);
+        
+        console.log('❌ [MOBILE SUCCESS] モバイル版API処理失敗：サイト投稿は実行されません');
         if (onError) {
           onError(errorMsg);
         }
@@ -251,7 +324,36 @@ export default function TwitterPythonButton({
       const errorMessage = err instanceof Error ? err.message : 'モバイル版で予期しないエラーが発生しました';
       setError(errorMessage);
       setProcessingStatus(`❌ モバイル版エラー: ${errorMessage}`);
-      console.error('Mobile post error:', err);
+      
+      // エラーレスポンスを整形
+      setLastResponse({
+        success: false,
+        error: errorMessage,
+        details: {
+          final_result: false,
+          timestamp: new Date().toISOString(),
+          errors: [
+            {
+              step: 'mobile_exception',
+              message: errorMessage,
+              timestamp: new Date().toISOString(),
+              type: 'exception',
+              exception: err instanceof Error ? err.stack : String(err)
+            }
+          ],
+          warnings: [],
+          success_steps: [],
+          summary: {
+            total_errors: 1,
+            total_warnings: 0,
+            total_success_steps: 0
+          }
+        }
+      });
+      
+      console.error('❌ [MOBILE ERROR] モバイル版例外発生：サイト投稿は実行されません', err);
+      
+      // 例外発生時はonSuccess()は絶対に呼ばない
       if (onError) {
         onError(errorMessage);
       }
@@ -439,8 +541,14 @@ export default function TwitterPythonButton({
         step.message.includes('投稿完了成功') || step.message.includes('実投稿') || step.message.includes('ツイート投稿完了')
       );
       
-      if (isActualPostSuccess && hasActualPostStep) {
-        setProcessingStatus('Playwright版実投稿完了！');
+      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] result.success:', result.success);
+      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
+      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
+      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] 最終判定:', result.success && isActualPostSuccess && hasActualPostStep);
+      
+      if (result.success && isActualPostSuccess && hasActualPostStep) {
+        // 実投稿が確実に成功した場合のみサイト投稿を実行
+        setProcessingStatus('✅ Playwright版実投稿が正常に完了しました！');
         setError(null);
         
         // 実投稿成功レスポンスを整形
@@ -456,9 +564,40 @@ export default function TwitterPythonButton({
         
         // 実投稿成功時のみonSuccessを呼ぶ
         if (onSuccess) {
-          console.log('Playwright版実投稿成功：サイト投稿を実行します');
+          console.log('✅ [PLAYWRIGHT SUCCESS] Playwright版実投稿成功：サイト投稿を実行します');
           onSuccess();
         }
+      } else if (result.success && (!isActualPostSuccess || !hasActualPostStep)) {
+        // API処理は成功したが、実投稿は未実行の場合
+        setProcessingStatus('🎭 Playwright版処理完了（投稿は未実行）');
+        setError('Playwright版実投稿が実行されませんでした');
+        
+        setLastResponse({
+          success: false,
+          error: 'Playwright版実投稿が実行されませんでした',
+          details: result.details || {
+            final_result: false,
+            timestamp: new Date().toISOString(),
+            errors: [
+              {
+                step: 'playwright_post_verification',
+                message: 'Playwright版実投稿ステップが確認できませんでした',
+                timestamp: new Date().toISOString(),
+                type: 'verification_error'
+              }
+            ],
+            warnings: [],
+            success_steps: [],
+            summary: {
+              total_errors: 1,
+              total_warnings: 0,
+              total_success_steps: 0
+            }
+          }
+        });
+        
+        console.log('❌ [PLAYWRIGHT INCOMPLETE] Playwright版実投稿未確認：サイト投稿は実行されません');
+        if (onError) onError('Playwright版実投稿が実行されませんでした');
       } else {
         // 投稿が完了していない場合
         setProcessingStatus('Playwright処理完了（投稿は未実行）');
@@ -644,8 +783,14 @@ export default function TwitterPythonButton({
         step.message.includes('投稿成功') || step.message.includes('実投稿') || step.message.includes('ツイート完了')
       );
       
-      if (isActualPostSuccess && hasActualPostStep) {
-        setProcessingStatus('実投稿完了！');
+      console.log('🔍 [SAFE SUCCESS CHECK] result.success:', result.success);
+      console.log('🔍 [SAFE SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
+      console.log('🔍 [SAFE SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
+      console.log('🔍 [SAFE SUCCESS CHECK] 最終判定:', result.success && isActualPostSuccess && hasActualPostStep);
+      
+      if (result.success && isActualPostSuccess && hasActualPostStep) {
+        // 実投稿が確実に成功した場合のみサイト投稿を実行
+        setProcessingStatus('✅ 安全な実投稿が正常に完了しました！');
         setError(null);
         
         // 実投稿成功レスポンスを整形
@@ -661,9 +806,40 @@ export default function TwitterPythonButton({
         
         // 実投稿成功時のみonSuccessを呼ぶ
         if (onSuccess) {
-          console.log('実投稿成功：サイト投稿を実行します');
+          console.log('✅ [SAFE SUCCESS] 安全な実投稿成功：サイト投稿を実行します');
           onSuccess();
         }
+      } else if (result.success && (!isActualPostSuccess || !hasActualPostStep)) {
+        // API処理は成功したが、実投稿は未実行の場合
+        setProcessingStatus('🔒 安全版処理完了（投稿は未実行）');
+        setError('安全版実投稿が実行されませんでした');
+        
+        setLastResponse({
+          success: false,
+          error: '安全版実投稿が実行されませんでした',
+          details: result.details || {
+            final_result: false,
+            timestamp: new Date().toISOString(),
+            errors: [
+              {
+                step: 'safe_post_verification',
+                message: '安全版実投稿ステップが確認できませんでした',
+                timestamp: new Date().toISOString(),
+                type: 'verification_error'
+              }
+            ],
+            warnings: [],
+            success_steps: [],
+            summary: {
+              total_errors: 1,
+              total_warnings: 0,
+              total_success_steps: 0
+            }
+          }
+        });
+        
+        console.log('❌ [SAFE INCOMPLETE] 安全版実投稿未確認：サイト投稿は実行されません');
+        if (onError) onError('安全版実投稿が実行されませんでした');
       } else {
         // 投稿が完了していない場合（テストモードなど）
         setProcessingStatus('処理完了（投稿は未実行）');
