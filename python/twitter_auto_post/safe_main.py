@@ -200,29 +200,141 @@ def safe_post_text(driver, message, image_path=None, actually_post=False):
             logger.info("📝 テキストのみ投稿")
         
         if actually_post:
-            # 実際に投稿ボタンを押す
+            # 実際に投稿ボタンを押す - 強化版ポストボタンクリック
+            logger.info("🚀 [強化版] 実投稿モード: 確実な投稿ボタン探索開始")
+            
+            # 包括的な投稿ボタンセレクター（Selenium版）
             submit_selectors = [
                 '[data-testid="tweetButtonInline"]',
                 '[data-testid="tweetButton"]',
-                'button[type="button"]:has-text("ツイートする")',
-                'button[type="button"]:has-text("Tweet")'
+                'button[data-testid="tweetButtonInline"]',
+                'button[data-testid="tweetButton"]',
+                '[role="button"][data-testid="tweetButtonInline"]',
+                '[role="button"][data-testid="tweetButton"]',
+                'button:has-text("ツイートする")',
+                'button:has-text("Tweet")',
+                'button:has-text("Post")',
+                'button:has-text("ポスト")',
+                '[aria-label*="ツイート"]',
+                '[aria-label*="Tweet"]',
+                '[aria-label*="Post"]',
+                '[aria-label*="ポスト"]',
+                '[role="button"][aria-label*="ツイート"]',
+                '[role="button"][aria-label*="Tweet"]',
+                '[role="button"][aria-label*="Post"]',
+                '[role="button"][aria-label*="ポスト"]',
+                'button[type="submit"]',
+                'button[class*="tweet"]',
+                'button[class*="post"]',
+                '*[data-testid="tweetButtonInline"]:not([disabled])',
+                '*[data-testid="tweetButton"]:not([disabled])'
             ]
             
-            submit_button = None
-            for selector in submit_selectors:
-                try:
-                    elements = driver.find_elements("css selector", selector)
-                    if elements:
-                        submit_button = elements[0]
-                        break
-                except:
-                    continue
+            # 3回の試行でポストボタンを確実にクリック
+            post_success = False
+            for attempt in range(3):
+                logger.info(f"🎯 [強化版] 投稿ボタン探索 試行 {attempt + 1}/3")
+                
+                submit_button = None
+                found_selector = None
+                
+                # 各セレクターを試行
+                for selector in submit_selectors:
+                    try:
+                        elements = driver.find_elements("css selector", selector)
+                        if elements:
+                            element = elements[0]
+                            
+                            # 詳細な要素検証
+                            is_displayed = element.is_displayed()
+                            is_enabled = element.is_enabled()
+                            is_selected = element.is_selected()  # 可能な場合のみ
+                            element_text = element.text if is_displayed else "N/A"
+                            
+                            logger.info(f"📍 [強化版] ボタン発見: {selector}")
+                            logger.info(f"   表示: {is_displayed}, 有効: {is_enabled}, 選択: {is_selected}")
+                            logger.info(f"   テキスト: '{element_text}'")
+                            
+                            if is_displayed and is_enabled:
+                                submit_button = element
+                                found_selector = selector
+                                logger.info(f"✅ [強化版] 有効な投稿ボタン確認: {selector}")
+                                break
+                    except Exception as e:
+                        logger.warning(f"⚠️ [強化版] セレクター {selector} 検証エラー: {e}")
+                        continue
+                
+                if submit_button:
+                    logger.info(f"🎯 [強化版] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
                     
-            if submit_button:
-                submit_button.click()
-                logger.info("✅ 投稿完了")
+                    # 複数のクリック方法を試行（Selenium版専用）
+                    click_methods = [
+                        ("direct_click", lambda: submit_button.click()),
+                        ("js_click", lambda: driver.execute_script("arguments[0].click();", submit_button)),
+                        ("action_click", lambda: driver.find_element("tag name", "body").send_keys("\n") if submit_button.is_focused() else None),
+                        ("focus_enter", lambda: (submit_button.send_keys(""), submit_button.send_keys("\n")))
+                    ]
+                    
+                    for method_name, method_func in click_methods:
+                        try:
+                            logger.info(f"🔄 [強化版] クリック方法試行: {method_name}")
+                            
+                            # フォーカスを設定してからクリック
+                            if method_name != "js_click":
+                                try:
+                                    driver.execute_script("arguments[0].focus();", submit_button)
+                                    time.sleep(0.5)
+                                except:
+                                    pass
+                            
+                            method_func()
+                            time.sleep(2)
+                            
+                            # クリック成功判定（URLまたはページ状態の変化確認）
+                            current_url = driver.current_url
+                            if "compose" not in current_url.lower() or "home" in current_url.lower():
+                                logger.info(f"✅ [強化版] {method_name}クリック成功確認")
+                                post_success = True
+                                break
+                            else:
+                                logger.warning(f"⚠️ [強化版] {method_name}クリック効果なし、次の方法を試行")
+                        except Exception as e:
+                            logger.error(f"❌ [強化版] {method_name}クリックエラー: {e}")
+                            continue
+                    
+                    if post_success:
+                        break
+                else:
+                    logger.error(f"❌ [強化版] 試行 {attempt + 1}: 投稿ボタンが見つかりません")
+                
+                # 次の試行前に少し待機
+                if attempt < 2:
+                    logger.info(f"⏳ [強化版] 次の試行まで待機...")
+                    time.sleep(2)
+            
+            if post_success:
+                logger.info("🎉 [強化版] [ポストボタン確実クリック済み] 投稿処理成功")
                 time.sleep(3)
+                logger.info("✅ 投稿完了")
             else:
+                # 詳細な調査ログ
+                logger.error("🔍 [強化版] 投稿ボタン発見失敗 - 詳細調査開始")
+                try:
+                    all_buttons = driver.find_elements("css selector", "button, [role='button'], input[type='submit']")
+                    logger.info(f"🔍 [強化版] ページ内総ボタン数: {len(all_buttons)}")
+                    
+                    for i, btn in enumerate(all_buttons[:10]):  # 最初の10個のみ調査
+                        try:
+                            btn_text = btn.text[:30] if btn.is_displayed() else "非表示"
+                            btn_aria = btn.get_attribute('aria-label') or ""
+                            btn_testid = btn.get_attribute('data-testid') or ""
+                            logger.info(f"  ボタン{i+1}: text='{btn_text}', aria='{btn_aria[:20]}', testid='{btn_testid}'")
+                        except:
+                            continue
+                except Exception as e:
+                    logger.error(f"🔍 [強化版] 詳細調査エラー: {e}")
+                
+                logger.error("❌ [強化版] 全ての試行が失敗しました")
                 logger.warning("投稿ボタンが見つからないため、テキスト入力のみ完了")
         else:
             logger.info("✅ 投稿準備完了（投稿ボタンは押しません）")

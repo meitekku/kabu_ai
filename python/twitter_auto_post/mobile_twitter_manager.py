@@ -751,40 +751,134 @@ class MobileTwitterManager:
                 print("✅ === モバイル版投稿テスト成功！ ===")
                 return True
             
-            # 実際の投稿処理（テストモードでない場合のみ）
-            self.debug_log("🚀 実投稿モード: 投稿ボタンを探します")
+            # 実際の投稿処理（テストモードでない場合のみ）- 強化版ポストボタンクリック
+            self.debug_log("🚀 [強化版] 実投稿モード: 確実な投稿ボタン探索開始")
             
+            # 包括的な投稿ボタンセレクター（モバイル版特化）
             post_button_selectors = [
                 '[data-testid="tweetButtonInline"]',
                 '[data-testid="tweetButton"]',
+                'button[data-testid="tweetButtonInline"]',
                 'button[data-testid="tweetButton"]',
-                '[role="button"][aria-label*="ツイート"], [role="button"][aria-label*="Tweet"]',
-                'button:has-text("ツイート"), button:has-text("Tweet")'
+                '[role="button"][data-testid="tweetButtonInline"]',
+                '[role="button"][data-testid="tweetButton"]',
+                'button:has-text("ツイートする")',
+                'button:has-text("Tweet")',
+                'button:has-text("Post")',
+                'button:has-text("ポスト")',
+                '[aria-label*="ツイート"]',
+                '[aria-label*="Tweet"]',
+                '[aria-label*="Post"]',
+                '[aria-label*="ポスト"]',
+                '[role="button"][aria-label*="ツイート"]',
+                '[role="button"][aria-label*="Tweet"]',
+                '[role="button"][aria-label*="Post"]',
+                '[role="button"][aria-label*="ポスト"]',
+                'button[type="submit"]',
+                'button[class*="tweet"]',
+                'button[class*="post"]',
+                '.css-18t94o4.css-1dbjc4n.r-l5o3uw button',
+                '.css-175oi2r.r-sdzlij button',
+                '*[data-testid="tweetButtonInline"]:not([disabled])',
+                '*[data-testid="tweetButton"]:not([disabled])'
             ]
             
-            post_button = None
-            for selector in post_button_selectors:
-                try:
-                    button = self.page.query_selector(selector)
-                    if button and button.is_visible() and not button.is_disabled():
-                        post_button = button
-                        self.debug_log(f"投稿ボタン発見: {selector}")
+            # 3回の試行でポストボタンを確実にクリック
+            post_success = False
+            for attempt in range(3):
+                self.debug_log(f"🎯 [強化版] 投稿ボタン探索 試行 {attempt + 1}/3")
+                
+                post_button = None
+                found_selector = None
+                
+                # 各セレクターを試行
+                for selector in post_button_selectors:
+                    try:
+                        button = self.page.query_selector(selector)
+                        if button:
+                            # 詳細な要素検証
+                            is_visible = button.is_visible()
+                            is_enabled = button.is_enabled()
+                            is_attached = button.evaluate("element => element.isConnected")
+                            button_text = button.inner_text() if is_visible else "N/A"
+                            
+                            self.debug_log(f"📍 [強化版] ボタン発見: {selector}")
+                            self.debug_log(f"   可視: {is_visible}, 有効: {is_enabled}, 接続: {is_attached}")
+                            self.debug_log(f"   テキスト: '{button_text}'")
+                            
+                            if is_visible and is_enabled and is_attached:
+                                post_button = button
+                                found_selector = selector
+                                self.debug_log(f"✅ [強化版] 有効な投稿ボタン確認: {selector}")
+                                break
+                    except Exception as e:
+                        self.debug_log(f"⚠️ [強化版] セレクター {selector} 検証エラー: {e}")
+                        continue
+                
+                if post_button:
+                    self.debug_log(f"🎯 [強化版] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
+                    
+                    # 複数のクリック方法を試行（モバイル版専用）
+                    click_methods = [
+                        ("mobile_tap", lambda: self.mobile_tap(post_button)),
+                        ("direct_click", lambda: post_button.click()),
+                        ("js_click", lambda: post_button.evaluate("element => element.click()")),
+                        ("focus_enter", lambda: (post_button.focus(), post_button.press("Enter")))
+                    ]
+                    
+                    for method_name, method_func in click_methods:
+                        try:
+                            self.debug_log(f"🔄 [強化版] クリック方法試行: {method_name}")
+                            method_func()
+                            self.human_delay(1000, 2000)
+                            
+                            # クリック成功判定（URLまたはページ状態の変化確認）
+                            current_url = self.page.url
+                            if "compose" not in current_url.lower():
+                                self.debug_log(f"✅ [強化版] {method_name}クリック成功確認")
+                                post_success = True
+                                break
+                            else:
+                                self.debug_log(f"⚠️ [強化版] {method_name}クリック効果なし、次の方法を試行")
+                        except Exception as e:
+                            self.debug_log(f"❌ [強化版] {method_name}クリックエラー: {e}")
+                            continue
+                    
+                    if post_success:
                         break
-                except:
-                    continue
-            
-            if post_button:
-                self.debug_log("🚀 モバイル実投稿実行中...")
-                if self.mobile_tap(post_button):
-                    self.human_delay(3000, 5000)  # 投稿完了を待機
-                    self.debug_log("✅ === モバイル版投稿完了成功！ ===")
-                    print("✅ === モバイル版投稿完了成功！ ===")
-                    return True
                 else:
-                    self.debug_log("❌ 投稿ボタンクリック失敗", "ERROR")
-                    return False
+                    self.debug_log(f"❌ [強化版] 試行 {attempt + 1}: 投稿ボタンが見つかりません")
+                
+                # 次の試行前に少し待機
+                if attempt < 2:
+                    self.debug_log(f"⏳ [強化版] 次の試行まで待機...")
+                    self.human_delay(1500, 2500)
+            
+            if post_success:
+                self.debug_log("🎉 [強化版] [ポストボタン確実クリック済み] 投稿処理成功")
+                self.human_delay(3000, 5000)  # 投稿完了を待機
+                self.debug_log("✅ === モバイル版投稿完了成功！ ===")
+                print("✅ === モバイル版投稿完了成功！ ===")
+                return True
             else:
-                self.debug_log("❌ 投稿ボタンが見つかりません", "ERROR")
+                # 詳細な調査ログ
+                self.debug_log("🔍 [強化版] 投稿ボタン発見失敗 - 詳細調査開始")
+                try:
+                    all_buttons = self.page.query_selector_all('button, [role="button"], input[type="submit"]')
+                    self.debug_log(f"🔍 [強化版] ページ内総ボタン数: {len(all_buttons)}")
+                    
+                    for i, btn in enumerate(all_buttons[:10]):  # 最初の10個のみ調査
+                        try:
+                            btn_text = btn.inner_text()[:30] if btn.is_visible() else "非表示"
+                            btn_aria = btn.get_attribute('aria-label') or ""
+                            btn_testid = btn.get_attribute('data-testid') or ""
+                            self.debug_log(f"  ボタン{i+1}: text='{btn_text}', aria='{btn_aria[:20]}', testid='{btn_testid}'")
+                        except:
+                            continue
+                except Exception as e:
+                    self.debug_log(f"🔍 [強化版] 詳細調査エラー: {e}")
+                
+                self.debug_log("❌ [強化版] 全ての試行が失敗しました")
                 return False
                 
         except Exception as e:

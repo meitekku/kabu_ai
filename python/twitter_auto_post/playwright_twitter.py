@@ -1530,46 +1530,205 @@ class PlaywrightTwitterManager:
             logger.info(f"✅ テキスト入力完了: {message[:50]}...")
             
             if not test_mode:
-                # 実際に投稿
+                # 実際に投稿（強化版 - 確実に「ポストする」ボタンを押す）
                 self.debug_log("🚀 実投稿モード: 投稿ボタンを探しています...")
                 print("🚀 実投稿モード: 投稿ボタンを探しています...")
+                
+                # より多くのセレクタパターンを追加（順番も重要）
                 submit_selectors = [
                     '[data-testid="tweetButtonInline"]',
                     '[data-testid="tweetButton"]',
+                    'button[data-testid="tweetButtonInline"]',
+                    'button[data-testid="tweetButton"]',
+                    '[role="button"][data-testid="tweetButtonInline"]',
+                    '[role="button"][data-testid="tweetButton"]',
                     'button:has-text("ツイートする")',
                     'button:has-text("Tweet")',
-                    'button:has-text("Post")'
+                    'button:has-text("Post")',
+                    'button:has-text("ポスト")',
+                    '[aria-label*="ツイート"]',
+                    '[aria-label*="Tweet"]',
+                    '[aria-label*="Post"]',
+                    'button[aria-label*="ツイート"]',
+                    'button[aria-label*="Tweet"]',
+                    'button[aria-label*="Post"]',
+                    # より汎用的なパターン
+                    'button[type="submit"]',
+                    'div[role="button"][tabindex="0"]',
+                    '[role="button"]:has-text("ツイート")',
+                    '[role="button"]:has-text("Tweet")',
+                    '[role="button"]:has-text("Post")'
                 ]
                 
                 submit_button = None
-                for selector in submit_selectors:
-                    try:
-                        submit_button = self.page.query_selector(selector)
-                        if submit_button:
-                            self.debug_log(f"✅ 投稿ボタン発見: {selector}")
-                            print(f"✅ 投稿ボタン発見: {selector}")
-                            logger.info(f"投稿ボタン発見: {selector}")
-                            break
-                    except:
-                        continue
+                found_selector = None
                 
+                # 最大3回まで投稿ボタンを探す（リトライ機能）
+                for attempt in range(3):
+                    self.debug_log(f"投稿ボタン検索試行 {attempt + 1}/3")
+                    
+                    for i, selector in enumerate(submit_selectors):
+                        try:
+                            self.debug_log(f"セレクター {i+1}/{len(submit_selectors)}: {selector}")
+                            elements = self.page.query_selector_all(selector)
+                            
+                            for j, element in enumerate(elements):
+                                try:
+                                    # より詳細な要素チェック
+                                    is_visible = element.is_visible()
+                                    is_enabled = element.is_enabled()
+                                    is_attached = element.is_attached()
+                                    text_content = element.text_content() or ""
+                                    aria_label = element.get_attribute('aria-label') or ""
+                                    
+                                    self.debug_log(f"  要素 {j+1}: visible={is_visible}, enabled={is_enabled}, attached={is_attached}")
+                                    self.debug_log(f"  要素 {j+1}: text='{text_content[:30]}', aria-label='{aria_label[:30]}'")
+                                    
+                                    # 投稿ボタンとして適切かチェック
+                                    is_tweet_button = (
+                                        is_visible and is_enabled and is_attached and
+                                        (
+                                            'tweet' in selector.lower() or
+                                            'post' in selector.lower() or
+                                            'ツイート' in (text_content + aria_label).lower() or
+                                            'tweet' in (text_content + aria_label).lower() or
+                                            'post' in (text_content + aria_label).lower()
+                                        )
+                                    )
+                                    
+                                    if is_tweet_button:
+                                        submit_button = element
+                                        found_selector = f"{selector} (要素 {j+1})"
+                                        self.debug_log(f"✅ 投稿ボタン発見: {found_selector}")
+                                        print(f"✅ 投稿ボタン発見: {found_selector}")
+                                        logger.info(f"投稿ボタン発見: {found_selector}")
+                                        break
+                                except Exception as element_error:
+                                    self.debug_log(f"要素 {j+1} チェック中エラー: {element_error}", "WARNING")
+                                    continue
+                            
+                            if submit_button:
+                                break
+                                
+                        except Exception as selector_error:
+                            self.debug_log(f"セレクター '{selector}' でエラー: {selector_error}", "WARNING")
+                            continue
+                    
+                    if submit_button:
+                        break
+                    
+                    # ボタンが見つからない場合、短時間待機してリトライ
+                    if attempt < 2:
+                        self.debug_log(f"投稿ボタンが見つかりません。{2-attempt}秒待機してリトライします...")
+                        time.sleep(2)
+
                 if submit_button:
-                    self.debug_log("投稿ボタンをクリック中...")
-                    self.natural_click(submit_button)
-                    self.human_delay(2000, 4000)  # 投稿処理の完了待機
+                    self.debug_log("🎯 投稿ボタンを確実にクリック中...")
+                    print("🎯 投稿ボタンを確実にクリック中...")
                     
-                    success_msg = "✅ Playwright版ツイート投稿完了！"
-                    if image_paths:
-                        success_msg += f"（画像{len(image_paths)}枚付き）"
-                    
-                    self.debug_log(success_msg)
-                    print(success_msg)
-                    logger.info(success_msg)
+                    # 投稿前の最終確認
+                    try:
+                        button_text = submit_button.text_content() or ""
+                        button_aria = submit_button.get_attribute('aria-label') or ""
+                        self.debug_log(f"クリック前確認 - text: '{button_text}', aria-label: '{button_aria}'")
+                        
+                        # クリック実行（複数の方法を試行）
+                        click_success = False
+                        
+                        # 方法1: natural_click（通常のクリック）
+                        try:
+                            self.natural_click(submit_button)
+                            click_success = True
+                            self.debug_log("✅ natural_click成功")
+                        except Exception as e1:
+                            self.debug_log(f"natural_clickエラー: {e1}", "WARNING")
+                        
+                        # 方法2: 直接クリック
+                        if not click_success:
+                            try:
+                                submit_button.click()
+                                click_success = True
+                                self.debug_log("✅ 直接click成功")
+                            except Exception as e2:
+                                self.debug_log(f"直接clickエラー: {e2}", "WARNING")
+                        
+                        # 方法3: JavaScriptクリック
+                        if not click_success:
+                            try:
+                                submit_button.evaluate("element => element.click()")
+                                click_success = True
+                                self.debug_log("✅ JavaScriptクリック成功")
+                            except Exception as e3:
+                                self.debug_log(f"JavaScriptクリックエラー: {e3}", "WARNING")
+                        
+                        # 方法4: フォーカス＋Enter
+                        if not click_success:
+                            try:
+                                submit_button.focus()
+                                time.sleep(0.5)
+                                submit_button.press('Enter')
+                                click_success = True
+                                self.debug_log("✅ フォーカス＋Enterキー成功")
+                            except Exception as e4:
+                                self.debug_log(f"フォーカス＋Enterエラー: {e4}", "WARNING")
+                        
+                        if click_success:
+                            # 投稿処理の完了を待機（時間を延長）
+                            self.debug_log("⏳ 投稿処理完了を待機中...")
+                            self.human_delay(3000, 6000)
+                            
+                            success_msg = "✅ Playwright版ツイート投稿完了！"
+                            if image_paths:
+                                success_msg += f"（画像{len(image_paths)}枚付き）"
+                            success_msg += " [ポストボタン確実クリック済み]"
+                            
+                            self.debug_log(success_msg)
+                            print(success_msg)
+                            logger.info(success_msg)
+                            
+                        else:
+                            error_msg = "❌ 全ての投稿ボタンクリック方法が失敗しました"
+                            self.debug_log(error_msg, "ERROR")
+                            print(error_msg)
+                            logger.error(error_msg)
+                            
+                    except Exception as final_error:
+                        error_msg = f"❌ 投稿ボタンクリック処理でエラー: {final_error}"
+                        self.debug_log(error_msg, "ERROR")
+                        print(error_msg)
+                        logger.error(error_msg)
+                        
                 else:
-                    warning_msg = "⚠️ 投稿ボタンが見つからないため、テキスト入力のみ完了"
-                    self.debug_log(warning_msg, "WARNING")
+                    # 全ての試行でボタンが見つからない場合の詳細調査
+                    self.debug_log("❌ 投稿ボタンが見つかりません。詳細調査開始...", "ERROR")
+                    print("❌ 投稿ボタンが見つかりません。詳細調査中...")
+                    
+                    try:
+                        # ページ上の全ボタンを調査
+                        all_buttons = self.page.query_selector_all('button, [role="button"]')
+                        self.debug_log(f"ページ上の全ボタン数: {len(all_buttons)}")
+                        
+                        for i, btn in enumerate(all_buttons[:20]):  # 最初の20個を調査
+                            try:
+                                text = btn.text_content() or ""
+                                aria_label = btn.get_attribute('aria-label') or ""
+                                data_testid = btn.get_attribute('data-testid') or ""
+                                is_visible = btn.is_visible()
+                                is_enabled = btn.is_enabled()
+                                
+                                if any(keyword in (text + aria_label + data_testid).lower() 
+                                       for keyword in ['tweet', 'post', 'ツイート', 'submit']):
+                                    self.debug_log(f"候補ボタン {i+1}: text='{text[:20]}', aria='{aria_label[:20]}', testid='{data_testid}', visible={is_visible}, enabled={is_enabled}")
+                                    
+                            except:
+                                continue
+                    except Exception as investigation_error:
+                        self.debug_log(f"詳細調査エラー: {investigation_error}", "WARNING")
+                    
+                    warning_msg = "❌ 投稿ボタンが見つからないため、投稿処理を完了できませんでした"
+                    self.debug_log(warning_msg, "ERROR")
                     print(warning_msg)
-                    logger.warning(warning_msg)
+                    logger.error(warning_msg)
             else:
                 test_msg = "✅ Playwright版テストモード完了！"
                 if image_paths:
