@@ -252,21 +252,26 @@ export default function TwitterPythonButton({
       
       const isActualPostSuccess = result.details && result.details.final_result;
       
-      // モバイル版の成功ステップを確認（テストモードと実投稿モードの両方を考慮）
+      // モバイル版の成功ステップを確認（より柔軟な判定）
       const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
-        const isPostSuccess = step.message.includes('モバイル版投稿完了成功') || 
-                             step.message.includes('モバイル版実投稿成功') ||
-                             step.message.includes('モバイルツイート投稿完了') ||
-                             step.message.includes('投稿完了成功') ||
-                             step.message.includes('実投稿') ||
-                             step.message.includes('ツイート投稿完了');
+        const message = step.message.toLowerCase();
+        const isPostSuccess = message.includes('投稿完了') || 
+                             message.includes('投稿成功') ||
+                             message.includes('ツイート完了') ||
+                             message.includes('ツイート成功') ||
+                             message.includes('post success') ||
+                             message.includes('posted successfully') ||
+                             message.includes('tweet posted') ||
+                             message.includes('success') && (message.includes('投稿') || message.includes('ツイート')) ||
+                             step.step.toLowerCase().includes('post_success') ||
+                             step.step.toLowerCase().includes('tweet_success');
         console.log('🔍 [MOBILE SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
         return isPostSuccess;
       });
       
       console.log('🔍 [MOBILE SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
       console.log('🔍 [MOBILE SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
-      console.log('🔍 [MOBILE SUCCESS CHECK] 最終判定:', isActualPostSuccess && hasActualPostStep);
+      console.log('🔍 [MOBILE SUCCESS CHECK] 最終判定:', result.success && isActualPostSuccess && hasActualPostStep);
       
       if (result.success && isActualPostSuccess && hasActualPostStep) {
         // 実投稿が確実に成功した場合のみサイト投稿を実行
@@ -547,11 +552,23 @@ export default function TwitterPythonButton({
       
       console.log('✅ [SUCCESS] API呼び出し成功');
       
-      // Playwright版実投稿の成功を詳細チェック
+      // Playwright版実投稿の成功を詳細チェック（より柔軟な判定）
       const isActualPostSuccess = result.details && result.details.final_result;
-      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => 
-        step.message.includes('投稿完了成功') || step.message.includes('実投稿') || step.message.includes('ツイート投稿完了')
-      );
+      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
+        const message = step.message.toLowerCase();
+        const isPostSuccess = message.includes('投稿完了') || 
+                             message.includes('投稿成功') ||
+                             message.includes('ツイート完了') ||
+                             message.includes('ツイート成功') ||
+                             message.includes('post success') ||
+                             message.includes('posted successfully') ||
+                             message.includes('tweet posted') ||
+                             message.includes('success') && (message.includes('投稿') || message.includes('ツイート')) ||
+                             step.step.toLowerCase().includes('post_success') ||
+                             step.step.toLowerCase().includes('tweet_success');
+        console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
+        return isPostSuccess;
+      });
       
       console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] result.success:', result.success);
       console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
@@ -806,11 +823,23 @@ export default function TwitterPythonButton({
         throw new Error(result.error || '投稿に失敗しました');
       }
       
-      // 実際の投稿が成功したかを詳細チェック
+      // 実際の投稿が成功したかを詳細チェック（より柔軟な判定）
       const isActualPostSuccess = result.details && result.details.final_result;
-      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => 
-        step.message.includes('投稿成功') || step.message.includes('実投稿') || step.message.includes('ツイート完了')
-      );
+      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
+        const message = step.message.toLowerCase();
+        const isPostSuccess = message.includes('投稿完了') || 
+                             message.includes('投稿成功') ||
+                             message.includes('ツイート完了') ||
+                             message.includes('ツイート成功') ||
+                             message.includes('post success') ||
+                             message.includes('posted successfully') ||
+                             message.includes('tweet posted') ||
+                             message.includes('success') && (message.includes('投稿') || message.includes('ツイート')) ||
+                             step.step.toLowerCase().includes('post_success') ||
+                             step.step.toLowerCase().includes('tweet_success');
+        console.log('🔍 [SAFE SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
+        return isPostSuccess;
+      });
       
       console.log('🔍 [SAFE SUCCESS CHECK] result.success:', result.success);
       console.log('🔍 [SAFE SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
