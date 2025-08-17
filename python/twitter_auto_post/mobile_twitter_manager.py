@@ -162,6 +162,56 @@ class MobileTwitterManager:
             self.debug_log(f"モバイルタップエラー: {e}", "ERROR")
             return False
 
+    def mobile_type_simple(self, element, text):
+        """シンプルなテキスト入力（1回のみ、余計な確認なし）"""
+        if not text:
+            return
+        
+        try:
+            self.debug_log(f"📝 [SIMPLE_TYPE] シンプルテキスト入力開始: {len(text)}文字")
+            
+            # フォーカスを設定
+            element.focus()
+            self.human_delay(300, 500)
+            
+            # JavaScriptで直接設定（1回のみ）
+            result = element.evaluate('''(element, text) => {
+                try {
+                    // 現在の値をクリア
+                    element.value = '';
+                    element.textContent = '';
+                    element.innerText = '';
+                    
+                    // 新しいテキストを設定
+                    if (element.value !== undefined) {
+                        element.value = text;
+                    } else if (element.textContent !== undefined) {
+                        element.textContent = text;
+                    } else if (element.innerText !== undefined) {
+                        element.innerText = text;
+                    }
+                    
+                    // inputイベントを発火（UIに反映）
+                    const inputEvent = new Event('input', { bubbles: true });
+                    element.dispatchEvent(inputEvent);
+                    
+                    // フォーカスを維持
+                    element.focus();
+                    
+                    return { success: true, finalValue: element.value || element.textContent || element.innerText || '' };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }''', text)
+            
+            if result['success']:
+                self.debug_log(f"✅ [SIMPLE_TYPE] テキスト設定完了: {len(result['finalValue'])}文字")
+            else:
+                self.debug_log(f"❌ [SIMPLE_TYPE] テキスト設定エラー: {result.get('error')}", "ERROR")
+                
+        except Exception as e:
+            self.debug_log(f"❌ [SIMPLE_TYPE] 例外エラー: {e}", "ERROR")
+    
     def mobile_type(self, element, text, clear_first=False):
         """モバイル風タイピング（1文字タイピング + ペースト改善版）"""
         if not text:
@@ -189,20 +239,60 @@ class MobileTwitterManager:
             # 現在の値を取得
             before_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
             
-            # JavaScriptで直接設定
+            # 強化されたJavaScript設定（React対応）
             element.evaluate('''
                 (element, newText) => {
-                    if (element.value !== undefined) {
+                    // React の制御されたコンポーネント対応
+                    const inputDescriptor = Object.getOwnPropertyDescriptor(element, 'value') ||
+                                          Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
+                    
+                    if (inputDescriptor && inputDescriptor.set) {
+                        inputDescriptor.set.call(element, newText);
+                    } else if (element.value !== undefined) {
                         element.value = newText;
                     } else {
                         element.textContent = newText;
                         element.innerText = newText;
                     }
                     
-                    // 入力イベントを発火
-                    element.dispatchEvent(new Event('input', { bubbles: true }));
-                    element.dispatchEvent(new Event('change', { bubbles: true }));
-                    element.dispatchEvent(new Event('keyup', { bubbles: true }));
+                    // より包括的なイベント発火（React対応）
+                    const events = [
+                        new Event('input', { bubbles: true, cancelable: true }),
+                        new Event('change', { bubbles: true, cancelable: true }),
+                        new Event('keyup', { bubbles: true, cancelable: true }),
+                        new Event('keydown', { bubbles: true, cancelable: true }),
+                        new Event('focus', { bubbles: true }),
+                        new Event('blur', { bubbles: true })
+                    ];
+                    
+                    events.forEach(event => {
+                        try {
+                            element.dispatchEvent(event);
+                        } catch (e) {
+                            console.log('Event dispatch error:', e);
+                        }
+                    });
+                    
+                    // React の内部状態更新をトリガー
+                    if (element._valueTracker) {
+                        element._valueTracker.setValue('');
+                        element._valueTracker.setValue(newText);
+                    }
+                    
+                    // 追加のReact更新トリガー
+                    const reactInternalInstance = element._reactInternalFiber || element._reactInternalInstance;
+                    if (reactInternalInstance && reactInternalInstance.memoizedProps) {
+                        if (reactInternalInstance.memoizedProps.onChange) {
+                            try {
+                                reactInternalInstance.memoizedProps.onChange({
+                                    target: element,
+                                    currentTarget: element
+                                });
+                            } catch (e) {
+                                console.log('React onChange trigger error:', e);
+                            }
+                        }
+                    }
                 }
             ''', text)
             
@@ -210,14 +300,197 @@ class MobileTwitterManager:
             after_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
             self.debug_log(f"🔧 [DEBUG] モバイルJS設定結果 - before: '{before_value[:50]}{'...' if len(before_value) > 50 else ''}', after: '{after_value[:50]}{'...' if len(after_value) > 50 else ''}'")
             
+            # 設定が成功していない場合の追加処理
+            if not after_value or len(after_value.strip()) == 0:
+                self.debug_log("⚠️ JavaScript設定が失敗、追加手法を試行", "WARNING")
+                
+                # 手法1: focus + type + blur
+                try:
+                    element.focus()
+                    self.human_delay(200, 400)
+                    element.type(text)
+                    self.human_delay(200, 400)
+                    element.blur()
+                    
+                    after_value_2 = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                    self.debug_log(f"🔄 focus+type+blur結果: '{after_value_2[:50]}{'...' if len(after_value_2) > 50 else ''}'")
+                    
+                    if after_value_2 and len(after_value_2.strip()) > 0:
+                        self.debug_log("✅ focus+type+blur成功")
+                        after_value = after_value_2
+                    else:
+                        raise Exception("focus+type+blur失敗")
+                        
+                except Exception as e1:
+                    self.debug_log(f"focus+type+blur失敗: {e1}", "WARNING")
+                    
+                    # 手法2: 強制的なDOM操作
+                    try:
+                        element.evaluate('''
+                            (element, text) => {
+                                // DOM操作で強制設定
+                                element.setAttribute('value', text);
+                                if (element.value !== undefined) {
+                                    element.value = text;
+                                }
+                                element.textContent = text;
+                                element.innerText = text;
+                                
+                                // 手動でReactの内部状態を更新
+                                const keys = Object.keys(element);
+                                for (const key of keys) {
+                                    if (key.startsWith('__reactProps') || key.startsWith('__reactEventHandlers')) {
+                                        console.log('Found React key:', key);
+                                    }
+                                }
+                                
+                                // React Fiber ノードの検索
+                                let fiber = element._reactInternalFiber || element._reactInternalInstance;
+                                if (!fiber) {
+                                    // より詳細な検索
+                                    for (let prop in element) {
+                                        if (prop.startsWith('__reactInternalInstance') || prop.startsWith('__reactInternalFiber')) {
+                                            fiber = element[prop];
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                if (fiber) {
+                                    console.log('Found React fiber:', fiber);
+                                    // Reactの状態更新をトリガー
+                                    if (fiber.stateNode && fiber.stateNode.forceUpdate) {
+                                        fiber.stateNode.forceUpdate();
+                                    }
+                                }
+                            }
+                        ''', text)
+                        
+                        self.human_delay(500, 1000)
+                        
+                        after_value_3 = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                        self.debug_log(f"🔄 強制DOM操作結果: '{after_value_3[:50]}{'...' if len(after_value_3) > 50 else ''}'")
+                        
+                        if after_value_3 and len(after_value_3.strip()) > 0:
+                            self.debug_log("✅ 強制DOM操作成功")
+                            after_value = after_value_3
+                        else:
+                            raise Exception("強制DOM操作失敗")
+                            
+                    except Exception as e2:
+                        self.debug_log(f"強制DOM操作失敗: {e2}", "WARNING")
+            
             self.debug_log(f"✅ JavaScript直接入力完了: '{text[:50]}{'...' if len(text) > 50 else ''}'")
             
-            # 短時間待機
-            self.human_delay(300, 800)
+            # React状態更新のための長時間待機
+            self.human_delay(1500, 2500)
             
-            # 最終確認
-            final_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
-            self.debug_log(f"🎯 [DEBUG] モバイル最終結果: '{final_value[:50]}{'...' if len(final_value) > 50 else ''}'")
+            # 包括的な最終確認と再設定ループ（最大5回）
+            for i in range(5):
+                final_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                self.debug_log(f"🎯 [DEBUG] モバイル最終確認{i+1}: '{final_value[:50]}{'...' if len(final_value) > 50 else ''}'")
+                
+                if final_value and len(final_value.strip()) > 0:
+                    self.debug_log(f"✅ テキスト設定成功確認（試行{i+1}）")
+                    break
+                else:
+                    # テキストが消えている場合は再設定
+                    self.debug_log(f"⚠️ テキストが消失、再設定試行{i+1}", "WARNING")
+                    
+                    # より強力な再設定
+                    element.evaluate('''
+                        (element, text) => {
+                            // 強制的なReact状態リセット
+                            if (element._valueTracker) {
+                                element._valueTracker.setValue('');
+                            }
+                            
+                            // より包括的なReact内部状態操作
+                            const reactInstance = element._reactInternalInstance || element._reactInternalFiber;
+                            if (reactInstance) {
+                                const stateNode = reactInstance.stateNode;
+                                if (stateNode && stateNode.setState) {
+                                    try {
+                                        stateNode.setState({value: text});
+                                    } catch(e) {}
+                                }
+                            }
+                            
+                            // DOM直接操作
+                            element.value = text;
+                            element.textContent = text;
+                            element.innerText = text;
+                            element.setAttribute('value', text);
+                            
+                            // React Fiberツリーの強制更新
+                            const fiber = element._reactInternalFiber;
+                            if (fiber && fiber.return) {
+                                let current = fiber;
+                                while (current) {
+                                    if (current.stateNode && current.stateNode.forceUpdate) {
+                                        current.stateNode.forceUpdate();
+                                        break;
+                                    }
+                                    current = current.return;
+                                }
+                            }
+                            
+                            // 再度value trackerを設定
+                            if (element._valueTracker) {
+                                element._valueTracker.setValue(text);
+                            }
+                            
+                            // 全イベントを再発火
+                            ['input', 'change', 'keyup', 'keydown', 'focus', 'blur'].forEach(eventType => {
+                                const event = new Event(eventType, { bubbles: true, cancelable: true });
+                                element.dispatchEvent(event);
+                            });
+                        }
+                    ''', text)
+                    
+                    # 再設定後の短時間待機
+                    self.human_delay(1000, 1500)
+            
+            # 最終的にテキストが設定されていない場合の強制的な対処
+            final_check = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+            if not final_check or len(final_check.strip()) == 0:
+                self.debug_log("❌ [CRITICAL] 通常設定完全失敗、緊急モード開始", "ERROR")
+                
+                # 緊急モード: ページ全体のReactを強制更新
+                try:
+                    self.page.evaluate('''
+                        () => {
+                            // すべてのReactコンポーネントを強制更新
+                            if (window.React && window.React.version) {
+                                const allElements = document.querySelectorAll('*');
+                                for (let el of allElements) {
+                                    const fiber = el._reactInternalFiber || el._reactInternalInstance;
+                                    if (fiber && fiber.stateNode && fiber.stateNode.forceUpdate) {
+                                        try {
+                                            fiber.stateNode.forceUpdate();
+                                        } catch(e) {}
+                                    }
+                                }
+                            }
+                        }
+                    ''')
+                    
+                    # 緊急再設定
+                    element.fill('')  # Playwrightの強力なfillメソッド
+                    self.human_delay(500, 800)
+                    element.fill(text)
+                    self.human_delay(1000, 1500)
+                    
+                    emergency_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                    self.debug_log(f"🚨 緊急モード結果: '{emergency_value[:50]}{'...' if len(emergency_value) > 50 else ''}'")
+                    
+                    if emergency_value and len(emergency_value.strip()) > 0:
+                        self.debug_log("✅ 緊急モードで復旧成功", "INFO")
+                    else:
+                        self.debug_log("❌ 緊急モードも失敗", "ERROR")
+                        
+                except Exception as emergency_error:
+                    self.debug_log(f"❌ 緊急モードエラー: {emergency_error}", "ERROR")
             
         except Exception as e:
             self.debug_log(f"❌ モバイル入力エラー: {e}", "ERROR")
@@ -225,10 +498,27 @@ class MobileTwitterManager:
             # フォールバック：1文字ずつ入力
             try:
                 self.debug_log("フォールバック：1文字ずつ入力を試行")
+                element.focus()
+                self.human_delay(200, 400)
+                
+                # 既存内容をクリア
+                element.evaluate("element => { element.value = ''; element.textContent = ''; element.innerText = ''; }")
+                
+                # 1文字ずつ入力
                 for char in text:
                     element.type(char)
                     time.sleep(random.uniform(0.01, 0.05))
-                self.debug_log("フォールバック入力完了")
+                
+                self.human_delay(500, 1000)
+                
+                fallback_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                self.debug_log(f"フォールバック入力結果: '{fallback_value[:50]}{'...' if len(fallback_value) > 50 else ''}'")
+                
+                if fallback_value and len(fallback_value.strip()) > 0:
+                    self.debug_log("✅ フォールバック入力成功")
+                else:
+                    self.debug_log("❌ フォールバック入力も失敗", "ERROR")
+                    
             except Exception as fallback_error:
                 self.debug_log(f"フォールバック入力も失敗: {fallback_error}", "ERROR")
 
@@ -488,33 +778,71 @@ class MobileTwitterManager:
                                 
                                 console.log('[MOBILE DEBUG] Twitterファイル設定完了, files.length:', targetTwitterInput.files.length);
                                 
-                                // 6. 必要なイベントを発火（ダイアログを開かない方法）
-                                const events = [
-                                    new Event('change', { bubbles: true, cancelable: true }),
-                                    new Event('input', { bubbles: true, cancelable: true }),
-                                    new Event('loadstart', { bubbles: true }),
-                                    new Event('load', { bubbles: true }),
-                                    new Event('loadend', { bubbles: true })
+                                // 6. テキスト保護しながら最小限のイベントを発火
+                                console.log('[MOBILE DEBUG] イベント発火前テキスト保護開始');
+                                
+                                // テキストエリアの現在の内容を保存
+                                const textAreaSelectors = [
+                                    '[data-testid="tweetTextarea_0"]',
+                                    '.public-DraftEditor-content',
+                                    '[contenteditable="true"]',
+                                    'textarea',
+                                    '[role="textbox"]'
                                 ];
                                 
-                                events.forEach(event => {
+                                let currentTextContent = '';
+                                let textAreaElement = null;
+                                
+                                for (const selector of textAreaSelectors) {
+                                    const elem = document.querySelector(selector);
+                                    if (elem) {
+                                        currentTextContent = elem.value || elem.textContent || elem.innerText || '';
+                                        if (currentTextContent.trim()) {
+                                            textAreaElement = elem;
+                                            console.log('[MOBILE DEBUG] テキスト保存:', currentTextContent.length, '文字');
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // 最小限のイベントのみ発火（画像認識に必要な最低限）
+                                const minimalEvents = [
+                                    new Event('change', { bubbles: true, cancelable: true })
+                                ];
+                                
+                                minimalEvents.forEach(event => {
                                     targetTwitterInput.dispatchEvent(event);
                                 });
                                 
-                                console.log('[MOBILE DEBUG] Twitterイベント発火完了');
+                                console.log('[MOBILE DEBUG] 最小限イベント発火完了');
+                                
+                                // イベント発火後、即座にテキストを復元
+                                setTimeout(() => {
+                                    if (textAreaElement && currentTextContent) {
+                                        const newContent = textAreaElement.value || textAreaElement.textContent || textAreaElement.innerText || '';
+                                        if (!newContent || newContent.length === 0) {
+                                            console.log('[MOBILE DEBUG] テキスト消失検出、即座に復元中...');
+                                            if (textAreaElement.value !== undefined) {
+                                                textAreaElement.value = currentTextContent;
+                                            } else {
+                                                textAreaElement.textContent = currentTextContent;
+                                            }
+                                            
+                                            // 復元後にInputイベントを発火してUIに反映
+                                            const restoreEvent = new Event('input', { bubbles: true });
+                                            textAreaElement.dispatchEvent(restoreEvent);
+                                            
+                                            console.log('[MOBILE DEBUG] テキスト即座復元完了:', currentTextContent.length, '文字');
+                                        }
+                                    }
+                                }, 100); // 100ms後に復元チェック
                             }
                             
-                            // 7. 隠れた要素のイベントも発火
-                            const hiddenEvents = [
-                                new Event('change', { bubbles: true }),
-                                new Event('input', { bubbles: true })
-                            ];
+                            // 7. 隠れた要素は最小限のイベントのみ
+                            const hiddenEvent = new Event('change', { bubbles: false }); // bubblesをfalseに
+                            hiddenInput.dispatchEvent(hiddenEvent);
                             
-                            hiddenEvents.forEach(event => {
-                                hiddenInput.dispatchEvent(event);
-                            });
-                            
-                            console.log('[MOBILE DEBUG] 隠れた要素イベント発火完了');
+                            console.log('[MOBILE DEBUG] 隠れた要素最小限イベント発火完了');
                             
                             // 8. 少し後に隠れた要素を削除
                             setTimeout(() => {
@@ -724,29 +1052,30 @@ class MobileTwitterManager:
                 self.debug_log("❌ モバイルテキストエリアが見つかりません", "ERROR")
                 return False
             
-            # 画像がある場合は先にアップロード
+            # ★ 新戦略：画像を先に、テキストを後に1回だけ ★
+            self.debug_log("📝 [SIMPLE_FLOW] 画像先・テキスト後の単純フロー")
+            
+            # 1. 画像がある場合は先にアップロード
             if image_paths:
-                self.debug_log(f"📷 画像アップロード開始: {len(image_paths)}枚")
-                self.check_text_content(step_name="画像アップロード前")
+                self.debug_log(f"📷 [SIMPLE_FLOW] 画像アップロード開始: {len(image_paths)}枚")
+                self._current_image_paths = image_paths  # 画像パスを保存
                 self.upload_images_mobile(image_paths)
-                self.check_text_content(step_name="画像アップロード後")
+                self.human_delay(1000, 1500)  # 画像アップロード後の安定待機
             
-            # テキスト入力前の状態をチェック
-            self.debug_log("📝 テキスト入力開始前の状態チェック")
-            self.check_text_content(step_name="テキスト入力開始前")
+            # 2. テキストを1回だけ入力（フォーカスを維持）
+            self.debug_log("📝 [SIMPLE_FLOW] テキスト入力（1回のみ）")
+            self.mobile_type_simple(textarea, message)
             
-            # テキストを入力
-            self.mobile_type(textarea, message, clear_first=False)
-            
-            # テキスト入力完了後の状態をチェック
-            self.debug_log("📝 テキスト入力完了後の状態チェック")
-            self.check_text_content(step_name="テキスト入力完了後")
+            # 3. テキストエリアにフォーカスを維持
+            self.debug_log("🎯 [SIMPLE_FLOW] テキストエリアにフォーカス維持")
+            textarea.focus()
+            self.human_delay(500, 800)  # フォーカス安定待機
             
             self.debug_log(f"✅ モバイルテキスト入力完了: {message[:50]}{'...' if len(message) > 50 else ''}")
             
             # テストモードの場合は実際の投稿をスキップ
             if test_mode:
-                self.debug_log("🚫 実投稿モード: 投稿直前で停止（投稿処理はコメントアウト中）")
+                self.debug_log("🚫 テストモード: 投稿直前で停止（投稿処理をスキップ）")
                 self.debug_log("✅ モバイルテキスト入力完了")
                 print("✅ === モバイル版投稿テスト成功！ ===")
                 return True
@@ -816,33 +1145,69 @@ class MobileTwitterManager:
                         continue
                 
                 if post_button:
-                    self.debug_log(f"🎯 [強化版] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
+                    self.debug_log(f"🎯 [SIMPLE_FLOW] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
                     
-                    # 複数のクリック方法を試行（モバイル版専用）
-                    click_methods = [
-                        ("mobile_tap", lambda: self.mobile_tap(post_button)),
-                        ("direct_click", lambda: post_button.click()),
-                        ("js_click", lambda: post_button.evaluate("element => element.click()")),
-                        ("focus_enter", lambda: (post_button.focus(), post_button.press("Enter")))
-                    ]
+                    # テキストエリアにフォーカスを維持したまま、JavaScriptでボタンをクリック
+                    self.debug_log("🎯 [SIMPLE_FLOW] フォーカス維持したままJSクリック")
                     
-                    for method_name, method_func in click_methods:
+                    try:
+                        # 現在のフォーカス要素を保存
+                        self.page.evaluate('''() => {
+                            const activeElement = document.activeElement;
+                            if (activeElement) {
+                                window._savedFocus = activeElement;
+                                console.log('[MOBILE DEBUG] フォーカス要素保存:', activeElement.tagName, activeElement.getAttribute('data-testid'));
+                            }
+                        }''')
+                        
+                        # JavaScriptでボタンをクリック（フォーカスを変更しない）
+                        click_result = post_button.evaluate('''(button) => {
+                            try {
+                                // クリックイベントを直接発火（フォーカス変更なし）
+                                const clickEvent = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                button.dispatchEvent(clickEvent);
+                                
+                                // 保存したフォーカスを復元
+                                if (window._savedFocus) {
+                                    window._savedFocus.focus();
+                                    console.log('[MOBILE DEBUG] フォーカス復元完了');
+                                }
+                                
+                                return { success: true };
+                            } catch (error) {
+                                return { success: false, error: error.message };
+                            }
+                        }''')
+                        
+                        if click_result['success']:
+                            self.debug_log("✅ [SIMPLE_FLOW] JSクリック成功（フォーカス維持）")
+                            post_success = True
+                            break
+                        else:
+                            self.debug_log(f"❌ [SIMPLE_FLOW] JSクリックエラー: {click_result.get('error')}")
+                    except Exception as e:
+                        self.debug_log(f"❌ [SIMPLE_FLOW] クリック例外: {e}")
+                        
+                    # フォーカス維持クリックが失敗した場合のみ、通常のクリックを試行
+                    if not post_success:
                         try:
-                            self.debug_log(f"🔄 [強化版] クリック方法試行: {method_name}")
-                            method_func()
+                            self.debug_log("🔄 [SIMPLE_FLOW] フォールバック: 通常のJSクリック")
+                            post_button.evaluate("element => element.click()")
                             self.human_delay(1000, 2000)
                             
                             # クリック成功判定（URLまたはページ状態の変化確認）
                             current_url = self.page.url
                             if "compose" not in current_url.lower():
-                                self.debug_log(f"✅ [強化版] {method_name}クリック成功確認")
+                                self.debug_log("✅ [SIMPLE_FLOW] フォールバッククリック成功確認")
                                 post_success = True
-                                break
                             else:
-                                self.debug_log(f"⚠️ [強化版] {method_name}クリック効果なし、次の方法を試行")
+                                self.debug_log("⚠️ [SIMPLE_FLOW] フォールバッククリック効果なし")
                         except Exception as e:
-                            self.debug_log(f"❌ [強化版] {method_name}クリックエラー: {e}")
-                            continue
+                            self.debug_log(f"❌ [SIMPLE_FLOW] フォールバッククリックエラー: {e}")
                     
                     if post_success:
                         break
@@ -857,6 +1222,50 @@ class MobileTwitterManager:
             if post_success:
                 self.debug_log("🎉 [強化版] [ポストボタン確実クリック済み] 投稿処理成功")
                 self.human_delay(3000, 5000)  # 投稿完了を待機
+                
+                # ★ 投稿後の最終確認処理 ★
+                self.debug_log("🔍 [POST-VALIDATION] 投稿完了後の最終確認開始")
+                try:
+                    final_url = self.page.url
+                    self.debug_log(f"📍 [POST-VALIDATION] 投稿後URL: {final_url}")
+                    
+                    # ホーム画面に戻ったかチェック
+                    if "home" in final_url or "x.com" in final_url:
+                        self.debug_log("✅ [POST-VALIDATION] ホーム画面への遷移確認")
+                        
+                        # 投稿成功の画面要素を探す
+                        success_indicators = [
+                            '[data-testid="toast"]',  # 成功トースト
+                            '[aria-live="polite"]',   # スクリーンリーダー用メッセージ
+                            '.r-1awozwy'              # 成功メッセージ的なクラス
+                        ]
+                        
+                        for indicator in success_indicators:
+                            try:
+                                element = self.page.query_selector(indicator)
+                                if element:
+                                    text = element.inner_text()
+                                    self.debug_log(f"📢 [POST-VALIDATION] 成功インジケーター発見: {text}")
+                                    break
+                            except:
+                                continue
+                    else:
+                        self.debug_log(f"⚠️ [POST-VALIDATION] 予期しないURL: {final_url}")
+                    
+                    # 投稿内容の最終ログ出力
+                    self.debug_log("=" * 60)
+                    self.debug_log("📊 [FINAL-SUMMARY] 投稿処理完了サマリー")
+                    self.debug_log("=" * 60)
+                    self.debug_log(f"📝 投稿メッセージ長: {len(message)}文字")
+                    self.debug_log(f"📝 投稿メッセージ内容: {message[:200]}{'...' if len(message) > 200 else ''}")
+                    self.debug_log(f"📷 画像アップロード: {'あり' if hasattr(self, '_current_image_paths') and self._current_image_paths else 'なし'}")
+                    self.debug_log(f"🌐 最終URL: {final_url}")
+                    self.debug_log(f"⏰ 投稿完了時刻: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+                    self.debug_log("=" * 60)
+                    
+                except Exception as e:
+                    self.debug_log(f"⚠️ [POST-VALIDATION] 投稿後確認エラー: {e}", "WARNING")
+                
                 self.debug_log("✅ === モバイル版投稿完了成功！ ===")
                 print("✅ === モバイル版投稿完了成功！ ===")
                 return True

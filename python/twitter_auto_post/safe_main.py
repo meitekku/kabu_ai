@@ -80,6 +80,57 @@ def safe_manual_login_wait(driver, timeout=300):
         error_reporter.add_error("manual_login", str(e), e)
         return False
 
+def check_text_content(driver, element_selector=None, step_name=""):
+    """テキストエリアの内容を詳細にチェックする（Selenium版）"""
+    try:
+        if not element_selector:
+            # デフォルトのテキストエリアセレクタ
+            selectors = [
+                '[data-testid="tweetTextarea_0"]',
+                '.public-DraftEditor-content',
+                '[contenteditable="true"]',
+                'textarea',
+                '[role="textbox"]'
+            ]
+            
+            text_content = ""
+            for selector in selectors:
+                try:
+                    elements = driver.find_elements("css selector", selector)
+                    if elements:
+                        element = elements[0]
+                        content = driver.execute_script(
+                            "return arguments[0].value || arguments[0].textContent || arguments[0].innerText || '';", 
+                            element
+                        )
+                        if content and content.strip():
+                            text_content = content
+                            break
+                except:
+                    continue
+        else:
+            try:
+                elements = driver.find_elements("css selector", element_selector)
+                if elements:
+                    element = elements[0]
+                    text_content = driver.execute_script(
+                        "return arguments[0].value || arguments[0].textContent || arguments[0].innerText || '';", 
+                        element
+                    )
+                else:
+                    text_content = ""
+            except:
+                text_content = ""
+        
+        # ログに記録
+        logger.info(f"📝 [TEXT_CHECK] {step_name}: テキスト長={len(text_content)}, 内容='{text_content[:50]}{'...' if len(text_content) > 50 else ''}'")
+        
+        return text_content
+        
+    except Exception as e:
+        logger.warning(f"テキスト内容チェックエラー: {e}")
+        return ""
+
 def safe_post_text(driver, message, image_path=None, actually_post=False):
     """安全なテキスト投稿"""
     try:
@@ -137,6 +188,8 @@ def safe_post_text(driver, message, image_path=None, actually_post=False):
         
         # 画像アップロード処理
         if image_path:
+            # 画像アップロード前のテキスト状態を保存
+            text_before_upload = check_text_content(driver, step_name="画像アップロード前")
             logger.info(f"📷 画像アップロード開始: {image_path}")
             try:
                 # 画像アップロードボタンを探す
@@ -196,6 +249,41 @@ def safe_post_text(driver, message, image_path=None, actually_post=False):
             except Exception as upload_error:
                 logger.error(f"❌ 画像アップロードエラー: {upload_error}")
                 # 画像アップロードに失敗してもテキスト投稿は続行
+                
+            # 画像アップロード後のテキスト状態をチェック
+            text_after_upload = check_text_content(driver, step_name="画像アップロード後")
+            
+            # テキストが削除されていた場合は復元
+            if text_before_upload and (not text_after_upload or len(text_after_upload.strip()) == 0):
+                logger.warning("⚠️ テキストが削除されました。復元を試行します")
+                try:
+                    # テキストエリアを探して復元
+                    text_area_selectors = [
+                        '[data-testid="tweetTextarea_0"]',
+                        '.public-DraftEditor-content',
+                        '[contenteditable="true"]',
+                        'textarea',
+                        '[role="textbox"]'
+                    ]
+                    
+                    text_area_for_restore = None
+                    for selector in text_area_selectors:
+                        try:
+                            elements = driver.find_elements("css selector", selector)
+                            if elements:
+                                text_area_for_restore = elements[0]
+                                break
+                        except:
+                            continue
+                            
+                    if text_area_for_restore:
+                        text_area_for_restore.send_keys(text_before_upload)
+                        logger.info("✅ テキスト復元完了")
+                        check_text_content(driver, step_name="テキスト復元後")
+                    else:
+                        logger.error("❌ テキスト復元失敗: テキストエリアが見つかりません")
+                except Exception as e:
+                    logger.error(f"❌ テキスト復元エラー: {e}")
         else:
             logger.info("📝 テキストのみ投稿")
         
@@ -266,6 +354,50 @@ def safe_post_text(driver, message, image_path=None, actually_post=False):
                 
                 if submit_button:
                     logger.info(f"🎯 [強化版] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
+                    
+                    # ★ 投稿直前の最終テキスト確認と復元（Selenium版） ★
+                    logger.info("🔍 [CRITICAL] 投稿ボタンクリック直前の最終テキスト確認")
+                    final_text_content = check_text_content(driver, step_name="投稿直前最終確認")
+                    
+                    if not final_text_content or len(final_text_content.strip()) == 0:
+                        logger.warning("⚠️ [CRITICAL] 投稿直前でテキストが消失！緊急復元開始")
+                        try:
+                            # テキストエリアを再取得して緊急復元
+                            emergency_selectors = [
+                                '[data-testid="tweetTextarea_0"]',
+                                '.public-DraftEditor-content',
+                                '[contenteditable="true"]',
+                                'textarea',
+                                '[role="textbox"]'
+                            ]
+                            
+                            emergency_textarea = None
+                            for selector in emergency_selectors:
+                                try:
+                                    elements = driver.find_elements("css selector", selector)
+                                    if elements:
+                                        emergency_textarea = elements[0]
+                                        break
+                                except:
+                                    continue
+                                    
+                            if emergency_textarea:
+                                logger.info(f"🚨 [EMERGENCY] テキスト緊急復元: {message[:100]}...")
+                                emergency_textarea.send_keys(message)
+                                time.sleep(1.5)  # 復元後の安定待機
+                                
+                                # 復元後の確認
+                                restored_text = check_text_content(driver, step_name="緊急復元後確認")
+                                if restored_text and len(restored_text.strip()) > 0:
+                                    logger.info("✅ [EMERGENCY] テキスト緊急復元成功")
+                                else:
+                                    logger.error("❌ [EMERGENCY] テキスト緊急復元失敗")
+                            else:
+                                logger.error("❌ [EMERGENCY] テキストエリアが見つからず、復元不可")
+                        except Exception as e:
+                            logger.error(f"❌ [EMERGENCY] 緊急復元エラー: {e}")
+                    else:
+                        logger.info(f"✅ [CRITICAL] 投稿直前テキスト確認OK: {len(final_text_content)}文字")
                     
                     # 複数のクリック方法を試行（Selenium版専用）
                     click_methods = [

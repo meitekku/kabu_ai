@@ -10,6 +10,8 @@ import logging
 import traceback
 import psutil
 import random
+import json
+from datetime import datetime
 from pathlib import Path
 
 # Playwrightのインストール確認
@@ -41,7 +43,193 @@ class PlaywrightTwitterManager:
         else:
             self.profile_dir = profile_dir
         
+        # ポストボタン専用デバッグログシステムの初期化
+        self.init_post_button_debug_system()
+        
         self.debug_log(f"プロファイルディレクトリ: {self.profile_dir}")
+    
+    def init_post_button_debug_system(self):
+        """ポストボタン専用デバッグログシステムの初期化"""
+        try:
+            # デバッグディレクトリの作成
+            debug_dir = Path(__file__).parent / "post_button_debug"
+            debug_dir.mkdir(exist_ok=True)
+            
+            # タイムスタンプ付きのセッションID
+            session_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.debug_session_id = f"post_button_debug_{session_timestamp}"
+            
+            # デバッグファイルパス
+            self.debug_log_file = debug_dir / f"{self.debug_session_id}.log"
+            self.debug_json_file = debug_dir / f"{self.debug_session_id}.json"
+            self.debug_screenshot_dir = debug_dir / self.debug_session_id / "screenshots"
+            self.debug_html_dir = debug_dir / self.debug_session_id / "html_dumps"
+            
+            # ディレクトリ作成
+            self.debug_screenshot_dir.mkdir(parents=True, exist_ok=True)
+            self.debug_html_dir.mkdir(parents=True, exist_ok=True)
+            
+            # デバッグデータの初期化
+            self.debug_data = {
+                "session_id": self.debug_session_id,
+                "start_time": datetime.now().isoformat(),
+                "post_button_search_attempts": [],
+                "click_attempts": [],
+                "screenshots": [],
+                "html_dumps": [],
+                "page_states": [],
+                "errors": []
+            }
+            
+            # 初期ログ出力
+            self.post_button_debug_log("🔍 ポストボタンデバッグシステム初期化完了", {
+                "debug_dir": str(debug_dir),
+                "session_id": self.debug_session_id,
+                "log_file": str(self.debug_log_file),
+                "json_file": str(self.debug_json_file)
+            })
+            
+        except Exception as e:
+            print(f"⚠️ ポストボタンデバッグシステム初期化エラー: {e}")
+            self.debug_session_id = "debug_init_failed"
+            self.debug_data = {}
+    
+    def post_button_debug_log(self, message, data=None, level="INFO"):
+        """ポストボタン専用デバッグログ出力"""
+        try:
+            timestamp = datetime.now().isoformat()
+            elapsed = time.time() - self.start_time
+            
+            # コンソール出力
+            console_msg = f"[POST_BTN_DEBUG] [{elapsed:.2f}s] [{level}] {message}"
+            print(console_msg)
+            
+            # ファイル出力
+            if hasattr(self, 'debug_log_file'):
+                with open(self.debug_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"{console_msg}\n")
+                    if data:
+                        f.write(f"  データ: {json.dumps(data, ensure_ascii=False, indent=2)}\n")
+            
+            # 構造化データに記録
+            if hasattr(self, 'debug_data'):
+                log_entry = {
+                    "timestamp": timestamp,
+                    "elapsed_seconds": elapsed,
+                    "level": level,
+                    "message": message,
+                    "data": data
+                }
+                
+                if level == "ERROR":
+                    self.debug_data.setdefault("errors", []).append(log_entry)
+                else:
+                    self.debug_data.setdefault("general_logs", []).append(log_entry)
+                
+                # JSON ファイルを更新
+                self.save_debug_data()
+            
+        except Exception as e:
+            print(f"⚠️ ポストボタンデバッグログ出力エラー: {e}")
+    
+    def save_debug_data(self):
+        """デバッグデータをJSONファイルに保存"""
+        try:
+            if hasattr(self, 'debug_json_file') and hasattr(self, 'debug_data'):
+                with open(self.debug_json_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.debug_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"⚠️ デバッグデータ保存エラー: {e}")
+    
+    def take_debug_screenshot(self, name, description=""):
+        """デバッグ用スクリーンショット撮影"""
+        try:
+            if not self.page:
+                return None
+                
+            timestamp = datetime.now().strftime("%H%M%S_%f")[:-3]  # ミリ秒まで
+            filename = f"{timestamp}_{name}.png"
+            filepath = self.debug_screenshot_dir / filename
+            
+            self.page.screenshot(path=str(filepath), full_page=True)
+            
+            screenshot_info = {
+                "timestamp": datetime.now().isoformat(),
+                "filename": filename,
+                "filepath": str(filepath),
+                "description": description,
+                "page_url": self.page.url if self.page else "N/A"
+            }
+            
+            self.debug_data.setdefault("screenshots", []).append(screenshot_info)
+            self.post_button_debug_log(f"📸 スクリーンショット撮影: {filename}", screenshot_info)
+            
+            return str(filepath)
+            
+        except Exception as e:
+            self.post_button_debug_log(f"❌ スクリーンショット撮影エラー: {e}", {"error": str(e)}, "ERROR")
+            return None
+    
+    def dump_page_html(self, name, description=""):
+        """ページHTMLのダンプ"""
+        try:
+            if not self.page:
+                return None
+                
+            timestamp = datetime.now().strftime("%H%M%S_%f")[:-3]
+            filename = f"{timestamp}_{name}.html"
+            filepath = self.debug_html_dir / filename
+            
+            html_content = self.page.content()
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            html_info = {
+                "timestamp": datetime.now().isoformat(),
+                "filename": filename,
+                "filepath": str(filepath),
+                "description": description,
+                "page_url": self.page.url if self.page else "N/A",
+                "html_length": len(html_content)
+            }
+            
+            self.debug_data.setdefault("html_dumps", []).append(html_info)
+            self.post_button_debug_log(f"📄 HTMLダンプ: {filename}", html_info)
+            
+            return str(filepath)
+            
+        except Exception as e:
+            self.post_button_debug_log(f"❌ HTMLダンプエラー: {e}", {"error": str(e)}, "ERROR")
+            return None
+    
+    def record_page_state(self, state_name, additional_data=None):
+        """ページ状態の記録"""
+        try:
+            if not self.page:
+                return
+                
+            state_info = {
+                "timestamp": datetime.now().isoformat(),
+                "state_name": state_name,
+                "page_url": self.page.url,
+                "page_title": self.page.title(),
+                "viewport_size": self.page.viewport_size,
+                "additional_data": additional_data or {}
+            }
+            
+            # ボタン要素の数を調査
+            try:
+                button_count = len(self.page.query_selector_all('button, [role="button"]'))
+                state_info["total_buttons"] = button_count
+            except:
+                state_info["total_buttons"] = "調査失敗"
+            
+            self.debug_data.setdefault("page_states", []).append(state_info)
+            self.post_button_debug_log(f"📊 ページ状態記録: {state_name}", state_info)
+            
+        except Exception as e:
+            self.post_button_debug_log(f"❌ ページ状態記録エラー: {e}", {"error": str(e)}, "ERROR")
         
     def debug_log(self, message, level="INFO"):
         """デバッグログ出力"""
@@ -49,6 +237,48 @@ class PlaywrightTwitterManager:
             elapsed = time.time() - self.start_time
             print(f"[{elapsed:.2f}s] [{level}] {message}")
             logger.info(f"[{elapsed:.2f}s] {message}")
+    
+    def check_text_content(self, element_selector=None, step_name=""):
+        """テキストエリアの内容を詳細にチェックする"""
+        try:
+            if not element_selector:
+                # デフォルトのテキストエリアセレクタ
+                selectors = [
+                    '[data-testid="tweetTextarea_0"]',
+                    '.public-DraftEditor-content',
+                    '[contenteditable="true"]',
+                    '[aria-label*="ツイートを入力"]',
+                    '[aria-label*="Tweet text"]',
+                    'textarea',
+                    '[role="textbox"]'
+                ]
+                
+                text_content = ""
+                for selector in selectors:
+                    try:
+                        element = self.page.query_selector(selector)
+                        if element:
+                            content = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                            if content and content.strip():
+                                text_content = content
+                                break
+                    except:
+                        continue
+            else:
+                element = self.page.query_selector(element_selector)
+                if element:
+                    text_content = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
+                else:
+                    text_content = ""
+            
+            # ログに記録
+            self.debug_log(f"📝 [TEXT_CHECK] {step_name}: テキスト長={len(text_content)}, 内容='{text_content[:50]}{'...' if len(text_content) > 50 else ''}'")
+            
+            return text_content
+            
+        except Exception as e:
+            self.debug_log(f"テキスト内容チェックエラー: {e}", "WARNING")
+            return ""
     
     def human_delay(self, min_ms=500, max_ms=2000):
         """人間らしいランダムな待機時間"""
@@ -1023,9 +1253,13 @@ class PlaywrightTwitterManager:
             self.natural_click(post_button)
             self.human_delay(2000, 4000)  # 投稿画面の読み込み待機
             
+            # テキスト復元用の変数を初期化
+            text_before_upload = ""
+            
             # 画像アップロード処理（JavaScript ファイル操作方式）
             if image_paths:
                 self.debug_log("📷 画像アップロード処理開始（JavaScript方式）")
+                text_before_upload = self.check_text_content(step_name="画像アップロード前")
                 success_count = 0
                 
                 for i, image_path in enumerate(image_paths):
@@ -1496,6 +1730,43 @@ class PlaywrightTwitterManager:
                 self.debug_log(f"📷 JavaScript方式画像アップロード完了: {success_count}/{len(image_paths)}枚成功")
                 if success_count > 0:
                     logger.info(f"✅ 画像アップロード成功: {success_count}枚")
+                    
+                # 画像アップロード後のテキスト状態をチェック
+                text_after_upload = self.check_text_content(step_name="画像アップロード後")
+                
+                # テキストが削除されていた場合は復元
+                if text_before_upload and (not text_after_upload or len(text_after_upload.strip()) == 0):
+                    self.debug_log("⚠️ テキストが削除されました。復元を試行します", "WARNING")
+                    try:
+                        # テキストエリアを探して復元
+                        text_area_selectors = [
+                            '[data-testid="tweetTextarea_0"]',
+                            '.public-DraftEditor-content',
+                            '[aria-label*="ツイートを入力"]',
+                            '[aria-label*="Tweet text"]',
+                            '[contenteditable="true"]',
+                            'textarea',
+                            '[role="textbox"]'
+                        ]
+                        
+                        text_area_for_restore = None
+                        for selector in text_area_selectors:
+                            try:
+                                element = self.page.query_selector(selector)
+                                if element:
+                                    text_area_for_restore = element
+                                    break
+                            except:
+                                continue
+                                
+                        if text_area_for_restore:
+                            self.natural_type(text_area_for_restore, text_before_upload, clear_first=False)
+                            self.debug_log("✅ テキスト復元完了")
+                            self.check_text_content(step_name="テキスト復元後")
+                        else:
+                            self.debug_log("❌ テキスト復元失敗: テキストエリアが見つかりません", "ERROR")
+                    except Exception as e:
+                        self.debug_log(f"❌ テキスト復元エラー: {e}", "ERROR")
                 
             # テキストエリアを探す
             self.debug_log("📝 テキストエリアを検索中...")
@@ -1530,8 +1801,19 @@ class PlaywrightTwitterManager:
             logger.info(f"✅ テキスト入力完了: {message[:50]}...")
             
             if not test_mode:
-                # 実際に投稿（強化版 - 確実に「ポストする」ボタンを押す）
+                # 実際に投稿（強化版 + 詳細デバッグ - 確実に「ポストする」ボタンを押す）
                 self.debug_log("🚀 実投稿モード: 投稿ボタンを探しています...")
+                self.post_button_debug_log("🚀 [CRITICAL] 実投稿モード開始", {
+                    "mode": "実投稿",
+                    "test_mode": test_mode,
+                    "page_url": self.page.url if self.page else "N/A"
+                })
+                
+                # デバッグ用: 投稿ボタン検索前の状態記録
+                self.record_page_state("投稿ボタン検索前")
+                self.take_debug_screenshot("before_post_button_search", "投稿ボタン検索開始前のページ状態")
+                self.dump_page_html("before_post_button_search", "投稿ボタン検索開始前のHTML")
+                
                 print("🚀 実投稿モード: 投稿ボタンを探しています...")
                 
                 # より多くのセレクタパターンを追加（順番も重要）
@@ -1560,17 +1842,46 @@ class PlaywrightTwitterManager:
                     '[role="button"]:has-text("Post")'
                 ]
                 
+                self.post_button_debug_log("🔍 投稿ボタンセレクター準備完了", {
+                    "total_selectors": len(submit_selectors),
+                    "selectors": submit_selectors
+                })
+                
                 submit_button = None
                 found_selector = None
                 
-                # 最大3回まで投稿ボタンを探す（リトライ機能）
+                # 最大3回まで投稿ボタンを探す（リトライ機能）+ 詳細デバッグ
                 for attempt in range(3):
+                    attempt_data = {
+                        "attempt_number": attempt + 1,
+                        "total_attempts": 3,
+                        "found_buttons": [],
+                        "errors": []
+                    }
+                    
                     self.debug_log(f"投稿ボタン検索試行 {attempt + 1}/3")
+                    self.post_button_debug_log(f"🔍 [ATTEMPT {attempt + 1}] 投稿ボタン検索開始", attempt_data)
+                    
+                    # 試行ごとにスクリーンショット撮影
+                    self.take_debug_screenshot(f"search_attempt_{attempt + 1}", f"検索試行 {attempt + 1} 開始時")
                     
                     for i, selector in enumerate(submit_selectors):
                         try:
                             self.debug_log(f"セレクター {i+1}/{len(submit_selectors)}: {selector}")
                             elements = self.page.query_selector_all(selector)
+                            
+                            selector_data = {
+                                "selector": selector,
+                                "index": i + 1,
+                                "elements_found": len(elements),
+                                "element_details": []
+                            }
+                            
+                            self.post_button_debug_log(f"🔍 セレクター検査: {selector}", {
+                                "selector_index": i + 1,
+                                "total_selectors": len(submit_selectors),
+                                "elements_found": len(elements)
+                            })
                             
                             for j, element in enumerate(elements):
                                 try:
@@ -1580,9 +1891,26 @@ class PlaywrightTwitterManager:
                                     is_attached = element.is_attached()
                                     text_content = element.text_content() or ""
                                     aria_label = element.get_attribute('aria-label') or ""
+                                    data_testid = element.get_attribute('data-testid') or ""
+                                    class_name = element.get_attribute('class') or ""
+                                    
+                                    element_detail = {
+                                        "element_index": j + 1,
+                                        "visible": is_visible,
+                                        "enabled": is_enabled,
+                                        "attached": is_attached,
+                                        "text_content": text_content[:50],
+                                        "aria_label": aria_label[:50],
+                                        "data_testid": data_testid,
+                                        "class_name": class_name[:100]
+                                    }
+                                    
+                                    selector_data["element_details"].append(element_detail)
                                     
                                     self.debug_log(f"  要素 {j+1}: visible={is_visible}, enabled={is_enabled}, attached={is_attached}")
                                     self.debug_log(f"  要素 {j+1}: text='{text_content[:30]}', aria-label='{aria_label[:30]}'")
+                                    
+                                    self.post_button_debug_log(f"📍 要素詳細分析 [{i+1}-{j+1}]", element_detail)
                                     
                                     # 投稿ボタンとして適切かチェック
                                     is_tweet_button = (
@@ -1596,99 +1924,340 @@ class PlaywrightTwitterManager:
                                         )
                                     )
                                     
+                                    element_detail["is_tweet_button"] = is_tweet_button
+                                    
                                     if is_tweet_button:
                                         submit_button = element
                                         found_selector = f"{selector} (要素 {j+1})"
+                                        
+                                        button_found_data = {
+                                            "selector": selector,
+                                            "selector_index": i + 1,
+                                            "element_index": j + 1,
+                                            "found_selector": found_selector,
+                                            "element_details": element_detail
+                                        }
+                                        
                                         self.debug_log(f"✅ 投稿ボタン発見: {found_selector}")
+                                        self.post_button_debug_log("🎯 [SUCCESS] 投稿ボタン発見！", button_found_data)
+                                        
+                                        # 投稿ボタン発見時のスクリーンショット
+                                        self.take_debug_screenshot("button_found", f"投稿ボタン発見: {found_selector}")
+                                        
                                         print(f"✅ 投稿ボタン発見: {found_selector}")
                                         logger.info(f"投稿ボタン発見: {found_selector}")
+                                        
+                                        attempt_data["found_buttons"].append(button_found_data)
                                         break
+                                        
                                 except Exception as element_error:
+                                    error_detail = {
+                                        "element_index": j + 1,
+                                        "error": str(element_error),
+                                        "error_type": type(element_error).__name__
+                                    }
+                                    selector_data["element_details"].append(error_detail)
+                                    attempt_data["errors"].append(error_detail)
+                                    
                                     self.debug_log(f"要素 {j+1} チェック中エラー: {element_error}", "WARNING")
+                                    self.post_button_debug_log(f"⚠️ 要素検査エラー [{i+1}-{j+1}]", error_detail, "WARNING")
                                     continue
+                            
+                            # セレクターごとの詳細をデバッグデータに記録
+                            self.debug_data.setdefault("post_button_search_attempts", []).append(selector_data)
                             
                             if submit_button:
                                 break
                                 
                         except Exception as selector_error:
+                            error_detail = {
+                                "selector": selector,
+                                "selector_index": i + 1,
+                                "error": str(selector_error),
+                                "error_type": type(selector_error).__name__
+                            }
+                            attempt_data["errors"].append(error_detail)
+                            
                             self.debug_log(f"セレクター '{selector}' でエラー: {selector_error}", "WARNING")
+                            self.post_button_debug_log(f"❌ セレクターエラー [{i+1}]", error_detail, "ERROR")
                             continue
                     
+                    # 試行結果をデバッグデータに記録
+                    self.debug_data.setdefault("search_attempts_summary", []).append(attempt_data)
+                    
                     if submit_button:
+                        self.post_button_debug_log(f"✅ [ATTEMPT {attempt + 1}] 投稿ボタン検索成功", attempt_data)
                         break
                     
                     # ボタンが見つからない場合、短時間待機してリトライ
                     if attempt < 2:
                         self.debug_log(f"投稿ボタンが見つかりません。{2-attempt}秒待機してリトライします...")
+                        self.post_button_debug_log(f"⏳ [ATTEMPT {attempt + 1}] ボタン未発見、リトライ待機", {
+                            "wait_seconds": 2,
+                            "remaining_attempts": 2 - attempt
+                        })
                         time.sleep(2)
+                        # リトライ前の状態スクリーンショット
+                        self.take_debug_screenshot(f"retry_wait_{attempt + 1}", "リトライ前の待機状態")
+                    else:
+                        self.post_button_debug_log(f"❌ [ATTEMPT {attempt + 1}] 最終試行失敗", attempt_data, "ERROR")
 
                 if submit_button:
                     self.debug_log("🎯 投稿ボタンを確実にクリック中...")
+                    self.post_button_debug_log("🎯 [CLICK_START] 投稿ボタンクリック開始", {
+                        "button_found": True,
+                        "found_selector": found_selector
+                    })
                     print("🎯 投稿ボタンを確実にクリック中...")
+                    
+                    # クリック前の詳細状態記録
+                    self.record_page_state("クリック前")
+                    self.take_debug_screenshot("before_click", "投稿ボタンクリック直前")
                     
                     # 投稿前の最終確認
                     try:
+                        # ★ 投稿直前の最終テキスト確認と復元（Playwright版） ★
+                        self.debug_log("🔍 [CRITICAL] 投稿ボタンクリック直前の最終テキスト確認")
+                        final_text_content = self.check_text_content(step_name="投稿直前最終確認")
+                        
+                        if not final_text_content or len(final_text_content.strip()) == 0:
+                            self.debug_log("⚠️ [CRITICAL] 投稿直前でテキストが消失！緊急復元開始", "WARNING")
+                            try:
+                                # テキストエリアを再取得して緊急復元
+                                emergency_selectors = [
+                                    '[data-testid="tweetTextarea_0"]',
+                                    '.public-DraftEditor-content',
+                                    '[aria-label*="ツイートを入力"]',
+                                    '[aria-label*="Tweet text"]',
+                                    '[contenteditable="true"]',
+                                    'textarea',
+                                    '[role="textbox"]'
+                                ]
+                                
+                                emergency_textarea = None
+                                for selector in emergency_selectors:
+                                    try:
+                                        element = self.page.query_selector(selector)
+                                        if element:
+                                            emergency_textarea = element
+                                            break
+                                    except:
+                                        continue
+                                        
+                                if emergency_textarea:
+                                    self.debug_log(f"🚨 [EMERGENCY] テキスト緊急復元: {message[:100]}...")
+                                    self.natural_type(emergency_textarea, message, clear_first=False)
+                                    self.human_delay(1000, 1500)  # 復元後の安定待機
+                                    
+                                    # 復元後の確認
+                                    restored_text = self.check_text_content(step_name="緊急復元後確認")
+                                    if restored_text and len(restored_text.strip()) > 0:
+                                        self.debug_log("✅ [EMERGENCY] テキスト緊急復元成功")
+                                    else:
+                                        self.debug_log("❌ [EMERGENCY] テキスト緊急復元失敗", "ERROR")
+                                else:
+                                    self.debug_log("❌ [EMERGENCY] テキストエリアが見つからず、復元不可", "ERROR")
+                            except Exception as e:
+                                self.debug_log(f"❌ [EMERGENCY] 緊急復元エラー: {e}", "ERROR")
+                        else:
+                            self.debug_log(f"✅ [CRITICAL] 投稿直前テキスト確認OK: {len(final_text_content)}文字")
+                        
+                        # ボタンの最終確認
                         button_text = submit_button.text_content() or ""
                         button_aria = submit_button.get_attribute('aria-label') or ""
-                        self.debug_log(f"クリック前確認 - text: '{button_text}', aria-label: '{button_aria}'")
+                        button_class = submit_button.get_attribute('class') or ""
+                        button_id = submit_button.get_attribute('id') or ""
+                        button_testid = submit_button.get_attribute('data-testid') or ""
                         
-                        # クリック実行（複数の方法を試行）
+                        final_button_info = {
+                            "text_content": button_text,
+                            "aria_label": button_aria,
+                            "class_name": button_class,
+                            "id": button_id,
+                            "data_testid": button_testid,
+                            "is_visible": submit_button.is_visible(),
+                            "is_enabled": submit_button.is_enabled(),
+                            "is_attached": submit_button.is_attached()
+                        }
+                        
+                        self.debug_log(f"クリック前確認 - text: '{button_text}', aria-label: '{button_aria}'")
+                        self.post_button_debug_log("🔍 [CLICK_PREP] クリック前最終確認", final_button_info)
+                        
+                        # クリック実行（複数の方法を試行）+ 詳細デバッグ
                         click_success = False
+                        click_attempts = []
                         
                         # 方法1: natural_click（通常のクリック）
+                        click_attempt = {
+                            "method": "natural_click",
+                            "attempt_time": datetime.now().isoformat(),
+                            "success": False,
+                            "error": None
+                        }
                         try:
+                            self.post_button_debug_log("🔄 [CLICK_METHOD_1] natural_click 試行開始")
                             self.natural_click(submit_button)
                             click_success = True
+                            click_attempt["success"] = True
                             self.debug_log("✅ natural_click成功")
+                            self.post_button_debug_log("✅ [CLICK_METHOD_1] natural_click 成功！")
+                            
+                            # クリック成功時のスクリーンショット
+                            self.take_debug_screenshot("after_natural_click", "natural_click成功後")
+                            
                         except Exception as e1:
+                            click_attempt["error"] = str(e1)
+                            click_attempt["error_type"] = type(e1).__name__
                             self.debug_log(f"natural_clickエラー: {e1}", "WARNING")
+                            self.post_button_debug_log(f"❌ [CLICK_METHOD_1] natural_click失敗", click_attempt, "WARNING")
+                        
+                        click_attempts.append(click_attempt)
                         
                         # 方法2: 直接クリック
                         if not click_success:
+                            click_attempt = {
+                                "method": "direct_click",
+                                "attempt_time": datetime.now().isoformat(),
+                                "success": False,
+                                "error": None
+                            }
                             try:
+                                self.post_button_debug_log("🔄 [CLICK_METHOD_2] direct_click 試行開始")
                                 submit_button.click()
                                 click_success = True
+                                click_attempt["success"] = True
                                 self.debug_log("✅ 直接click成功")
+                                self.post_button_debug_log("✅ [CLICK_METHOD_2] direct_click 成功！")
+                                
+                                # クリック成功時のスクリーンショット
+                                self.take_debug_screenshot("after_direct_click", "direct_click成功後")
+                                
                             except Exception as e2:
+                                click_attempt["error"] = str(e2)
+                                click_attempt["error_type"] = type(e2).__name__
                                 self.debug_log(f"直接clickエラー: {e2}", "WARNING")
+                                self.post_button_debug_log(f"❌ [CLICK_METHOD_2] direct_click失敗", click_attempt, "WARNING")
+                            
+                            click_attempts.append(click_attempt)
                         
                         # 方法3: JavaScriptクリック
                         if not click_success:
+                            click_attempt = {
+                                "method": "javascript_click",
+                                "attempt_time": datetime.now().isoformat(),
+                                "success": False,
+                                "error": None
+                            }
                             try:
+                                self.post_button_debug_log("🔄 [CLICK_METHOD_3] javascript_click 試行開始")
                                 submit_button.evaluate("element => element.click()")
                                 click_success = True
+                                click_attempt["success"] = True
                                 self.debug_log("✅ JavaScriptクリック成功")
+                                self.post_button_debug_log("✅ [CLICK_METHOD_3] javascript_click 成功！")
+                                
+                                # クリック成功時のスクリーンショット
+                                self.take_debug_screenshot("after_js_click", "javascript_click成功後")
+                                
                             except Exception as e3:
+                                click_attempt["error"] = str(e3)
+                                click_attempt["error_type"] = type(e3).__name__
                                 self.debug_log(f"JavaScriptクリックエラー: {e3}", "WARNING")
+                                self.post_button_debug_log(f"❌ [CLICK_METHOD_3] javascript_click失敗", click_attempt, "WARNING")
+                            
+                            click_attempts.append(click_attempt)
                         
                         # 方法4: フォーカス＋Enter
                         if not click_success:
+                            click_attempt = {
+                                "method": "focus_enter",
+                                "attempt_time": datetime.now().isoformat(),
+                                "success": False,
+                                "error": None
+                            }
                             try:
+                                self.post_button_debug_log("🔄 [CLICK_METHOD_4] focus_enter 試行開始")
                                 submit_button.focus()
                                 time.sleep(0.5)
                                 submit_button.press('Enter')
                                 click_success = True
+                                click_attempt["success"] = True
                                 self.debug_log("✅ フォーカス＋Enterキー成功")
+                                self.post_button_debug_log("✅ [CLICK_METHOD_4] focus_enter 成功！")
+                                
+                                # クリック成功時のスクリーンショット
+                                self.take_debug_screenshot("after_focus_enter", "focus_enter成功後")
+                                
                             except Exception as e4:
+                                click_attempt["error"] = str(e4)
+                                click_attempt["error_type"] = type(e4).__name__
                                 self.debug_log(f"フォーカス＋Enterエラー: {e4}", "WARNING")
+                                self.post_button_debug_log(f"❌ [CLICK_METHOD_4] focus_enter失敗", click_attempt, "WARNING")
+                            
+                            click_attempts.append(click_attempt)
+                        
+                        # クリック試行結果をデバッグデータに記録
+                        click_result = {
+                            "timestamp": datetime.now().isoformat(),
+                            "click_success": click_success,
+                            "button_info": final_button_info,
+                            "click_attempts": click_attempts,
+                            "successful_method": next((attempt["method"] for attempt in click_attempts if attempt["success"]), None)
+                        }
+                        
+                        self.debug_data.setdefault("click_attempts", []).append(click_result)
                         
                         if click_success:
-                            # 投稿処理の完了を待機（時間を延長）
+                            # 投稿処理の完了を待機（時間を延長）+ 詳細デバッグ
                             self.debug_log("⏳ 投稿処理完了を待機中...")
+                            self.post_button_debug_log("⏳ [POST_PROCESSING] 投稿処理完了待機開始", {
+                                "wait_duration": "3-6秒",
+                                "successful_click_method": click_result["successful_method"]
+                            })
+                            
                             self.human_delay(3000, 6000)
+                            
+                            # 投稿完了後の状態記録
+                            self.record_page_state("投稿完了後")
+                            self.take_debug_screenshot("after_post_completion", "投稿処理完了後")
+                            self.dump_page_html("after_post_completion", "投稿処理完了後のHTML")
                             
                             success_msg = "✅ Playwright版ツイート投稿完了！"
                             if image_paths:
                                 success_msg += f"（画像{len(image_paths)}枚付き）"
                             success_msg += " [ポストボタン確実クリック済み]"
                             
+                            final_success_data = {
+                                "message": success_msg,
+                                "image_count": len(image_paths) if image_paths else 0,
+                                "click_method_used": click_result["successful_method"],
+                                "total_click_attempts": len(click_attempts),
+                                "completion_time": datetime.now().isoformat()
+                            }
+                            
                             self.debug_log(success_msg)
+                            self.post_button_debug_log("🎉 [FINAL_SUCCESS] 投稿処理完全成功！", final_success_data)
                             print(success_msg)
                             logger.info(success_msg)
                             
                         else:
                             error_msg = "❌ 全ての投稿ボタンクリック方法が失敗しました"
+                            
+                            # クリック失敗時の詳細デバッグ
+                            self.record_page_state("クリック全失敗後")
+                            self.take_debug_screenshot("all_click_methods_failed", "全クリック方法失敗後")
+                            self.dump_page_html("all_click_methods_failed", "全クリック方法失敗後のHTML")
+                            
+                            failure_data = {
+                                "error_message": error_msg,
+                                "total_click_attempts": len(click_attempts),
+                                "failed_methods": [attempt["method"] for attempt in click_attempts],
+                                "button_info": final_button_info,
+                                "failure_time": datetime.now().isoformat()
+                            }
+                            
                             self.debug_log(error_msg, "ERROR")
+                            self.post_button_debug_log("❌ [FINAL_FAILURE] 全クリック方法失敗", failure_data, "ERROR")
                             print(error_msg)
                             logger.error(error_msg)
                             
@@ -1699,34 +2268,94 @@ class PlaywrightTwitterManager:
                         logger.error(error_msg)
                         
                 else:
-                    # 全ての試行でボタンが見つからない場合の詳細調査
+                    # 全ての試行でボタンが見つからない場合の詳細調査 + 強化デバッグ
                     self.debug_log("❌ 投稿ボタンが見つかりません。詳細調査開始...", "ERROR")
+                    self.post_button_debug_log("❌ [BUTTON_NOT_FOUND] 投稿ボタン完全未発見", {
+                        "search_attempts": 3,
+                        "total_selectors_tried": len(submit_selectors)
+                    }, "ERROR")
+                    
                     print("❌ 投稿ボタンが見つかりません。詳細調査中...")
                     
+                    # ボタン未発見時の詳細状態記録
+                    self.record_page_state("ボタン未発見時")
+                    self.take_debug_screenshot("button_not_found", "投稿ボタン完全未発見時")
+                    self.dump_page_html("button_not_found", "投稿ボタン完全未発見時のHTML")
+                    
                     try:
-                        # ページ上の全ボタンを調査
-                        all_buttons = self.page.query_selector_all('button, [role="button"]')
+                        # ページ上の全ボタンを詳細調査
+                        all_buttons = self.page.query_selector_all('button, [role="button"], input[type="submit"]')
                         self.debug_log(f"ページ上の全ボタン数: {len(all_buttons)}")
                         
-                        for i, btn in enumerate(all_buttons[:20]):  # 最初の20個を調査
+                        investigation_results = {
+                            "total_buttons": len(all_buttons),
+                            "candidate_buttons": [],
+                            "all_buttons_sample": []
+                        }
+                        
+                        for i, btn in enumerate(all_buttons[:30]):  # 最初の30個を調査
                             try:
                                 text = btn.text_content() or ""
                                 aria_label = btn.get_attribute('aria-label') or ""
                                 data_testid = btn.get_attribute('data-testid') or ""
+                                class_name = btn.get_attribute('class') or ""
                                 is_visible = btn.is_visible()
                                 is_enabled = btn.is_enabled()
+                                is_attached = btn.is_attached()
                                 
+                                button_info = {
+                                    "index": i + 1,
+                                    "text_content": text[:50],
+                                    "aria_label": aria_label[:50], 
+                                    "data_testid": data_testid,
+                                    "class_name": class_name[:100],
+                                    "visible": is_visible,
+                                    "enabled": is_enabled,
+                                    "attached": is_attached
+                                }
+                                
+                                investigation_results["all_buttons_sample"].append(button_info)
+                                
+                                # 候補ボタンの詳細分析
                                 if any(keyword in (text + aria_label + data_testid).lower() 
-                                       for keyword in ['tweet', 'post', 'ツイート', 'submit']):
-                                    self.debug_log(f"候補ボタン {i+1}: text='{text[:20]}', aria='{aria_label[:20]}', testid='{data_testid}', visible={is_visible}, enabled={is_enabled}")
+                                       for keyword in ['tweet', 'post', 'ツイート', 'submit', 'send', '送信', '投稿']):
                                     
-                            except:
+                                    button_info["is_candidate"] = True
+                                    investigation_results["candidate_buttons"].append(button_info)
+                                    
+                                    self.debug_log(f"候補ボタン {i+1}: text='{text[:20]}', aria='{aria_label[:20]}', testid='{data_testid}', visible={is_visible}, enabled={is_enabled}")
+                                    self.post_button_debug_log(f"🔍 [CANDIDATE] 候補ボタン発見 #{i+1}", button_info)
+                                    
+                            except Exception as btn_error:
+                                error_info = {
+                                    "index": i + 1,
+                                    "error": str(btn_error),
+                                    "error_type": type(btn_error).__name__
+                                }
+                                investigation_results["all_buttons_sample"].append(error_info)
                                 continue
+                        
+                        self.debug_data.setdefault("button_investigation", []).append(investigation_results)
+                        self.post_button_debug_log("🔍 [INVESTIGATION] ボタン詳細調査完了", investigation_results)
+                        
                     except Exception as investigation_error:
+                        investigation_error_data = {
+                            "error": str(investigation_error),
+                            "error_type": type(investigation_error).__name__
+                        }
                         self.debug_log(f"詳細調査エラー: {investigation_error}", "WARNING")
+                        self.post_button_debug_log("❌ [INVESTIGATION_ERROR] 詳細調査エラー", investigation_error_data, "ERROR")
                     
                     warning_msg = "❌ 投稿ボタンが見つからないため、投稿処理を完了できませんでした"
+                    final_failure_data = {
+                        "error_message": warning_msg,
+                        "total_search_attempts": 3,
+                        "total_selectors": len(submit_selectors),
+                        "failure_time": datetime.now().isoformat()
+                    }
+                    
                     self.debug_log(warning_msg, "ERROR")
+                    self.post_button_debug_log("❌ [CRITICAL_FAILURE] 投稿処理完全失敗", final_failure_data, "ERROR")
                     print(warning_msg)
                     logger.error(warning_msg)
             else:
@@ -1738,14 +2367,100 @@ class PlaywrightTwitterManager:
                 print(test_msg)
                 logger.info(test_msg)
             
+            # デバッグシステム終了処理
+            self.finalize_post_button_debug()
+            
             return True
             
         except Exception as e:
             error_msg = f"ツイート投稿エラー: {e}"
+            
+            # エラー時の緊急デバッグ情報記録
+            emergency_error_data = {
+                "error_message": error_msg,
+                "error_type": type(e).__name__,
+                "error_traceback": traceback.format_exc(),
+                "error_time": datetime.now().isoformat()
+            }
+            
             self.debug_log(error_msg, "ERROR")
             self.debug_log(f"詳細エラー: {traceback.format_exc()}", "ERROR")
+            
+            if hasattr(self, 'post_button_debug_log'):
+                self.post_button_debug_log("💥 [EMERGENCY_ERROR] 投稿処理中の予期しないエラー", emergency_error_data, "ERROR")
+                
+                # 緊急時のスクリーンショット・HTML保存
+                try:
+                    self.take_debug_screenshot("emergency_error", f"緊急エラー時: {error_msg[:50]}")
+                    self.dump_page_html("emergency_error", f"緊急エラー時のHTML: {error_msg[:50]}")
+                    self.record_page_state("緊急エラー時", {"error": error_msg})
+                except:
+                    pass  # 緊急時なので追加エラーは無視
+            
+            print(f"❌ 投稿エラー: {e}")
             logger.error(error_msg)
+            
+            # デバッグシステム終了処理
+            if hasattr(self, 'finalize_post_button_debug'):
+                self.finalize_post_button_debug()
+            
             return False
+    
+    def finalize_post_button_debug(self):
+        """ポストボタンデバッグシステムの終了処理"""
+        try:
+            # 最終セッション情報の記録
+            final_session_info = {
+                "session_end_time": datetime.now().isoformat(),
+                "total_session_duration": time.time() - self.start_time,
+                "debug_files_created": {
+                    "log_file": str(self.debug_log_file) if hasattr(self, 'debug_log_file') else None,
+                    "json_file": str(self.debug_json_file) if hasattr(self, 'debug_json_file') else None,
+                    "screenshot_dir": str(self.debug_screenshot_dir) if hasattr(self, 'debug_screenshot_dir') else None,
+                    "html_dir": str(self.debug_html_dir) if hasattr(self, 'debug_html_dir') else None
+                },
+                "summary": {
+                    "total_screenshots": len(self.debug_data.get("screenshots", [])),
+                    "total_html_dumps": len(self.debug_data.get("html_dumps", [])),
+                    "total_page_states": len(self.debug_data.get("page_states", [])),
+                    "total_errors": len(self.debug_data.get("errors", [])),
+                    "search_attempts": len(self.debug_data.get("search_attempts_summary", [])),
+                    "click_attempts": len(self.debug_data.get("click_attempts", []))
+                }
+            }
+            
+            if hasattr(self, 'debug_data'):
+                self.debug_data["final_session_info"] = final_session_info
+                
+                self.post_button_debug_log("🏁 [SESSION_END] ポストボタンデバッグセッション終了", final_session_info)
+                
+                # 最終JSON保存
+                self.save_debug_data()
+            
+            # 終了ログファイル出力
+            if hasattr(self, 'debug_log_file'):
+                with open(self.debug_log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n{'='*80}\n")
+                    f.write(f"ポストボタンデバッグセッション終了: {datetime.now().isoformat()}\n")
+                    f.write(f"総実行時間: {final_session_info['total_session_duration']:.2f}秒\n")
+                    f.write(f"生成されたファイル:\n")
+                    f.write(f"  - ログファイル: {self.debug_log_file}\n")
+                    f.write(f"  - JSONファイル: {self.debug_json_file}\n") 
+                    f.write(f"  - スクリーンショット: {len(self.debug_data.get('screenshots', []))}枚\n")
+                    f.write(f"  - HTMLダンプ: {len(self.debug_data.get('html_dumps', []))}枚\n")
+                    f.write(f"{'='*80}\n")
+            
+            print(f"🔍 [POST_BTN_DEBUG] デバッグファイル保存完了:")
+            if hasattr(self, 'debug_log_file'):
+                print(f"  📋 ログ: {self.debug_log_file}")
+            if hasattr(self, 'debug_json_file'):
+                print(f"  📊 JSON: {self.debug_json_file}")
+            if hasattr(self, 'debug_data'):
+                print(f"  📸 スクリーンショット: {len(self.debug_data.get('screenshots', []))}枚")
+                print(f"  📄 HTMLダンプ: {len(self.debug_data.get('html_dumps', []))}枚")
+            
+        except Exception as e:
+            print(f"⚠️ デバッグシステム終了処理エラー: {e}")
     
     def cleanup(self):
         """リソースクリーンアップ（永続プロファイル対応）"""

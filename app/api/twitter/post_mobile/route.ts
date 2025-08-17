@@ -175,8 +175,9 @@ export async function POST(request: NextRequest) {
       debugLog(`📋 [CMD DEBUG] テストモードフラグ追加後: "${pythonCmd}"`);
       debugLog('テストモードフラグを追加');
     } else {
-      debugLog(`📋 [CMD DEBUG] 実投稿モード - フラグ追加なし`);
-      debugLog('実投稿モードで実行');
+      pythonCmd += ' --post';
+      debugLog(`📋 [CMD DEBUG] 実投稿モードフラグ追加後: "${pythonCmd}"`);
+      debugLog('🚀 実投稿モードフラグ (--post) を追加');
     }
     
     debugLog(`📋 [CMD DEBUG] === 最終コマンド ===`);

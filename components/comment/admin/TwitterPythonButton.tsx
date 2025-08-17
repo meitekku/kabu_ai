@@ -196,16 +196,46 @@ export default function TwitterPythonButton({
       // titleが存在する場合は、contentが空でも改行2つを追加
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
-      // デバッグ情報をコンソールに出力
-      console.log('🐛 [DEBUG] モバイル投稿開始');
-      console.log('🐛 [DEBUG] title:', title);
-      console.log('🐛 [DEBUG] content:', content);
-      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
-      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
-      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
+      // デバッグ情報をコンソールに出力（詳細強化版）
+      console.log('='.repeat(60));
+      console.log('📱 [モバイル投稿開始] 詳細デバッグ');
+      console.log('='.repeat(60));
+      console.log('📝 [INPUT] title存在:', !!title);
+      console.log('📝 [INPUT] title長さ:', title ? title.length : 0);
+      console.log('📝 [INPUT] title内容:', title || '(なし)');
+      console.log('📝 [INPUT] content存在:', !!content);
+      console.log('📝 [INPUT] content長さ:', content ? content.length : 0);
+      console.log('📝 [INPUT] content内容:', content || '(なし)');
+      console.log('📝 [COMPOSED] tweetMessage長さ:', tweetMessage.length);
+      console.log('📝 [COMPOSED] tweetMessage内容:', tweetMessage);
+      console.log('📝 [COMPOSED] tweetMessage予想バイト数:', new Blob([tweetMessage]).size);
+      console.log('📷 [IMAGE] chartImageUrl存在:', !!imageUrl);
+      console.log('📷 [IMAGE] chartImageUrl長さ:', imageUrl ? imageUrl.length : 0);
+      
+      if (imageUrl) {
+        console.log('📷 [IMAGE] データ形式:', imageUrl.substring(0, 50) + '...');
+        console.log('📷 [IMAGE] MIMEタイプ:', imageUrl.match(/data:([^;]*)/)?.[1] || 'unknown');
+        
+        // base64データの妥当性チェック
+        try {
+          const base64Data = imageUrl.split(',')[1];
+          const decodedSize = atob(base64Data).length;
+          console.log('📷 [IMAGE] デコード後サイズ:', decodedSize, 'bytes');
+          console.log('📷 [IMAGE] 推定ファイルサイズ:', Math.round(decodedSize / 1024), 'KB');
+        } catch (e) {
+          console.error('📷 [ERROR] base64デコードエラー:', e);
+        }
+      }
+      
+      console.log('⏰ [TIMING] 処理開始時刻:', new Date().toISOString());
       
       // モバイル版実投稿処理
       setProcessingStatus('📱 iPhone 14 Pro Max として認証を回避しています...');
+      
+      console.log('📊 [SEND-PREP] API送信前データ準備');
+      console.log('📊 [SEND-PREP] メッセージ内容:', tweetMessage);
+      console.log('📊 [SEND-PREP] メッセージ文字数:', tweetMessage.length);
+      console.log('📊 [SEND-PREP] 画像存在:', !!imageUrl);
       
       // 画像データの準備（base64を直接渡す）
       let imageBase64Data: string[] = [];
@@ -213,12 +243,15 @@ export default function TwitterPythonButton({
         try {
           setProcessingStatus('📱 画像データを準備中...');
           imageBase64Data = [imageUrl]; // base64 data URLをそのまま渡す
-          console.log('🐛 [DEBUG] Mobile imageBase64Data prepared:', imageBase64Data.length, 'items');
+          console.log('📷 [IMAGE-PREP] Mobile imageBase64Data prepared:', imageBase64Data.length, 'items');
+          console.log('📷 [IMAGE-PREP] 画像データサイズ:', imageUrl.length, 'characters');
           setProcessingStatus('📱 画像データ準備完了。モバイル投稿処理中...');
         } catch (err) {
-          console.error('Mobile image data preparation error:', err);
+          console.error('📷 [IMAGE-ERROR] Mobile image data preparation error:', err);
           setProcessingStatus('📱 画像データ準備に失敗。テキストのみで投稿中...');
         }
+      } else {
+        console.log('📷 [IMAGE-PREP] 画像なし - テキストのみ投稿');
       }
 
 
@@ -230,6 +263,13 @@ export default function TwitterPythonButton({
         imageBase64Data: imageBase64Data
       };
       
+      console.log('🌐 [API-SEND] リクエストボディ作成完了:');
+      console.log('  - メッセージ長:', postBody.message.length);
+      console.log('  - textOnly:', postBody.textOnly);
+      console.log('  - actuallyPost:', postBody.actuallyPost);
+      console.log('  - 画像データ配列サイズ:', postBody.imageBase64Data.length);
+      console.log('  - 送信予定バイト数（概算):', JSON.stringify(postBody).length);
+      
       const requestOptions = {
         method: 'POST',
         cache: 'no-cache' as RequestCache,
@@ -240,8 +280,26 @@ export default function TwitterPythonButton({
         body: JSON.stringify(postBody)
       };
       
+      console.log('🌐 [API-SEND] API送信開始:', new Date().toISOString());
+      console.log('🌐 [API-SEND] エンドポイント: /api/twitter/post_mobile');
+      
       const response = await fetch('/api/twitter/post_mobile', requestOptions);
+      
+      console.log('🌐 [API-RECEIVED] レスポンス受信:', new Date().toISOString());
+      console.log('🌐 [API-RECEIVED] ステータス:', response.status, response.statusText);
+      
       const result = await response.json();
+      
+      console.log('🌐 [API-RECEIVED] レスポンス内容:');
+      console.log('  - success:', result.success);
+      console.log('  - message:', result.message);
+      if (result.error) {
+        console.log('  - error:', result.error);
+      }
+      if (result.details) {
+        console.log('  - details.final_result:', result.details.final_result);
+        console.log('  - details.summary:', result.details.summary);
+      }
       
       setLastResponse(result);
       

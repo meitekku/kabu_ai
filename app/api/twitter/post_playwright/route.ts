@@ -143,7 +143,8 @@ export async function POST(request: NextRequest) {
       pythonCmd += ' --test';
       debugLog('テストモードフラグを追加');
     } else {
-      debugLog('実投稿モードで実行');
+      // Playwright版では引数があれば実投稿モードだが、明示性のため何もしない
+      debugLog('🚀 実投稿モードで実行（フラグなし = 実投稿）');
     }
 
     debugLog('🎭 実行コマンド: ' + pythonCmd);
