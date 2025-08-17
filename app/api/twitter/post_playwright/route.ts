@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 
 const execAsync = promisify(exec);
 
@@ -20,9 +22,9 @@ export async function POST(request: NextRequest) {
     debugLog('🎭 Playwright版Twitter投稿API開始');
     
     const body = await request.json();
-    const { message, textOnly = true, actuallyPost = false, imagePaths = [] } = body;
+    const { message, textOnly = true, actuallyPost = false, imagePaths = [], imageBase64Data = [] } = body;
     
-    debugLog(`リクエスト詳細: textOnly=${textOnly}, actuallyPost=${actuallyPost}, images=${imagePaths.length}枚`);
+    debugLog(`リクエスト詳細: textOnly=${textOnly}, actuallyPost=${actuallyPost}, images=${imagePaths.length}枚, base64Images=${imageBase64Data.length}枚`);
 
     if (!message) {
       debugLog('❌ メッセージが指定されていません', 'ERROR');
@@ -55,7 +57,10 @@ export async function POST(request: NextRequest) {
     const escapedMessage = message.replace(/"/g, '\\"');
     pythonCmd += ` "${escapedMessage}"`;
     
-    // 画像パスを追加
+    // base64データを一時ファイルに保存して画像パスを追加
+    const finalImagePaths: string[] = [];
+    
+    // 既存の画像パス（従来方式）
     if (imagePaths.length > 0) {
       const fullImagePaths = imagePaths.map((imagePath: string) => {
         // 相対パスを絶対パスに変換
@@ -64,9 +69,51 @@ export async function POST(request: NextRequest) {
         }
         return imagePath;
       });
+      finalImagePaths.push(...fullImagePaths);
+      debugLog(`既存画像パス追加: ${fullImagePaths.length}枚`);
+    }
+    
+    // base64データを一時ファイルに保存（新方式）
+    if (imageBase64Data.length > 0) {
+      debugLog(`base64画像データを一時ファイルに保存中: ${imageBase64Data.length}枚`);
       
-      pythonCmd += ` ${fullImagePaths.map((p: string) => `"${p}"`).join(' ')}`;
-      debugLog(`画像パス追加: ${fullImagePaths.length}枚`);
+      // 一時ディレクトリを作成
+      const tempDir = path.join(process.cwd(), 'temp', 'base64_images');
+      try {
+        await mkdir(tempDir, { recursive: true });
+      } catch {
+        // ディレクトリが既に存在する場合はエラーを無視
+      }
+      
+      for (let i = 0; i < imageBase64Data.length; i++) {
+        try {
+          const base64Data = imageBase64Data[i];
+          if (base64Data.startsWith('data:image/')) {
+            // data URLから実際のbase64データを抽出
+            const base64Content = base64Data.split(',')[1];
+            const buffer = Buffer.from(base64Content, 'base64');
+            
+            // 一意のファイル名を生成
+            const fileName = `chart_${uuidv4()}.png`;
+            const filePath = path.join(tempDir, fileName);
+            
+            // ファイルに保存
+            await writeFile(filePath, buffer);
+            finalImagePaths.push(filePath);
+            debugLog(`base64画像保存完了: ${filePath}`);
+          } else {
+            debugLog(`無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
+          }
+        } catch (error) {
+          debugLog(`base64画像保存エラー: ${i + 1}枚目 - ${error}`, 'ERROR');
+        }
+      }
+    }
+    
+    // 最終的な画像パスをコマンドに追加
+    if (finalImagePaths.length > 0) {
+      pythonCmd += ` ${finalImagePaths.map((p: string) => `"${p}"`).join(' ')}`;
+      debugLog(`最終画像パス追加: ${finalImagePaths.length}枚`);
     }
     
     if (!actuallyPost) {

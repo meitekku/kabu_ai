@@ -177,38 +177,28 @@ export default function TwitterPythonButton({
       // titleが存在する場合は、contentが空でも改行2つを追加
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
+      // デバッグ情報をコンソールに出力
+      console.log('🐛 [DEBUG] モバイル投稿開始');
+      console.log('🐛 [DEBUG] title:', title);
+      console.log('🐛 [DEBUG] content:', content);
+      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
+      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
+      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
+      
       // モバイル版実投稿処理
       setProcessingStatus('📱 iPhone 14 Pro Max として認証を回避しています...');
       
-      // 画像パスの準備
-      let imagePaths: string[] = [];
+      // 画像データの準備（base64を直接渡す）
+      let imageBase64Data: string[] = [];
       if (imageUrl) {
         try {
-          setProcessingStatus('📱 画像をアップロード中...');
-          // Data URLから Blob を作成
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'mobile_chart_image.png', { type: blob.type || 'image/png' });
-          
-          // 画像を一時的にアップロード
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', file);
-          
-          const uploadResponse = await fetch('/api/upload-temp-image', {
-            method: 'POST',
-            body: uploadFormData
-          });
-          
-          if (uploadResponse.ok) {
-            const uploadResult = await uploadResponse.json();
-            imagePaths = [uploadResult.filePath];
-            setProcessingStatus('📱 画像アップロード完了。モバイル投稿処理中...');
-          } else {
-            setProcessingStatus('📱 画像アップロードに失敗。テキストのみで投稿中...');
-          }
+          setProcessingStatus('📱 画像データを準備中...');
+          imageBase64Data = [imageUrl]; // base64 data URLをそのまま渡す
+          console.log('🐛 [DEBUG] Mobile imageBase64Data prepared:', imageBase64Data.length, 'items');
+          setProcessingStatus('📱 画像データ準備完了。モバイル投稿処理中...');
         } catch (err) {
-          console.error('Mobile image upload error:', err);
-          setProcessingStatus('📱 画像アップロードに失敗。テキストのみで投稿中...');
+          console.error('Mobile image data preparation error:', err);
+          setProcessingStatus('📱 画像データ準備に失敗。テキストのみで投稿中...');
         }
       }
 
@@ -216,9 +206,9 @@ export default function TwitterPythonButton({
       // リクエストボディを作成（モバイル実投稿モード）
       const postBody = {
         message: tweetMessage,
-        textOnly: imagePaths.length === 0,
+        textOnly: imageBase64Data.length === 0,
         actuallyPost: true, // 実投稿モード
-        imagePaths: imagePaths
+        imageBase64Data: imageBase64Data
       };
       
       const requestOptions = {
@@ -286,38 +276,28 @@ export default function TwitterPythonButton({
       // titleが存在する場合は、contentが空でも改行2つを追加
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
+      // デバッグ情報をコンソールに出力
+      console.log('🐛 [DEBUG] Playwright投稿開始');
+      console.log('🐛 [DEBUG] title:', title);
+      console.log('🐛 [DEBUG] content:', content);
+      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
+      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
+      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
+      
       // Playwright版実投稿処理
       setProcessingStatus('ブラウザでの手動ログインをお待ちください。ログイン完了後に実際に投稿されます...');
       
-      // 画像パスの準備
-      let imagePaths: string[] = [];
+      // 画像データの準備（base64を直接渡す）
+      let imageBase64Data: string[] = [];
       if (imageUrl) {
         try {
-          setProcessingStatus('画像をアップロード中...');
-          // Data URLから Blob を作成
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'chart_image.png', { type: blob.type || 'image/png' });
-          
-          // 画像を一時的にアップロード
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', file);
-          
-          const uploadResponse = await fetch('/api/upload-temp-image', {
-            method: 'POST',
-            body: uploadFormData
-          });
-          
-          if (uploadResponse.ok) {
-            const uploadResult = await uploadResponse.json();
-            imagePaths = [uploadResult.filePath];
-            setProcessingStatus('画像アップロード完了。投稿処理中...');
-          } else {
-            setProcessingStatus('画像アップロードに失敗。テキストのみで投稿中...');
-          }
+          setProcessingStatus('画像データを準備中...');
+          imageBase64Data = [imageUrl]; // base64 data URLをそのまま渡す
+          console.log('🐛 [DEBUG] imageBase64Data prepared:', imageBase64Data.length, 'items');
+          setProcessingStatus('画像データ準備完了。投稿処理中...');
         } catch (err) {
-          console.error('Image upload error:', err);
-          setProcessingStatus('画像アップロードに失敗。テキストのみで投稿中...');
+          console.error('Image data preparation error:', err);
+          setProcessingStatus('画像データ準備に失敗。テキストのみで投稿中...');
         }
       }
 
@@ -325,9 +305,9 @@ export default function TwitterPythonButton({
       // リクエストボディを作成（実投稿モード）
       const postBody = {
         message: tweetMessage,
-        textOnly: imagePaths.length === 0,
+        textOnly: imageBase64Data.length === 0,
         actuallyPost: true, // 実投稿モード
-        imagePaths: imagePaths
+        imageBase64Data: imageBase64Data
       };
       
       const requestOptions = {
@@ -491,39 +471,30 @@ export default function TwitterPythonButton({
       // titleが存在する場合は、contentが空でも改行2つを追加
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
+      // デバッグ情報をコンソールに出力
+      console.log('🐛 [DEBUG] Python投稿開始');
+      console.log('🐛 [DEBUG] title:', title);
+      console.log('🐛 [DEBUG] content:', content);
+      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
+      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
+      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
+      console.log('🐛 [DEBUG] useSystemProfile:', useSystemProfile);
+      
       // ツイート投稿処理
       setProcessingStatus(useSystemProfile ? 'ブラウザでの手動ログインをお待ちください。ログイン完了後に自動投稿されます...' : 'ツイートを投稿中...');
       
-      let imagePath = undefined;
+      let imageBase64 = undefined;
       
-      // 画像がある場合は先に画像をアップロード
+      // 画像がある場合はbase64データを準備
       if (imageUrl) {
-        setProcessingStatus('画像をアップロード中...');
+        setProcessingStatus('画像データを準備中...');
         try {
-          // Data URLから Blob を作成
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'image.png', { type: blob.type || 'image/png' });
-          
-          // 画像を一時的にアップロード
-          const uploadFormData = new FormData();
-          uploadFormData.append('image', file);
-          
-          const uploadResponse = await fetch('/api/upload-temp-image', {
-            method: 'POST',
-            body: uploadFormData
-          });
-          
-          if (!uploadResponse.ok) {
-            throw new Error('画像のアップロードに失敗しました');
-          }
-          
-          const uploadResult = await uploadResponse.json();
-          imagePath = uploadResult.filePath;
+          imageBase64 = imageUrl; // base64 data URLをそのまま使用
+          console.log('🐛 [DEBUG] Python imageBase64 prepared, length:', imageBase64.length);
+          setProcessingStatus('画像データ準備完了。投稿処理中...');
         } catch (err) {
-          console.error('Image upload error:', err);
-          // 画像アップロードが失敗した場合はテキストのみで投稿
-          setProcessingStatus('画像アップロードに失敗しました。テキストのみで投稿します...');
+          console.error('Image data preparation error:', err);
+          setProcessingStatus('画像データ準備に失敗しました。テキストのみで投稿します...');
         }
       }
       
@@ -531,10 +502,10 @@ export default function TwitterPythonButton({
       // リクエストボディを作成（実投稿モード）
       const postBody = {
         message: tweetMessage,
-        textOnly: !imagePath,
+        textOnly: !imageBase64,
         useSystemProfile: useSystemProfile,
         actuallyPost: true, // 実投稿モードを明示的に指定
-        ...(imagePath && { imagePath })
+        ...(imageBase64 && { imageBase64 })
       };
       
       const requestOptions = {

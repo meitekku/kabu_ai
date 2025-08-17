@@ -80,7 +80,7 @@ class MobileTwitterManager:
         # タップ後の遅延
         self.human_delay(500, 1200)
     
-    def mobile_type(self, element, text, clear_first=True):
+    def mobile_type(self, element, text, clear_first=False):
         """モバイル風タイピング（1文字タイピング + ペースト改善版）"""
         if clear_first:
             element.tap()
@@ -92,10 +92,85 @@ class MobileTwitterManager:
             self.human_delay(300, 600)
         
         if len(text) > 0:
-            # === 1文字目タイピング + 2文字目以降ペースト方式 ===
-            # 最初の1文字だけ手動でタイピング（自然に見せるため）
+            # === 安全なテキスト設定方式（JavaScript直接入力） ===
+            self.debug_log(f"🎯 [DEBUG] mobile_type開始: clear_first={clear_first}, text='{text[:30]}...'")
+            
+            # 現在のテキスト内容を確認
+            try:
+                current_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+                self.debug_log(f"📝 [DEBUG] モバイル設定前の現在値: '{current_value[:30]}...'")
+            except:
+                self.debug_log("📝 [DEBUG] モバイル現在値の取得に失敗")
+            
+            # 1文字ずつタイピングすると問題が起きるため、JavaScript で直接設定
+            self.debug_log(f"📝 JavaScript直接入力開始: '{text[:30]}...'")
+            try:
+                # JavaScript で直接テキストを設定
+                result = element.evaluate('''
+                    (element, text) => {
+                        console.log('[MOBILE DEBUG] JavaScript設定開始:', element.tagName, element.contentEditable, text.substring(0, 30));
+                        
+                        const beforeValue = element.value || element.textContent || element.innerText || '';
+                        console.log('[MOBILE DEBUG] 設定前の値:', beforeValue.substring(0, 30));
+                        
+                        if (element.tagName === 'DIV' && element.contentEditable === 'true') {
+                            element.textContent = text;
+                        } else {
+                            element.value = text;
+                        }
+                        
+                        const afterValue = element.value || element.textContent || element.innerText || '';
+                        console.log('[MOBILE DEBUG] 設定後の値:', afterValue.substring(0, 30));
+                        
+                        // 必要なイベントを発火
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                        element.dispatchEvent(new Event('keyup', { bubbles: true }));
+                        
+                        return {
+                            success: true,
+                            beforeValue: beforeValue,
+                            afterValue: afterValue,
+                            targetText: text
+                        };
+                    }
+                ''', text)
+                
+                if result:
+                    self.debug_log(f"🔧 [DEBUG] モバイルJS設定結果 - before: '{result.get('beforeValue', '')[:30]}...', after: '{result.get('afterValue', '')[:30]}...'")
+                
+                self.debug_log(f"✅ JavaScript直接入力完了: '{text[:30]}...'")
+                self.human_delay(500, 1000)
+                
+                # 最終確認
+                try:
+                    final_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+                    self.debug_log(f"🎯 [DEBUG] モバイル最終結果: '{final_value[:30]}...'")
+                except:
+                    self.debug_log("🎯 [DEBUG] モバイル最終値の確認に失敗")
+                
+                return  # 成功したら以下の処理をスキップ
+            except Exception as e:
+                self.debug_log(f"⚠️ JavaScript設定失敗、fill()を試行: {e}", "WARNING")
+                
+            # JavaScript が失敗した場合は fill() を試行
+            try:
+                self.debug_log(f"📝 [DEBUG] モバイルfill()でテキスト設定試行: '{text[:30]}...'")
+                element.fill(text)
+                
+                # 設定後の値を確認
+                after_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+                self.debug_log(f"✅ [DEBUG] モバイルfill()完了、設定後の値: '{after_value[:30]}...'")
+                
+                self.debug_log(f"✅ fill()でテキスト設定完了: '{text[:30]}...'")
+                self.human_delay(500, 1000)
+                return  # 成功したら以下の処理をスキップ
+            except Exception as e:
+                self.debug_log(f"⚠️ fill()も失敗、1文字目タイピング方式にフォールバック: {e}", "WARNING")
+                
+            # 最後の手段として1文字目タイピング方式（元の処理）
             first_char = text[0]
-            self.debug_log(f"📝 1文字目タイピング開始: '{first_char}'")
+            self.debug_log(f"📝 1文字目タイピング開始（フォールバック）: '{first_char}'")
             element.type(first_char)
             self.human_delay(200, 500)
             self.debug_log(f"✅ 1文字目タイピング完了: '{first_char}'")
@@ -628,9 +703,71 @@ class MobileTwitterManager:
                 
                 if file_input:
                     try:
-                        # ファイルをアップロード
-                        self.debug_log(f"ファイルアップロード実行: {image_path}")
-                        file_input.set_input_files(image_path)
+                        # JavaScript方式でファイルをアップロード
+                        self.debug_log(f"JavaScript方式でファイルアップロード実行: {image_path}")
+                        
+                        # 画像ファイルをbase64として読み込み
+                        with open(image_path, 'rb') as f:
+                            image_data = f.read()
+                            import base64
+                            base64_data = base64.b64encode(image_data).decode('utf-8')
+                        
+                        # JavaScriptでファイルアップロードをシミュレート
+                        result = self.page.evaluate('''
+                            async (base64Data, fileName) => {
+                                try {
+                                    // base64からBlobを作成
+                                    const byteCharacters = atob(base64Data);
+                                    const byteNumbers = new Array(byteCharacters.length);
+                                    for (let i = 0; i < byteCharacters.length; i++) {
+                                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                    }
+                                    const byteArray = new Uint8Array(byteNumbers);
+                                    const blob = new Blob([byteArray], {type: 'image/png'});
+                                    
+                                    // Fileオブジェクトを作成
+                                    const file = new File([blob], fileName, {type: 'image/png'});
+                                    
+                                    // ファイル入力要素を取得
+                                    const fileInputs = document.querySelectorAll('input[type="file"]');
+                                    let targetInput = null;
+                                    
+                                    // アクティブな（visible/enabled）ファイル入力要素を探す
+                                    for (const input of fileInputs) {
+                                        if (input.accept && input.accept.includes('image')) {
+                                            targetInput = input;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (!targetInput && fileInputs.length > 0) {
+                                        targetInput = fileInputs[fileInputs.length - 1]; // 最新の要素を使用
+                                    }
+                                    
+                                    if (targetInput) {
+                                        // DataTransferオブジェクトを作成
+                                        const dt = new DataTransfer();
+                                        dt.items.add(file);
+                                        targetInput.files = dt.files;
+                                        
+                                        // changeイベントを発火
+                                        const event = new Event('change', { bubbles: true });
+                                        targetInput.dispatchEvent(event);
+                                        
+                                        return { success: true, message: 'モバイル版ファイル設定完了' };
+                                    } else {
+                                        return { success: false, error: 'ファイル入力要素が見つかりません' };
+                                    }
+                                } catch (error) {
+                                    return { success: false, error: error.message };
+                                }
+                            }
+                        ''', base64_data, os.path.basename(image_path))
+                        
+                        if result.get('success'):
+                            self.debug_log(f"✅ JavaScript方式でファイル設定成功: {result.get('message')}")
+                        else:
+                            self.debug_log(f"❌ JavaScript方式でファイル設定失敗: {result.get('error')}", "ERROR")
                         
                         # アップロード完了を待機
                         self.human_delay(3000, 5000)
@@ -856,7 +993,7 @@ class MobileTwitterManager:
                 raise Exception("モバイルテキストエリアが見つかりません")
             
             # モバイル風テキスト入力（1文字タイピング+残りペースト方式）
-            self.mobile_type(text_area, message)
+            self.mobile_type(text_area, message, clear_first=False)
             
             self.debug_log(f"✅ モバイルテキスト入力完了: {message[:30]}...")
             print(f"✅ モバイルテキスト入力完了: {message[:30]}...")

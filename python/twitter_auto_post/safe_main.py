@@ -132,7 +132,6 @@ def safe_post_text(driver, message, actually_post=False):
             raise Exception("テキストエリアが見つかりません")
             
         # テキストを入力
-        text_area.clear()
         text_area.send_keys(message)
         time.sleep(2)
         

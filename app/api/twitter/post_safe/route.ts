@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { writeFile, mkdir } from 'fs/promises';
+import { v4 as uuidv4 } from 'uuid';
 
 const execAsync = promisify(exec);
 
@@ -9,7 +11,7 @@ const execAsync = promisify(exec);
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, textOnly = true, actuallyPost = false } = body;
+    const { message, textOnly = true, actuallyPost = false, imagePath, imageBase64 } = body;
 
     if (!message) {
       return NextResponse.json({
@@ -32,7 +34,56 @@ export async function POST(request: NextRequest) {
     const escapedMessage = message.replace(/"/g, '\\"');
     pythonCmd += ` "${escapedMessage}"`;
     
-    if (textOnly) {
+    // base64画像データがある場合は一時ファイルに保存
+    let finalImagePath: string | undefined = undefined;
+    
+    if (imageBase64) {
+      console.log('📷 base64画像データを一時ファイルに保存中...');
+      try {
+        if (imageBase64.startsWith('data:image/')) {
+          // 一時ディレクトリを作成
+          const tempDir = path.join(process.cwd(), 'temp', 'base64_images');
+          try {
+            await mkdir(tempDir, { recursive: true });
+          } catch {
+            // ディレクトリが既に存在する場合はエラーを無視
+          }
+          
+          // data URLから実際のbase64データを抽出
+          const base64Content = imageBase64.split(',')[1];
+          const buffer = Buffer.from(base64Content, 'base64');
+          
+          // 一意のファイル名を生成
+          const fileName = `safe_chart_${uuidv4()}.png`;
+          const filePath = path.join(tempDir, fileName);
+          
+          // ファイルに保存
+          await writeFile(filePath, buffer);
+          finalImagePath = filePath;
+          console.log(`✅ base64画像保存完了: ${filePath}`);
+        } else {
+          console.log('⚠️ 無効なbase64データ形式');
+        }
+      } catch (error) {
+        console.log(`❌ base64画像保存エラー: ${error}`);
+      }
+    } else if (imagePath) {
+      // 従来のファイルパス方式
+      if (imagePath.startsWith('/uploads/')) {
+        finalImagePath = path.join(process.cwd(), 'public', imagePath);
+      } else {
+        finalImagePath = imagePath;
+      }
+      console.log(`📷 既存画像パス使用: ${finalImagePath}`);
+    }
+    
+    // 画像パスがある場合はコマンドに追加
+    if (finalImagePath) {
+      pythonCmd += ` "${finalImagePath}"`;
+      console.log(`📷 画像パス追加: ${finalImagePath}`);
+    }
+    
+    if (textOnly && !finalImagePath) {
       pythonCmd += ' --text-only';
     }
     

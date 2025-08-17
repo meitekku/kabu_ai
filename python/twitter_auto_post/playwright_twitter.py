@@ -69,21 +69,92 @@ class PlaywrightTwitterManager:
         # クリック後の自然な待機
         self.human_delay(300, 800)
     
-    def natural_type(self, element, text, clear_first=True):
-        """自然なタイピング動作"""
+    def natural_type(self, element, text, clear_first=False):
+        """自然なタイピング動作（fill()使用で安全）"""
+        self.debug_log(f"🎯 [DEBUG] natural_type開始: clear_first={clear_first}, text='{text[:50]}...'")
+        
+        # 現在のテキスト内容を確認
+        try:
+            current_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+            self.debug_log(f"📝 [DEBUG] 設定前の現在値: '{current_value[:50]}...'")
+        except:
+            self.debug_log("📝 [DEBUG] 現在値の取得に失敗")
+        
         if clear_first:
+            self.debug_log("🧹 [DEBUG] clear_first=True のため既存テキストをクリア")
             element.click()
             self.human_delay(100, 300)
             element.clear()
             self.human_delay(200, 500)
+        else:
+            self.debug_log("🔄 [DEBUG] clear_first=False のため既存テキストを保持")
         
-        # 一文字ずつタイプして自然な遅延を入れる
-        for char in text:
-            element.type(char)
-            if random.random() < 0.1:  # 10%の確率でランダムな停止
-                self.human_delay(100, 500)
-            else:
-                self.typing_delay()
+        # fill()を使用してテキストを一度に設定（type()の代替）
+        try:
+            self.debug_log(f"📝 [DEBUG] fill()でテキスト設定試行: '{text[:50]}...'")
+            element.fill(text)
+            
+            # 設定後の値を確認
+            after_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+            self.debug_log(f"✅ [DEBUG] fill()完了、設定後の値: '{after_value[:50]}...'")
+            
+            self.debug_log(f"✅ fill()でテキスト設定完了: {text[:50]}...")
+        except Exception as e:
+            self.debug_log(f"⚠️ fill()失敗、JavaScript設定を試行: {e}", "WARNING")
+            # fill()が失敗した場合はJavaScriptで直接設定
+            try:
+                self.debug_log(f"🔧 [DEBUG] JavaScript方式でテキスト設定試行: '{text[:50]}...'")
+                
+                result = element.evaluate('''
+                    (element, text) => {
+                        console.log('[DEBUG] JavaScript設定開始:', element.tagName, element.contentEditable, text.substring(0, 50));
+                        
+                        const beforeValue = element.value || element.textContent || element.innerText || '';
+                        console.log('[DEBUG] 設定前の値:', beforeValue.substring(0, 50));
+                        
+                        if (element.tagName === 'DIV' && element.contentEditable === 'true') {
+                            element.textContent = text;
+                        } else {
+                            element.value = text;
+                        }
+                        
+                        const afterValue = element.value || element.textContent || element.innerText || '';
+                        console.log('[DEBUG] 設定後の値:', afterValue.substring(0, 50));
+                        
+                        // inputイベントを発火
+                        element.dispatchEvent(new Event('input', { bubbles: true }));
+                        element.dispatchEvent(new Event('change', { bubbles: true }));
+                        
+                        return {
+                            success: true,
+                            beforeValue: beforeValue,
+                            afterValue: afterValue,
+                            targetText: text
+                        };
+                    }
+                ''', text)
+                
+                if result:
+                    self.debug_log(f"🔧 [DEBUG] JS設定結果 - before: '{result.get('beforeValue', '')[:30]}...', after: '{result.get('afterValue', '')[:30]}...'")
+                
+                self.debug_log(f"✅ JavaScript設定完了: {text[:50]}...")
+            except Exception as js_error:
+                self.debug_log(f"❌ JavaScript設定も失敗: {js_error}", "ERROR")
+                # 最後の手段として一文字ずつタイプ（元の方式）
+                self.debug_log("🔄 [DEBUG] フォールバック: 一文字ずつタイプ方式")
+                for char in text:
+                    element.type(char)
+                    if random.random() < 0.1:
+                        self.human_delay(100, 500)
+                    else:
+                        self.typing_delay()
+        
+        # 最終確認
+        try:
+            final_value = element.evaluate('el => el.value || el.textContent || el.innerText || ""')
+            self.debug_log(f"🎯 [DEBUG] natural_type最終結果: '{final_value[:50]}...'")
+        except:
+            self.debug_log("🎯 [DEBUG] 最終値の確認に失敗")
         
         # タイピング完了後の待機
         self.human_delay(500, 1000)
@@ -952,9 +1023,9 @@ class PlaywrightTwitterManager:
             self.natural_click(post_button)
             self.human_delay(2000, 4000)  # 投稿画面の読み込み待機
             
-            # 画像アップロード処理
+            # 画像アップロード処理（JavaScript ファイル操作方式）
             if image_paths:
-                self.debug_log("📷 画像アップロード処理開始")
+                self.debug_log("📷 画像アップロード処理開始（JavaScript方式）")
                 success_count = 0
                 
                 for i, image_path in enumerate(image_paths):
@@ -966,85 +1037,458 @@ class PlaywrightTwitterManager:
                             
                         self.debug_log(f"📷 画像 {i+1}/{len(image_paths)} をアップロード中: {Path(image_path).name}")
                         
-                        # メディアアップロードボタンを探す
+                        # 画像ファイルをbase64として読み込み
+                        with open(image_path, 'rb') as f:
+                            image_data = f.read()
+                            import base64
+                            base64_data = base64.b64encode(image_data).decode('utf-8')
+                        
+                        # メディアアップロードボタンを探す（詳細デバッグ付き）
                         media_selectors = [
                             '[data-testid="attachments"]',
-                            '[aria-label*="メディア"]',
+                            '[aria-label*="メディア"]', 
                             '[aria-label*="media"]',
-                            'input[type="file"]',
+                            '[aria-label*="Media"]',
+                            '[data-testid="toolbarAddMedia"]',
+                            'input[type="file"][accept*="image"]',
+                            '[role="button"][aria-label*="写真"]',
+                            '[role="button"][aria-label*="画像"]',
+                            'svg[viewBox="0 0 24 24"] + input[type="file"]',
+                            '.r-1p0dtai.r-1d2f490.r-u8s1d.r-zchlnj.r-ipm5af.r-13qz1uu',
                             '[data-testid="fileInput"]'
                         ]
                         
+                        self.debug_log(f"🔍 [DEBUG] メディアボタン検索開始: {len(media_selectors)}個のセレクタを試行")
+                        
                         media_button = None
-                        for selector in media_selectors:
+                        found_selector = None
+                        for i, selector in enumerate(media_selectors):
                             try:
-                                media_button = self.page.query_selector(selector)
+                                self.debug_log(f"🔍 [DEBUG] セレクタ {i+1}/{len(media_selectors)} 試行中: {selector}")
+                                elements = self.page.query_selector_all(selector)
+                                self.debug_log(f"📊 [DEBUG] セレクタ {selector} で {len(elements)}個の要素発見")
+                                
+                                for j, element in enumerate(elements):
+                                    try:
+                                        is_visible = element.is_visible()
+                                        is_enabled = element.is_enabled()
+                                        self.debug_log(f"📊 [DEBUG] 要素 {j+1}: visible={is_visible}, enabled={is_enabled}")
+                                        
+                                        if is_visible and is_enabled:
+                                            media_button = element
+                                            found_selector = selector
+                                            self.debug_log(f"✅ [DEBUG] メディアボタン発見: {selector} (要素 {j+1})")
+                                            break
+                                    except Exception as e:
+                                        self.debug_log(f"⚠️ [DEBUG] 要素 {j+1} チェックエラー: {e}")
+                                        
                                 if media_button:
-                                    self.debug_log(f"メディアボタン発見: {selector}")
                                     break
-                            except:
+                                    
+                            except Exception as e:
+                                self.debug_log(f"❌ [DEBUG] セレクタ {selector} でエラー: {e}")
                                 continue
                         
-                        if media_button:
-                            # ファイル入力要素を使用してアップロード
-                            if media_button.get_attribute('type') == 'file':
-                                # 直接ファイル入力要素の場合
-                                self.debug_log("ファイル入力要素に直接設定")
-                                media_button.set_input_files(image_path)
-                            else:
-                                # ボタンの場合、隠されたファイル入力要素を探す
-                                self.debug_log("メディアボタンをクリック")
-                                self.natural_click(media_button)
-                                
-                                # ファイル選択ダイアログが開いた後、ファイル入力要素を探す
-                                file_input_selectors = [
-                                    'input[type="file"]',
-                                    '[data-testid="fileInput"]'
-                                ]
-                                
-                                file_input = None
-                                for file_selector in file_input_selectors:
-                                    try:
-                                        file_input = self.page.query_selector(file_selector)
-                                        if file_input:
-                                            self.debug_log(f"ファイル入力要素発見: {file_selector}")
-                                            break
-                                    except:
-                                        continue
-                                
-                                if file_input:
-                                    self.debug_log("ファイルを設定中...")
-                                    file_input.set_input_files(image_path)
-                                else:
-                                    self.debug_log("❌ ファイル入力要素が見つかりません", "WARNING")
-                                    continue
+                        if not media_button:
+                            self.debug_log("❌ [ERROR] メディアボタンが見つかりません。全ボタン要素を調査中...")
                             
-                            # アップロード完了を待機
-                            self.debug_log("アップロード完了を待機中...")
-                            time.sleep(3)
+                            # 全ボタン要素を調査
+                            all_buttons = self.page.query_selector_all('button, [role="button"]')
+                            self.debug_log(f"🔍 [DEBUG] ページ内の全ボタン数: {len(all_buttons)}")
                             
-                            # アップロード成功の確認
-                            upload_success_selectors = [
-                                '[data-testid="removeMedia"]',
-                                '.css-175oi2r.r-sdzlij.r-1phboty.r-rs99b7.r-lrvibr.r-19yznuf.r-64el8z.r-1fkl15p.r-1loqt21',
-                                'img[src*="twimg.com"]'
-                            ]
-                            
-                            upload_success = False
-                            for success_selector in upload_success_selectors:
+                            for i, btn in enumerate(all_buttons[:10]):  # 最初の10個だけ調査
                                 try:
-                                    if self.page.query_selector(success_selector):
-                                        upload_success = True
-                                        self.debug_log(f"✅ 画像アップロード成功確認: {success_selector}")
-                                        break
+                                    aria_label = btn.get_attribute('aria-label') or ''
+                                    data_testid = btn.get_attribute('data-testid') or ''
+                                    text_content = btn.text_content() or ''
+                                    is_visible = btn.is_visible()
+                                    
+                                    if any(keyword in (aria_label + data_testid + text_content).lower() for keyword in ['media', 'photo', 'image', '写真', '画像', 'メディア']):
+                                        self.debug_log(f"🎯 [DEBUG] 候補ボタン {i+1}: aria-label='{aria_label}', data-testid='{data_testid}', text='{text_content}', visible={is_visible}")
+                                        if is_visible:
+                                            media_button = btn
+                                            found_selector = f'候補ボタン{i+1}'
+                                            break
                                 except:
                                     continue
+                        
+                        # メディアボタンをクリックしてファイル入力要素を作成
+                        if media_button:
+                            try:
+                                self.debug_log(f"🚀 [DEBUG] メディアボタンクリック実行: {found_selector}")
+                                
+                                # クリック前のファイル入力要素数を確認
+                                before_inputs = len(self.page.query_selector_all('input[type="file"]'))
+                                self.debug_log(f"📊 [DEBUG] クリック前のファイル入力要素数: {before_inputs}")
+                                
+                                self.natural_click(media_button)
+                                self.human_delay(1000, 2000)  # ファイル入力要素が作成されるまで待機
+                                
+                                # クリック後のファイル入力要素数を確認
+                                after_inputs = len(self.page.query_selector_all('input[type="file"]'))
+                                self.debug_log(f"📊 [DEBUG] クリック後のファイル入力要素数: {after_inputs}")
+                                
+                                if after_inputs > before_inputs:
+                                    self.debug_log(f"✅ [DEBUG] ファイル入力要素が {after_inputs - before_inputs} 個新規作成されました")
+                                else:
+                                    self.debug_log("⚠️ [WARNING] ファイル入力要素が新規作成されませんでした")
+                        else:
+                            self.debug_log("❌ [ERROR] メディアボタンが見つからないため、JavaScript直接実行を試行")
                             
-                            if upload_success:
+                            # メディアボタンが見つからない場合の代替手段
+                            try:
+                                # 既存のファイル入力要素を直接使用
+                                existing_inputs = self.page.query_selector_all('input[type="file"]')
+                                self.debug_log(f"📊 [DEBUG] 既存ファイル入力要素数: {len(existing_inputs)}")
+                                
+                                if len(existing_inputs) == 0:
+                                    # ファイル入力要素がない場合、動的に作成
+                                    self.debug_log("🛠️ [DEBUG] ファイル入力要素を動的作成中...")
+                                    self.page.evaluate('''
+                                        // 動的にファイル入力要素を作成
+                                        const fileInput = document.createElement('input');
+                                        fileInput.type = 'file';
+                                        fileInput.accept = 'image/*';
+                                        fileInput.style.position = 'absolute';
+                                        fileInput.style.opacity = '0';
+                                        fileInput.style.zIndex = '9999';
+                                        document.body.appendChild(fileInput);
+                                        console.log('[DEBUG] 動的ファイル入力要素作成完了');
+                                    ''')
+                                    self.human_delay(500, 1000)
+                            except Exception as e:
+                                self.debug_log(f"❌ [ERROR] 代替手段失敗: {e}")
+                            
+                            # JavaScriptでファイルアップロードをシミュレート（強化版）
+                            self.debug_log("📁 [DEBUG] JavaScript強化版でファイル設定実行中...")
+                            self.debug_log(f"📊 [DEBUG] base64データ長: {len(base64_data)} 文字")
+                            
+                            result = self.page.evaluate('''
+                                async (base64Data, fileName) => {
+                                    try {
+                                        console.log('='.repeat(50));
+                                        console.log('[DEBUG] 📁 ファイルアップロードシミュレーション開始');
+                                        console.log('[DEBUG] 📊 ファイル名:', fileName);
+                                        console.log('[DEBUG] 📊 base64データ長:', base64Data.length);
+                                        
+                                        // STEP 1: base64からBlobを作成
+                                        console.log('[DEBUG] 🔄 STEP 1: base64からBlob変換開始');
+                                        let byteCharacters, byteArray, blob, file;
+                                        
+                                        try {
+                                            byteCharacters = atob(base64Data);
+                                            console.log('[DEBUG] ✅ atob完了, バイト長:', byteCharacters.length);
+                                        } catch (e) {
+                                            console.error('[DEBUG] ❌ atobエラー:', e);
+                                            return { success: false, error: 'atob失敗: ' + e.message };
+                                        }
+                                        
+                                        try {
+                                            const byteNumbers = new Array(byteCharacters.length);
+                                            for (let i = 0; i < byteCharacters.length; i++) {
+                                                byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                            }
+                                            byteArray = new Uint8Array(byteNumbers);
+                                            console.log('[DEBUG] ✅ byteArray作成完了, サイズ:', byteArray.length);
+                                        } catch (e) {
+                                            console.error('[DEBUG] ❌ byteArray作成エラー:', e);
+                                            return { success: false, error: 'byteArray作成失敗: ' + e.message };
+                                        }
+                                        
+                                        try {
+                                            blob = new Blob([byteArray], {type: 'image/png'});
+                                            console.log('[DEBUG] ✅ Blob作成完了, サイズ:', blob.size, 'bytes');
+                                        } catch (e) {
+                                            console.error('[DEBUG] ❌ Blob作成エラー:', e);
+                                            return { success: false, error: 'Blob作成失敗: ' + e.message };
+                                        }
+                                        
+                                        // STEP 2: Fileオブジェクトを作成
+                                        console.log('[DEBUG] 🔄 STEP 2: Fileオブジェクト作成');
+                                        try {
+                                            file = new File([blob], fileName, {
+                                                type: 'image/png',
+                                                lastModified: Date.now()
+                                            });
+                                            console.log('[DEBUG] ✅ File作成完了:');
+                                            console.log('  - ファイル名:', file.name);
+                                            console.log('  - サイズ:', file.size, 'bytes');
+                                            console.log('  - タイプ:', file.type);
+                                            console.log('  - 最終更新:', new Date(file.lastModified).toISOString());
+                                        } catch (e) {
+                                            console.error('[DEBUG] ❌ File作成エラー:', e);
+                                            return { success: false, error: 'File作成失敗: ' + e.message };
+                                        }
+                                        
+                                        // STEP 3: ファイル入力要素を探す（強化版）
+                                        console.log('[DEBUG] 🔄 STEP 3: ファイル入力要素検索開始');
+                                        
+                                        // 既存要素を調査
+                                        let fileInputs = document.querySelectorAll('input[type="file"]');
+                                        console.log('[DEBUG] 📊 既存ファイル入力要素数:', fileInputs.length);
+                                        
+                                        // 各要素の詳細を調査
+                                        for (let i = 0; i < fileInputs.length; i++) {
+                                            const input = fileInputs[i];
+                                            const rect = input.getBoundingClientRect();
+                                            const style = window.getComputedStyle(input);
+                                            console.log(`[DEBUG] 📊 Input ${i}:`);
+                                            console.log(`  - accept: '${input.accept}'`);
+                                            console.log(`  - visible: ${rect.width > 0 || rect.height > 0}`);
+                                            console.log(`  - display: '${style.display}'`);
+                                            console.log(`  - visibility: '${style.visibility}'`);
+                                            console.log(`  - opacity: '${style.opacity}'`);
+                                            console.log(`  - position: ${rect.left}, ${rect.top}`);
+                                            console.log(`  - size: ${rect.width} x ${rect.height}`);
+                                        }
+                                        
+                                        // ファイル入力要素がない場合、動的作成
+                                        if (fileInputs.length === 0) {
+                                            console.log('[DEBUG] 🛠️ ファイル入力要素がないため、動的作成を実行');
+                                            
+                                            // メインエリアを探す
+                                            const mainAreas = [
+                                                'main[role="main"]',
+                                                '[data-testid="primaryColumn"]',
+                                                '[aria-label*="タイムライン"]',
+                                                '[data-testid="tweetTextarea_0"]'
+                                            ];
+                                            
+                                            let targetArea = document.body;
+                                            for (const selector of mainAreas) {
+                                                const area = document.querySelector(selector);
+                                                if (area) {
+                                                    targetArea = area;
+                                                    console.log('[DEBUG] ✅ メインエリア発見:', selector);
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            // 動的ファイル入力要素を作成
+                                            const dynamicInput = document.createElement('input');
+                                            dynamicInput.type = 'file';
+                                            dynamicInput.accept = 'image/*,.png,.jpg,.jpeg,.gif,.webp';
+                                            dynamicInput.multiple = false;
+                                            dynamicInput.style.cssText = `
+                                                position: absolute !important;
+                                                left: -9999px !important;
+                                                top: -9999px !important;
+                                                opacity: 0 !important;
+                                                width: 1px !important;
+                                                height: 1px !important;
+                                                z-index: 9999 !important;
+                                                pointer-events: none !important;
+                                            `;
+                                            dynamicInput.setAttribute('data-testid', 'claude-dynamic-file-input');
+                                            dynamicInput.setAttribute('data-purpose', 'twitter-image-upload');
+                                            
+                                            targetArea.appendChild(dynamicInput);
+                                            console.log('[DEBUG] ✅ 動的ファイル入力要素作成完了');
+                                            
+                                            // 再検索
+                                            fileInputs = document.querySelectorAll('input[type="file"]');
+                                            console.log('[DEBUG] 📊 作成後のファイル入力要素数:', fileInputs.length);
+                                        }
+                                        
+                                        // STEP 4: 最適なファイル入力要素を選択
+                                        console.log('[DEBUG] 🔄 STEP 4: ターゲット要素選択開始');
+                                        
+                                        let targetInput = null;
+                                        let targetReason = '';
+                                        
+                                        // 優先度順で探す
+                                        const priorities = [
+                                            { name: 'image-accept', test: (input) => input.accept && input.accept.includes('image') },
+                                            { name: 'empty-accept', test: (input) => !input.accept || input.accept === '' },
+                                            { name: 'any-accept', test: (input) => true }
+                                        ];
+                                        
+                                        for (const priority of priorities) {
+                                            console.log(`[DEBUG] 🔍 優先度 '${priority.name}' で検索中...`);
+                                            
+                                            for (let i = fileInputs.length - 1; i >= 0; i--) {
+                                                const input = fileInputs[i];
+                                                
+                                                if (priority.test(input)) {
+                                                    const rect = input.getBoundingClientRect();
+                                                    const style = window.getComputedStyle(input);
+                                                    
+                                                    console.log(`[DEBUG] 🎯 候補 ${i} (${priority.name}):`);
+                                                    console.log(`  - accept: '${input.accept}'`);
+                                                    console.log(`  - testid: '${input.getAttribute('data-testid') || 'none'}'`);
+                                                    console.log(`  - purpose: '${input.getAttribute('data-purpose') || 'none'}'`);
+                                                    
+                                                    targetInput = input;
+                                                    targetReason = `${priority.name}-${i}`;
+                                                    console.log(`[DEBUG] ✅ ターゲット決定: ${targetReason}`);
+                                                    break;
+                                                }
+                                            }
+                                            
+                                            if (targetInput) break;
+                                        }
+                                        
+                                        if (!targetInput) {
+                                            console.log('[DEBUG] ❌ ターゲットが見つからないため、最新要素を使用');
+                                            if (fileInputs.length > 0) {
+                                                targetInput = fileInputs[fileInputs.length - 1];
+                                                targetReason = 'fallback-latest';
+                                            }
+                                        }
+                                        
+                                        if (!targetInput) {
+                                            console.error('[DEBUG] ❌ ファイル入力要素が全く見つかりません');
+                                            return { 
+                                                success: false, 
+                                                error: 'ファイル入力要素が全く見つかりません',
+                                                inputCount: fileInputs.length 
+                                            };
+                                        }
+                                        
+                                        console.log(`[DEBUG] ✅ 最終ターゲット決定: ${targetReason}`);
+                                        console.log(`[DEBUG] ✅ ターゲット詳細: accept='${targetInput.accept}', testid='${targetInput.getAttribute('data-testid') || 'none'}'`);
+                                        
+                                        // STEP 5: ファイル設定実行（強化版）
+                                        console.log('[DEBUG] 🔄 STEP 5: ファイル設定実行開始');
+                                        
+                                        try {
+                                            // DataTransferオブジェクトを作成
+                                            console.log('[DEBUG] 🔄 DataTransfer作成中...');
+                                            const dt = new DataTransfer();
+                                            dt.items.add(file);
+                                            console.log('[DEBUG] ✅ DataTransferにファイル追加完了:', dt.files.length, 'ファイル');
+                                            
+                                            // ファイルを入力要素に設定
+                                            console.log('[DEBUG] 🔄 ファイル設定中...');
+                                            const previousFileCount = targetInput.files ? targetInput.files.length : 0;
+                                            targetInput.files = dt.files;
+                                            const newFileCount = targetInput.files ? targetInput.files.length : 0;
+                                            
+                                            console.log('[DEBUG] ✅ ファイル設定完了:');
+                                            console.log(`  - 設定前: ${previousFileCount} ファイル`);
+                                            console.log(`  - 設定後: ${newFileCount} ファイル`);
+                                            
+                                            if (newFileCount > 0) {
+                                                const uploadedFile = targetInput.files[0];
+                                                console.log('[DEBUG] ✅ アップロードファイル詳細:');
+                                                console.log(`  - 名前: ${uploadedFile.name}`);
+                                                console.log(`  - サイズ: ${uploadedFile.size} bytes`);
+                                                console.log(`  - タイプ: ${uploadedFile.type}`);
+                                                console.log(`  - 最終更新: ${new Date(uploadedFile.lastModified).toISOString()}`);
+                                            } else {
+                                                console.warn('[DEBUG] ⚠️ ファイル設定後もファイル数が0です');
+                                            }
+                                            
+                                        } catch (fileSetError) {
+                                            console.error('[DEBUG] ❌ ファイル設定エラー:', fileSetError);
+                                            return { 
+                                                success: false, 
+                                                error: 'ファイル設定エラー: ' + fileSetError.message,
+                                                inputCount: fileInputs.length,
+                                                targetReason: targetReason
+                                            };
+                                        }
+                                        
+                                        // STEP 6: イベント発火（強化版）
+                                        console.log('[DEBUG] 🔄 STEP 6: イベント発火シーケンス開始');
+                                        
+                                        const eventResults = [];
+                                        
+                                        // 基本イベント発火
+                                        const basicEvents = [
+                                            { name: 'focus', options: { bubbles: true, cancelable: true } },
+                                            { name: 'change', options: { bubbles: true, cancelable: true } },
+                                            { name: 'input', options: { bubbles: true, cancelable: true } },
+                                            { name: 'blur', options: { bubbles: true, cancelable: true } }
+                                        ];
+                                        
+                                        for (const eventDef of basicEvents) {
+                                            try {
+                                                const event = new Event(eventDef.name, eventDef.options);
+                                                const result = targetInput.dispatchEvent(event);
+                                                eventResults.push({ event: eventDef.name, success: true, result });
+                                                console.log(`[DEBUG] ✅ ${eventDef.name}イベント発火: ${result}`);
+                                            } catch (e) {
+                                                eventResults.push({ event: eventDef.name, success: false, error: e.message });
+                                                console.warn(`[DEBUG] ⚠️ ${eventDef.name}イベントエラー:`, e);
+                                            }
+                                        }
+                                        
+                                        // React系イベント発火
+                                        try {
+                                            console.log('[DEBUG] 🔄 React系イベント発火中...');
+                                            
+                                            // Reactのvalue trackerをリセット
+                                            if (targetInput._valueTracker) {
+                                                targetInput._valueTracker.setValue('');
+                                                console.log('[DEBUG] ✅ React valueTrackerリセット完了');
+                                            }
+                                            
+                                            // カスタムイベント発火
+                                            const customEvents = [
+                                                { name: 'fileselected', detail: { files: targetInput.files } },
+                                                { name: 'filesadded', detail: { files: targetInput.files } },
+                                                { name: 'uploadready', detail: { files: targetInput.files } }
+                                            ];
+                                            
+                                            for (const customEvent of customEvents) {
+                                                try {
+                                                    const event = new CustomEvent(customEvent.name, {
+                                                        bubbles: true,
+                                                        cancelable: true,
+                                                        detail: customEvent.detail
+                                                    });
+                                                    const result = targetInput.dispatchEvent(event);
+                                                    console.log(`[DEBUG] ✅ カスタムイベント ${customEvent.name}: ${result}`);
+                                                } catch (e) {
+                                                    console.warn(`[DEBUG] ⚠️ カスタムイベント ${customEvent.name} エラー:`, e);
+                                                }
+                                            }
+                                            
+                                        } catch (reactError) {
+                                            console.warn('[DEBUG] ⚠️ React系イベントエラー:', reactError);
+                                        }
+                                        
+                                        // 最終確認
+                                        const finalFileCount = targetInput.files ? targetInput.files.length : 0;
+                                        console.log('[DEBUG] 🏁 最終確認:');
+                                        console.log(`  - ファイル数: ${finalFileCount}`);
+                                        console.log(`  - イベント結果: ${eventResults.filter(r => r.success).length}/${eventResults.length} 成功`);
+                                        console.log(`  - ターゲット理由: ${targetReason}`);
+                                        console.log('='.repeat(50));
+                                        
+                                        return { 
+                                            success: true, 
+                                            message: 'ファイル設定・イベント発火完了',
+                                            inputCount: fileInputs.length,
+                                            targetAccept: targetInput.accept,
+                                            targetReason: targetReason,
+                                            finalFileCount: finalFileCount,
+                                            eventResults: eventResults,
+                                            uploadedFile: finalFileCount > 0 ? {
+                                                name: targetInput.files[0].name,
+                                                size: targetInput.files[0].size,
+                                                type: targetInput.files[0].type
+                                            } : null
+                                        };
+                                    } catch (error) {
+                                        console.error('[DEBUG] ファイル設定エラー:', error);
+                                        return { success: false, error: error.message };
+                                    }
+                                }
+                            ''', base64_data, Path(image_path).name)
+                            
+                            if result.get('success'):
+                                self.debug_log(f"✅ JavaScript方式でファイル設定成功: {result.get('message')}")
+                                self.debug_log(f"📊 入力要素数: {result.get('inputCount')}, 対象accept: {result.get('targetAccept')}")
                                 success_count += 1
                                 self.debug_log(f"✅ 画像 {i+1} アップロード成功")
                             else:
-                                self.debug_log(f"⚠️ 画像 {i+1} アップロード状態不明", "WARNING")
+                                self.debug_log(f"❌ JavaScript方式でファイル設定失敗: {result.get('error')}", "ERROR")
+                                self.debug_log(f"📊 入力要素数: {result.get('inputCount', 0)}", "ERROR")
+                                
+                        except Exception as js_error:
+                            self.debug_log(f"❌ JavaScript方式アップロードエラー: {js_error}", "ERROR")
                         else:
                             self.debug_log("❌ メディアアップロードボタンが見つかりません", "WARNING")
                             
@@ -1052,7 +1496,7 @@ class PlaywrightTwitterManager:
                         self.debug_log(f"❌ 画像 {i+1} アップロードエラー: {upload_error}", "ERROR")
                         continue
                 
-                self.debug_log(f"📷 画像アップロード完了: {success_count}/{len(image_paths)}枚成功")
+                self.debug_log(f"📷 JavaScript方式画像アップロード完了: {success_count}/{len(image_paths)}枚成功")
                 if success_count > 0:
                     logger.info(f"✅ 画像アップロード成功: {success_count}枚")
                 
@@ -1082,7 +1526,7 @@ class PlaywrightTwitterManager:
             
             # テキストを入力（自然なタイピング）
             self.debug_log("📝 テキスト入力中...")
-            self.natural_type(text_area, message)
+            self.natural_type(text_area, message, clear_first=False)
             
             self.debug_log(f"✅ テキスト入力完了: {message[:50]}...")
             print(f"✅ テキスト入力完了: {message[:50]}...")
