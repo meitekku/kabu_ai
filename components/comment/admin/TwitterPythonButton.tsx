@@ -73,6 +73,7 @@ export default function TwitterPythonButton({
   const [showDetails, setShowDetails] = useState(false);
   const [lastResponse, setLastResponse] = useState<TweetResponse | null>(null);
   const [showFullUI, setShowFullUI] = useState(false); // UIの表示切り替え
+  const [isManuallySelected, setIsManuallySelected] = useState(false); // 手動選択画像フラグ
   
   // テストモード用のstate
   const [showTestModal, setShowTestModal] = useState(false);
@@ -82,20 +83,31 @@ export default function TwitterPythonButton({
     mode: 'mobile' | 'playwright' | 'normal';
   } | null>(null);
 
-  // チャート画像が渡された場合、それを使用
+  // チャート画像が渡された場合、それを使用（手動選択画像を優先）
   useEffect(() => {
     console.log('🔍 [FRONTEND DEBUG] useEffect - chartImageUrl変更検出');
     console.log('🔍 [FRONTEND DEBUG] chartImageUrl存在:', !!chartImageUrl);
     console.log('🔍 [FRONTEND DEBUG] chartImageUrl長さ:', chartImageUrl ? chartImageUrl.length : 0);
-    if (chartImageUrl) {
+    console.log('🔍 [FRONTEND DEBUG] 現在のimageUrl存在:', !!imageUrl);
+    console.log('🔍 [FRONTEND DEBUG] 現在のimageUrl長さ:', imageUrl ? imageUrl.length : 0);
+    console.log('🔍 [FRONTEND DEBUG] 手動選択フラグ:', isManuallySelected);
+    
+    // 手動選択された画像がない場合のみchartImageUrlを適用
+    if (chartImageUrl && (!imageUrl || !isManuallySelected)) {
       console.log('🔍 [FRONTEND DEBUG] chartImageUrlプレビュー:', chartImageUrl.substring(0, 100) + '...');
       setImageUrl(chartImageUrl);
       setPreviewUrl(chartImageUrl);
-      console.log('✅ [FRONTEND DEBUG] imageUrl設定完了');
+      setIsManuallySelected(false); // chart画像なので手動選択フラグをfalseに
+      console.log('✅ [FRONTEND DEBUG] chartImageUrlをimageUrlに設定完了');
+    } else if (!chartImageUrl && imageUrl && !isManuallySelected) {
+      // chartImageUrlが空で、既存が手動選択でない場合はクリア
+      console.log('⚠️ [FRONTEND DEBUG] chartImageUrlが空になったため、chart画像をクリア');
+      setImageUrl('');
+      setPreviewUrl('');
     } else {
-      console.log('⚠️ [FRONTEND DEBUG] chartImageUrlが空です');
+      console.log('🔍 [FRONTEND DEBUG] 手動選択画像が存在するため、chartImageUrlは無視');
     }
-  }, [chartImageUrl]);
+  }, [chartImageUrl, isManuallySelected]);  // imageUrlを依存配列から除外して無限ループを防ぐ
 
   // ファイルサイズをフォーマット
   const formatFileSize = (bytes: number): string => {
@@ -670,24 +682,41 @@ export default function TwitterPythonButton({
 
   // 手動で画像を選択
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🖼️ [IMAGE DEBUG] handleImageChange呼び出し');
+    console.log('🖼️ [IMAGE DEBUG] 現在の状態 - imageUrl存在:', !!imageUrl);
+    console.log('🖼️ [IMAGE DEBUG] 現在の状態 - isManuallySelected:', isManuallySelected);
     const file = e.target.files?.[0];
     if (file) {
       try {
         setError(null);
+        console.log('🖼️ [IMAGE DEBUG] 手動画像選択開始');
+        console.log('🖼️ [IMAGE DEBUG] ファイル名:', file.name);
+        console.log('🖼️ [IMAGE DEBUG] ファイルサイズ:', file.size);
+        console.log('🖼️ [IMAGE DEBUG] ファイルタイプ:', file.type);
+        
         const reader = new FileReader();
         reader.onloadend = () => {
           const result = reader.result as string;
+          console.log('🖼️ [IMAGE DEBUG] FileReader完了');
+          console.log('🖼️ [IMAGE DEBUG] データURL長さ:', result.length);
+          console.log('🖼️ [IMAGE DEBUG] データURLプレビュー:', result.substring(0, 100) + '...');
+          
           setImageUrl(result);
           setPreviewUrl(result);
+          setIsManuallySelected(true); // 手動選択フラグを設定
           setProcessingStatus(`画像サイズ: ${formatFileSize(file.size)}`);
+          
+          console.log('✅ [IMAGE DEBUG] 手動選択画像設定完了（手動選択フラグON）');
         };
         reader.readAsDataURL(file);
       } catch (err) {
-        console.error('画像読み込みエラー:', err);
+        console.error('🖼️ [IMAGE ERROR] 画像読み込みエラー:', err);
         const errorMsg = '画像の読み込みに失敗しました';
         setError(errorMsg);
         if (onError) onError(errorMsg);
       }
+    } else {
+      console.log('🖼️ [IMAGE DEBUG] ファイルが選択されませんでした');
     }
   };
 
@@ -912,11 +941,18 @@ export default function TwitterPythonButton({
 
   // 画像をクリア
   const handleClearImage = () => {
+    console.log('🗑️ [IMAGE DEBUG] 画像クリア実行');
+    console.log('🗑️ [IMAGE DEBUG] クリア前 - imageUrl存在:', !!imageUrl);
+    console.log('🗑️ [IMAGE DEBUG] クリア前 - previewUrl存在:', !!previewUrl);
+    
     setImageUrl('');
     setPreviewUrl('');
+    setIsManuallySelected(false); // 手動選択フラグをリセット
     setProcessingStatus('');
     setLastResponse(null);
     setError(null);
+    
+    console.log('✅ [IMAGE DEBUG] 画像クリア完了（手動選択フラグOFF）');
   };
 
   // 詳細情報の表示切り替え
