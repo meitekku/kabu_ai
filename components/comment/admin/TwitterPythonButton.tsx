@@ -276,39 +276,101 @@ export default function TwitterPythonButton({
       // titleが存在する場合は、contentが空でも改行2つを追加
       const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
-      // デバッグ情報をコンソールに出力
-      console.log('🐛 [DEBUG] Playwright投稿開始');
-      console.log('🐛 [DEBUG] title:', title);
-      console.log('🐛 [DEBUG] content:', content);
-      console.log('🐛 [DEBUG] tweetMessage:', tweetMessage);
-      console.log('🐛 [DEBUG] chartImageUrl present:', !!imageUrl);
-      console.log('🐛 [DEBUG] chartImageUrl length:', imageUrl ? imageUrl.length : 0);
+      // デバッグ情報をコンソールに出力（詳細強化版）
+      console.log('='.repeat(60));
+      console.log('🎭 [Playwright投稿開始] 詳細デバッグ');
+      console.log('='.repeat(60));
+      console.log('📝 [INPUT] title:', title);
+      console.log('📝 [INPUT] content:', content);
+      console.log('📝 [COMPOSED] tweetMessage:', tweetMessage);
+      console.log('📷 [IMAGE] chartImageUrl存在:', !!imageUrl);
+      console.log('📷 [IMAGE] chartImageUrl長さ:', imageUrl ? imageUrl.length : 0);
+      
+      if (imageUrl) {
+        console.log('📷 [IMAGE] データ形式:', imageUrl.substring(0, 50) + '...');
+        console.log('📷 [IMAGE] MIMEタイプ:', imageUrl.match(/data:([^;]*)/)?.[1] || 'unknown');
+        
+        // base64データの妥当性チェック
+        try {
+          const base64Data = imageUrl.split(',')[1];
+          const decodedSize = atob(base64Data).length;
+          console.log('📷 [IMAGE] デコード後サイズ:', decodedSize, 'bytes');
+          console.log('📷 [IMAGE] 推定ファイルサイズ:', Math.round(decodedSize / 1024), 'KB');
+        } catch (e) {
+          console.error('📷 [ERROR] base64デコードエラー:', e);
+        }
+      } else {
+        console.log('📷 [WARNING] 画像データが存在しません');
+      }
+      
+      console.log('⏰ [TIMING] 処理開始時刻:', new Date().toISOString());
       
       // Playwright版実投稿処理
       setProcessingStatus('ブラウザでの手動ログインをお待ちください。ログイン完了後に実際に投稿されます...');
       
-      // 画像データの準備（base64を直接渡す）
+      // 画像データの準備（base64を直接渡す）- 詳細ログ版
       let imageBase64Data: string[] = [];
       if (imageUrl) {
         try {
+          console.log('📷 [PREPARE] 画像データ準備開始...');
           setProcessingStatus('画像データを準備中...');
+          
+          // データの詳細検証
+          console.log('📷 [PREPARE] 元データ形式確認:', {
+            isDataURL: imageUrl.startsWith('data:'),
+            length: imageUrl.length,
+            hasComma: imageUrl.includes(','),
+            mimeType: imageUrl.match(/data:([^;]*)/)?.[1]
+          });
+          
           imageBase64Data = [imageUrl]; // base64 data URLをそのまま渡す
-          console.log('🐛 [DEBUG] imageBase64Data prepared:', imageBase64Data.length, 'items');
+          
+          console.log('📷 [PREPARE] imageBase64Data作成完了:');
+          console.log('  - 配列サイズ:', imageBase64Data.length);
+          console.log('  - 各アイテム長さ:', imageBase64Data.map(item => item.length));
+          console.log('  - 送信データプレビュー:', imageBase64Data[0]?.substring(0, 100) + '...');
+          
           setProcessingStatus('画像データ準備完了。投稿処理中...');
+          
         } catch (err) {
-          console.error('Image data preparation error:', err);
+          console.error('📷 [ERROR] 画像データ準備エラー:', err);
+          console.error('📷 [ERROR] エラー詳細:', {
+            message: err instanceof Error ? err.message : String(err),
+            stack: err instanceof Error ? err.stack : undefined,
+            imageUrlLength: imageUrl.length,
+            imageUrlStart: imageUrl.substring(0, 50)
+          });
           setProcessingStatus('画像データ準備に失敗。テキストのみで投稿中...');
         }
+      } else {
+        console.log('📷 [SKIP] 画像データなし - テキストのみ投稿');
       }
 
 
-      // リクエストボディを作成（実投稿モード）
+      // リクエストボディを作成（実投稿モード）- 詳細ログ版
       const postBody = {
         message: tweetMessage,
         textOnly: imageBase64Data.length === 0,
         actuallyPost: true, // 実投稿モード
         imageBase64Data: imageBase64Data
       };
+      
+      console.log('📦 [REQUEST] リクエストボディ作成完了:');
+      console.log('  - message長さ:', postBody.message.length);
+      console.log('  - textOnly:', postBody.textOnly);
+      console.log('  - actuallyPost:', postBody.actuallyPost);
+      console.log('  - imageBase64Data配列サイズ:', postBody.imageBase64Data.length);
+      
+      if (postBody.imageBase64Data.length > 0) {
+        console.log('  - 画像データ詳細:', postBody.imageBase64Data.map((img, i) => ({
+          index: i,
+          length: img.length,
+          isDataURL: img.startsWith('data:'),
+          mimeType: img.match(/data:([^;]*)/)?.[1] || 'unknown'
+        })));
+      } else {
+        console.log('  - ⚠️ 画像データが空です');
+      }
       
       const requestOptions = {
         method: 'POST',
@@ -320,12 +382,49 @@ export default function TwitterPythonButton({
         body: JSON.stringify(postBody)
       };
       
+      console.log('🌐 [API] リクエスト送信開始...');
+      console.log('🌐 [API] エンドポイント: /api/twitter/post_playwright');
+      console.log('🌐 [API] リクエストオプション:', {
+        method: requestOptions.method,
+        headers: requestOptions.headers,
+        bodyLength: requestOptions.body ? requestOptions.body.length : 0
+      });
+      
       const response = await fetch('/api/twitter/post_playwright', requestOptions);
+      
+      console.log('🌐 [API] レスポンス受信:');
+      console.log('  - ステータス:', response.status, response.statusText);
+      console.log('  - ヘッダー:', Object.fromEntries(response.headers.entries()));
+      
       const result = await response.json();
       
+      console.log('🌐 [API] レスポンス内容:');
+      console.log('  - success:', result.success);
+      console.log('  - message:', result.message);
+      if (result.error) {
+        console.log('  - error:', result.error);
+      }
+      if (result.details) {
+        console.log('  - details.final_result:', result.details.final_result);
+        console.log('  - details.summary:', result.details.summary);
+        
+        if (result.details.errors && result.details.errors.length > 0) {
+          console.log('  - エラー詳細:', result.details.errors);
+        }
+        
+        if (result.details.success_steps && result.details.success_steps.length > 0) {
+          console.log('  - 成功ステップ:', result.details.success_steps.map((s: { step: string; message: string; timestamp: string; type: string }) => s.message));
+        }
+      }
+      
       if (!result.success) {
+        console.error('❌ [FAIL] API呼び出し失敗');
+        console.error('❌ [FAIL] エラー内容:', result.error);
+        console.error('❌ [FAIL] 完全レスポンス:', result);
         throw new Error(result.error || 'Playwright版実投稿に失敗しました');
       }
+      
+      console.log('✅ [SUCCESS] API呼び出し成功');
       
       // Playwright版実投稿の成功を詳細チェック
       const isActualPostSuccess = result.details && result.details.final_result;

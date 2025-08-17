@@ -101,6 +101,11 @@ export async function POST(request: NextRequest) {
             await writeFile(filePath, buffer);
             finalImagePaths.push(filePath);
             debugLog(`base64画像保存完了: ${filePath}`);
+            
+            // ファイルサイズを確認
+            const fs = require('fs');
+            const stats = fs.statSync(filePath);
+            debugLog(`  ファイルサイズ: ${stats.size} bytes`);
           } else {
             debugLog(`無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
           }
@@ -124,6 +129,20 @@ export async function POST(request: NextRequest) {
     }
 
     debugLog('📱 実行コマンド: ' + pythonCmd);
+    
+    // 最終的な画像ファイルの詳細情報を出力
+    if (finalImagePaths.length > 0) {
+      debugLog(`📷 最終画像ファイル詳細:`);
+      finalImagePaths.forEach((path, i) => {
+        try {
+          const fs = require('fs');
+          const stats = fs.statSync(path);
+          debugLog(`  ${i+1}. ${path} (${stats.size} bytes)`);
+        } catch (e) {
+          debugLog(`  ${i+1}. ${path} (ファイルエラー: ${e})`, 'ERROR');
+        }
+      });
+    }
 
     // Pythonスクリプトを実行（モバイル版は少し長めのタイムアウト）
     debugLog('モバイル版Pythonスクリプト実行開始...');

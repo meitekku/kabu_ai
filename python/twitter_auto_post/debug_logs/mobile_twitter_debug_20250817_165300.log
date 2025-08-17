@@ -1,0 +1,30 @@
+=== モバイルTwitterデバッグログ開始 ===
+開始時刻: 2025-08-17 16:53:00
+ログファイル: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_165300.log
+============================================================
+
+[16:53:00] [0.00s] [INFO] モバイルプロファイルディレクトリ: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[16:53:00] [0.00s] [INFO] 📱 モバイルブラウザ起動開始
+[16:53:01] [1.03s] [INFO] ✅ Playwright インスタンス作成完了
+[16:53:01] [1.03s] [INFO] ✅ 既存モバイルプロファイル発見: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[16:53:01] [1.03s] [INFO] モバイル引数設定完了: 26個
+[16:53:01] [1.03s] [INFO] モバイルコンテキスト作成中...
+[16:53:04] [3.68s] [INFO] ✅ モバイルコンテキスト作成完了
+[16:53:04] [3.68s] [INFO] 既存モバイルページを使用
+[16:53:04] [3.72s] [INFO] ✅ モバイル偽装スクリプト適用完了
+[16:53:04] [3.72s] [INFO] 📱 モバイルブラウザ起動成功
+[16:53:04] [3.72s] [INFO] 📱 モバイル版Twitterに移動開始
+[16:53:04] [3.72s] [INFO] アクセス先: https://mobile.twitter.com
+[16:53:34] [33.72s] [ERROR] モバイルTwitter移動エラー: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "https://mobile.twitter.com/", waiting until "networkidle"
+
+[16:53:34] [33.72s] [INFO] 🧹 モバイルブラウザ クリーンアップ開始
+[16:53:35] [34.33s] [INFO] ✅ モバイルコンテキストクローズ完了
+[16:53:35] [34.36s] [INFO] ✅ Playwrightストップ完了
+
+=== モバイルTwitterデバッグログ終了 ===
+終了時刻: 2025-08-17 16:53:35
+総実行時間: 34.36秒
+============================================================
+[16:53:35] [34.36s] [INFO] 📋 詳細デバッグログ保存完了: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_165300.log

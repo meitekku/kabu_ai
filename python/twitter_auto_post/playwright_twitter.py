@@ -1132,6 +1132,8 @@ class PlaywrightTwitterManager:
                                     self.debug_log(f"✅ [DEBUG] ファイル入力要素が {after_inputs - before_inputs} 個新規作成されました")
                                 else:
                                     self.debug_log("⚠️ [WARNING] ファイル入力要素が新規作成されませんでした")
+                            except Exception as e:
+                                self.debug_log(f"❌ [ERROR] メディアボタンクリックエラー: {str(e)}")
                         else:
                             self.debug_log("❌ [ERROR] メディアボタンが見つからないため、JavaScript直接実行を試行")
                             
@@ -1486,11 +1488,6 @@ class PlaywrightTwitterManager:
                             else:
                                 self.debug_log(f"❌ JavaScript方式でファイル設定失敗: {result.get('error')}", "ERROR")
                                 self.debug_log(f"📊 入力要素数: {result.get('inputCount', 0)}", "ERROR")
-                                
-                        except Exception as js_error:
-                            self.debug_log(f"❌ JavaScript方式アップロードエラー: {js_error}", "ERROR")
-                        else:
-                            self.debug_log("❌ メディアアップロードボタンが見つかりません", "WARNING")
                             
                     except Exception as upload_error:
                         self.debug_log(f"❌ 画像 {i+1} アップロードエラー: {upload_error}", "ERROR")

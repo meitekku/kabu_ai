@@ -101,6 +101,11 @@ export async function POST(request: NextRequest) {
             await writeFile(filePath, buffer);
             finalImagePaths.push(filePath);
             debugLog(`base64画像保存完了: ${filePath}`);
+            
+            // ファイルサイズを確認
+            const fs = require('fs');
+            const stats = fs.statSync(filePath);
+            debugLog(`  ファイルサイズ: ${stats.size} bytes`);
           } else {
             debugLog(`無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
           }

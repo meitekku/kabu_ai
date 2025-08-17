@@ -1,0 +1,75 @@
+=== モバイルTwitterデバッグログ開始 ===
+開始時刻: 2025-08-17 16:55:42
+ログファイル: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_165542.log
+============================================================
+
+[16:55:42] [0.00s] [INFO] モバイルプロファイルディレクトリ: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[16:55:42] [0.00s] [INFO] 📱 モバイルブラウザ起動開始
+[16:55:43] [1.01s] [INFO] ✅ Playwright インスタンス作成完了
+[16:55:43] [1.01s] [INFO] ✅ 既存モバイルプロファイル発見: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[16:55:43] [1.01s] [INFO] モバイル引数設定完了: 26個
+[16:55:43] [1.01s] [INFO] モバイルコンテキスト作成中...
+[16:55:46] [4.49s] [INFO] ✅ モバイルコンテキスト作成完了
+[16:55:46] [4.49s] [INFO] 既存モバイルページを使用
+[16:55:46] [4.60s] [INFO] ✅ モバイル偽装スクリプト適用完了
+[16:55:46] [4.60s] [INFO] 📱 モバイルブラウザ起動成功
+[16:55:46] [4.60s] [INFO] 📱 モバイル版Twitterに移動開始
+[16:55:46] [4.60s] [INFO] アクセス先: https://mobile.twitter.com
+[16:55:48] [6.58s] [INFO] ✅ ページ移動完了
+[16:55:48] [6.58s] [INFO] モバイル風待機: 1.62秒
+[16:55:50] [8.37s] [INFO] 現在のURL: https://x.com/
+[16:55:50] [8.37s] [INFO] ページタイトル: X
+[16:55:50] [8.38s] [INFO] モバイルログイン状態チェック - URL: https://x.com/home
+[16:55:50] [8.54s] [INFO] ✅ モバイルログイン要素発見: nav[role="navigation"]
+[16:55:50] [8.58s] [INFO] ✅ モバイルログイン要素発見: [data-testid="primaryColumn"]
+[16:55:50] [8.60s] [INFO] ✅ モバイルログイン要素発見: [aria-label*="ホーム"], [aria-label*="Home"]
+[16:55:50] [8.60s] [INFO] ✅ モバイルログイン確認 (3個の要素)
+[16:55:50] [8.60s] [INFO] 📱 モバイルツイート投稿開始 (テスト: True)
+[16:55:50] [8.60s] [INFO] 投稿処理開始時のURL: https://x.com/home
+[16:55:50] [8.62s] [INFO] ページ上のボタン要素数: 8
+[16:55:50] [8.65s] [INFO] ボタン1: text='', aria-label='プロフィールメニュー めいめい＠株わかりやすくまとめ・解説', testid='DashButton_ProfileIcon_Link', href=''
+[16:55:51] [8.69s] [INFO] ボタン2: text='', aria-label='前', testid='', href=''
+[16:55:51] [8.73s] [INFO] ボタン3: text='', aria-label='次へ', testid='', href=''
+[16:55:51] [8.76s] [INFO] ボタン4: text='', aria-label='前', testid='', href=''
+[16:55:51] [8.79s] [INFO] ボタン5: text='', aria-label='次へ', testid='', href=''
+[16:55:51] [8.82s] [INFO] ボタン6: text='新しいポストを表示', aria-label='新しいポストがあります。新しいポストに移動するには、ピリオド', testid='', href=''
+[16:55:51] [8.84s] [INFO] ボタン7: text='', aria-label='ホームタイムラインに移動', testid='', href=''
+[16:55:51] [8.86s] [INFO] ボタン8: text='', aria-label='トレンドに移動', testid='', href=''
+[16:55:51] [8.88s] [INFO] モバイル投稿ボタン発見: [data-testid="FloatingActionButtons_Tweet_Button"]
+[16:55:51] [8.88s] [INFO] モバイル風待機: 1.75秒
+[16:55:53] [11.38s] [INFO] タップ成功
+[16:55:53] [11.38s] [INFO] モバイル風待機: 2.00秒
+[16:55:55] [13.40s] [INFO] モバイルテキストエリア発見: [data-testid="tweetTextarea_0"]
+[16:55:55] [13.40s] [INFO] 📝 テキスト入力開始前の状態チェック
+[16:55:55] [13.43s] [INFO] 📝 [TEXT_CHECK] テキスト入力開始前: テキスト長=0, 内容=''
+[16:55:55] [13.43s] [INFO] 🎯 [DEBUG] mobile_type開始: clear_first=False, text='画像テスト投稿'
+[16:55:55] [13.44s] [INFO] モバイル風待機: 0.24秒
+[16:55:56] [13.68s] [INFO] 📝 JavaScript直接入力開始: '画像テスト投稿'
+[16:55:56] [13.69s] [INFO] 🔧 [DEBUG] モバイルJS設定結果 - before: '', after: '画像テスト投稿'
+[16:55:56] [13.69s] [INFO] ✅ JavaScript直接入力完了: '画像テスト投稿'
+[16:55:56] [13.69s] [INFO] モバイル風待機: 0.72秒
+[16:55:56] [14.42s] [INFO] 🎯 [DEBUG] モバイル最終結果: '画像テスト投稿'
+[16:55:56] [14.42s] [INFO] 📝 テキスト入力完了後の状態チェック
+[16:55:56] [14.43s] [INFO] 📝 [TEXT_CHECK] テキスト入力完了後: テキスト長=7, 内容='画像テスト投稿'
+[16:55:56] [14.43s] [INFO] ✅ モバイルテキスト入力完了: 画像テスト投稿
+[16:55:56] [14.43s] [INFO] 📷 画像アップロード開始: 1枚
+[16:55:56] [14.43s] [INFO] 📝 [TEXT_CHECK] 画像アップロード前: テキスト長=7, 内容='画像テスト投稿'
+[16:55:56] [14.43s] [INFO] 画像1/1をアップロード中: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/test_image.jpg
+[16:55:56] [14.44s] [INFO] 📝 [TEXT_CHECK] プログラマティック画像アップロード前_1: テキスト長=7, 内容='画像テスト投稿'
+[16:55:56] [14.44s] [INFO] 📷 ファイルダイアログ回避モードで画像アップロード開始
+[16:55:56] [14.44s] [INFO] ✅ 画像ファイル読み込み完了: 388 bytes
+[16:55:56] [14.44s] [INFO] 🚀 プログラマティック画像アップロード実行: test_image.jpg
+[16:55:56] [14.44s] [ERROR] ❌ プログラマティック画像アップロード処理エラー: Page.evaluate() takes from 2 to 3 positional arguments but 4 were given
+[16:55:56] [14.44s] [INFO] 📷 プログラマティック画像アップロード処理完了: 1枚処理
+[16:55:56] [14.45s] [INFO] 📝 [TEXT_CHECK] 画像アップロード後: テキスト長=7, 内容='画像テスト投稿'
+[16:55:56] [14.45s] [INFO] 🚫 実投稿モード: 投稿直前で停止（投稿処理はコメントアウト中）
+[16:55:56] [14.45s] [INFO] ✅ モバイルテキスト入力完了
+[16:55:56] [14.45s] [INFO] 🧹 モバイルブラウザ クリーンアップ開始
+[16:55:57] [15.18s] [INFO] ✅ モバイルコンテキストクローズ完了
+[16:55:57] [15.21s] [INFO] ✅ Playwrightストップ完了
+
+=== モバイルTwitterデバッグログ終了 ===
+終了時刻: 2025-08-17 16:55:57
+総実行時間: 15.21秒
+============================================================
+[16:55:57] [15.21s] [INFO] 📋 詳細デバッグログ保存完了: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250817_165542.log
