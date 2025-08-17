@@ -47,3 +47,4 @@ next-env.d.ts
 
 # twitter posting profiles
 /twitter_profiles/
+twitter_chrome_profile/
