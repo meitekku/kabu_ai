@@ -1,0 +1,130 @@
+[25709:6532863:0811/235531.563934:ERROR:chrome/browser/process_singleton_posix.cc:358] プロファイルは、別のコンピュータ（MacBook-Air.local）の別の Google Chrome プロセス（66939）で使用されているようです。Chrome はプロファイルが破損しないようにプロファイルをロックしています。他のプロセスがこのプロファイルを使用していないことが確実であれば、プロファイルのロックを解除して Chrome を再起動できます。
+[25709:6532863:0811/235532.033927:INFO:components/enterprise/browser/controller/chrome_browser_cloud_management_controller.cc:202] No machine level policy manager exists.
+[25718:6533017:0811/235532.223742:WARNING:net/extras/sqlite/sqlite_persistent_store_backend_base.cc:189] SharedDictionary database is too new.
+[25716:6532952:0811/235534.746399:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A0E010002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25716:6532952:0811/235534.758540:ERROR:gpu/command_buffer/service/gl_utils.cc:443] [.WebGL-0x10c03b05400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[25716:6532952:0811/235534.786987:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A01011002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25709:6532863:0811/235534.992482:INFO:CONSOLE:343] "[GroupMarkerNotSet(crbug.com/242999)!:A0E010002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/i/flow/login (343)
+[25709:6532863:0811/235534.992585:INFO:CONSOLE:343] "[.WebGL-0x10c03b05400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels", source: https://x.com/i/flow/login (343)
+[25709:6532863:0811/235534.992642:INFO:CONSOLE:343] "[GroupMarkerNotSet(crbug.com/242999)!:A01011002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/i/flow/login (343)
+[25709:6532863:0811/235535.009854:INFO:CONSOLE:355] "No available adapters.", source: https://x.com/i/flow/login (355)
+[25730:6533484:0811/235535.121121:INFO:third_party/blink/renderer/modules/peerconnection/peer_connection_dependency_factory.cc:802] Running WebRTC with a combined Network and Worker thread.
+[25716:6532952:0811/235535.142918:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A0807E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25709:6532863:0811/235535.192339:INFO:CONSOLE:0] "[GroupMarkerNotSet(crbug.com/242999)!:A0807E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/i/flow/login (0)
+[25716:6532952:0811/235535.370465:ERROR:gpu/command_buffer/service/gl_utils.cc:443] [.WebGL-0x10c03b05400]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[25770:6533478:0811/235535.539829:ERROR:sandbox/mac/system_services.cc:31] SetApplicationIsDaemon: Error Domain=NSOSStatusErrorDomain Code=-50 "paramErr: error in user parameter list" (-50)
+[25709:6532863:0811/235536.216417:WARNING:chrome/browser/media/prefs/capture_device_ranking.h:255] Can't initialize the value of media.audio_input.user_preference_ranking because media.default_audio_capture_device isn't registered or is empty
+[25709:6532863:0811/235536.216494:WARNING:chrome/browser/media/prefs/capture_device_ranking.h:255] Can't initialize the value of media.video_input.user_preference_ranking because media.default_video_capture_Device isn't registered or is empty
+[25709:6532863:0811/235536.238072:INFO:CONSOLE:74] "[GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment", source: https://accounts.google.com/gsi/client (74)
+[25709:6532863:0811/235536.239544:INFO:CONSOLE:75] "[GSI_LOGGER]: FedCM get() rejects with TypeError: Failed to execute 'get' on 'CredentialsContainer': Failed to read the 'identity' property from 'CredentialRequestOptions': Failed to read the 'mode' property from 'IdentityCredentialRequestOptions': The provided value 'widget' is not a valid enum value of type IdentityCredentialRequestOptionsMode.", source: https://accounts.google.com/gsi/client (75)
+[25709:6532863:0811/235536.310320:INFO:CONSOLE:1] "Error", source: https://abs.twimg.com/responsive-web/client-web/main.81c1b28a.js (1)
+[25709:6532863:0811/235536.349967:INFO:CONSOLE:0] "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.", source: https://x.com/i/flow/login (0)
+[25716:6532952:0811/235537.577614:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A0E010002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25716:6532952:0811/235537.580535:ERROR:gpu/command_buffer/service/gl_utils.cc:443] [.WebGL-0x10c07876300]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+[25716:6532952:0811/235537.596849:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A0807E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25709:6532863:0811/235537.603484:WARNING:chrome/browser/media/prefs/capture_device_ranking.h:255] Can't initialize the value of media.audio_input.user_preference_ranking because media.default_audio_capture_device isn't registered or is empty
+[25709:6532863:0811/235537.603554:WARNING:chrome/browser/media/prefs/capture_device_ranking.h:255] Can't initialize the value of media.video_input.user_preference_ranking because media.default_video_capture_Device isn't registered or is empty
+[25709:6532863:0811/235537.722967:INFO:CONSOLE:345] "[GroupMarkerNotSet(crbug.com/242999)!:A0E010002C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/login (345)
+[25709:6532863:0811/235537.723170:INFO:CONSOLE:345] "[.WebGL-0x10c07876300]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels", source: https://x.com/login (345)
+[25709:6532863:0811/235537.724829:INFO:CONSOLE:345] "[GroupMarkerNotSet(crbug.com/242999)!:A0807E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/login (345)
+[25730:6533484:0811/235537.767329:INFO:third_party/blink/renderer/modules/peerconnection/peer_connection_dependency_factory.cc:802] Running WebRTC with a combined Network and Worker thread.
+[25709:6532863:0811/235537.774124:INFO:CONSOLE:345] "No available adapters.", source: https://x.com/login (345)
+[25716:6532952:0811/235537.863205:ERROR:gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc:1095] [GroupMarkerNotSet(crbug.com/242999)!:A0B07E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.
+[25709:6532863:0811/235537.870121:INFO:CONSOLE:0] "[GroupMarkerNotSet(crbug.com/242999)!:A0B07E052C010000]Automatic fallback to software WebGL has been deprecated. Please use the --enable-unsafe-swiftshader (about:flags#enable-unsafe-swiftshader) flag to opt in to lower security guarantees for trusted content.", source: https://x.com/login (0)
+[25709:6532863:0811/235538.279193:INFO:CONSOLE:74] "[GSI_LOGGER]: Your client application uses one of the Google One Tap prompt UI status methods that may stop functioning when FedCM becomes mandatory. Refer to the migration guide to update your code accordingly and opt-in to FedCM to test your changes. Learn more: https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#display_moment and https://developers.google.com/identity/gsi/web/guides/fedcm-migration?s=dc#skipped_moment", source: https://accounts.google.com/gsi/client (74)
+[25709:6532863:0811/235538.280527:INFO:CONSOLE:75] "[GSI_LOGGER]: FedCM get() rejects with TypeError: Failed to execute 'get' on 'CredentialsContainer': Failed to read the 'identity' property from 'CredentialRequestOptions': Failed to read the 'mode' property from 'IdentityCredentialRequestOptions': The provided value 'widget' is not a valid enum value of type IdentityCredentialRequestOptionsMode.", source: https://accounts.google.com/gsi/client (75)
+[25716:6532952:0811/235538.286652:ERROR:gpu/command_buffer/service/gl_utils.cc:443] [.WebGL-0x10c07876300]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+[25709:6532863:0811/235538.571110:INFO:CONSOLE:0] "Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.", source: https://x.com/i/flow/login (0)
+[25709:6532922:0811/235543.312442:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[25730:6533485:0811/235549.006608:WARNING:third_party/webrtc/media/engine/webrtc_voice_engine.cc:807] Attempting to stop aecdump when no audio processing module is present
+[25709:6532917:0812/132228.866597:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/132228.867944:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532919:0812/132234.775250:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0812/132234.776227:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/140519.538027:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/140519.538789:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/140525.255350:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/140525.255603:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532919:0812/142330.519039:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/142330.519285:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/142336.181397:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/142336.182036:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/152431.604872:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/152431.605036:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/152437.297560:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/152437.297841:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/162532.564756:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/162532.566829:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/162538.319706:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/162538.319834:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/172634.578426:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/172634.578680:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/172640.413362:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0812/172640.414573:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/182735.677921:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/182735.679356:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/182741.377419:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/182741.377477:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/192836.680788:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/192836.680911:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/192842.316322:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/192842.316534:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0812/202938.756679:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/202938.757143:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/202944.426261:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/202944.426646:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/213046.422451:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/213046.429818:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/213054.454962:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532919:0812/213054.455250:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/221827.929277:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0812/221827.929656:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/221834.818340:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/221834.818427:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/223156.163861:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/223156.164289:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/223203.605737:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0812/223203.606451:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/225056.044121:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/225056.044192:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0812/225102.204366:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0812/225102.204692:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0813/232013.313231:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0813/232013.313357:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0813/232018.008900:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0813/232018.009404:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/211343.191172:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0814/211343.202257:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/211346.641588:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0814/211346.641982:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0814/221443.864520:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/221443.865211:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/221449.466898:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0814/221449.467864:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/223301.859470:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0814/223301.860354:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0814/223307.024252:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0814/223307.024949:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532919:0815/200334.153277:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/200334.160877:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/200340.584227:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/200340.584416:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/210712.815764:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/210712.816030:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/210718.762116:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/210718.762350:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/220815.097814:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/220815.098109:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/220820.897748:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533017:0815/220820.899623:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/224752.905103:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/224752.905336:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0815/224759.159245:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0815/224759.160213:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0816/121752.682847:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532917:0816/121752.682799:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25718:6533015:0816/121805.143358:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532919:0816/121805.143612:WARNING:net/dns/dns_config_service_posix.cc:201] Failed to read DnsConfig.
+[25709:6532863:0816/122837.035611:ERROR:content/browser/network_service_instance_impl.cc:597] Network service crashed, restarting service.
+[25709:6532922:0816/122837.309423:WARNING:content/browser/renderer_host/media/service_video_capture_provider.cc:343] Too many GetDeviceInfos() retries
+[25709:6532922:0816/122837.309519:WARNING:content/browser/renderer_host/media/service_video_capture_provider.cc:343] Too many GetDeviceInfos() retries

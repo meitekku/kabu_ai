@@ -123,7 +123,8 @@ export default function TwitterPythonButton({
       setIsLoading(true);
       setProcessingStatus('🧪 テストモード：投稿内容を確認中...');
       
-      const tweetMessage = title && content ? `${title}\n\n${content}` : title || content || '';
+      // titleが存在する場合は、contentが空でも改行2つを追加
+      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       const imagePaths = chartImageUrl ? ['チャート画像が添付されます'] : [];
       
       logTestPostData(tweetMessage, imagePaths, mode);
@@ -173,7 +174,8 @@ export default function TwitterPythonButton({
       setProcessingStatus('📱 モバイル版（認証回避強化）で処理を開始しています...');
       setLastResponse(null);
       
-      const tweetMessage = title && content ? `${title}\n\n${content}` : title || content || '';
+      // titleが存在する場合は、contentが空でも改行2つを追加
+      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
       // モバイル版実投稿処理
       setProcessingStatus('📱 iPhone 14 Pro Max として認証を回避しています...');
@@ -281,7 +283,8 @@ export default function TwitterPythonButton({
       setProcessingStatus('Playwright版（実投稿モード）で処理を開始しています...');
       setLastResponse(null);
       
-      const tweetMessage = title && content ? `${title}\n\n${content}` : title || content || '';
+      // titleが存在する場合は、contentが空でも改行2つを追加
+      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
       // Playwright版実投稿処理
       setProcessingStatus('ブラウザでの手動ログインをお待ちください。ログイン完了後に実際に投稿されます...');
@@ -485,7 +488,8 @@ export default function TwitterPythonButton({
       setProcessingStatus(useSystemProfile ? '安全なプロファイルコピーを作成中。既存のChromeとVSCodeには影響しません...' : '処理を開始しています...');
       setLastResponse(null);
       
-      const tweetMessage = title && content ? `${title}\n\n${content}` : title || content || '';
+      // titleが存在する場合は、contentが空でも改行2つを追加
+      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
       
       // ツイート投稿処理
       setProcessingStatus(useSystemProfile ? 'ブラウザでの手動ログインをお待ちください。ログイン完了後に自動投稿されます...' : 'ツイートを投稿中...');
