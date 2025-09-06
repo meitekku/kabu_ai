@@ -163,180 +163,74 @@ class MobileTwitterManager:
             return False
 
     def mobile_type_simple(self, element, text):
-        """フォーカス外れ対応強化版テキスト入力（テキスト消失防止機能付き）"""
+        """高速1文字1文字タイピング方式"""
         if not text:
             return
         
         try:
-            self.debug_log(f"📝 [PROTECTED_TYPE] フォーカス外れ対応テキスト入力開始: {len(text)}文字")
+            self.debug_log(f"⚡ [ULTRA_TYPE] 高速1文字1文字タイピング開始: {len(text)}文字")
             
             # フォーカスを設定
             element.focus()
-            self.human_delay(300, 500)
+            self.human_delay(200, 300)
             
-            # 強化版テキスト設定とフォーカス監視
-            result = element.evaluate('''(element, text) => {
-                try {
-                    console.log('[PROTECTED_TYPE] テキスト保護設定開始:', text.length, '文字');
-                    
-                    // 1. 既存のプロテクターを無効化
-                    if (window._textProtectors) {
-                        window._textProtectors.forEach(protector => {
-                            if (protector.observer) protector.observer.disconnect();
-                            if (protector.focusListener) element.removeEventListener('blur', protector.focusListener);
-                            if (protector.mutationListener) element.removeEventListener('DOMSubtreeModified', protector.mutationListener);
-                        });
-                    }
-                    window._textProtectors = [];
-                    
-                    // 2. 強固なテキスト設定（複数属性同時設定）
-                    const setText = (elem, txt) => {
-                        // すべての可能な属性に同時設定
-                        if (elem.value !== undefined) elem.value = txt;
-                        if (elem.textContent !== undefined) elem.textContent = txt;
-                        if (elem.innerText !== undefined) elem.innerText = txt;
-                        if (elem.innerHTML !== undefined) elem.innerHTML = txt;
-                        
-                        // data属性にもバックアップ保存
-                        elem.setAttribute('data-backup-text', txt);
-                        elem.setAttribute('data-original-text', txt);
-                        
-                        console.log('[PROTECTED_TYPE] テキスト強固設定完了');
-                    };
-                    
-                    // 初期テキスト設定
-                    setText(element, text);
-                    
-                    // 3. テキスト復元関数
-                    const restoreText = () => {
-                        const currentText = element.value || element.textContent || element.innerText || '';
-                        const backupText = element.getAttribute('data-backup-text') || text;
-                        
-                        if (!currentText || currentText.length === 0 || currentText !== backupText) {
-                            console.log('[PROTECTED_TYPE] テキスト消失検出、即座復元:', backupText.length, '文字');
-                            setText(element, backupText);
-                            
-                            // UIに反映するためのイベント発火
-                            const events = [
-                                new Event('input', { bubbles: true, cancelable: true }),
-                                new Event('change', { bubbles: true, cancelable: true }),
-                                new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: ' ' }),
-                                new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: ' ' })
-                            ];
-                            
-                            events.forEach(evt => {
-                                try { element.dispatchEvent(evt); } catch(e) {}
-                            });
-                            
-                            return true;
-                        }
-                        return false;
-                    };
-                    
-                    // 4. フォーカス監視（blur時の即座復元）
-                    const focusProtector = (evt) => {
-                        console.log('[PROTECTED_TYPE] フォーカス変更検出');
-                        setTimeout(() => restoreText(), 50);  // 50ms後に復元チェック
-                        setTimeout(() => restoreText(), 200); // 200ms後にも復元チェック
-                    };
-                    
-                    element.addEventListener('blur', focusProtector, { passive: true });
-                    
-                    // 5. DOM変更監視（MutationObserver）
-                    let mutationObserver = null;
-                    if (window.MutationObserver) {
-                        mutationObserver = new MutationObserver((mutations) => {
-                            let shouldRestore = false;
-                            mutations.forEach((mutation) => {
-                                if (mutation.type === 'childList' || mutation.type === 'characterData' || 
-                                    (mutation.type === 'attributes' && (mutation.attributeName === 'value' || 
-                                    mutation.attributeName === 'data-value'))) {
-                                    shouldRestore = true;
-                                }
-                            });
-                            
-                            if (shouldRestore) {
-                                console.log('[PROTECTED_TYPE] DOM変更検出、復元チェック');
-                                setTimeout(() => restoreText(), 10);
-                            }
-                        });
-                        
-                        mutationObserver.observe(element, {
-                            attributes: true,
-                            childList: true,
-                            characterData: true,
-                            subtree: true,
-                            attributeOldValue: true,
-                            characterDataOldValue: true
-                        });
-                    }
-                    
-                    // 6. 定期的な監視（軽量版）
-                    const intervalProtector = setInterval(() => {
-                        const restored = restoreText();
-                        if (!restored) {
-                            // テキストが安定している場合の監視頻度を下げる
-                            const checkCount = parseInt(element.getAttribute('data-check-count') || '0') + 1;
-                            element.setAttribute('data-check-count', checkCount.toString());
-                            
-                            // 10回チェックしてOKなら監視を5秒に1回に変更
-                            if (checkCount > 10) {
-                                clearInterval(intervalProtector);
-                                setInterval(() => restoreText(), 5000); // 5秒ごと
-                                console.log('[PROTECTED_TYPE] 監視を軽量化（5秒間隔）');
-                            }
-                        }
-                    }, 500); // 0.5秒ごと
-                    
-                    // 7. プロテクター情報を保存
-                    window._textProtectors.push({
-                        element: element,
-                        observer: mutationObserver,
-                        focusListener: focusProtector,
-                        intervalId: intervalProtector,
-                        text: text
-                    });
-                    
-                    // 8. 最終確認とイベント発火
-                    setTimeout(() => {
-                        restoreText();
-                        
-                        // 最終的なUIイベント発火
-                        const finalEvents = [
-                            new Event('input', { bubbles: true }),
-                            new Event('change', { bubbles: true })
-                        ];
-                        
-                        finalEvents.forEach(evt => {
-                            try { element.dispatchEvent(evt); } catch(e) {}
-                        });
-                        
-                        element.focus();
-                        console.log('[PROTECTED_TYPE] テキスト保護設定完了');
-                    }, 100);
-                    
-                    return { 
-                        success: true, 
-                        finalValue: element.value || element.textContent || element.innerText || '',
-                        protectionEnabled: true,
-                        watchersCount: window._textProtectors.length
-                    };
-                    
-                } catch (error) {
-                    console.error('[PROTECTED_TYPE] エラー:', error);
-                    return { success: false, error: error.message };
-                }
-            }''', text)
+            # テキストエリアをクリア
+            element.evaluate('element => { element.value = ""; element.textContent = ""; element.innerText = ""; }')
             
-            if result['success']:
-                self.debug_log(f"✅ [PROTECTED_TYPE] テキスト保護設定完了: {len(result['finalValue'])}文字")
-                self.debug_log(f"  - 保護機能: {result.get('protectionEnabled')}")
-                self.debug_log(f"  - 監視数: {result.get('watchersCount')}")
+            # 高速タイピング（1-3msの超高速間隔）
+            start_time = time.time()
+            
+            try:
+                # Playwrightの高速タイピング機能を使用
+                element.type(text, delay=2)  # 2ms間隔で高速タイピング
+                
+                typing_time = time.time() - start_time
+                self.debug_log(f"⚡ [ULTRA_TYPE] 高速タイピング完了: {typing_time:.3f}秒 ({len(text)/typing_time:.1f}文字/秒)")
+                
+            except Exception as e:
+                self.debug_log(f"⚠️ [ULTRA_TYPE] element.type失敗、代替手段を実行: {e}")
+                
+                # 代替手段：キーボード経由で高速タイピング
+                try:
+                    element.click()  # フォーカス確保
+                    self.page.keyboard.type(text, delay=2)
+                    
+                    typing_time = time.time() - start_time
+                    self.debug_log(f"⚡ [ULTRA_TYPE] キーボード高速タイピング完了: {typing_time:.3f}秒")
+                    
+                except Exception as e2:
+                    self.debug_log(f"⚠️ [ULTRA_TYPE] keyboard.type失敗、手動ループを実行: {e2}")
+                    
+                    # 最終手段：1文字ずつ手動ループ（超高速）
+                    for i, char in enumerate(text):
+                        try:
+                            self.page.keyboard.press(f'Key{char.upper()}' if char.isalpha() else char)
+                            if i % 10 == 0:  # 10文字ごとにプログレス表示
+                                progress = (i + 1) / len(text) * 100
+                                self.debug_log(f"⚡ [ULTRA_TYPE] 進行状況: {progress:.1f}% ({i+1}/{len(text)})")
+                        except:
+                            # 特殊文字の場合はJavaScriptで挿入
+                            element.evaluate(f'element => {{ element.value += "{char}"; }}')
+                    
+                    typing_time = time.time() - start_time
+                    self.debug_log(f"⚡ [ULTRA_TYPE] 手動ループタイピング完了: {typing_time:.3f}秒")
+            
+            # 入力完了後の確認
+            element.focus()
+            time.sleep(0.1)  # 短時間の安定化待機
+            
+            # 最終的なテキスト内容を確認
+            final_text = element.evaluate('element => element.value || element.textContent || element.innerText || ""')
+            success = len(final_text) > 0 and final_text.strip() != ""
+            
+            if success:
+                self.debug_log(f"✅ [ULTRA_TYPE] 高速タイピング成功: {len(final_text)}文字入力完了")
+                self.debug_log(f"📝 [ULTRA_TYPE] 入力内容: {final_text[:50]}{'...' if len(final_text) > 50 else ''}")
             else:
-                self.debug_log(f"❌ [PROTECTED_TYPE] テキスト設定エラー: {result.get('error')}", "ERROR")
+                self.debug_log(f"❌ [ULTRA_TYPE] 高速タイピング失敗: 最終テキスト長={len(final_text)}", "ERROR")
                 
         except Exception as e:
-            self.debug_log(f"❌ [PROTECTED_TYPE] 例外エラー: {e}", "ERROR")
+            self.debug_log(f"❌ [ULTRA_TYPE] 高速タイピング例外エラー: {e}", "ERROR")
     
 
     def setup_mobile_browser(self):
@@ -788,6 +682,13 @@ class MobileTwitterManager:
     def mobile_post_tweet(self, message, image_paths=None, test_mode=True):
         """モバイル版でツイート投稿"""
         try:
+            # テスト用文字数制限（50文字）
+            if len(message) > 50:
+                original_message = message
+                message = message[:50]
+                self.debug_log(f"🔢 [TEST_MODE] 文字数制限: {len(original_message)}文字 → {len(message)}文字")
+                self.debug_log(f"📝 [TEST_MODE] 制限後テキスト: {message}")
+            
             self.debug_log(f"📱 モバイルツイート投稿開始 (テスト: {test_mode})")
             
             current_url = self.page.url
