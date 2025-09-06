@@ -682,13 +682,6 @@ class MobileTwitterManager:
     def mobile_post_tweet(self, message, image_paths=None, test_mode=True):
         """モバイル版でツイート投稿"""
         try:
-            # テスト用文字数制限（50文字）
-            if len(message) > 50:
-                original_message = message
-                message = message[:50]
-                self.debug_log(f"🔢 [TEST_MODE] 文字数制限: {len(original_message)}文字 → {len(message)}文字")
-                self.debug_log(f"📝 [TEST_MODE] 制限後テキスト: {message}")
-            
             self.debug_log(f"📱 モバイルツイート投稿開始 (テスト: {test_mode})")
             
             current_url = self.page.url
