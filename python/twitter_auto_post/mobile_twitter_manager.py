@@ -385,113 +385,6 @@ class MobileTwitterManager:
             # React状態更新のための長時間待機
             self.human_delay(1500, 2500)
             
-            # 包括的な最終確認と再設定ループ（最大5回）
-            for i in range(5):
-                final_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
-                self.debug_log(f"🎯 [DEBUG] モバイル最終確認{i+1}: '{final_value[:50]}{'...' if len(final_value) > 50 else ''}'")
-                
-                if final_value and len(final_value.strip()) > 0:
-                    self.debug_log(f"✅ テキスト設定成功確認（試行{i+1}）")
-                    break
-                else:
-                    # テキストが消えている場合は再設定
-                    self.debug_log(f"⚠️ テキストが消失、再設定試行{i+1}", "WARNING")
-                    
-                    # より強力な再設定
-                    element.evaluate('''
-                        (element, text) => {
-                            // 強制的なReact状態リセット
-                            if (element._valueTracker) {
-                                element._valueTracker.setValue('');
-                            }
-                            
-                            // より包括的なReact内部状態操作
-                            const reactInstance = element._reactInternalInstance || element._reactInternalFiber;
-                            if (reactInstance) {
-                                const stateNode = reactInstance.stateNode;
-                                if (stateNode && stateNode.setState) {
-                                    try {
-                                        stateNode.setState({value: text});
-                                    } catch(e) {}
-                                }
-                            }
-                            
-                            // DOM直接操作
-                            element.value = text;
-                            element.textContent = text;
-                            element.innerText = text;
-                            element.setAttribute('value', text);
-                            
-                            // React Fiberツリーの強制更新
-                            const fiber = element._reactInternalFiber;
-                            if (fiber && fiber.return) {
-                                let current = fiber;
-                                while (current) {
-                                    if (current.stateNode && current.stateNode.forceUpdate) {
-                                        current.stateNode.forceUpdate();
-                                        break;
-                                    }
-                                    current = current.return;
-                                }
-                            }
-                            
-                            // 再度value trackerを設定
-                            if (element._valueTracker) {
-                                element._valueTracker.setValue(text);
-                            }
-                            
-                            // 全イベントを再発火
-                            ['input', 'change', 'keyup', 'keydown', 'focus', 'blur'].forEach(eventType => {
-                                const event = new Event(eventType, { bubbles: true, cancelable: true });
-                                element.dispatchEvent(event);
-                            });
-                        }
-                    ''', text)
-                    
-                    # 再設定後の短時間待機
-                    self.human_delay(1000, 1500)
-            
-            # 最終的にテキストが設定されていない場合の強制的な対処
-            final_check = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
-            if not final_check or len(final_check.strip()) == 0:
-                self.debug_log("❌ [CRITICAL] 通常設定完全失敗、緊急モード開始", "ERROR")
-                
-                # 緊急モード: ページ全体のReactを強制更新
-                try:
-                    self.page.evaluate('''
-                        () => {
-                            // すべてのReactコンポーネントを強制更新
-                            if (window.React && window.React.version) {
-                                const allElements = document.querySelectorAll('*');
-                                for (let el of allElements) {
-                                    const fiber = el._reactInternalFiber || el._reactInternalInstance;
-                                    if (fiber && fiber.stateNode && fiber.stateNode.forceUpdate) {
-                                        try {
-                                            fiber.stateNode.forceUpdate();
-                                        } catch(e) {}
-                                    }
-                                }
-                            }
-                        }
-                    ''')
-                    
-                    # 緊急再設定
-                    element.fill('')  # Playwrightの強力なfillメソッド
-                    self.human_delay(500, 800)
-                    element.fill(text)
-                    self.human_delay(1000, 1500)
-                    
-                    emergency_value = element.evaluate("element => element.value || element.textContent || element.innerText || ''")
-                    self.debug_log(f"🚨 緊急モード結果: '{emergency_value[:50]}{'...' if len(emergency_value) > 50 else ''}'")
-                    
-                    if emergency_value and len(emergency_value.strip()) > 0:
-                        self.debug_log("✅ 緊急モードで復旧成功", "INFO")
-                    else:
-                        self.debug_log("❌ 緊急モードも失敗", "ERROR")
-                        
-                except Exception as emergency_error:
-                    self.debug_log(f"❌ 緊急モードエラー: {emergency_error}", "ERROR")
-            
         except Exception as e:
             self.debug_log(f"❌ モバイル入力エラー: {e}", "ERROR")
             
@@ -1146,6 +1039,11 @@ class MobileTwitterManager:
                 
                 if post_button:
                     self.debug_log(f"🎯 [SIMPLE_FLOW] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
+                    
+                    # 投稿ボタンクリック前に10秒待機
+                    self.debug_log("⏳ 投稿ボタンクリック前に10秒待機中...")
+                    time.sleep(10)
+                    self.debug_log("✅ 10秒待機完了")
                     
                     # テキストエリアにフォーカスを維持したまま、JavaScriptでボタンをクリック
                     self.debug_log("🎯 [SIMPLE_FLOW] フォーカス維持したままJSクリック")
