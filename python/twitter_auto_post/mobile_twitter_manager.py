@@ -163,54 +163,180 @@ class MobileTwitterManager:
             return False
 
     def mobile_type_simple(self, element, text):
-        """シンプルなテキスト入力（1回のみ、余計な確認なし）"""
+        """フォーカス外れ対応強化版テキスト入力（テキスト消失防止機能付き）"""
         if not text:
             return
         
         try:
-            self.debug_log(f"📝 [SIMPLE_TYPE] シンプルテキスト入力開始: {len(text)}文字")
+            self.debug_log(f"📝 [PROTECTED_TYPE] フォーカス外れ対応テキスト入力開始: {len(text)}文字")
             
             # フォーカスを設定
             element.focus()
             self.human_delay(300, 500)
             
-            # JavaScriptで直接設定（1回のみ）
+            # 強化版テキスト設定とフォーカス監視
             result = element.evaluate('''(element, text) => {
                 try {
-                    // 現在の値をクリア
-                    element.value = '';
-                    element.textContent = '';
-                    element.innerText = '';
+                    console.log('[PROTECTED_TYPE] テキスト保護設定開始:', text.length, '文字');
                     
-                    // 新しいテキストを設定
-                    if (element.value !== undefined) {
-                        element.value = text;
-                    } else if (element.textContent !== undefined) {
-                        element.textContent = text;
-                    } else if (element.innerText !== undefined) {
-                        element.innerText = text;
+                    // 1. 既存のプロテクターを無効化
+                    if (window._textProtectors) {
+                        window._textProtectors.forEach(protector => {
+                            if (protector.observer) protector.observer.disconnect();
+                            if (protector.focusListener) element.removeEventListener('blur', protector.focusListener);
+                            if (protector.mutationListener) element.removeEventListener('DOMSubtreeModified', protector.mutationListener);
+                        });
+                    }
+                    window._textProtectors = [];
+                    
+                    // 2. 強固なテキスト設定（複数属性同時設定）
+                    const setText = (elem, txt) => {
+                        // すべての可能な属性に同時設定
+                        if (elem.value !== undefined) elem.value = txt;
+                        if (elem.textContent !== undefined) elem.textContent = txt;
+                        if (elem.innerText !== undefined) elem.innerText = txt;
+                        if (elem.innerHTML !== undefined) elem.innerHTML = txt;
+                        
+                        // data属性にもバックアップ保存
+                        elem.setAttribute('data-backup-text', txt);
+                        elem.setAttribute('data-original-text', txt);
+                        
+                        console.log('[PROTECTED_TYPE] テキスト強固設定完了');
+                    };
+                    
+                    // 初期テキスト設定
+                    setText(element, text);
+                    
+                    // 3. テキスト復元関数
+                    const restoreText = () => {
+                        const currentText = element.value || element.textContent || element.innerText || '';
+                        const backupText = element.getAttribute('data-backup-text') || text;
+                        
+                        if (!currentText || currentText.length === 0 || currentText !== backupText) {
+                            console.log('[PROTECTED_TYPE] テキスト消失検出、即座復元:', backupText.length, '文字');
+                            setText(element, backupText);
+                            
+                            // UIに反映するためのイベント発火
+                            const events = [
+                                new Event('input', { bubbles: true, cancelable: true }),
+                                new Event('change', { bubbles: true, cancelable: true }),
+                                new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: ' ' }),
+                                new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: ' ' })
+                            ];
+                            
+                            events.forEach(evt => {
+                                try { element.dispatchEvent(evt); } catch(e) {}
+                            });
+                            
+                            return true;
+                        }
+                        return false;
+                    };
+                    
+                    // 4. フォーカス監視（blur時の即座復元）
+                    const focusProtector = (evt) => {
+                        console.log('[PROTECTED_TYPE] フォーカス変更検出');
+                        setTimeout(() => restoreText(), 50);  // 50ms後に復元チェック
+                        setTimeout(() => restoreText(), 200); // 200ms後にも復元チェック
+                    };
+                    
+                    element.addEventListener('blur', focusProtector, { passive: true });
+                    
+                    // 5. DOM変更監視（MutationObserver）
+                    let mutationObserver = null;
+                    if (window.MutationObserver) {
+                        mutationObserver = new MutationObserver((mutations) => {
+                            let shouldRestore = false;
+                            mutations.forEach((mutation) => {
+                                if (mutation.type === 'childList' || mutation.type === 'characterData' || 
+                                    (mutation.type === 'attributes' && (mutation.attributeName === 'value' || 
+                                    mutation.attributeName === 'data-value'))) {
+                                    shouldRestore = true;
+                                }
+                            });
+                            
+                            if (shouldRestore) {
+                                console.log('[PROTECTED_TYPE] DOM変更検出、復元チェック');
+                                setTimeout(() => restoreText(), 10);
+                            }
+                        });
+                        
+                        mutationObserver.observe(element, {
+                            attributes: true,
+                            childList: true,
+                            characterData: true,
+                            subtree: true,
+                            attributeOldValue: true,
+                            characterDataOldValue: true
+                        });
                     }
                     
-                    // inputイベントを発火（UIに反映）
-                    const inputEvent = new Event('input', { bubbles: true });
-                    element.dispatchEvent(inputEvent);
+                    // 6. 定期的な監視（軽量版）
+                    const intervalProtector = setInterval(() => {
+                        const restored = restoreText();
+                        if (!restored) {
+                            // テキストが安定している場合の監視頻度を下げる
+                            const checkCount = parseInt(element.getAttribute('data-check-count') || '0') + 1;
+                            element.setAttribute('data-check-count', checkCount.toString());
+                            
+                            // 10回チェックしてOKなら監視を5秒に1回に変更
+                            if (checkCount > 10) {
+                                clearInterval(intervalProtector);
+                                setInterval(() => restoreText(), 5000); // 5秒ごと
+                                console.log('[PROTECTED_TYPE] 監視を軽量化（5秒間隔）');
+                            }
+                        }
+                    }, 500); // 0.5秒ごと
                     
-                    // フォーカスを維持
-                    element.focus();
+                    // 7. プロテクター情報を保存
+                    window._textProtectors.push({
+                        element: element,
+                        observer: mutationObserver,
+                        focusListener: focusProtector,
+                        intervalId: intervalProtector,
+                        text: text
+                    });
                     
-                    return { success: true, finalValue: element.value || element.textContent || element.innerText || '' };
+                    // 8. 最終確認とイベント発火
+                    setTimeout(() => {
+                        restoreText();
+                        
+                        // 最終的なUIイベント発火
+                        const finalEvents = [
+                            new Event('input', { bubbles: true }),
+                            new Event('change', { bubbles: true })
+                        ];
+                        
+                        finalEvents.forEach(evt => {
+                            try { element.dispatchEvent(evt); } catch(e) {}
+                        });
+                        
+                        element.focus();
+                        console.log('[PROTECTED_TYPE] テキスト保護設定完了');
+                    }, 100);
+                    
+                    return { 
+                        success: true, 
+                        finalValue: element.value || element.textContent || element.innerText || '',
+                        protectionEnabled: true,
+                        watchersCount: window._textProtectors.length
+                    };
+                    
                 } catch (error) {
+                    console.error('[PROTECTED_TYPE] エラー:', error);
                     return { success: false, error: error.message };
                 }
             }''', text)
             
             if result['success']:
-                self.debug_log(f"✅ [SIMPLE_TYPE] テキスト設定完了: {len(result['finalValue'])}文字")
+                self.debug_log(f"✅ [PROTECTED_TYPE] テキスト保護設定完了: {len(result['finalValue'])}文字")
+                self.debug_log(f"  - 保護機能: {result.get('protectionEnabled')}")
+                self.debug_log(f"  - 監視数: {result.get('watchersCount')}")
             else:
-                self.debug_log(f"❌ [SIMPLE_TYPE] テキスト設定エラー: {result.get('error')}", "ERROR")
+                self.debug_log(f"❌ [PROTECTED_TYPE] テキスト設定エラー: {result.get('error')}", "ERROR")
                 
         except Exception as e:
-            self.debug_log(f"❌ [SIMPLE_TYPE] 例外エラー: {e}", "ERROR")
+            self.debug_log(f"❌ [PROTECTED_TYPE] 例外エラー: {e}", "ERROR")
     
 
     def setup_mobile_browser(self):
