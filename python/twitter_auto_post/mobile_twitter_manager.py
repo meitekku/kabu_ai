@@ -838,11 +838,6 @@ class MobileTwitterManager:
                 if post_button:
                     self.debug_log(f"🎯 [SIMPLE_FLOW] 投稿ボタンクリック試行 {attempt + 1}: {found_selector}")
                     
-                    # 投稿ボタンクリック前に10秒待機
-                    self.debug_log("⏳ 投稿ボタンクリック前に10秒待機中...")
-                    time.sleep(10)
-                    self.debug_log("✅ 10秒待機完了")
-                    
                     # テキストエリアにフォーカスを維持したまま、JavaScriptでボタンをクリック
                     self.debug_log("🎯 [SIMPLE_FLOW] フォーカス維持したままJSクリック")
                     

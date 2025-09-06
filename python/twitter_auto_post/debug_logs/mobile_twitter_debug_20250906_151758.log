@@ -1,0 +1,151 @@
+=== モバイルTwitterデバッグログ開始 ===
+開始時刻: 2025-09-06 15:17:58
+ログファイル: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250906_151758.log
+============================================================
+
+[15:17:58] [0.00s] [INFO] モバイルプロファイルディレクトリ: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[15:17:58] [0.00s] [INFO] 📱 モバイルブラウザ起動開始
+[15:17:59] [0.57s] [INFO] ✅ Playwright インスタンス作成完了
+[15:17:59] [0.57s] [INFO] ✅ 既存モバイルプロファイル発見: /Users/takahashimika/Dropbox/web_kabu_ai/twitter_mobile_profile
+[15:17:59] [0.57s] [INFO] モバイル引数設定完了: 26個
+[15:17:59] [0.57s] [INFO] モバイルコンテキスト作成中...
+[15:18:01] [2.70s] [INFO] ✅ モバイルコンテキスト作成完了
+[15:18:01] [2.71s] [INFO] 既存モバイルページを使用
+[15:18:01] [2.74s] [INFO] ✅ モバイル偽装スクリプト適用完了
+[15:18:01] [2.74s] [INFO] 📱 モバイルブラウザ起動成功
+[15:18:01] [2.74s] [INFO] 📱 モバイル版Twitterに移動開始
+[15:18:01] [2.74s] [INFO] アクセス先: https://mobile.twitter.com
+[15:18:03] [4.37s] [INFO] ✅ ページ移動完了
+[15:18:03] [4.37s] [INFO] モバイル風待機: 2.43秒
+[15:18:06] [7.28s] [INFO] 現在のURL: https://x.com/
+[15:18:06] [7.28s] [INFO] ページタイトル: ホーム / X
+[15:18:06] [7.28s] [INFO] モバイルログイン状態チェック - URL: https://x.com/home
+[15:18:06] [7.61s] [INFO] ✅ モバイルログイン要素発見: nav[role="navigation"]
+[15:18:06] [7.67s] [INFO] ✅ モバイルログイン要素発見: [data-testid="primaryColumn"]
+[15:18:06] [7.69s] [INFO] ✅ モバイルログイン要素発見: [aria-label*="ホーム"], [aria-label*="Home"]
+[15:18:06] [7.69s] [INFO] ✅ モバイルログイン確認 (3個の要素)
+[15:18:06] [7.69s] [INFO] 📱 モバイルツイート投稿開始 (テスト: False)
+[15:18:06] [7.69s] [INFO] 投稿処理開始時のURL: https://x.com/home
+[15:18:06] [7.76s] [INFO] ページ上のボタン要素数: 49
+[15:18:06] [7.80s] [INFO] ボタン1: text='', aria-label='プロフィールメニュー meiteko', testid='DashButton_ProfileIcon_Link', href=''
+[15:18:06] [7.83s] [INFO] ボタン2: text='', aria-label='前', testid='', href=''
+[15:18:06] [7.86s] [INFO] ボタン3: text='', aria-label='次へ', testid='', href=''
+[15:18:06] [7.88s] [INFO] ボタン4: text='', aria-label='前', testid='', href=''
+[15:18:06] [7.91s] [INFO] ボタン5: text='+5.9万·【8周年】アズレンEXPO ', aria-label='ライブ放送、アズールレーン公式さんがホストしています、アズー', testid='', href=''
+[15:18:06] [7.94s] [INFO] ボタン6: text='+5·作業適当', aria-label='スペース、ミルクさんがリスニング中、すめらぎ☕さんがホスト、', testid='', href=''
+[15:18:06] [7.96s] [INFO] ボタン7: text='+1·同人AVやコスプレ雑談スピーカー誰', aria-label='スペース、ねこめし@東京メカクシ娘さんがホストしています、ね', testid='', href=''
+[15:18:06] [7.98s] [INFO] ボタン8: text='', aria-label='次へ', testid='', href=''
+[15:18:06] [8.00s] [INFO] ボタン9: text='新しいポストを表示', aria-label='新しいポストがあります。新しいポストに移動するには、ピリオド', testid='', href=''
+[15:18:07] [8.02s] [INFO] ボタン10: text='', aria-label='ホームタイムラインに移動', testid='', href=''
+[15:18:07] [8.03s] [INFO] モバイル投稿ボタン発見: [data-testid="FloatingActionButtons_Tweet_Button"]
+[15:18:07] [8.03s] [INFO] モバイル風待機: 1.48秒
+[15:18:08] [9.66s] [INFO] タップ成功
+[15:18:08] [9.66s] [INFO] モバイル風待機: 2.80秒
+[15:18:11] [12.47s] [INFO] モバイルテキストエリア発見: [data-testid="tweetTextarea_0"]
+[15:18:11] [12.47s] [INFO] 📝 [SIMPLE_FLOW] 画像先・テキスト後の単純フロー
+[15:18:11] [12.47s] [INFO] 📝 [SIMPLE_FLOW] テキスト入力（1回のみ）
+[15:18:11] [12.47s] [INFO] 📝 [SIMPLE_TYPE] シンプルテキスト入力開始: 823文字
+[15:18:11] [12.48s] [INFO] モバイル風待機: 0.32秒
+[15:18:11] [12.81s] [INFO] ✅ [SIMPLE_TYPE] テキスト設定完了: 823文字
+[15:18:11] [12.82s] [INFO] 🎯 [SIMPLE_FLOW] テキストエリアにフォーカス維持
+[15:18:11] [12.82s] [INFO] モバイル風待機: 0.58秒
+[15:18:12] [13.41s] [INFO] ✅ モバイルテキスト入力完了: 【トヨタ自動車(7203)】1.98%
+
+米国関税15%決定で株価反発も利益圧迫懸念残る  
+
+★今...
+[15:18:12] [13.41s] [INFO] 🚀 [強化版] 実投稿モード: 確実な投稿ボタン探索開始
+[15:18:12] [13.41s] [INFO] 🎯 [強化版] 投稿ボタン探索 試行 1/3
+[15:18:12] [13.43s] [INFO] 📍 [強化版] ボタン発見: [data-testid="tweetButton"]
+[15:18:12] [13.43s] [INFO]    可視: True, 有効: False, 接続: True
+[15:18:12] [13.43s] [INFO]    テキスト: 'ポストする'
+[15:18:12] [13.46s] [INFO] 📍 [強化版] ボタン発見: button[data-testid="tweetButton"]
+[15:18:12] [13.46s] [INFO]    可視: True, 有効: False, 接続: True
+[15:18:12] [13.46s] [INFO]    テキスト: 'ポストする'
+[15:18:12] [13.48s] [INFO] 📍 [強化版] ボタン発見: [role="button"][data-testid="tweetButton"]
+[15:18:12] [13.48s] [INFO]    可視: True, 有効: False, 接続: True
+[15:18:12] [13.48s] [INFO]    テキスト: 'ポストする'
+[15:18:12] [13.52s] [INFO] 📍 [強化版] ボタン発見: button:has-text("ポスト")
+[15:18:12] [13.52s] [INFO]    可視: True, 有効: False, 接続: True
+[15:18:12] [13.52s] [INFO]    テキスト: 'ポストする'
+[15:18:12] [13.55s] [INFO] 📍 [強化版] ボタン発見: [aria-label*="ポスト"]
+[15:18:12] [13.55s] [INFO]    可視: True, 有効: True, 接続: True
+[15:18:12] [13.55s] [INFO]    テキスト: ''
+[15:18:12] [13.55s] [INFO] ✅ [強化版] 有効な投稿ボタン確認: [aria-label*="ポスト"]
+[15:18:12] [13.55s] [INFO] 🎯 [SIMPLE_FLOW] 投稿ボタンクリック試行 1: [aria-label*="ポスト"]
+[15:18:12] [13.55s] [INFO] ⏳ 投稿ボタンクリック前に20秒待機中...
+[15:18:32] [33.55s] [INFO] ✅ 20秒待機完了
+[15:18:32] [33.55s] [INFO] 🎯 [SIMPLE_FLOW] フォーカス維持したままJSクリック
+[15:18:32] [33.55s] [INFO] ❌ [SIMPLE_FLOW] クリック例外: Page.evaluate: Target page, context or browser has been closed
+[15:18:32] [33.55s] [INFO] 🔄 [SIMPLE_FLOW] フォールバック: 通常のJSクリック
+[15:18:32] [33.55s] [INFO] ❌ [SIMPLE_FLOW] フォールバッククリックエラー: ElementHandle.evaluate: Target page, context or browser has been closed
+[15:18:32] [33.55s] [INFO] ⏳ [強化版] 次の試行まで待機...
+[15:18:32] [33.56s] [INFO] モバイル風待機: 1.68秒
+[15:18:34] [35.23s] [INFO] 🎯 [強化版] 投稿ボタン探索 試行 2/3
+[15:18:34] [35.25s] [INFO] ⚠️ [強化版] セレクター [data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.26s] [INFO] ⚠️ [強化版] セレクター [data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.26s] [INFO] ⚠️ [強化版] セレクター button[data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.27s] [INFO] ⚠️ [強化版] セレクター button[data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.28s] [INFO] ⚠️ [強化版] セレクター [role="button"][data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.29s] [INFO] ⚠️ [強化版] セレクター [role="button"][data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.29s] [INFO] ⚠️ [強化版] セレクター button:has-text("ツイートする") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.30s] [INFO] ⚠️ [強化版] セレクター button:has-text("Tweet") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.30s] [INFO] ⚠️ [強化版] セレクター button:has-text("Post") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.30s] [INFO] ⚠️ [強化版] セレクター button:has-text("ポスト") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.31s] [INFO] ⚠️ [強化版] セレクター [aria-label*="ツイート"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.31s] [INFO] ⚠️ [強化版] セレクター [aria-label*="Tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.32s] [INFO] ⚠️ [強化版] セレクター [aria-label*="Post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.32s] [INFO] ⚠️ [強化版] セレクター [aria-label*="ポスト"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.33s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="ツイート"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.33s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="Tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.34s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="Post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.34s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="ポスト"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.34s] [INFO] ⚠️ [強化版] セレクター button[type="submit"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.36s] [INFO] ⚠️ [強化版] セレクター button[class*="tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.36s] [INFO] ⚠️ [強化版] セレクター button[class*="post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.37s] [INFO] ⚠️ [強化版] セレクター .css-18t94o4.css-1dbjc4n.r-l5o3uw button 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.37s] [INFO] ⚠️ [強化版] セレクター .css-175oi2r.r-sdzlij button 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.37s] [INFO] ⚠️ [強化版] セレクター *[data-testid="tweetButtonInline"]:not([disabled]) 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.38s] [INFO] ⚠️ [強化版] セレクター *[data-testid="tweetButton"]:not([disabled]) 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:34] [35.38s] [INFO] ❌ [強化版] 試行 2: 投稿ボタンが見つかりません
+[15:18:34] [35.38s] [INFO] ⏳ [強化版] 次の試行まで待機...
+[15:18:34] [35.38s] [INFO] モバイル風待機: 2.38秒
+[15:18:36] [37.76s] [INFO] 🎯 [強化版] 投稿ボタン探索 試行 3/3
+[15:18:36] [37.76s] [INFO] ⚠️ [強化版] セレクター [data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.77s] [INFO] ⚠️ [強化版] セレクター [data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.77s] [INFO] ⚠️ [強化版] セレクター button[data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.78s] [INFO] ⚠️ [強化版] セレクター button[data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.78s] [INFO] ⚠️ [強化版] セレクター [role="button"][data-testid="tweetButtonInline"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.78s] [INFO] ⚠️ [強化版] セレクター [role="button"][data-testid="tweetButton"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.79s] [INFO] ⚠️ [強化版] セレクター button:has-text("ツイートする") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.79s] [INFO] ⚠️ [強化版] セレクター button:has-text("Tweet") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.80s] [INFO] ⚠️ [強化版] セレクター button:has-text("Post") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.80s] [INFO] ⚠️ [強化版] セレクター button:has-text("ポスト") 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.81s] [INFO] ⚠️ [強化版] セレクター [aria-label*="ツイート"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.81s] [INFO] ⚠️ [強化版] セレクター [aria-label*="Tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.81s] [INFO] ⚠️ [強化版] セレクター [aria-label*="Post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.82s] [INFO] ⚠️ [強化版] セレクター [aria-label*="ポスト"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.82s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="ツイート"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.82s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="Tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.83s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="Post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.83s] [INFO] ⚠️ [強化版] セレクター [role="button"][aria-label*="ポスト"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.83s] [INFO] ⚠️ [強化版] セレクター button[type="submit"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.84s] [INFO] ⚠️ [強化版] セレクター button[class*="tweet"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.84s] [INFO] ⚠️ [強化版] セレクター button[class*="post"] 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.85s] [INFO] ⚠️ [強化版] セレクター .css-18t94o4.css-1dbjc4n.r-l5o3uw button 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.85s] [INFO] ⚠️ [強化版] セレクター .css-175oi2r.r-sdzlij button 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.85s] [INFO] ⚠️ [強化版] セレクター *[data-testid="tweetButtonInline"]:not([disabled]) 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.86s] [INFO] ⚠️ [強化版] セレクター *[data-testid="tweetButton"]:not([disabled]) 検証エラー: Page.query_selector: Target page, context or browser has been closed
+[15:18:36] [37.86s] [INFO] ❌ [強化版] 試行 3: 投稿ボタンが見つかりません
+[15:18:36] [37.86s] [INFO] 🔍 [強化版] 投稿ボタン発見失敗 - 詳細調査開始
+[15:18:36] [37.86s] [INFO] 🔍 [強化版] 詳細調査エラー: Page.query_selector_all: Target page, context or browser has been closed
+[15:18:36] [37.86s] [INFO] ❌ [強化版] 全ての試行が失敗しました
+[15:18:36] [37.86s] [INFO] 🧹 モバイルブラウザ クリーンアップ開始
+[15:18:37] [38.63s] [INFO] ✅ モバイルコンテキストクローズ完了
+[15:18:37] [38.65s] [INFO] ✅ Playwrightストップ完了
+
+=== モバイルTwitterデバッグログ終了 ===
+終了時刻: 2025-09-06 15:18:37
+総実行時間: 38.65秒
+============================================================
+[15:18:37] [38.65s] [INFO] 📋 詳細デバッグログ保存完了: /Users/takahashimika/Dropbox/web_kabu_ai/python/twitter_auto_post/debug_logs/mobile_twitter_debug_20250906_151758.log
