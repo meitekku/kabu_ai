@@ -256,7 +256,7 @@ print('✅ iPhone 14 Pro環境テスト完了成功' if success else '❌ iPhone
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-  } catch {
+  } catch (error: unknown) {
     const errorDuration = Date.now() - startTime;
     debugLog(`❌ iPhone 14 Pro版Twitter投稿APIエラー (実行時間: ${errorDuration}ms)`, 'ERROR');
     

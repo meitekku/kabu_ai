@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
             debugLog(`✅ [IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
-            const fs = await import('fs');
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const fs = require('fs');
             const stats = fs.statSync(filePath);
             debugLog(`📊 [IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
             debugLog(`base64画像保存完了: ${filePath}`);
@@ -317,7 +318,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-  } catch {
+  } catch (error: unknown) {
     const errorDuration = Date.now() - startTime;
     debugLog(`❌ Playwright版Twitter投稿APIエラー (実行時間: ${errorDuration}ms)`, 'ERROR');
     
