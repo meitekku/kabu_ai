@@ -83,6 +83,17 @@ export default function Home() {
     void fetchData();
   }, []);
 
+  useEffect(() => {
+    // loadingがtrueの場合のみタイマーを設定
+    if (loading) {
+      const timeoutId = setTimeout(() => {
+        window.location.reload();
+      }, 15000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [loading]);
+
   if (loading) {
     return <div className="flex justify-center p-4">読み込み中...</div>;
   }

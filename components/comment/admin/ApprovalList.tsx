@@ -9,17 +9,6 @@ import StockChart, { StockChartRef } from '@/components/parts/chart/StockChart';
 
 // サンプル画像配列は削除（実データがある場合は不要）
 
-// debounce関数の定義
-function debounce(
-  func: (id: number, title: string, content: string) => void,
-  wait: number
-) {
-  let timeout: NodeJS.Timeout;
-  return function executedFunction(id: number, title: string, content: string) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(id, title, content), wait);
-  };
-}
 
 interface ApprovalItem {
   id: number;
@@ -39,8 +28,9 @@ interface ApprovalListProps {
 const AutoResizeTextarea: React.FC<{
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
+  onBlur: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
   id: number;
-}> = ({ value, onChange, id }) => {
+}> = ({ value, onChange, onBlur, id }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const adjustHeight = () => {
@@ -62,6 +52,7 @@ const AutoResizeTextarea: React.FC<{
       ref={textareaRef}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
       data-id={id}
       className="w-full p-2 border rounded-lg resize-none overflow-hidden"
       style={{ minHeight: '2.5rem' }}
@@ -115,7 +106,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
       },
       {
         root: null,
-        rootMargin: '0px',
+        rootMargin: '200px', // 200px手前から読み込み開始
         threshold: 0.1 // ボタンの10%が見えたら発動
       }
     );
@@ -151,37 +142,13 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
     }
   };
 
-  const debouncedUpdate = useRef(
-    debounce((id: number, title: string, content: string) => {
-      updatePost(id, title, content);
-    }, 1000)
-  ).current;
 
   const handleContentChange = (id: number, newContent: string) => {
-    if (typeof document === 'undefined') return;
-    const textarea = document.querySelector(`textarea[data-id="${id}"]`) as HTMLTextAreaElement;
-    const start = textarea?.selectionStart;
-    const end = textarea?.selectionEnd;
     setEditedContents(prev => ({ ...prev, [id]: newContent }));
-    debouncedUpdate(id, editedTitles[id] || '', newContent);
-    if (textarea) {
-      textarea.focus();
-      if (start !== undefined && end !== undefined) textarea.setSelectionRange(start, end);
-    }
   };
 
   const handleTitleChange = (id: number, newTitle: string) => {
-    const input = inputRefs.current[id];
-    const start = input?.selectionStart ?? 0;
-    const end = input?.selectionEnd ?? 0;
     setEditedTitles(prev => ({ ...prev, [id]: newTitle }));
-    debouncedUpdate(id, newTitle, editedContents[id] || '');
-    requestAnimationFrame(() => {
-      if (input) {
-        input.focus();
-        input.setSelectionRange(start, end);
-      }
-    });
   };
 
   const handleAccept = async (id: number) => {
@@ -286,6 +253,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
                   type="text"
                   value={editedTitles[item.id] || ''}
                   onChange={e => handleTitleChange(item.id, e.target.value)}
+                  onBlur={e => updatePost(item.id, e.target.value, editedContents[item.id] || '')}
                   className="flex-1 p-2 border rounded-lg w-full mb-2"
                   placeholder="タイトルを入力"
                   readOnly={isUpdating[item.id]}
@@ -295,6 +263,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, useSystem
                 <AutoResizeTextarea
                   value={editedContents[item.id] || ''}
                   onChange={e => handleContentChange(item.id, e.target.value)}
+                  onBlur={e => updatePost(item.id, editedTitles[item.id] || '', e.target.value)}
                   id={item.id}
                 />
                 
