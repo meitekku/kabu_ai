@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const escapedMessage = message.replace(/"/g, '\\"').replace(/'/g, "\\'");
     
     // iPhone 14 Pro用Pythonコマンドを構築（統合版使用）
-    let pythonCmd = `cd "${pythonDir}" && python3 -c "
+    const pythonCmd = `cd "${pythonDir}" && python3 -c "
 import sys
 sys.path.insert(0, '.')
 from playwright_twitter import PlaywrightTwitterManager, playwright_twitter_test
@@ -138,7 +138,7 @@ print('✅ iPhone 14 Pro環境テスト完了成功' if success else '❌ iPhone
     ) : [];
     
     // モバイルテストモードでは投稿ボタンが見つからないエラーは正常とみなす
-    const criticalErrors = foundErrors.filter(error => 
+    const criticalErrors = foundErrors.filter(() => 
       isTestMode ? !result.stderr.includes('投稿ボタンが見つかりません') : true
     );
     
@@ -256,7 +256,7 @@ print('✅ iPhone 14 Pro環境テスト完了成功' if success else '❌ iPhone
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-  } catch (error: unknown) {
+  } catch {
     const errorDuration = Date.now() - startTime;
     debugLog(`❌ iPhone 14 Pro版Twitter投稿APIエラー (実行時間: ${errorDuration}ms)`, 'ERROR');
     

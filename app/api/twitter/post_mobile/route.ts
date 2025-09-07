@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             debugLog(`✅ [MOBILE IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
-            const fs = require('fs');
+            const fs = await import('fs');
             const stats = fs.statSync(filePath);
             debugLog(`📊 [MOBILE IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
             debugLog(`base64画像保存完了: ${filePath}`);
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
             debugLog(`❌ [MOBILE IMAGE DEBUG] 無効なbase64データ形式: ${i + 1}枚目`, 'WARNING');
             debugLog(`❌ [MOBILE IMAGE DEBUG] データ開始: ${base64Data.substring(0, 50)}...`, 'WARNING');
           }
-        } catch (error) {
+        } catch {
           debugLog(`❌ [MOBILE IMAGE DEBUG] 画像 ${i + 1} 処理エラー: ${error}`, 'ERROR');
           debugLog(`❌ [MOBILE IMAGE DEBUG] エラー詳細: ${error instanceof Error ? error.stack : String(error)}`, 'ERROR');
         }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       debugLog(`📋 [CMD DEBUG] ファイル存在確認:`, 'INFO');
       finalImagePaths.forEach((path, index) => {
         try {
-          const fs = require('fs');
+          const fs = await import('fs');
           if (fs.existsSync(path)) {
             const stats = fs.statSync(path);
             debugLog(`📋 [CMD DEBUG]   ${index + 1}. ✅ "${path}" (${stats.size} bytes)`);
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
       debugLog(`📷 最終画像ファイル詳細:`);
       finalImagePaths.forEach((path, i) => {
         try {
-          const fs = require('fs');
+          const fs = await import('fs');
           const stats = fs.statSync(path);
           debugLog(`  ${i+1}. ${path} (${stats.size} bytes)`);
         } catch (e) {
@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
       'allow-same-origin'
     ];
     
-    const criticalErrors = foundErrors.filter(error => 
+    const criticalErrors = foundErrors.filter(() => 
       !mobileIgnoreErrors.some(ignore => result.stderr.includes(ignore))
     );
     
@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-  } catch (error: unknown) {
+  } catch {
     const errorDuration = Date.now() - startTime;
     debugLog(`❌ モバイル版Twitter投稿APIエラー (実行時間: ${errorDuration}ms)`, 'ERROR');
     

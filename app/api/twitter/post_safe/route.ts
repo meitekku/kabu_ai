@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           finalImagePath = filePath;
           
           // ファイルサイズ確認
-          const fs = require('fs');
+          const fs = await import('fs');
           const stats = fs.statSync(filePath);
           console.log('📷 [IMAGE DEBUG] 保存されたファイルサイズ:', stats.size, 'bytes');
           console.log('📷 [IMAGE DEBUG] ファイル保存成功:', filePath);
@@ -147,14 +147,15 @@ export async function POST(request: NextRequest) {
       console.log(`📷 [COMMAND DEBUG] 画像パス追加: ${finalImagePath}`);
       
       // ファイル存在確認
-      const fs = require('fs');
+      const fs = await import('fs');
       try {
         if (fs.existsSync(finalImagePath)) {
           const stats = fs.statSync(finalImagePath);
           console.log(`📷 [SAFE CMD DEBUG] ✅ ファイル存在確認: OK (${stats.size} bytes)`);
         } else {
           console.log(`❌ [SAFE CMD DEBUG] ファイル存在確認: NG - ファイルが見つかりません`);
-          console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${require('path').resolve(finalImagePath)}`);
+          const pathModule = await import('path');
+          console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${pathModule.default.resolve(finalImagePath)}`);
         }
       } catch (fileError) {
         console.log(`❌ [SAFE CMD DEBUG] ファイル確認エラー:`, fileError);

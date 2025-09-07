@@ -116,7 +116,7 @@ export default function TwitterPythonButton({
     } else {
       console.log('🔍 [FRONTEND DEBUG] 手動選択画像が存在するため、chartImageUrlは無視');
     }
-  }, [chartImageUrl, isManuallySelected]);  // imageUrlを依存配列から除外して無限ループを防ぐ
+  }, [chartImageUrl, isManuallySelected, imageUrl]);  // imageUrlを依存配列に追加
 
   // ファイルサイズをフォーマット
   const formatFileSize = (bytes: number): string => {

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             debugLog(`✅ [IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
-            const fs = require('fs');
+            const fs = await import('fs');
             const stats = fs.statSync(filePath);
             debugLog(`📊 [IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
             debugLog(`base64画像保存完了: ${filePath}`);
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     ) : [];
     
     // テストモードでは投稿ボタンが見つからないエラーは正常とみなす
-    const criticalErrors = foundErrors.filter(error => 
+    const criticalErrors = foundErrors.filter(() => 
       isTestMode ? !result.stderr.includes('投稿ボタンが見つかりません') : true
     );
     
@@ -317,7 +317,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(errorResponse, { status: 500 });
     }
 
-  } catch (error: unknown) {
+  } catch {
     const errorDuration = Date.now() - startTime;
     debugLog(`❌ Playwright版Twitter投稿APIエラー (実行時間: ${errorDuration}ms)`, 'ERROR');
     
