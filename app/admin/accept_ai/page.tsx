@@ -88,7 +88,7 @@ export default function Home() {
     if (loading) {
       const timeoutId = setTimeout(() => {
         window.location.reload();
-      }, 15000);
+      }, 30000);
       
       return () => clearTimeout(timeoutId);
     }
