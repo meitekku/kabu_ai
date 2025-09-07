@@ -118,7 +118,7 @@ export default function UltraThinkPage() {
           </div>
         </div>
       </div>
-      <ApprovalList items={items} fetchData={fetchData} useSystemProfile={true} />
+      <ApprovalList items={items} fetchData={fetchData} />
     </main>
   );
 }

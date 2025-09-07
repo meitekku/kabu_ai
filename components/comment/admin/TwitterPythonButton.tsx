@@ -18,7 +18,6 @@ interface TwitterPythonButtonProps {
   chartImageUrl?: string; // チャート画像のURL（data URL）
   onSuccess?: () => void;
   onError?: (error: string) => void;
-  useSystemProfile?: boolean; // システムプロファイルを使用するかどうか
 }
 
 
@@ -62,8 +61,7 @@ export default function TwitterPythonButton({
   content, 
   chartImageUrl, 
   onSuccess,
-  onError,
-  useSystemProfile = false
+  onError
 }: TwitterPythonButtonProps) {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -138,7 +136,7 @@ export default function TwitterPythonButton({
 
   // テストモード用：投稿確認を表示する関数（ボタン押下直後用）
   const showTestConfirmationImmediate = (mode: 'mobile' | 'playwright' | 'normal') => {
-    if (IS_TEST_MODE) {
+    if (IS_TEST_MODE && mode === 'mobile') {
       setIsLoading(true);
       setProcessingStatus('🧪 テストモード：投稿内容を確認中...');
       
@@ -163,10 +161,8 @@ export default function TwitterPythonButton({
         await handlePostMobileActual();
         break;
       case 'playwright':
-        await handlePostPlaywrightActual();
-        break;
       case 'normal':
-        await handlePostActual();
+        // これらのモードは削除されました
         break;
     }
   };
@@ -437,323 +433,6 @@ export default function TwitterPythonButton({
     }
   };
 
-  // Playwright版投稿（テストモード対応）
-  const handlePostPlaywright = async () => {
-    // ===== テストモード確認（最優先） =====
-    if (showTestConfirmationImmediate('playwright')) {
-      return; // テストモードで停止
-    }
-    // ===========================
-    
-    // 本番モードの場合は実際の投稿処理を実行
-    await handlePostPlaywrightActual();
-  };
-
-  // Playwright版投稿（実際の処理）
-  const handlePostPlaywrightActual = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      setProcessingStatus('Playwright版（実投稿モード）で処理を開始しています...');
-      setLastResponse(null);
-      
-      // titleが存在する場合は、contentが空でも改行2つを追加
-      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
-      
-      // デバッグ情報をコンソールに出力（詳細強化版）
-      console.log('='.repeat(60));
-      console.log('🎭 [Playwright投稿開始] 詳細デバッグ');
-      console.log('='.repeat(60));
-      console.log('📝 [INPUT] title:', title);
-      console.log('📝 [INPUT] content:', content);
-      console.log('📝 [COMPOSED] tweetMessage:', tweetMessage);
-      console.log('📷 [IMAGE] chartImageUrl存在:', !!imageUrl);
-      console.log('📷 [IMAGE] chartImageUrl長さ:', imageUrl ? imageUrl.length : 0);
-      
-      if (imageUrl) {
-        console.log('📷 [IMAGE] データ形式:', imageUrl.substring(0, 50) + '...');
-        console.log('📷 [IMAGE] MIMEタイプ:', imageUrl.match(/data:([^;]*)/)?.[1] || 'unknown');
-        
-        // base64データの妥当性チェック
-        try {
-          const base64Data = imageUrl.split(',')[1];
-          const decodedSize = atob(base64Data).length;
-          console.log('📷 [IMAGE] デコード後サイズ:', decodedSize, 'bytes');
-          console.log('📷 [IMAGE] 推定ファイルサイズ:', Math.round(decodedSize / 1024), 'KB');
-        } catch (e) {
-          console.error('📷 [ERROR] base64デコードエラー:', e);
-        }
-      } else {
-        console.log('📷 [WARNING] 画像データが存在しません');
-      }
-      
-      console.log('⏰ [TIMING] 処理開始時刻:', new Date().toISOString());
-      
-      // Playwright版実投稿処理
-      setProcessingStatus('ブラウザでの手動ログインをお待ちください。ログイン完了後に実際に投稿されます...');
-      
-      // 画像データの準備（base64を直接渡す）- 詳細ログ版
-      let imageBase64Data: string[] = [];
-      if (imageUrl) {
-        try {
-          console.log('📷 [PREPARE] 画像データ準備開始...');
-          setProcessingStatus('画像データを準備中...');
-          
-          // データの詳細検証
-          console.log('📷 [PREPARE] 元データ形式確認:', {
-            isDataURL: imageUrl.startsWith('data:'),
-            length: imageUrl.length,
-            hasComma: imageUrl.includes(','),
-            mimeType: imageUrl.match(/data:([^;]*)/)?.[1]
-          });
-          
-          imageBase64Data = [imageUrl]; // base64 data URLをそのまま渡す
-          
-          console.log('📷 [PREPARE] imageBase64Data作成完了:');
-          console.log('  - 配列サイズ:', imageBase64Data.length);
-          console.log('  - 各アイテム長さ:', imageBase64Data.map(item => item.length));
-          console.log('  - 送信データプレビュー:', imageBase64Data[0]?.substring(0, 100) + '...');
-          
-          setProcessingStatus('画像データ準備完了。投稿処理中...');
-          
-        } catch (err) {
-          console.error('📷 [ERROR] 画像データ準備エラー:', err);
-          console.error('📷 [ERROR] エラー詳細:', {
-            message: err instanceof Error ? err.message : String(err),
-            stack: err instanceof Error ? err.stack : undefined,
-            imageUrlLength: imageUrl.length,
-            imageUrlStart: imageUrl.substring(0, 50)
-          });
-          setProcessingStatus('画像データ準備に失敗。テキストのみで投稿中...');
-        }
-      } else {
-        console.log('📷 [SKIP] 画像データなし - テキストのみ投稿');
-      }
-
-
-      // リクエストボディを作成（実投稿モード）- 詳細ログ版
-      const postBody = {
-        message: tweetMessage,
-        textOnly: imageBase64Data.length === 0,
-        actuallyPost: true, // 実投稿モード
-        imageBase64Data: imageBase64Data
-      };
-      
-      console.log('📦 [REQUEST] リクエストボディ作成完了:');
-      console.log('  - message長さ:', postBody.message.length);
-      console.log('  - textOnly:', postBody.textOnly);
-      console.log('  - actuallyPost:', postBody.actuallyPost);
-      console.log('  - imageBase64Data配列サイズ:', postBody.imageBase64Data.length);
-      
-      if (postBody.imageBase64Data.length > 0) {
-        console.log('  - 画像データ詳細:', postBody.imageBase64Data.map((img, i) => ({
-          index: i,
-          length: img.length,
-          isDataURL: img.startsWith('data:'),
-          mimeType: img.match(/data:([^;]*)/)?.[1] || 'unknown'
-        })));
-      } else {
-        console.log('  - ⚠️ 画像データが空です');
-      }
-      
-      const requestOptions = {
-        method: 'POST',
-        cache: 'no-cache' as RequestCache,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postBody)
-      };
-      
-      console.log('🌐 [API] リクエスト送信開始...');
-      console.log('🌐 [API] エンドポイント: /api/twitter/post_playwright');
-      console.log('🌐 [API] リクエストオプション:', {
-        method: requestOptions.method,
-        headers: requestOptions.headers,
-        bodyLength: requestOptions.body ? requestOptions.body.length : 0
-      });
-      
-      const response = await fetch('/api/twitter/post_playwright', requestOptions);
-      
-      console.log('🌐 [API] レスポンス受信:');
-      console.log('  - ステータス:', response.status, response.statusText);
-      console.log('  - ヘッダー:', Object.fromEntries(response.headers.entries()));
-      
-      const result = await response.json();
-      
-      console.log('🌐 [API] レスポンス内容:');
-      console.log('  - success:', result.success);
-      console.log('  - message:', result.message);
-      if (result.error) {
-        console.log('  - error:', result.error);
-      }
-      if (result.details) {
-        console.log('  - details.final_result:', result.details.final_result);
-        console.log('  - details.summary:', result.details.summary);
-        
-        if (result.details.errors && result.details.errors.length > 0) {
-          console.log('  - エラー詳細:', result.details.errors);
-        }
-        
-        if (result.details.success_steps && result.details.success_steps.length > 0) {
-          console.log('  - 成功ステップ:', result.details.success_steps.map((s: { step: string; message: string; timestamp: string; type: string }) => s.message));
-        }
-      }
-      
-      if (!result.success) {
-        console.error('❌ [FAIL] API呼び出し失敗');
-        console.error('❌ [FAIL] エラー内容:', result.error);
-        console.error('❌ [FAIL] 完全レスポンス:', result);
-        throw new Error(result.error || 'Playwright版実投稿に失敗しました');
-      }
-      
-      console.log('✅ [SUCCESS] API呼び出し成功');
-      
-      // Playwright版実投稿の成功を詳細チェック（より柔軟な判定）
-      const isActualPostSuccess = result.details && result.details.final_result;
-      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
-        const message = step.message.toLowerCase();
-        const isPostSuccess = message.includes('投稿完了') || 
-                             message.includes('投稿成功') ||
-                             message.includes('ツイート完了') ||
-                             message.includes('ツイート成功') ||
-                             message.includes('post success') ||
-                             message.includes('posted successfully') ||
-                             message.includes('tweet posted') ||
-                             message.includes('success') && (message.includes('投稿') || message.includes('ツイート')) ||
-                             step.step.toLowerCase().includes('post_success') ||
-                             step.step.toLowerCase().includes('tweet_success');
-        console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
-        return isPostSuccess;
-      });
-      
-      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] result.success:', result.success);
-      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
-      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
-      console.log('🔍 [PLAYWRIGHT SUCCESS CHECK] 最終判定:', result.success && isActualPostSuccess && hasActualPostStep);
-      
-      if (result.success && isActualPostSuccess && hasActualPostStep) {
-        // 実投稿が確実に成功した場合のみサイト投稿を実行
-        setProcessingStatus('✅ Playwright版実投稿が正常に完了しました！');
-        setError(null);
-        
-        // 実投稿成功レスポンスを整形
-        setLastResponse({
-          success: true,
-          message: 'Playwright版実投稿が完了しました',
-          details: result.details
-        });
-        
-        setTimeout(() => {
-          setProcessingStatus('');
-        }, 3000);
-        
-        // 実投稿成功時のみonSuccessを呼ぶ
-        if (onSuccess) {
-          console.log('✅ [PLAYWRIGHT SUCCESS] Playwright版実投稿成功：サイト投稿を実行します');
-          onSuccess();
-        }
-      } else if (result.success && (!isActualPostSuccess || !hasActualPostStep)) {
-        // API処理は成功したが、実投稿は未実行の場合
-        setProcessingStatus('🎭 Playwright版処理完了（投稿は未実行）');
-        setError('Playwright版実投稿が実行されませんでした');
-        
-        setLastResponse({
-          success: false,
-          error: 'Playwright版実投稿が実行されませんでした',
-          details: result.details || {
-            final_result: false,
-            timestamp: new Date().toISOString(),
-            errors: [
-              {
-                step: 'playwright_post_verification',
-                message: 'Playwright版実投稿ステップが確認できませんでした',
-                timestamp: new Date().toISOString(),
-                type: 'verification_error'
-              }
-            ],
-            warnings: [],
-            success_steps: [],
-            summary: {
-              total_errors: 1,
-              total_warnings: 0,
-              total_success_steps: 0
-            }
-          }
-        });
-        
-        console.log('❌ [PLAYWRIGHT INCOMPLETE] Playwright版実投稿未確認：サイト投稿は実行されません');
-        if (onError) onError('Playwright版実投稿が実行されませんでした');
-      } else {
-        // 投稿が完了していない場合
-        setProcessingStatus('Playwright処理完了（投稿は未実行）');
-        setError('Playwright版実投稿が実行されませんでした');
-        
-        setLastResponse({
-          success: false,
-          error: 'Playwright版実投稿が実行されませんでした',
-          details: result.details || {
-            final_result: false,
-            timestamp: new Date().toISOString(),
-            errors: [
-              {
-                step: 'playwright_post_verification',
-                message: 'Playwright版実投稿ステップが確認できませんでした',
-                timestamp: new Date().toISOString(),
-                type: 'verification_error'
-              }
-            ],
-            warnings: [],
-            success_steps: [],
-            summary: {
-              total_errors: 1,
-              total_warnings: 0,
-              total_success_steps: 0
-            }
-          }
-        });
-        
-        console.log('Playwright版実投稿未確認：サイト投稿は実行されません');
-        if (onError) onError('Playwright版実投稿が実行されませんでした');
-      }
-      
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Playwright版実投稿に失敗しました';
-      setError(errorMsg);
-      setProcessingStatus('');
-      
-      // エラーレスポンスを整形
-      setLastResponse({
-        success: false,
-        error: errorMsg,
-        details: {
-          final_result: false,
-          timestamp: new Date().toISOString(),
-          errors: [
-            {
-              step: 'playwright_actual_post',
-              message: errorMsg,
-              timestamp: new Date().toISOString(),
-              type: 'error',
-              exception: errorMsg
-            }
-          ],
-          warnings: [],
-          success_steps: [],
-          summary: {
-            total_errors: 1,
-            total_warnings: 0,
-            total_success_steps: 0
-          }
-        }
-      });
-      
-      if (onError) onError(errorMsg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 手動で画像を選択
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -797,234 +476,6 @@ export default function TwitterPythonButton({
 
 
 
-  // ツイートを実投稿（テストモード対応）
-  const handlePost = async () => {
-    // ===== テストモード確認（最優先） =====
-    if (showTestConfirmationImmediate('normal')) {
-      return; // テストモードで停止
-    }
-    // ===========================
-    
-    // 本番モードの場合は実際の投稿処理を実行
-    await handlePostActual();
-  };
-
-  // ツイートを実投稿（実際の処理）
-  const handlePostActual = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      setProcessingStatus(useSystemProfile ? '安全なプロファイルコピーを作成中。既存のChromeとVSCodeには影響しません...' : '処理を開始しています...');
-      setLastResponse(null);
-      
-      // titleが存在する場合は、contentが空でも改行2つを追加
-      const tweetMessage = title ? (content ? `${title}\n\n${content}` : title) : (content || '');
-      
-      // デバッグ情報をコンソールに出力
-      console.log('='.repeat(60));
-      console.log('🐛 [PYTHON DEBUG] 通常Python投稿開始');
-      console.log('='.repeat(60));
-      console.log('🐛 [PYTHON DEBUG] title:', title);
-      console.log('🐛 [PYTHON DEBUG] content:', content);
-      console.log('🐛 [PYTHON DEBUG] tweetMessage:', tweetMessage);
-      console.log('🐛 [PYTHON DEBUG] imageUrl存在:', !!imageUrl);
-      console.log('🐛 [PYTHON DEBUG] imageUrl長さ:', imageUrl ? imageUrl.length : 0);
-      if (imageUrl) {
-        console.log('🐛 [PYTHON DEBUG] imageUrlプレビュー:', imageUrl.substring(0, 100) + '...');
-        console.log('🐛 [PYTHON DEBUG] MIMEタイプ:', imageUrl.match(/data:([^;]*)/)?.[1] || 'unknown');
-      }
-      console.log('🐛 [PYTHON DEBUG] useSystemProfile:', useSystemProfile);
-      
-      // ツイート投稿処理
-      setProcessingStatus(useSystemProfile ? 'ブラウザでの手動ログインをお待ちください。ログイン完了後に自動投稿されます...' : 'ツイートを投稿中...');
-      
-      let imageBase64Data: string[] = [];
-      
-      // 画像がある場合はbase64データを準備
-      if (imageUrl) {
-        setProcessingStatus('画像データを準備中...');
-        try {
-          imageBase64Data = [imageUrl]; // base64 data URLを配列形式で設定
-          console.log('🐛 [DEBUG] Python imageBase64Data prepared, length:', imageBase64Data.length, 'items');
-          console.log('🐛 [DEBUG] 画像データ詳細:', imageBase64Data[0] ? imageBase64Data[0].substring(0, 100) + '...' : 'なし');
-          setProcessingStatus('画像データ準備完了。投稿処理中...');
-        } catch (err) {
-          console.error('Image data preparation error:', err);
-          setProcessingStatus('画像データ準備に失敗しました。テキストのみで投稿します...');
-        }
-      }
-      
-
-      // リクエストボディを作成（実投稿モード）
-      const postBody = {
-        message: tweetMessage,
-        textOnly: imageBase64Data.length === 0,
-        useSystemProfile: useSystemProfile,
-        actuallyPost: true, // 実投稿モードを明示的に指定
-        imageBase64Data: imageBase64Data
-      };
-      
-      const requestOptions = {
-        method: 'POST',
-        cache: 'no-cache' as RequestCache,
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(postBody)
-      };
-      
-      const response = await fetch('/api/twitter/post_safe', requestOptions);
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || '投稿に失敗しました');
-      }
-      
-      // 実際の投稿が成功したかを詳細チェック（より柔軟な判定）
-      const isActualPostSuccess = result.details && result.details.final_result;
-      const hasActualPostStep = result.details && result.details.success_steps.some((step: { step: string; message: string; timestamp: string; type: string }) => {
-        const message = step.message.toLowerCase();
-        const isPostSuccess = message.includes('投稿完了') || 
-                             message.includes('投稿成功') ||
-                             message.includes('ツイート完了') ||
-                             message.includes('ツイート成功') ||
-                             message.includes('post success') ||
-                             message.includes('posted successfully') ||
-                             message.includes('tweet posted') ||
-                             message.includes('success') && (message.includes('投稿') || message.includes('ツイート')) ||
-                             step.step.toLowerCase().includes('post_success') ||
-                             step.step.toLowerCase().includes('tweet_success');
-        console.log('🔍 [SAFE SUCCESS CHECK] step:', step.message, '→ success:', isPostSuccess);
-        return isPostSuccess;
-      });
-      
-      console.log('🔍 [SAFE SUCCESS CHECK] result.success:', result.success);
-      console.log('🔍 [SAFE SUCCESS CHECK] isActualPostSuccess:', isActualPostSuccess);
-      console.log('🔍 [SAFE SUCCESS CHECK] hasActualPostStep:', hasActualPostStep);
-      console.log('🔍 [SAFE SUCCESS CHECK] 最終判定:', result.success && isActualPostSuccess && hasActualPostStep);
-      
-      if (result.success && isActualPostSuccess && hasActualPostStep) {
-        // 実投稿が確実に成功した場合のみサイト投稿を実行
-        setProcessingStatus('✅ 安全な実投稿が正常に完了しました！');
-        setError(null);
-        
-        // 実投稿成功レスポンスを整形
-        setLastResponse({
-          success: true,
-          message: result.message || 'ツイート実投稿が完了しました',
-          details: result.details
-        });
-        
-        setTimeout(() => {
-          setProcessingStatus('');
-        }, 3000);
-        
-        // 実投稿成功時のみonSuccessを呼ぶ
-        if (onSuccess) {
-          console.log('✅ [SAFE SUCCESS] 安全な実投稿成功：サイト投稿を実行します');
-          onSuccess();
-        }
-      } else if (result.success && (!isActualPostSuccess || !hasActualPostStep)) {
-        // API処理は成功したが、実投稿は未実行の場合
-        setProcessingStatus('🔒 安全版処理完了（投稿は未実行）');
-        setError('安全版実投稿が実行されませんでした');
-        
-        setLastResponse({
-          success: false,
-          error: '安全版実投稿が実行されませんでした',
-          details: result.details || {
-            final_result: false,
-            timestamp: new Date().toISOString(),
-            errors: [
-              {
-                step: 'safe_post_verification',
-                message: '安全版実投稿ステップが確認できませんでした',
-                timestamp: new Date().toISOString(),
-                type: 'verification_error'
-              }
-            ],
-            warnings: [],
-            success_steps: [],
-            summary: {
-              total_errors: 1,
-              total_warnings: 0,
-              total_success_steps: 0
-            }
-          }
-        });
-        
-        console.log('❌ [SAFE INCOMPLETE] 安全版実投稿未確認：サイト投稿は実行されません');
-        if (onError) onError('安全版実投稿が実行されませんでした');
-      } else {
-        // 投稿が完了していない場合（テストモードなど）
-        setProcessingStatus('処理完了（投稿は未実行）');
-        setError('実際の投稿が実行されませんでした');
-        
-        setLastResponse({
-          success: false,
-          error: '実際の投稿が実行されませんでした',
-          details: result.details || {
-            final_result: false,
-            timestamp: new Date().toISOString(),
-            errors: [
-              {
-                step: 'post_verification',
-                message: '実際の投稿ステップが確認できませんでした',
-                timestamp: new Date().toISOString(),
-                type: 'verification_error'
-              }
-            ],
-            warnings: [],
-            success_steps: [],
-            summary: {
-              total_errors: 1,
-              total_warnings: 0,
-              total_success_steps: 0
-            }
-          }
-        });
-        
-        console.log('実投稿未確認：サイト投稿は実行されません');
-        if (onError) onError('実際の投稿が実行されませんでした');
-      }
-      
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '投稿に失敗しました';
-      setError(errorMsg);
-      setProcessingStatus('');
-      
-      // エラーレスポンスを整形
-      setLastResponse({
-        success: false,
-        error: errorMsg,
-        details: {
-          final_result: false,
-          timestamp: new Date().toISOString(),
-          errors: [
-            {
-              step: 'tweet_post',
-              message: errorMsg,
-              timestamp: new Date().toISOString(),
-              type: 'error',
-              exception: errorMsg
-            }
-          ],
-          warnings: [],
-          success_steps: [],
-          summary: {
-            total_errors: 1,
-            total_warnings: 0,
-            total_success_steps: 0
-          }
-        }
-      });
-      
-      if (onError) onError(errorMsg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // 画像をクリア
   const handleClearImage = () => {
@@ -1052,21 +503,6 @@ export default function TwitterPythonButton({
       {/* シンプルなボタンモード（デフォルト） */}
       {!showFullUI ? (
         <div className="flex flex-col gap-1">
-          <button
-            onClick={handlePost}
-            disabled={isLoading}
-            className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
-          >
-            {isLoading ? '処理中...' : IS_TEST_MODE ? '🧪 Python投稿(テスト)' : 'Python投稿'}
-          </button>
-          
-          <button
-            onClick={() => handlePostPlaywright()}
-            disabled={isLoading}
-            className="flex items-center justify-center gap-1 bg-[#10a37f] text-white px-3 py-1.5 rounded hover:bg-[#0e8f6f] disabled:opacity-50 text-xs"
-          >
-            {isLoading ? '処理中...' : IS_TEST_MODE ? '🧪 Playwright投稿(テスト)' : 'Playwright投稿'}
-          </button>
           
           <button
             onClick={() => handlePostMobile()}
@@ -1095,36 +531,8 @@ export default function TwitterPythonButton({
         /* フルUIモード */
         <div className="flex flex-col gap-2 p-3 border rounded-lg bg-white shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Python投稿</h3>
+            <h3 className="text-sm font-semibold">モバイル投稿</h3>
             <div className="flex gap-2">
-              <button
-                onClick={handlePost}
-                disabled={isLoading}
-                className="flex items-center justify-center gap-1 bg-[#1DA1F2] text-white px-3 py-1.5 rounded hover:bg-[#1a8cd8] disabled:opacity-50 text-xs"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    処理中...
-                  </>
-                ) : (
-                  IS_TEST_MODE ? '🧪 Python投稿(テスト)' : 'Python投稿'
-                )}
-              </button>
-              <button
-                onClick={() => handlePostPlaywright()}
-                disabled={isLoading}
-                className="flex items-center justify-center gap-1 bg-[#10a37f] text-white px-3 py-1.5 rounded hover:bg-[#0e8f6f] disabled:opacity-50 text-xs"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    処理中...
-                  </>
-                ) : (
-                  IS_TEST_MODE ? '🧪 Playwright投稿(テスト)' : 'Playwright投稿'
-                )}
-              </button>
               <button
                 onClick={() => handlePostMobile()}
                 disabled={isLoading}
@@ -1342,7 +750,7 @@ export default function TwitterPythonButton({
                     console.log('🚀 [テストモード] 投稿実行が選択されました');
                     setShowTestModal(false);
                     
-                    if (testPostData) {
+                    if (testPostData && testPostData.mode === 'mobile') {
                       console.log(`📤 [テストモード] ${testPostData.mode}モードで投稿処理を開始します`);
                       await executeActualPost(testPostData.mode);
                     }
