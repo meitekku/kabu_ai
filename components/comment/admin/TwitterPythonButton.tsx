@@ -73,6 +73,17 @@ export default function TwitterPythonButton({
   const [showFullUI, setShowFullUI] = useState(false); // UIの表示切り替え
   const [isManuallySelected, setIsManuallySelected] = useState(false); // 手動選択画像フラグ
   
+  // ドメインを判定（本番環境かどうかチェック）
+  const [isProduction, setIsProduction] = useState(false);
+  
+  useEffect(() => {
+    // クライアントサイドでのみドメインをチェック
+    if (typeof window !== 'undefined') {
+      const currentDomain = window.location.hostname;
+      setIsProduction(currentDomain === 'kabu-ai.jp' || currentDomain === 'www.kabu-ai.jp');
+    }
+  }, []);
+  
   // テストモード用のstate
   const [showTestModal, setShowTestModal] = useState(false);
   const [testPostData, setTestPostData] = useState<{
@@ -504,13 +515,31 @@ export default function TwitterPythonButton({
       {!showFullUI ? (
         <div className="flex flex-col gap-1">
           
-          <button
-            onClick={() => handlePostMobile()}
-            disabled={isLoading}
-            className="flex items-center justify-center gap-1 bg-[#8b5cf6] text-white px-3 py-1.5 rounded hover:bg-[#7c3aed] disabled:opacity-50 text-xs"
-          >
-            {isLoading ? '処理中...' : IS_TEST_MODE ? '🧪📱 モバイル版(テスト)' : '📱 モバイル版（推奨）'}
-          </button>
+          {isProduction ? (
+            /* 本番環境：localhost管理画面に飛ぶボタン */
+            <div className="flex flex-col gap-2">
+              <a
+                href="http://localhost:3000/admin/accept_ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 bg-[#10a37f] text-white px-3 py-1.5 rounded hover:bg-[#0e8f6f] text-xs no-underline"
+              >
+                🖥️ ローカル管理画面で投稿
+              </a>
+              <p className="text-xs text-gray-600 text-center">
+                ※ 本番環境のため、投稿はローカル管理画面で行ってください
+              </p>
+            </div>
+          ) : (
+            /* 開発環境：通常のモバイル投稿ボタン */
+            <button
+              onClick={() => handlePostMobile()}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-1 bg-[#8b5cf6] text-white px-3 py-1.5 rounded hover:bg-[#7c3aed] disabled:opacity-50 text-xs"
+            >
+              {isLoading ? '処理中...' : IS_TEST_MODE ? '🧪🖥️ PC自動投稿(テスト)' : '🖥️ PC自動投稿'}
+            </button>
+          )}
           
           {error && (
             <p className="text-red-500 text-xs mt-1">{error}</p>
@@ -520,33 +549,48 @@ export default function TwitterPythonButton({
             <p className="text-xs text-gray-600">{processingStatus}</p>
           )}
           
-          <button
-            onClick={() => setShowFullUI(true)}
-            className="text-xs text-gray-600 hover:text-gray-800"
-          >
-            詳細オプション
-          </button>
+          {!isProduction && (
+            <button
+              onClick={() => setShowFullUI(true)}
+              className="text-xs text-gray-600 hover:text-gray-800"
+            >
+              詳細オプション
+            </button>
+          )}
         </div>
       ) : (
         /* フルUIモード */
         <div className="flex flex-col gap-2 p-3 border rounded-lg bg-white shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">モバイル投稿</h3>
+            <h3 className="text-sm font-semibold">{isProduction ? 'ローカル管理画面' : 'PC自動投稿'}</h3>
             <div className="flex gap-2">
-              <button
-                onClick={() => handlePostMobile()}
-                disabled={isLoading}
-                className="flex items-center justify-center gap-1 bg-[#8b5cf6] text-white px-3 py-1.5 rounded hover:bg-[#7c3aed] disabled:opacity-50 text-xs"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    処理中...
-                  </>
-                ) : (
-                  IS_TEST_MODE ? '🧪📱 モバイル版(テスト)' : '📱 モバイル版（推奨）'
-                )}
-              </button>
+              {isProduction ? (
+                /* 本番環境：localhost管理画面に飛ぶボタン */
+                <a
+                  href="http://localhost:3000/admin/accept_ai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1 bg-[#10a37f] text-white px-3 py-1.5 rounded hover:bg-[#0e8f6f] text-xs no-underline"
+                >
+                  🖥️ ローカル管理画面で投稿
+                </a>
+              ) : (
+                /* 開発環境：通常のモバイル投稿ボタン */
+                <button
+                  onClick={() => handlePostMobile()}
+                  disabled={isLoading}
+                  className="flex items-center justify-center gap-1 bg-[#8b5cf6] text-white px-3 py-1.5 rounded hover:bg-[#7c3aed] disabled:opacity-50 text-xs"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                      処理中...
+                    </>
+                  ) : (
+                    IS_TEST_MODE ? '🧪🖥️ PC自動投稿(テスト)' : '🖥️ PC自動投稿'
+                  )}
+                </button>
+              )}
               <button
                 onClick={() => setShowFullUI(false)}
                 className="text-xs text-gray-600 hover:text-gray-800"
@@ -556,7 +600,18 @@ export default function TwitterPythonButton({
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          {isProduction ? (
+            /* 本番環境：説明のみ表示 */
+            <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <p className="text-xs text-blue-800">
+                本番環境では投稿機能は制限されています。<br />
+                投稿を行うには、ローカル環境の管理画面をご利用ください。
+              </p>
+            </div>
+          ) : (
+            /* 開発環境：通常の詳細UI */
+            <>
+              <div className="flex items-center gap-2">
             <input
               type="file"
               accept="image/*"
@@ -664,6 +719,8 @@ export default function TwitterPythonButton({
                 </div>
               )}
             </div>
+          )}
+            </>
           )}
         </div>
       )}
