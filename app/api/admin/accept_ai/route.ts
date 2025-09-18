@@ -210,6 +210,13 @@ export async function POST(request: NextRequest) {
 
           // WHERE 節を付与
           query += ' WHERE ' + conditionParts.join(' AND ');
+          
+          // データを50件に限定
+          if (operation.table === 'post' && operation.data.includes('code')) {
+            query += ' ORDER BY p.created_at DESC LIMIT 50';
+          } else {
+            query += ' ORDER BY created_at DESC LIMIT 50';
+          }
 
           const results = await db.select<NewsItem>(query, params);
           
