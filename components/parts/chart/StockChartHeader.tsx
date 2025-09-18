@@ -41,7 +41,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
       <div className="flex items-center justify-center">
         {/* 会社名を中央に配置 */}
         <div className="text-center">
-          <span 
+          <div 
             className="text-xl font-bold" 
             style={{ 
               color: companyInfo.changePrice >= 0 
@@ -50,18 +50,21 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
             }}
           >
             ({code}) {companyInfo.companyName}
-          </span>
-          <span 
-            className="text-base font-medium ml-2" 
+          </div>
+          <div 
             style={{ 
               color: companyInfo.changePrice >= 0 
                 ? '#ff0000'  // プラスなら赤
                 : (theme === 'black' ? '#00aa00' : '#00aa00')  // マイナスなら緑
             }}
           >
-            {companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePrice.toFixed(0)}
-            ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
-          </span>
+            <span className="text-xl font-bold">
+              {companyInfo.currentPrice.toLocaleString()}円 {companyInfo.changePrice >= 0 ? '↑' : '↓'}
+            </span>
+            <span className="text-base font-medium ml-1">
+              {Math.abs(companyInfo.changePrice).toFixed(0)} ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
+            </span>
+          </div>
         </div>
       </div>
     </div>
