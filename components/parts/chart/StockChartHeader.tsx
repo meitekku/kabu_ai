@@ -32,10 +32,14 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
   
   return (
     <div 
-      className="px-4 py-4 border-b mb-4" 
+      className="px-4 py-4 border-t border-b mb-4" 
       style={{ 
         backgroundColor: colors.background,
-        borderColor: colors.gridColor
+        borderColor: colors.gridColor,
+        borderTopWidth: '1px',
+        borderTopStyle: 'solid',
+        borderBottomWidth: '1px',
+        borderBottomStyle: 'solid'
       }}
     >
       <div className="flex items-center justify-center">

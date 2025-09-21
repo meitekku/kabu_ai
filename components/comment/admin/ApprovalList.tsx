@@ -304,7 +304,6 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                         }
                       }}
                       maxNewsTooltips={4}
-                      theme="black"
                       company_name={true}
                     />
                   </div>
