@@ -2,16 +2,38 @@ import React from 'react';
 import { ExtendedChartData } from './types/StockChartTypes';
 import { formatNumber } from './StockChartUtils';
 
+// windowオブジェクトを拡張する型定義
+declare global {
+  interface Window {
+    _formatDateLogCount?: number;
+  }
+}
+
 /* --------------------------------------------------
  * 日付フォーマット関数
  * -------------------------------------------------- */
 export const formatDate = (date: Date | string): string => {
   const d = new Date(date);
+  const originalDateStr = typeof date === 'string' ? date : date.toISOString();
+  let result: string;
+  
   if (process.env.NODE_ENV === 'development') {
     const jpDate = new Date(d.getTime() + (9 * 60 * 60 * 1000));
-    return jpDate.toISOString().split('T')[0];
+    result = jpDate.toISOString().split('T')[0];
+  } else {
+    result = d.toISOString().split('T')[0];
   }
-  return d.toISOString().split('T')[0];
+  
+  // デバッグログ（最初の数回のみ）
+  if (typeof window !== 'undefined' && !window._formatDateLogCount) {
+    window._formatDateLogCount = 0;
+  }
+  if (typeof window !== 'undefined' && window._formatDateLogCount !== undefined && window._formatDateLogCount < 5) {
+    console.log(`formatDate: 入力=${originalDateStr} → 出力=${result} (開発環境=${process.env.NODE_ENV === 'development'})`);
+    window._formatDateLogCount++;
+  }
+  
+  return result;
 };
 
 /* --------------------------------------------------
@@ -36,4 +58,4 @@ export const PriceInfo: React.FC<{
       <div>{displayData.date}</div>
     </div>
   );
-}; 
+};

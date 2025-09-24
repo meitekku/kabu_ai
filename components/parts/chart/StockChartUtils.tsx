@@ -39,6 +39,14 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   
   // 日付をYYYY-MM-DD形式に変換
   const formattedDate = date.toISOString().split('T')[0];
+  
+  // 記事抽出条件をログ出力
+  console.log('===== 記事抽出条件 =====');
+  console.log('銘柄コード:', code);
+  console.log('対象日付:', formattedDate, '以降');
+  console.log('ニュース機関フィルタ:', newsInstitution || 'なし（全機関）');
+  console.log('取得件数上限:', 60);
+  console.log('========================');
 
   // 株価データ取得
   const chartResponse = await fetch(`/api/${code}/chart`, {
@@ -57,6 +65,13 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   }
 
   // 記事データ取得
+  console.log('記事APIリクエスト:', {
+    limit: 60,
+    page: 1,
+    institution: newsInstitution,
+    target_date: formattedDate
+  });
+  
   const newsResponse = await fetch(`/api/${code}/news`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -71,26 +86,62 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   const newsResult = await newsResponse.json();
   if (!newsResult.success) throw new Error('News API returned error');
   const articles: NewsArticle[] = newsResult.data || [];
+  
+  console.log('記事取得結果: 全', articles.length, '件');
   // 日付でソート
   const sortedData = chartResult.data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   // 移動平均
   const ma5 = calculateMA(sortedData, 5);
   const ma25 = calculateMA(sortedData, 25);
   const ma75 = calculateMA(sortedData, 75);
+  // 記事を日付でグループ化し、各日付で最新の1つだけを残す
+  const articlesByDate = new Map<string, NewsArticle>();
+  articles.forEach((article: NewsArticle) => {
+    try {
+      const articleDateStr = formatDate(article.created_at);
+      const existingArticle = articlesByDate.get(articleDateStr);
+      
+      // その日付の記事がまだない、または新しい記事の場合は更新
+      if (!existingArticle || new Date(article.created_at) > new Date(existingArticle.created_at)) {
+        articlesByDate.set(articleDateStr, article);
+        console.log(`記事選択: 日付=${articleDateStr}, 記事ID=${article.id}, タイトル="${article.title.substring(0, 30)}..."`);
+      }
+    } catch {
+      // エラーは無視
+    }
+  });
+  
+  console.log(`記事の絞り込み結果: 全${articles.length}件 → ${articlesByDate.size}日分の記事`);
+  
+  // 最新の記事を1つだけ取得（日付に関係なく）
+  let latestArticle: NewsArticle | null = null;
+  if (articles.length > 0) {
+    latestArticle = articles.reduce((latest: NewsArticle, current: NewsArticle) => {
+      return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+    });
+    console.log(`最新記事: 日付=${formatDate(latestArticle.created_at)}, ID=${latestArticle.id}, タイトル="${latestArticle.title.substring(0, 30)}..."`);
+  }
+  
   // 整形
   return sortedData.map((item, index) => {
     const isPositive = item.close >= item.open;
     const date = new Date(item.date);
     const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-    const dayArticles = articles.filter((article: NewsArticle) => {
-      try {
-        const articleDateStr = formatDate(article.created_at);
-        const chartDateStr = formatDate(item.date);
-        return articleDateStr === chartDateStr;
-      } catch {
-        return false;
-      }
-    });
+    
+    // その日付の記事を取得（各日付で1つのみ）
+    const chartDateStr = formatDate(item.date);
+    const dayArticle = articlesByDate.get(chartDateStr);
+    const dayArticles = dayArticle ? [dayArticle] : [];
+    
+    // 最新記事を表示する（最後のデータポイントの場合）
+    const articlesToShow = (index === sortedData.length - 1 && latestArticle && dayArticles.length === 0) 
+      ? [latestArticle] 
+      : dayArticles;
+    
+    if (articlesToShow.length > 0) {
+      console.log(`チャート[${index}]: 日付=${dateStr}, 記事数=${articlesToShow.length}, 記事="${articlesToShow[0].title.substring(0, 30)}..."`);
+    }
+    
     return {
       date: dateStr,
       open: item.open,
@@ -104,7 +155,7 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
       ma5: ma5[index],
       ma25: ma25[index],
       ma75: ma75[index],
-      articles: dayArticles,
+      articles: articlesToShow,
       code: code
     } as ExtendedChartData;
   });
@@ -145,7 +196,7 @@ export const captureAllChartPositions = (
       }
     });
     const defaultIndices = getDefaultTooltipIndices(data);
-    const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? 192 : 128;
+    const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? 192 : 148;
     const zones = calculateTooltipZones(
       defaultIndices.map(index => data[index]),
       newPositions,

@@ -23,6 +23,8 @@ export async function POST(
     const excludeId = body.excludeId; // New parameter to exclude specific article ID
     const page = body.page || 1; // ページ番号 (1から始まる)
     const offset = (page - 1) * limit; // オフセット計算
+    const targetDate = body.target_date; // 対象日付パラメータを追加
+    const institution = body.institution; // ニュース機関フィルタを追加
 
     if (!code) {
       return NextResponse.json(
@@ -34,11 +36,20 @@ export async function POST(
     const db = Database.getInstance();
     
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - (days - 1));
+    let startDate: Date;
+    let startDateStr: string;
+    let todayStr = today.toISOString().split('T')[0];
     
-    const todayStr = today.toISOString().split('T')[0];
-    const startDateStr = startDate.toISOString().split('T')[0];
+    // target_dateが指定されている場合はそれを使用、そうでない場合は従来のdays計算を使用
+    if (targetDate) {
+      startDateStr = targetDate;
+      console.log(`記事API: target_date指定あり - ${startDateStr}以降の記事を取得`);
+    } else {
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - (days - 1));
+      startDateStr = startDate.toISOString().split('T')[0];
+      console.log(`記事API: days指定 - ${days}日前（${startDateStr}）以降の記事を取得`);
+    }
     
     let query: string;
     let queryParams: (string | number)[];

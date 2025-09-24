@@ -46,7 +46,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     lower: 96
   },
   mobileHeight = {
-    upper: 128,
+    upper: 148,
     lower: 80
   },
   asImage = false,
