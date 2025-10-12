@@ -49,7 +49,7 @@ export async function GET() {
       WHERE p.created_at >= ? AND p.created_at < ?
       ORDER BY pc.code ASC
     `;
-    const results = await db.select<CompanyOption>(query, [today, tomorrow]);
+    const results = await db.select<CompanyOption>(query, [today.toISOString(), tomorrow.toISOString()]);
 
     return Response.json({
       success: true,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       WHERE pc.code = ? AND p.created_at >= ? AND p.created_at < ?
       ORDER BY p.created_at DESC
     `;
-    const articleResults = await db.select<PostArticle>(articleQuery, [code, today, tomorrow]);
+    const articleResults = await db.select<PostArticle>(articleQuery, [code, today.toISOString(), tomorrow.toISOString()]);
 
     return Response.json({
       success: true,
