@@ -1,15 +1,19 @@
 "use client"
 
-// import { ClientAuthCheck } from '@/app/admin/auth/ClientAuthCheck'
+import { usePathname } from 'next/navigation'
+import { ClientAuthCheck } from '@/app/admin/auth/ClientAuthCheck'
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
+    const pathname = usePathname()
+    const isLoginPage = pathname === '/admin/login'
+
     return (
         <div>
-            {/* <ClientAuthCheck /> */}
+            {!isLoginPage && <ClientAuthCheck />}
             <main className="dashboard-content">
                 {children}
             </main>

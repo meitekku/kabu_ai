@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 const NAVIGATION_LINKS = [
   { href: '/admin/accept_ai', label: '承認リスト' },
   { href: '/admin/prompt', label: 'プロンプト変更' },
+  { href: '/admin/prompt/article-prompt', label: '確認' },
   { href: '/admin/all-article', label: 'コメントコピー' },
   { href: '/admin/post/new', label: '投稿ページ' },
   { href: '/admin/news-summary', label: 'ニュース要約' },

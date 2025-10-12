@@ -38,6 +38,13 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   const [selectedFromSuggestion, setSelectedFromSuggestion] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 全角英数字を半角に変換する関数
+  const toHalfWidth = (str: string): string => {
+    return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+      return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+    });
+  };
+
   useEffect(() => {
     const loadCompanies = async () => {
       try {
@@ -48,9 +55,10 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           .filter(row => row.trim())
           .map(row => {
             const [id, name] = row.split(',');
-            return { id: id.trim(), name: name.trim() };
+            // 企業名の英数字を半角に変換
+            return { id: id.trim(), name: toHalfWidth(name.trim()) };
           });
-        
+
         setCompanies(parsedCompanies);
       } catch (error) {
         console.error('Failed to load companies:', error);
@@ -116,7 +124,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     setSearchTerm(value);
     setSelectedIndex(-1);
     setSelectedFromSuggestion(false);
-    
+
     if (!value.trim()) {
       setSuggestions([]);
       setShowHistory(true);
@@ -124,10 +132,12 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     }
 
     setShowHistory(false);
+    // 検索時は入力値を半角に変換して検索
+    const halfWidthValue = toHalfWidth(value);
     const filtered = companies
-      .filter(company => 
-        company.name.toLowerCase().includes(value.toLowerCase()) ||
-        company.id.includes(value)
+      .filter(company =>
+        company.name.toLowerCase().includes(halfWidthValue.toLowerCase()) ||
+        company.id.includes(halfWidthValue)
       )
       .slice(0, 10);
 
