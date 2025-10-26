@@ -236,6 +236,8 @@ export default function PostForm({
     }
   };
 
+  const [longPressTimeout, setLongPressTimeout] = useState<NodeJS.Timeout | null>(null);
+
   const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -292,6 +294,76 @@ export default function PostForm({
         setTimeout(() => {
           textarea.selectionStart = textarea.selectionEnd = cursorPosition + imgTag.length;
         }, 0);
+
+        setMessage('画像をアップロードしました');
+      } else {
+        setMessage(`アップロードに失敗しました: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setMessage('アップロード中にエラーが発生しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // スマホでの長押し→画像選択機能
+  const handleTouchStart = () => {
+    const timeout = setTimeout(() => {
+      // 画像選択ダイアログを表示
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (file) {
+          handleFileUpload(file);
+        }
+      };
+      input.click();
+    }, 500); // 500ms長押し
+    setLongPressTimeout(timeout);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimeout) {
+      clearTimeout(longPressTimeout);
+      setLongPressTimeout(null);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setMessage('画像ファイルのみアップロードできます');
+      return;
+    }
+
+    setMessage('画像をアップロード中...');
+    setIsSubmitting(true);
+
+    const textarea = textareaRef.current;
+    const cursorPosition = textarea?.selectionStart || 0;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const imgTag = `<img src='${data.filePath}' alt='${file.name}' class='block mx-auto mt-2 max-h-[400px]' />`;
+
+        setFormData(prev => ({
+          ...prev,
+          content: prev.content.substring(0, cursorPosition) +
+            imgTag +
+            prev.content.substring(cursorPosition)
+        }));
 
         setMessage('画像をアップロードしました');
       } else {
@@ -465,85 +537,91 @@ export default function PostForm({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4">
-      <div className="flex gap-4">
-        <div className="flex-1">
+    <div className="w-full max-w-6xl mx-auto p-2 sm:p-4">
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* 投稿フォーム部分 */}
+        <div className="flex-1 min-w-0">
           <div className="mb-4">
             <input
               type="text"
               value={formData.title}
               onChange={handleTitleChange}
               placeholder="タイトルを入力"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded text-sm sm:text-base"
             />
           </div>
           <textarea
             ref={textareaRef}
             value={formData.content}
             onChange={handleContentChange}
-            placeholder="内容を入力（画像をドラッグ&ドロップして挿入できます）"
-            className="w-full h-64 p-2 border rounded resize-none"
+            placeholder="内容を入力（PC:画像をドラッグ&ドロップ / スマホ:長押しで画像選択）"
+            className="w-full h-64 sm:h-96 p-2 border rounded resize-none text-sm sm:text-base"
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           />
         </div>
-  
-        <div className="w-48 flex flex-col items-center gap-2">
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting || !formData.code}
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {isSubmitting 
-              ? (postId && postId !== 'new' ? '更新中...' : '投稿中...') 
-              : (postId && postId !== 'new' ? '更新する' : '投稿する')}
-          </button>
-          
-          <button
-            onClick={handleCopy}
-            className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            disabled={!formData.title && !formData.content}
-          >
-            コピーする
-          </button>
-          
-          {/* 削除ボタンを追加 */}
-          {postId && postId !== 'new' && (
+
+        {/* ボタン部分 */}
+        <div className="w-full lg:w-48 flex flex-col gap-2">
+          {/* スマホ時は横並び、PC時は縦並び */}
+          <div className="flex flex-row lg:flex-col gap-2">
             <button
-              onClick={handleDelete}
-              disabled={isSubmitting}
-              className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !formData.code}
+              className="flex-1 lg:w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
             >
-              削除する
+              {isSubmitting
+                ? (postId && postId !== 'new' ? '更新中...' : '投稿中...')
+                : (postId && postId !== 'new' ? '更新する' : '投稿する')}
             </button>
-          )}
+
+            <button
+              onClick={handleCopy}
+              className="flex-1 lg:w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
+              disabled={!formData.title && !formData.content}
+            >
+              コピーする
+            </button>
+
+            {postId && postId !== 'new' && (
+              <button
+                onClick={handleDelete}
+                disabled={isSubmitting}
+                className="flex-1 lg:w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm sm:text-base"
+              >
+                削除する
+              </button>
+            )}
+          </div>
 
           <select
             value={formData.pickup}
             onChange={(e) => setFormData({...formData, pickup: Number(e.target.value)})}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-sm sm:text-base"
           >
             <option value={0}>通常</option>
             <option value={1}>トップ上部</option>
             <option value={2}>トップ下部</option>
           </select>
-          
+
           {postId && postId !== 'new' && (
-            <a 
+            <a
               href={`/${formData.code}/news/article/${postId}`}
-              className="text-blue-500 hover:text-blue-600 text-sm mt-2"
+              className="text-blue-500 hover:text-blue-600 text-sm mt-2 text-center lg:text-left"
             >
               記事を見る
             </a>
           )}
-  
-          <div className="h-2" />
-  
+
+          <div className="h-2 hidden lg:block" />
+
           {pathname === '/admin/comment' && (
             <div className="w-full">
-              <PostTitleList 
-                numPosts={8} 
+              <PostTitleList
+                numPosts={8}
                 fontSize={14}
                 refreshTrigger={refreshTrigger}
               />
@@ -551,12 +629,12 @@ export default function PostForm({
           )}
         </div>
       </div>
-  
+
       {message && (
-        <div 
-          className={`mt-4 p-3 text-center rounded-lg transition-opacity duration-300 ${
-            message.includes('完了しました') 
-              ? 'bg-green-100 text-green-800 border border-green-300' 
+        <div
+          className={`mt-4 p-3 text-center rounded-lg transition-opacity duration-300 text-sm sm:text-base ${
+            message.includes('完了しました')
+              ? 'bg-green-100 text-green-800 border border-green-300'
               : 'bg-red-100 text-red-800 border border-red-300'
           }`}
           style={{ opacity: messageOpacity }}
