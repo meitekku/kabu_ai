@@ -239,14 +239,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
       {error && <div className="text-red-500 mb-4">{error}</div>}
       <ul className="space-y-4">
         {items.map(item => (
-          <li 
-            key={item.id} 
+          <li
+            key={item.id}
             className={`relative rounded-lg border p-4 transition-opacity duration-500 ${
               fadingOut[item.id] ? 'opacity-0' : 'opacity-100'
             }`}
           >
-            <div className="flex items-start gap-4">
-              <div className="flex-1 min-w-0">
+            <div className="flex flex-col md:flex-row items-start gap-4">
+              <div className="flex-1 min-w-0 w-full">
                 <input
                   ref={el => { inputRefs.current[item.id] = el }}
                   type="text"
@@ -257,7 +257,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   placeholder="タイトルを入力"
                   readOnly={isUpdating[item.id]}
                 />
-                
+
                 {/* textareaを先に配置 */}
                 <AutoResizeTextarea
                   value={editedContents[item.id] || ''}
@@ -265,7 +265,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   onBlur={e => updatePost(item.id, editedTitles[item.id] || '', e.target.value)}
                   id={item.id}
                 />
-                
+
                 {/* チャート表示切り替えボタン */}
                 <button
                   ref={el => { chartButtonRefs.current[item.id] = el }}
@@ -308,12 +308,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                     />
                   </div>
                 )}
-                
+
                 <p className="text-sm text-gray-500 mt-2">
                   作成日時: {ServerToDate(item.created_at)}
                 </p>
               </div>
-              <div className="sticky top-4 flex flex-col gap-2 pt-2 w-[200px] flex-shrink-0">
+
+              {/* スマホ時は下部、PC・iPad時は右側に固定 */}
+              <div className="w-full md:sticky md:top-4 flex flex-col gap-2 md:pt-2 md:w-[200px] md:flex-shrink-0 order-last">
                 <button
                   onClick={() => handleAccept(item.id)}
                   className={`px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 ${isUpdating[item.id] ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -325,7 +327,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   disabled={isUpdating[item.id]}
                 >{isUpdating[item.id] ? '処理中...' : '却下'}</button>
                 <button onClick={() => handleCopy(item.id)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">コピー</button>
-                
+
                 {/* 既存のTwitterPostButton */}
                 <TwitterPostButton
                   title={editedTitles[item.id] || ''}
@@ -335,7 +337,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
                   onComplete={() => handleTwitterPostComplete(item.id)}
                   siteNumber={71}
                 />
-                
+
                 {/* 新しく追加: TwitterPythonButton */}
                 <TwitterPythonButton
                   title={editedTitles[item.id] || ''}

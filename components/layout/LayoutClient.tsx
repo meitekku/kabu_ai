@@ -19,9 +19,9 @@ export default function LayoutClient({
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
       <Header />
-      <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6">
-        <div className="flex flex-col md:flex-row gap-10">
-          <main className={mainClassName}>
+      <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6 overflow-x-auto">
+        <div className="flex flex-col md:flex-row gap-10 min-w-0">
+          <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>
           {!isAdminPage && (
