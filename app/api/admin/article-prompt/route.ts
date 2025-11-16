@@ -34,26 +34,17 @@ export async function GET() {
   try {
     const db = Database.getInstance();
 
-    // 今日の日付範囲を取得（JST）
-    const now = new Date();
-    const jstOffset = 9 * 60; // JSTはUTC+9
-    const jstNow = new Date(now.getTime() + (jstOffset + now.getTimezoneOffset()) * 60000);
-
-    const today = new Date(jstNow);
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     // 本日のデータがある会社コードと名前を取得（昇順）
+    // CONVERT_TZ で UTC から JST に変換して日付比較
     const query = `
       SELECT DISTINCT pc.code, c.name
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
       INNER JOIN company c ON pc.code = c.code
-      WHERE p.created_at >= ? AND p.created_at < ?
+      WHERE DATE(CONVERT_TZ(p.created_at, '+00:00', '+09:00')) = CURDATE()
       ORDER BY pc.code ASC
     `;
-    const results = await db.select<CompanyOption>(query, [today.toISOString(), tomorrow.toISOString()]);
+    const results = await db.select<CompanyOption>(query);
 
     return Response.json({
       success: true,
@@ -87,18 +78,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 今日の日付範囲を取得（JST）
-    const now = new Date();
-    const jstOffset = 9 * 60; // JSTはUTC+9
-    const jstNow = new Date(now.getTime() + (jstOffset + now.getTimezoneOffset()) * 60000);
-
-    const today = new Date(jstNow);
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // 1. post_promptテーブルから指定されたcodeのpromptを取得
-    const promptQuery = `SELECT code, prompt, created_at FROM post_prompt WHERE code = ?`;
+    // 1. post_promptテーブルから指定されたcodeの最新のpromptを取得
+    const promptQuery = `SELECT code, prompt, created_at FROM post_prompt WHERE code = ? ORDER BY created_at DESC LIMIT 1`;
     const promptResults = await db.select<PostPrompt>(promptQuery, [code]);
 
     if (promptResults.length === 0) {
@@ -114,15 +95,16 @@ export async function POST(request: NextRequest) {
     // 2. 本日のpostテーブルのデータを取得 (post_codeテーブルとJOIN)
     // contentは最初の500文字のみ取得してパフォーマンス改善
     // 最新の1件のみ取得
+    // CONVERT_TZ で UTC から JST に変換して日付比較
     const articleQuery = `
       SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content, p.created_at, pc.code
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
-      WHERE pc.code = ? AND p.created_at >= ? AND p.created_at < ?
+      WHERE pc.code = ? AND DATE(CONVERT_TZ(p.created_at, '+00:00', '+09:00')) = CURDATE()
       ORDER BY p.created_at DESC
       LIMIT 1
     `;
-    const articleResults = await db.select<PostArticle>(articleQuery, [code, today.toISOString(), tomorrow.toISOString()]);
+    const articleResults = await db.select<PostArticle>(articleQuery, [code]);
 
     return Response.json({
       success: true,
