@@ -34,8 +34,12 @@ export async function GET() {
   try {
     const db = Database.getInstance();
 
-    // 今日の日付範囲を取得
-    const today = new Date();
+    // 今日の日付範囲を取得（JST）
+    const now = new Date();
+    const jstOffset = 9 * 60; // JSTはUTC+9
+    const jstNow = new Date(now.getTime() + (jstOffset + now.getTimezoneOffset()) * 60000);
+
+    const today = new Date(jstNow);
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -83,8 +87,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 今日の日付範囲を取得
-    const today = new Date();
+    // 今日の日付範囲を取得（JST）
+    const now = new Date();
+    const jstOffset = 9 * 60; // JSTはUTC+9
+    const jstNow = new Date(now.getTime() + (jstOffset + now.getTimezoneOffset()) * 60000);
+
+    const today = new Date(jstNow);
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);

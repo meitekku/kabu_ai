@@ -154,7 +154,9 @@ export default function ArticlePromptPage() {
                 本日の記事 ({data.articles.length}件)
               </h2>
               <div className="space-y-4">
-                {data.articles.map((article) => (
+                {data.articles
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .map((article) => (
                   <div
                     key={article.id}
                     className="border border-gray-200 rounded-md p-4 bg-gray-50"
