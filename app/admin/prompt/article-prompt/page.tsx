@@ -151,12 +151,10 @@ export default function ArticlePromptPage() {
           {data.articles.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-bold mb-4 text-gray-800">
-                本日の記事 ({data.articles.length}件)
+                本日の最新記事
               </h2>
               <div className="space-y-4">
-                {data.articles
-                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .map((article) => (
+                {data.articles.map((article) => (
                   <div
                     key={article.id}
                     className="border border-gray-200 rounded-md p-4 bg-gray-50"

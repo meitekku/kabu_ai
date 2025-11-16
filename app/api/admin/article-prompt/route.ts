@@ -113,12 +113,14 @@ export async function POST(request: NextRequest) {
 
     // 2. 本日のpostテーブルのデータを取得 (post_codeテーブルとJOIN)
     // contentは最初の500文字のみ取得してパフォーマンス改善
+    // 最新の1件のみ取得
     const articleQuery = `
       SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content, p.created_at, pc.code
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
       WHERE pc.code = ? AND p.created_at >= ? AND p.created_at < ?
       ORDER BY p.created_at DESC
+      LIMIT 1
     `;
     const articleResults = await db.select<PostArticle>(articleQuery, [code, today.toISOString(), tomorrow.toISOString()]);
 
