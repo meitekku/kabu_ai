@@ -13,7 +13,7 @@ interface CompanyInfo {
 }
 
 interface StockChartImageProps {
-  chartContainerRef: React.RefObject<HTMLDivElement>;
+  chartContainerRef: React.RefObject<HTMLDivElement | null>;
   colors: {
     background: string;
     gridColor: string;
@@ -36,7 +36,7 @@ interface StockChartImageProps {
 
 // チャートを画像として出力する関数（高画質版・白色鮮明化対応）
 export const exportAsImage = async (
-  chartContainerRef: React.RefObject<HTMLDivElement>,
+  chartContainerRef: React.RefObject<HTMLDivElement | null>,
   colors: { background: string; gridColor: string },
   pcHeight: { upper: number; lower: number },
   mobileHeight: { upper: number; lower: number },
@@ -49,12 +49,12 @@ export const exportAsImage = async (
 
   try {
     const container = chartContainerRef.current;
-    
+
     // フォントの読み込みを待つ
     if (typeof document !== 'undefined') {
       await document.fonts.ready;
     }
-    
+
     // レンダリングの完了を待つ
     if (typeof requestAnimationFrame !== 'undefined') {
       await new Promise(resolve => {
@@ -78,10 +78,10 @@ export const exportAsImage = async (
     container.style.transformOrigin = 'top left';
 
     // 背景色を確実に不透明にする
-    const solidBackgroundColor = colors.background.startsWith('#') 
-      ? colors.background 
-      : colors.background === 'transparent' 
-        ? '#000000' 
+    const solidBackgroundColor = colors.background.startsWith('#')
+      ? colors.background
+      : colors.background === 'transparent'
+        ? '#000000'
         : colors.background;
 
     // SVGとして一度出力してから高解像度PNGに変換（最高画質・白色鮮明化）
@@ -118,11 +118,11 @@ export const exportAsImage = async (
       };
 
       const svgDataUrl = await domtoimage.toSvg(container, svgOptions);
-      
+
       // SVGをCanvasに描画して高解像度PNGに変換
       const img = new window.Image();
       const scale = 8;
-      
+
       return new Promise<string>((resolve, reject) => {
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -133,7 +133,7 @@ export const exportAsImage = async (
             willReadFrequently: false,
             colorSpace: 'srgb' // 色空間を明示的に指定
           });
-          
+
           if (!ctx) {
             reject(new Error('Failed to get canvas context'));
             return;
@@ -141,38 +141,38 @@ export const exportAsImage = async (
 
           canvas.width = container.offsetWidth * scale;
           canvas.height = totalHeight * scale;
-          
+
           // アンチエイリアシングを有効化
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
-          
+
           // 背景色を確実に塗りつぶし（透過防止）
           ctx.globalCompositeOperation = 'source-over';
           ctx.fillStyle = solidBackgroundColor;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
+
           // 混合モードを通常に設定
           ctx.globalCompositeOperation = 'source-over';
-          
+
           // スケーリングして描画
           ctx.scale(scale, scale);
           ctx.drawImage(img, 0, 0);
-          
+
           // 最高品質でPNGに変換（透過なし）
           const pngDataUrl = canvas.toDataURL('image/png', 1.0);
           resolve(pngDataUrl);
         };
-        
+
         img.onerror = () => {
           reject(new Error('Failed to load SVG image'));
         };
-        
+
         img.src = svgDataUrl;
       });
 
     } catch (svgError) {
       console.warn('SVG conversion failed, falling back to direct PNG:', svgError);
-      
+
       // SVG変換が失敗した場合は、直接PNG出力（高解像度設定・白色鮮明化）
       const pngOptions = {
         bgcolor: solidBackgroundColor,
@@ -207,20 +207,20 @@ export const exportAsImage = async (
       };
 
       const dataUrl = await domtoimage.toPng(container, pngOptions);
-      
+
       // 元のスタイルを復元
       container.style.transform = originalTransform;
-      
+
       return dataUrl;
     }
 
   } catch (error) {
     console.error('Error exporting chart as image with dom-to-image:', error);
-    
+
     // フォールバック: html2canvasを使用（白色鮮明化対応）
     try {
       const html2canvas = (await import('html2canvas')).default;
-      
+
       const canvas = await html2canvas(chartContainerRef.current, {
         backgroundColor: colors.background === 'transparent' ? '#000000' : colors.background,
         scale: 8,
@@ -278,7 +278,7 @@ export const exportAsImage = async (
             const htmlContainer = container as HTMLElement;
             htmlContainer.style.backgroundColor = colors.background;
             htmlContainer.style.opacity = '1';
-            
+
             const textElements = container.querySelectorAll('*');
             textElements.forEach((el) => {
               const htmlEl = el as HTMLElement;
@@ -290,14 +290,14 @@ export const exportAsImage = async (
                 htmlEl.style.textRendering = 'geometricPrecision';
                 htmlEl.style.opacity = '1'; // 透過を無効化
                 htmlEl.style.mixBlendMode = 'normal'; // 混合モードをノーマル
-                
+
                 // 白色要素の透過を防ぐ
                 const fill = htmlEl.getAttribute('fill');
                 if (fill === 'white' || fill === '#ffffff' || fill === '#FFFFFF') {
                   htmlEl.style.fillOpacity = '1';
                   htmlEl.style.opacity = '1';
                 }
-                
+
                 if (htmlEl.textContent && htmlEl.textContent.trim()) {
                   htmlEl.style.transform = 'translateZ(0)';
                   htmlEl.style.backfaceVisibility = 'hidden';
@@ -328,13 +328,13 @@ export const exportAsImage = async (
 // 価格変化に基づく色と矢印を取得する関数
 const getPriceChangeStyle = (changePrice: number, theme: ChartTheme) => {
   const isPositive = changePrice >= 0;
-  
+
   // テーマに応じた色の設定（blackテーマがダークテーマ）
   const colors = {
     positive: theme === 'black' ? '#22c55e' : '#16a34a', // 緑色（上昇）
     negative: theme === 'black' ? '#ef4444' : '#dc2626', // 赤色（下降）
   };
-  
+
   return {
     color: isPositive ? colors.positive : colors.negative,
     arrow: isPositive ? '↑' : '↓'
@@ -360,16 +360,16 @@ export const StockChartImage: React.FC<StockChartImageProps> = ({
 }) => {
   // 価格変化のスタイルを取得
   const priceChangeStyle = companyInfo ? getPriceChangeStyle(companyInfo.changePrice, theme) : null;
-  
+
   // テキストの色を決定（テーマに応じて）
   const textColor = theme === 'black' ? '#ffffff' : '#000000';
-  
+
   return (
     <div className="mt-2" style={{ width: '100%', backgroundColor: colors.background, opacity: 1 }}>
       {/* 会社情報ヘッダー（改修版） */}
       {company_name && companyInfo && (
-        <div 
-          style={{ 
+        <div
+          style={{
             padding: '12px 16px',
             backgroundColor: colors.background,
             borderBottom: `1px solid ${colors.gridColor}`,
@@ -377,7 +377,7 @@ export const StockChartImage: React.FC<StockChartImageProps> = ({
           }}
         >
           {/* 会社名 */}
-          <div 
+          <div
             style={{
               fontSize: '18px',
               fontWeight: '600',
@@ -388,10 +388,10 @@ export const StockChartImage: React.FC<StockChartImageProps> = ({
           >
             {companyInfo.companyName} ({code})
           </div>
-          
+
           {/* 現在値と矢印 */}
           {priceChangeStyle && (
-            <div 
+            <div
               style={{
                 fontSize: '16px',
                 fontWeight: '500',
@@ -408,7 +408,7 @@ export const StockChartImage: React.FC<StockChartImageProps> = ({
           )}
         </div>
       )}
-      
+
       {/* チャート画像 */}
       <div style={{ position: 'relative', width: '100%', backgroundColor: colors.background }}>
         <Image

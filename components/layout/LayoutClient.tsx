@@ -13,18 +13,21 @@ export default function LayoutClient({
 }) {
   const pathname = usePathname()
   const isAdminPage = pathname?.startsWith('/admin')
-  const mainClassName = isAdminPage ? 'w-full' : 'w-full md:w-[670px]'
+  const isPremiumPage = pathname?.startsWith('/premium')
+  const isSettingsPage = pathname?.startsWith('/settings')
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage
+  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[670px]'
 
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
       <Header />
-      <div className="flex-grow max-w-[1000px] w-full mx-auto px-4 my-6 sm:px-6 overflow-x-auto">
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1000px] px-4 my-6 sm:px-6'} overflow-x-auto`}>
         <div className="flex flex-col md:flex-row gap-10 min-w-0">
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>
-          {!isAdminPage && (
+          {!isFullWidthPage && (
             <aside className="w-full md:w-[300px] flex-shrink-0">
               <Sidebar />
             </aside>
