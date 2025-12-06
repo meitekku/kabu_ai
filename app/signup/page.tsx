@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn, signUp, sendVerificationEmail } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
-export default function SignUpPage() {
+function SignUpForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [showLoginLink, setShowLoginLink] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // ?test=1 パラメータがある場合、またはlocalhostの場合にログインリンクを表示
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    setShowLoginLink(searchParams.get("test") === "1" || isLocalhost);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,14 +101,16 @@ export default function SignUpPage() {
           <p className="text-sm text-gray-500">
             メール内のリンクをクリックして、登録を完了してください。
           </p>
-          <div className="pt-4">
-            <Link
-              href="/login"
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              ログインページへ戻る
-            </Link>
-          </div>
+          {showLoginLink && (
+            <div className="pt-4">
+              <Link
+                href="/login?test=1"
+                className="text-blue-600 hover:text-blue-500 text-sm"
+              >
+                ログインページへ戻る
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -233,15 +244,29 @@ export default function SignUpPage() {
           </Button>
         </div>
 
-        <div className="text-center">
-          <Link
-            href="/login"
-            className="text-blue-600 hover:text-blue-500 text-sm"
-          >
-            すでにアカウントをお持ちの方はこちら
-          </Link>
-        </div>
+        {showLoginLink && (
+          <div className="text-center">
+            <Link
+              href="/login?test=1"
+              className="text-blue-600 hover:text-blue-500 text-sm"
+            >
+              すでにアカウントをお持ちの方はこちら
+            </Link>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500">読み込み中...</div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   );
 }
