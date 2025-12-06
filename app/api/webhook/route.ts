@@ -32,17 +32,17 @@ export async function POST(req: NextRequest) {
                 const session = event.data.object as Stripe.Checkout.Session;
                 const customerId = session.customer as string;
                 const subscriptionId = session.subscription as string;
-                const username = session.metadata?.username;
+                const userId = session.metadata?.userId;
 
-                if (username && customerId) {
+                if (userId && customerId) {
                     // ユーザーにStripe顧客IDとサブスクリプションを紐付け
                     await db.update(
-                        `UPDATE users
+                        `UPDATE user
                          SET stripe_customer_id = ?,
                              subscription_id = ?,
                              subscription_status = 'active'
-                         WHERE username = ?`,
-                        [customerId, subscriptionId, username]
+                         WHERE id = ?`,
+                        [customerId, subscriptionId, userId]
                     );
                 }
                 break;
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
                     : null;
 
                 await db.update(
-                    `UPDATE users
+                    `UPDATE user
                      SET subscription_status = ?,
                          subscription_current_period_end = ?
                      WHERE stripe_customer_id = ?`,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
                 const customerId = subscription.customer as string;
 
                 await db.update(
-                    `UPDATE users
+                    `UPDATE user
                      SET subscription_status = 'canceled',
                          subscription_id = NULL
                      WHERE stripe_customer_id = ?`,
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
                 const customerId = invoice.customer as string;
 
                 await db.update(
-                    `UPDATE users
+                    `UPDATE user
                      SET subscription_status = 'past_due'
                      WHERE stripe_customer_id = ?`,
                     [customerId]
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 
                 // 支払い成功時、ステータスをactiveに戻す
                 await db.update(
-                    `UPDATE users
+                    `UPDATE user
                      SET subscription_status = 'active'
                      WHERE stripe_customer_id = ?`,
                     [customerId]

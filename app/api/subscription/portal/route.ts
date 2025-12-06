@@ -1,17 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { auth } from '@/lib/auth/auth';
+import { headers } from 'next/headers';
 
 interface UserRow extends RowDataPacket {
     stripe_customer_id: string | null;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
     try {
-        const username = req.cookies.get('username')?.value;
+        // better-authのセッションからユーザーを取得
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
 
-        if (!username) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { error: 'ログインが必要です' },
                 { status: 401 }
@@ -20,8 +25,8 @@ export async function POST(req: NextRequest) {
 
         const db = Database.getInstance();
         const users = await db.select<UserRow>(
-            'SELECT stripe_customer_id FROM users WHERE username = ?',
-            [username]
+            'SELECT stripe_customer_id FROM user WHERE id = ?',
+            [session.user.id]
         );
 
         if (users.length === 0) {

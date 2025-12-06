@@ -1,22 +1,25 @@
-"use client"
+"use client";
 
-import { usePathname } from 'next/navigation'
-import { ClientAuthCheck } from '@/app/admin/auth/ClientAuthCheck'
+import { usePathname } from "next/navigation";
+import { AuthProvider, ProtectedRoute } from "@/components/auth";
 
-export default function DashboardLayout({
-    children,
+export default function AdminLayout({
+  children,
 }: {
-    children: React.ReactNode
+  children: React.ReactNode;
 }) {
-    const pathname = usePathname()
-    const isLoginPage = pathname === '/admin/login'
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/admin/login";
 
-    return (
-        <div>
-            {!isLoginPage && <ClientAuthCheck />}
-            <main className="dashboard-content">
-                {children}
-            </main>
-        </div>
-    )
+  return (
+    <AuthProvider>
+      {isLoginPage ? (
+        <main className="dashboard-content">{children}</main>
+      ) : (
+        <ProtectedRoute redirectTo="/login">
+          <main className="dashboard-content">{children}</main>
+        </ProtectedRoute>
+      )}
+    </AuthProvider>
+  );
 }

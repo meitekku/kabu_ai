@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { auth } from '@/lib/auth/auth';
+import { headers } from 'next/headers';
 
 interface SubscriptionRow extends RowDataPacket {
     subscription_status: 'none' | 'active' | 'canceled' | 'past_due' | null;
@@ -9,11 +11,14 @@ interface SubscriptionRow extends RowDataPacket {
     stripe_customer_id: string | null;
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
-        const username = req.cookies.get('username')?.value;
+        // better-authのセッションからユーザーを取得
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
 
-        if (!username) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { error: 'ログインが必要です' },
                 { status: 401 }
@@ -23,8 +28,8 @@ export async function GET(req: NextRequest) {
         const db = Database.getInstance();
         const users = await db.select<SubscriptionRow>(
             `SELECT subscription_status, subscription_id, subscription_current_period_end, stripe_customer_id
-             FROM users WHERE username = ?`,
-            [username]
+             FROM user WHERE id = ?`,
+            [session.user.id]
         );
 
         if (users.length === 0) {

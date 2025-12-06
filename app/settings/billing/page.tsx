@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, CreditCard, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "@/lib/auth/auth-client";
 
 interface SubscriptionInfo {
     isPremium: boolean;
@@ -18,10 +20,19 @@ export default function BillingPage() {
     const [portalLoading, setPortalLoading] = useState(false);
     const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const { data: session, isPending: sessionLoading } = useSession();
 
     useEffect(() => {
-        fetchSubscription();
-    }, []);
+        if (!sessionLoading) {
+            if (!session?.user) {
+                router.push('/login');
+            } else {
+                fetchSubscription();
+            }
+        }
+    }, [session, sessionLoading, router]);
 
     const fetchSubscription = async () => {
         try {
@@ -29,9 +40,15 @@ export default function BillingPage() {
             if (response.ok) {
                 const data = await response.json();
                 setSubscription(data);
+            } else if (response.status === 401) {
+                router.push('/login');
+            } else {
+                const data = await response.json();
+                setError(data.error || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Failed to fetch subscription:', error);
+            setError('サブスクリプション情報の取得に失敗しました');
         } finally {
             setIsLoading(false);
         }
@@ -130,11 +147,35 @@ export default function BillingPage() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading || sessionLoading) {
         return (
             <DefaultTemplate>
                 <div className="container mx-auto py-10 px-4 flex justify-center items-center min-h-[400px]">
                     <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                </div>
+            </DefaultTemplate>
+        );
+    }
+
+    if (error) {
+        return (
+            <DefaultTemplate>
+                <div className="container mx-auto py-10 px-4">
+                    <Card className="max-w-md mx-auto bg-white border-red-200">
+                        <CardContent className="pt-6">
+                            <div className="text-center">
+                                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                                <p className="text-red-600">{error}</p>
+                                <Button
+                                    onClick={() => window.location.reload()}
+                                    variant="outline"
+                                    className="mt-4"
+                                >
+                                    再読み込み
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </DefaultTemplate>
         );

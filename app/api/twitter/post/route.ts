@@ -285,7 +285,7 @@ async function simpleMediaUpload(imageBuffer: Buffer, mimeType: string): Promise
   );
 
   const formData = new FormData();
-  formData.append('media', new Blob([imageBuffer], { type: mimeType }), 'media.jpg');
+  formData.append('media', new Blob([new Uint8Array(imageBuffer)], { type: mimeType }), 'media.jpg');
   formData.append('media_category', 'tweet_image');
 
   const response = await fetch(TWITTER_MEDIA_UPLOAD_URL, {

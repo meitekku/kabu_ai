@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { auth } from '@/lib/auth/auth';
+import { headers } from 'next/headers';
 
 interface UserRow extends RowDataPacket {
-    id: number;
-    username: string;
+    id: string;
+    email: string;
     stripe_customer_id: string | null;
 }
 
 export async function POST(req: NextRequest) {
     try {
-        // ログインユーザーを取得
-        const username = req.cookies.get('username')?.value;
+        // better-authのセッションからユーザーを取得
+        const session = await auth.api.getSession({
+            headers: await headers(),
+        });
 
-        if (!username) {
+        if (!session?.user?.id) {
             return NextResponse.json(
                 { error: 'ログインが必要です' },
                 { status: 401 }
@@ -35,8 +39,8 @@ export async function POST(req: NextRequest) {
 
         // ユーザー情報を取得
         const users = await db.select<UserRow>(
-            'SELECT id, username, stripe_customer_id FROM users WHERE username = ?',
-            [username]
+            'SELECT id, email, stripe_customer_id FROM user WHERE id = ?',
+            [session.user.id]
         );
 
         if (users.length === 0) {
@@ -52,20 +56,21 @@ export async function POST(req: NextRequest) {
         // Stripe顧客がまだなければ作成
         if (!customerId) {
             const customer = await stripe.customers.create({
+                email: user.email,
                 metadata: {
-                    username: username,
+                    userId: user.id,
                 },
             });
             customerId = customer.id;
 
             // DBに保存
             await db.update(
-                'UPDATE users SET stripe_customer_id = ? WHERE username = ?',
-                [customerId, username]
+                'UPDATE user SET stripe_customer_id = ? WHERE id = ?',
+                [customerId, user.id]
             );
         }
 
-        const session = await stripe.checkout.sessions.create({
+        const checkoutSession = await stripe.checkout.sessions.create({
             customer: customerId,
             line_items: [
                 {
@@ -77,11 +82,11 @@ export async function POST(req: NextRequest) {
             success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium/success`,
             cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium`,
             metadata: {
-                username: username,
+                userId: user.id,
             },
         });
 
-        return NextResponse.json({ url: session.url });
+        return NextResponse.json({ url: checkoutSession.url });
     } catch (err: any) {
         console.error('Stripe Checkout Error:', err);
         return NextResponse.json(
