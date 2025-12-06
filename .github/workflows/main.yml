@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -59,6 +59,7 @@ jobs:
             --exclude='.next' \
             --exclude='.env*' \
             --exclude='public/uploads' \
+            --exclude='venv' \
             $SSH_USER@$SSH_HOST:$TARGET
 
           echo "Syncing uploads directory..."
@@ -141,14 +142,14 @@ jobs:
             
             echo "🔍 === Chrome インストール完了 ==="
 
-            # Python仮想環境のセットアップ
+            # Python仮想環境のセットアップ（--copiesでシンボリックリンク問題を回避）
             echo "🔍 === Python環境セットアップ開始 ==="
             echo "🔍 Python バージョン: $(python3 --version)"
             echo "🔍 pip バージョン: $(pip3 --version)"
-            
+
             if [ ! -d "venv" ]; then
               echo "🔍 Python仮想環境を作成中..."
-              python3 -m venv venv
+              python3 -m venv venv --copies
             else
               echo "🔍 既存の仮想環境を使用"
             fi
