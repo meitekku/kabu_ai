@@ -114,7 +114,7 @@ export function generateStockChartSVG(): string {
       
       <!-- 時刻表示 -->
       <text x="20" y="390" font-family="Arial, sans-serif" font-size="10" fill="#999">
-        生成時刻: ${now.toLocaleTimeString('ja-JP')}
+        生成時刻: ${new Date().toLocaleTimeString('ja-JP')}
       </text>
     </svg>
   `;
