@@ -2,10 +2,10 @@
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
 import { CurrentPriceInfo } from "@/components/common/CurrentPriceInfo";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
 import { Crown, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
 
@@ -101,6 +101,17 @@ const HeaderContent = ({ isRoot, pathname, user }: {
   pathname: string;
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
 }) => {
+  const [showLoginButton, setShowLoginButton] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // localhostまたは?test=1パラメータがある場合のみログインボタンを表示
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+    const hasTestParam = searchParams.get("test") === "1";
+    setShowLoginButton(isLocalhost || hasTestParam);
+  }, [searchParams]);
+
   const commonClasses = "logo pl-4 text-center w-full text-xl";
   const icon = <Image src='/logo.webp' alt='' width={100} height={50} />;
   const logoLink = (
@@ -127,14 +138,14 @@ const HeaderContent = ({ isRoot, pathname, user }: {
         <div className="iiarea pr-4 flex items-center justify-end gap-2">
           {user ? (
             <UserMenu user={user} />
-          ) : (
+          ) : showLoginButton ? (
             <Link
-              href="/login"
+              href="/login?test=1"
               className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
             >
               ログイン
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
       {!pathname.includes('/admin/') && (
@@ -155,12 +166,30 @@ const HeaderContent = ({ isRoot, pathname, user }: {
   );
 };
 
-const Header = () => {
+const HeaderInner = () => {
   const pathname = usePathname();
   const isRoot = pathname === "/";
   const { data: session } = useSession();
 
   return <HeaderContent isRoot={isRoot} pathname={pathname} user={session?.user || null} />;
+};
+
+const Header = () => {
+  return (
+    <Suspense fallback={
+      <header className="border-b border-gray-200">
+        <div className="grid grid-cols-[1fr_60%_1fr] items-center w-full">
+          <div className="logo pl-4 text-center w-full text-xl">
+            <Image src='/logo.webp' alt='' width={100} height={50} />
+          </div>
+          <div className="p-2"></div>
+          <div className="iiarea pr-4 flex items-center justify-end gap-2"></div>
+        </div>
+      </header>
+    }>
+      <HeaderInner />
+    </Suspense>
+  );
 };
 
 export default Header;

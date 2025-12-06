@@ -21,8 +21,12 @@ function SignUpForm() {
 
   useEffect(() => {
     // ?test=1 パラメータがある場合、またはlocalhostの場合にログインリンクを表示
-    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-    setShowLoginLink(searchParams.get("test") === "1" || isLocalhost);
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+    const hasTestParam = searchParams.get("test") === "1";
+    const shouldShow = hasTestParam || isLocalhost;
+    console.log("[SignUp] hostname:", hostname, "isLocalhost:", isLocalhost, "hasTestParam:", hasTestParam, "shouldShow:", shouldShow);
+    setShowLoginLink(shouldShow);
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
