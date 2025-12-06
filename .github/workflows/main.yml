@@ -35,29 +35,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install sshpass & lsof
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sshpass lsof
-
-      - name: Add SSH known_hosts
+      - name: Setup SSH key
         env:
-          SSH_HOST: 133.130.102.77
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H $SSH_HOST >> ~/.ssh/known_hosts
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 133.130.102.77 >> ~/.ssh/known_hosts
 
       - name: Sync and remote deploy
         env:
           SSH_USER: root
           SSH_HOST: 133.130.102.77
-          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
           TARGET: /var/www/kabu_ai
         run: |
-          export SSHPASS=$SSH_PASSWORD
-
           echo "Syncing files..."
-          sshpass -e rsync -avz --delete \
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
             . \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -67,12 +62,13 @@ jobs:
             $SSH_USER@$SSH_HOST:$TARGET
 
           echo "Syncing uploads directory..."
-          sshpass -e rsync -avz \
+          rsync -avz \
+            -e "ssh -i ~/.ssh/id_rsa" \
             public/uploads/ \
             $SSH_USER@$SSH_HOST:$TARGET/public/uploads/
 
           echo "Running remote commands..."
-          sshpass -e ssh $SSH_USER@$SSH_HOST << EOF
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << EOF
             set +e  # Continue on error to prevent blocking
 
             # 必ず正しいディレクトリへ移動
