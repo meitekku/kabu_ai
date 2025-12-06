@@ -3,7 +3,6 @@ const nextConfig = {
   turbopack: {},
   output: 'standalone',
   images: {
-    domains: ['133.130.102.77', 'kabu-ai.jp'],
     remotePatterns: [
       {
         protocol: 'https',

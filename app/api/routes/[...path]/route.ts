@@ -4,9 +4,29 @@
 // app/api/uploads/[...path]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile, mkdir, writeFile } from 'fs/promises';
+import { readFile, mkdir, writeFile, stat } from 'fs/promises';
 import path from 'path';
-import { existsSync } from 'fs';
+
+// ファイルが存在するかを非同期でチェック
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// 動的にファイルパスを取得（ビルド時の静的解析を回避）
+function getUploadBasePaths(): string[] {
+  if (process.env.NODE_ENV === 'production') {
+    return [
+      '/var/www/kabu_ai/public/uploads',
+      '/var/www/kabu_ai/.next/standalone/public/uploads'
+    ];
+  }
+  return [path.join(process.cwd(), 'public', 'uploads')];
+}
 
 // 画像を取得するGETハンドラー
 export async function GET(
@@ -15,18 +35,26 @@ export async function GET(
 ) {
   try {
     const resolvedParams = await params;
-    const relativePath = resolvedParams.path.join('/');
-    const possiblePaths = [
-      path.join(process.cwd(), 'public/uploads', relativePath),
-      path.join('/var/www/kabu_ai/public/uploads', relativePath),
-      path.join('/var/www/kabu_ai/.next/standalone/public/uploads', relativePath)
-    ];
+    const pathSegments = resolvedParams.path;
+
+    // パストラバーサル攻撃を防止
+    if (pathSegments.some(segment => segment.includes('..') || segment.includes('\0'))) {
+      return new NextResponse('Invalid path', { status: 400 });
+    }
+
+    const relativePath = pathSegments.join('/');
+    const basePaths = getUploadBasePaths();
 
     let fileBuffer = null;
     let foundPath = null;
 
-    for (const filePath of possiblePaths) {
-      if (existsSync(filePath)) {
+    for (const basePath of basePaths) {
+      const filePath = path.resolve(basePath, relativePath);
+      // パスがベースディレクトリ内に収まっているか確認
+      if (!filePath.startsWith(basePath)) {
+        continue;
+      }
+      if (await fileExists(filePath)) {
         fileBuffer = await readFile(filePath);
         foundPath = filePath;
         break;

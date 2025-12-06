@@ -2,8 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, stat } from 'fs/promises';
 import { v4 as uuidv4 } from 'uuid';
+
+// ファイル存在確認ユーティリティ
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await stat(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ファイルサイズ取得ユーティリティ
+async function getFileSize(filePath: string): Promise<number> {
+  const stats = await stat(filePath);
+  return stats.size;
+}
 
 const execAsync = promisify(exec);
 
@@ -99,10 +115,8 @@ export async function POST(request: NextRequest) {
           finalImagePath = filePath;
           
           // ファイルサイズ確認
-           
-          const fs = require('fs');
-          const stats = fs.statSync(filePath);
-          console.log('📷 [IMAGE DEBUG] 保存されたファイルサイズ:', stats.size, 'bytes');
+          const fileSize = await getFileSize(filePath);
+          console.log('📷 [IMAGE DEBUG] 保存されたファイルサイズ:', fileSize, 'bytes');
           console.log('📷 [IMAGE DEBUG] ファイル保存成功:', filePath);
           console.log(`✅ base64画像保存完了: ${filePath}`);
         } else {
@@ -148,16 +162,13 @@ export async function POST(request: NextRequest) {
       console.log(`📷 [COMMAND DEBUG] 画像パス追加: ${finalImagePath}`);
       
       // ファイル存在確認
-       
-      const fs = require('fs');
       try {
-        if (fs.existsSync(finalImagePath)) {
-          const stats = fs.statSync(finalImagePath);
-          console.log(`📷 [SAFE CMD DEBUG] ✅ ファイル存在確認: OK (${stats.size} bytes)`);
+        if (await fileExists(finalImagePath)) {
+          const fileSize = await getFileSize(finalImagePath);
+          console.log(`📷 [SAFE CMD DEBUG] ✅ ファイル存在確認: OK (${fileSize} bytes)`);
         } else {
           console.log(`❌ [SAFE CMD DEBUG] ファイル存在確認: NG - ファイルが見つかりません`);
-           
-          console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${require('path').resolve(finalImagePath)}`);
+          console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${path.resolve(finalImagePath)}`);
         }
       } catch (fileError) {
         console.log(`❌ [SAFE CMD DEBUG] ファイル確認エラー:`, fileError);

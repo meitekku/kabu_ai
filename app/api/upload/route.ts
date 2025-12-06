@@ -99,8 +99,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-}; 
+// Next.js App Router では formData を使用するため、bodyParser の設定は不要
+// 代わりに route segment config を使用する場合は以下のようにエクスポート
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
