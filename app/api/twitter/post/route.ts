@@ -249,21 +249,17 @@ async function uploadMedia(imageBuffer: Buffer, mimeType: string = 'image/jpeg')
   const totalBytes = imageBuffer.length;
   
 
-  try {
-    // ファイルサイズが小さい場合は単純アップロードを試行
-    if (totalBytes <= 1024 * 1024) { // 1MB以下
-      try {
-        return await simpleMediaUpload(imageBuffer, mimeType);
-      } catch {
-      }
+  // ファイルサイズが小さい場合は単純アップロードを試行
+  if (totalBytes <= 1024 * 1024) { // 1MB以下
+    try {
+      return await simpleMediaUpload(imageBuffer, mimeType);
+    } catch {
+      // 単純アップロード失敗時はチャンクアップロードにフォールバック
     }
-
-    // チャンクアップロードを実行
-    return await chunkedMediaUpload(imageBuffer, mimeType);
-
-  } catch (error) {
-    throw error;
   }
+
+  // チャンクアップロードを実行
+  return await chunkedMediaUpload(imageBuffer, mimeType);
 }
 
 // 単純メディアアップロード

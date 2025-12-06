@@ -40,8 +40,7 @@ const GlobalNavigation = () => {
   const additionalLinks = [];
 
   if (newsArticleMatch) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [_fullMatch, _code, id] = newsArticleMatch;
+    const [, , id] = newsArticleMatch;
     additionalLinks.push({
       href: `/admin/post/${id}`,
       label: '記事を編集する'

@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             debugLog(`✅ [IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+             
             const fs = require('fs');
             const stats = fs.statSync(filePath);
             debugLog(`📊 [IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);

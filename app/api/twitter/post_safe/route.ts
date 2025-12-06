@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           finalImagePath = filePath;
           
           // ファイルサイズ確認
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const fs = require('fs');
           const stats = fs.statSync(filePath);
           console.log('📷 [IMAGE DEBUG] 保存されたファイルサイズ:', stats.size, 'bytes');
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       console.log(`📷 [COMMAND DEBUG] 画像パス追加: ${finalImagePath}`);
       
       // ファイル存在確認
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const fs = require('fs');
       try {
         if (fs.existsSync(finalImagePath)) {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
           console.log(`📷 [SAFE CMD DEBUG] ✅ ファイル存在確認: OK (${stats.size} bytes)`);
         } else {
           console.log(`❌ [SAFE CMD DEBUG] ファイル存在確認: NG - ファイルが見つかりません`);
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${require('path').resolve(finalImagePath)}`);
         }
       } catch (fileError) {

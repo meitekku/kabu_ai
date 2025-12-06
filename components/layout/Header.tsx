@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
 import { useState, useRef, useEffect } from 'react';
-import { Crown, Settings, LogOut, User, ChevronDown } from 'lucide-react';
+import { Crown, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
 
 const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {

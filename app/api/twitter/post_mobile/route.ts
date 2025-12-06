@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             debugLog(`✅ [MOBILE IMAGE DEBUG] ファイル保存完了: ${filePath}`);
             
             // ファイルサイズを確認
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
+             
             const fs = require('fs');
             const stats = fs.statSync(filePath);
             debugLog(`📊 [MOBILE IMAGE DEBUG] 保存ファイルサイズ: ${stats.size} bytes`);
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       debugLog(`📋 [CMD DEBUG] ファイル存在確認:`, 'INFO');
       finalImagePaths.forEach((path, index) => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const fs = require('fs');
           if (fs.existsSync(path)) {
             const stats = fs.statSync(path);
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
       debugLog(`📷 最終画像ファイル詳細:`);
       finalImagePaths.forEach((path, i) => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
+           
           const fs = require('fs');
           const stats = fs.statSync(path);
           debugLog(`  ${i+1}. ${path} (${stats.size} bytes)`);

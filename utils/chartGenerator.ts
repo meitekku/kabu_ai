@@ -1,7 +1,5 @@
 // チャート画像生成ユーティリティ
 export function generateStockChartSVG(): string {
-  const now = new Date();
-  const timestamp = now.getTime();
   
   // リアルタイムの株価データ風の値を生成
   const basePrice = 2450;
@@ -124,7 +122,6 @@ export function generateStockChartSVG(): string {
 
 // より高度なチャート生成（ローソク足風）
 export function generateCandlestickChartSVG(): string {
-  const now = new Date();
   const basePrice = 2450;
   const candles = [];
   
@@ -163,7 +160,7 @@ export function generateCandlestickChartSVG(): string {
       <line x1="70" y1="400" x2="750" y2="400" stroke="#333" stroke-width="1"/>
       
       <!-- ローソク足 -->
-      ${candles.map((candle, i) => {
+      ${candles.map((candle) => {
         const highY = 50 + ((maxPrice - candle.high) / priceRange) * 350;
         const lowY = 50 + ((maxPrice - candle.low) / priceRange) * 350;
         const openY = 50 + ((maxPrice - candle.open) / priceRange) * 350;

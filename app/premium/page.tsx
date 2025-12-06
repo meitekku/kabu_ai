@@ -2,7 +2,7 @@
 
 import DefaultTemplate from "@/components/template/DefaultTemplate";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, TrendingUp, MessageSquare, Sparkles, Brain, LineChart, ArrowRight, Zap } from "lucide-react";
+import { CheckCircle2, TrendingUp, MessageSquare, Sparkles, Brain, ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function PremiumPage() {
