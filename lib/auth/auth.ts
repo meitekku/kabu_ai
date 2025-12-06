@@ -2,6 +2,12 @@ import { betterAuth } from "better-auth";
 import { createPool } from "mysql2/promise";
 import { sendVerificationEmail } from "./email";
 
+console.log("[Auth] Initializing auth module");
+console.log("[Auth] DB_HOST:", process.env.DB_HOST);
+console.log("[Auth] DB_NAME:", process.env.DB_NAME);
+console.log("[Auth] DB_USER:", process.env.DB_USER);
+console.log("[Auth] DB_PORT:", process.env.DB_PORT);
+
 // MySQL Pool を作成
 const pool = createPool({
   host: process.env.DB_HOST,
@@ -13,6 +19,8 @@ const pool = createPool({
   connectionLimit: 10,
   timezone: "Z",
 });
+
+console.log("[Auth] MySQL pool created");
 
 export const auth = betterAuth({
   database: pool,
