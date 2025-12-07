@@ -14,10 +14,9 @@ import {
   RectangleProps
 } from 'recharts';
 import { ExtendedChartData } from './types/StockChartTypes';
-import { formatNumber } from './StockChartUtils';
+import { formatNumber, fetchChartAndNewsData, recordChartPosition, handleResize } from './StockChartUtils';
 import { CandleWickShape, CandleBodyShape } from './StockChartShapes';
 import { TooltipZone, calculateTooltipZones } from './StockChartLayoutUtils';
-import { fetchChartAndNewsData, recordChartPosition, handleResize } from './StockChartUtils';
 import { formatArticleTitle } from './StockChartTooltip';
 import { StockChartProps, StockChartRef, UPPER_CHART_MARGIN, LOWER_CHART_MARGIN } from './StockChartTypes';
 import { getThemeColors, convertBlueToGreen } from './StockChartTheme';

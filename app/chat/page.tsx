@@ -1,11 +1,10 @@
 'use client';
 
 import { ChatInterface } from '@/components/chat/ChatInterface';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
+import { useSearchParams, notFound } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function ChatPage() {
+function ChatPageContent() {
   const searchParams = useSearchParams();
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
 
@@ -34,5 +33,17 @@ export default function ChatPage() {
     <div className="h-[calc(100vh-64px)]">
       <ChatInterface />
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-4 border-emerald-500 rounded-full border-t-transparent"></div>
+      </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   );
 }

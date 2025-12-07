@@ -1,8 +1,7 @@
 import '@/app/globals.css'
 import LayoutClient from '@/components/layout/LayoutClient'
 import MobileTopAd from '@/components/common/MobileTopAd'
-import { metadata } from './metadata'
-import { gtag } from './metadata'
+import { metadata, gtag } from './metadata'
 import Script from 'next/script'
 
 export { metadata }

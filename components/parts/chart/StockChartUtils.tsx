@@ -1,6 +1,5 @@
-import { PriceRecord } from '@/types/parts/chart/MainChart';
+import { PriceRecord, ApiResponse } from '@/types/parts/chart/MainChart';
 import { formatDate } from './StockChartComponents';
-import { ApiResponse } from '@/types/parts/chart/MainChart';
 import { ExtendedChartData, NewsArticle } from './types/StockChartTypes';
 import { getDefaultTooltipIndices } from './StockChartTooltip';
 import { calculateTooltipZones, TooltipZone } from './StockChartLayoutUtils';

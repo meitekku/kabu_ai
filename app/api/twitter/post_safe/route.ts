@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
           console.log(`📷 [SAFE CMD DEBUG] ✅ ファイル存在確認: OK (${fileSize} bytes)`);
         } else {
           console.log(`❌ [SAFE CMD DEBUG] ファイル存在確認: NG - ファイルが見つかりません`);
-          console.log(`❌ [SAFE CMD DEBUG] 絶対パス: ${path.resolve(finalImagePath)}`);
+          console.log(`❌ [SAFE CMD DEBUG] パス: ${finalImagePath}`);
         }
       } catch (fileError) {
         console.log(`❌ [SAFE CMD DEBUG] ファイル確認エラー:`, fileError);
