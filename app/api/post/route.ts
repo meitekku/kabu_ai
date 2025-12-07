@@ -121,12 +121,12 @@ function isBusinessDay(date: Date): boolean {
 async function getSettlementStatus(code: string): Promise<number | null> {
   const db = Database.getInstance();
   
-  const result = await db.select(
+  const result = await db.select<{ settlement_date: Date }>(
     `SELECT settlement_date FROM company_info WHERE code = ? AND settlement_date IS NOT NULL`,
     [code]
   );
 
-  if (!result || result.length === 0 || !result[0].settlement_date) {
+  if (!result || result.length === 0 || !result[0]?.settlement_date) {
     return null;
   }
 
@@ -174,24 +174,32 @@ async function generatePostStatus(code: string): Promise<Record<string, number |
   const statusDict: Record<string, number | null> = {};
   
   // 株価情報を取得
-  const companyData = await db.select(
+  interface CompanyData {
+    name: string;
+    volume: number;
+    price_change: number;
+    diff_percent: number;
+    volume_week_average: number;
+    settlement_date: Date;
+  }
+  const companyData = await db.select<CompanyData>(
     `SELECT c.name, p.volume, ci.price_change, ci.diff_percent, ci.volume_week_average, ci.settlement_date
-     FROM company c 
-     LEFT JOIN company_info ci ON c.code = ci.code 
+     FROM company c
+     LEFT JOIN company_info ci ON c.code = ci.code
      LEFT JOIN price p ON c.code = p.code
      WHERE c.code = ?
      AND p.date = (
-         SELECT MAX(date) 
-         FROM price 
+         SELECT MAX(date)
+         FROM price
          WHERE code = ?
      )`,
     [code, code]
   );
-  
+
   if (!companyData || companyData.length === 0) {
     return statusDict;
   }
-  
+
   const data = companyData[0];
   const diffPercent = data.diff_percent || 0;
   const volume = data.volume || 0;
@@ -216,12 +224,12 @@ async function generatePostStatus(code: string): Promise<Record<string, number |
   }
   
   // ニュースの存在確認（簡易版）
-  const newsCount = await db.select(
+  const newsCount = await db.select<{ count: number }>(
     `SELECT COUNT(*) as count FROM material WHERE code = ? AND DATE(article_time) = CURRENT_DATE`,
     [code]
   );
-  
-  if (newsCount && newsCount[0].count > 0) {
+
+  if (newsCount && newsCount[0]?.count > 0) {
     statusDict.news = 1;
   }
   

@@ -16,14 +16,14 @@ type Props = {
 
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => {
   const { code } = await params;
-  
+
   try {
     // 本番環境では内部API呼び出しを避け、直接データベースアクセス
     const { Database } = await import('@/lib/database/Mysql');
     const db = Database.getInstance();
-    
-    const [company] = await db.select('SELECT name FROM company WHERE code = ?', [code]);
-    
+
+    const [company] = await db.select<{ name: string }>('SELECT name FROM company WHERE code = ?', [code]);
+
     if (company && company.name) {
       return {
         title: PAGE_METADATA.title

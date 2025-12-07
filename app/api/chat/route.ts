@@ -7,6 +7,15 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 30;
 
+// 本番環境かどうかをチェック
+function isProductionAccess(headersList: Headers, url: string): boolean {
+  const host = headersList.get('host') || '';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+  const urlObj = new URL(url);
+  const hasTestParam = urlObj.searchParams.get('test') === '1';
+  return !isLocalhost && !hasTestParam;
+}
+
 // 非プレミアムユーザーの1日あたりの利用上限
 const FREE_USAGE_LIMIT = 3;
 
@@ -32,8 +41,17 @@ function getClientIp(headersList: Headers): string {
 
 export async function POST(req: Request) {
   try {
-    const { messages, chatId } = await req.json();
     const headersList = await headers();
+
+    // 本番環境ではアクセス拒否
+    if (isProductionAccess(headersList, req.url)) {
+      return new Response(
+        JSON.stringify({ error: 'この機能は現在利用できません' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { messages, chatId } = await req.json();
 
     // 認証チェック
     const session = await auth.api.getSession({ headers: headersList });
