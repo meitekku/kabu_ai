@@ -15,7 +15,7 @@ const NAVIGATION_LINKS = [
 ] as const;
 
 const GlobalNavigation = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const GlobalNavigation = () => {
           credentials: 'include',
         });
         const data = await response.json();
-        setIsAuthenticated(data.isAuthenticated);
+        setIsLogin(data.isLogin);
       } catch (error) {
         console.error('Authentication check failed:', error);
       }
@@ -47,7 +47,7 @@ const GlobalNavigation = () => {
     });
   }
 
-  if (!isAuthenticated) {
+  if (!isLogin) {
     return null;
   }
 

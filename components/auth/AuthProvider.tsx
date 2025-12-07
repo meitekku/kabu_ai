@@ -25,14 +25,14 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
-  isAuthenticated: boolean;
+  isLogin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   isLoading: true,
-  isAuthenticated: false,
+  isLogin: false,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user || null,
     session: session || null,
     isLoading: isPending,
-    isAuthenticated: !!session?.user,
+    isLogin: !!session?.user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

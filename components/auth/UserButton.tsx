@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function UserButton() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isLogin, isLoading } = useAuth();
   const router = useRouter();
 
   const handleSignOut = async () => {
@@ -30,7 +30,7 @@ export function UserButton() {
     );
   }
 
-  if (!isAuthenticated || !user) {
+  if (!isLogin || !user) {
     return (
       <Button variant="outline" onClick={() => router.push("/login")}>
         ログイン

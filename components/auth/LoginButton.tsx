@@ -10,11 +10,11 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ className }: LoginButtonProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLogin, isLoading } = useAuth();
   const router = useRouter();
 
   const handleClick = async () => {
-    if (isAuthenticated) {
+    if (isLogin) {
       await signOut();
       router.push("/login");
       router.refresh();
@@ -33,7 +33,7 @@ export function LoginButton({ className }: LoginButtonProps) {
 
   return (
     <Button variant="outline" className={className} onClick={handleClick}>
-      {isAuthenticated ? "ログアウト" : "ログイン"}
+      {isLogin ? "ログアウト" : "ログイン"}
     </Button>
   );
 }

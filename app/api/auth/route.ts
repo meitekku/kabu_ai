@@ -63,9 +63,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const username = req.cookies.get('username');
-  
-  return NextResponse.json({ 
-    isAuthenticated: !!username,
-    username: username?.value 
+
+  return NextResponse.json({
+    isLogin: !!username,
+    username: username?.value
   });
 }

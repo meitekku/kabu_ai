@@ -15,8 +15,22 @@ export default function LayoutClient({
   const isAdminPage = pathname?.startsWith('/admin')
   const isPremiumPage = pathname?.startsWith('/premium')
   const isSettingsPage = pathname?.startsWith('/settings')
-  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage
+  const isChatPage = pathname?.startsWith('/chat')
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage
   const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[670px]'
+
+  // チャットページは専用レイアウト
+  if (isChatPage) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <GlobalNavigation />
+        <Header />
+        <main className="flex-grow">
+          {children}
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

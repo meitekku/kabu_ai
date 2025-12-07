@@ -27,13 +27,13 @@ export class Database {
   }
 
   // SELECT操作
-  async select<T extends RowDataPacket>(
+  async select<T>(
     query: string,
     params?: Array<string | number | boolean | null>
   ): Promise<T[]> {
     try {
-      const [rows] = await this.pool.execute<T[]>(query, params);
-      return rows;
+      const [rows] = await this.pool.execute<RowDataPacket[]>(query, params);
+      return rows as T[];
     } catch (error) {
       console.error('Select error:', error);
       throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
@@ -83,12 +83,13 @@ export class Database {
   }
 
   // カスタムSQLクエリの実行
-  async query<T extends RowDataPacket>(
+  async query<T>(
     query: string,
     params?: Array<string | number | boolean | null>
   ): Promise<[T[], FieldPacket[]]> {
     try {
-      return await this.pool.execute<T[]>(query, params);
+      const [rows, fields] = await this.pool.execute<RowDataPacket[]>(query, params);
+      return [rows as T[], fields];
     } catch (error) {
       console.error('Query error:', error);
       throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');

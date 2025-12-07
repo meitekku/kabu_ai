@@ -5,8 +5,8 @@ export const checkAuth = async () => {
         credentials: 'include'
       });
       const data = await res.json();
-      return data.isAuthenticated;
+      return { isLogin: data.isLogin ?? false };
     } catch {
-      return false;
+      return { isLogin: false };
     }
   };

@@ -15,14 +15,14 @@ export function ProtectedRoute({
   redirectTo = "/login",
   fallback = null,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLogin, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isLogin) {
       router.push(redirectTo);
     }
-  }, [isAuthenticated, isLoading, router, redirectTo]);
+  }, [isLogin, isLoading, router, redirectTo]);
 
   if (isLoading) {
     return (
@@ -34,7 +34,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isLogin) {
     return null;
   }
 
