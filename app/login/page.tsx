@@ -44,7 +44,13 @@ function LoginForm() {
         return;
       }
 
-      router.push("/");
+      // 管理者メールの場合は/adminへ、それ以外はトップへ
+      const ADMIN_EMAIL = "smartaiinvest@gmail.com";
+      if (email === ADMIN_EMAIL) {
+        router.push("/admin/comment");
+      } else {
+        router.push("/");
+      }
       router.refresh();
     } catch {
       setError("エラーが発生しました。もう一度お試しください。");
@@ -68,7 +74,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
@@ -200,7 +206,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
         <div className="text-gray-500">読み込み中...</div>
       </div>
     }>
