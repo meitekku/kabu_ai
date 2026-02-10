@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 interface YahooBbsRanking extends RowDataPacket {
   code: string;
@@ -12,6 +13,16 @@ export async function POST(request: NextRequest) {
   try {
     // Bodyの取得
     const { code } = await request.json();
+
+    // キャッシュチェック
+    const cacheKey = makeCacheKey('yahoo-ranking', { code });
+    const ttl = getCacheTTL('ranking');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
+    }
 
     const db = Database.getInstance();
 
@@ -35,9 +46,10 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: rankings,
+    const responseData = { success: true, data: rankings };
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
     });
     
   } catch (error) {

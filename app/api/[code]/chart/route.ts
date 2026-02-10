@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 // 定義済みの型
 interface PriceRecord {
@@ -23,6 +24,17 @@ interface NumericPriceRecord {
 export async function POST(request: NextRequest) {
   try {
     const { code, num } = await request.json();
+
+    // キャッシュチェック
+    const cacheKey = makeCacheKey('chart', { code, num });
+    const ttl = getCacheTTL('market');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
+    }
+
     const db = Database.getInstance();
 
     const query = `
@@ -46,9 +58,10 @@ export async function POST(request: NextRequest) {
       volume: Number(p.volume),
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: numericPrices,
+    const responseData = { success: true, data: numericPrices };
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
     });
   } catch (error) {
     console.error('Error:', error);

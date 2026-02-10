@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 const ALLOWED_TABLES = [
   'ranking_yahoo_post',
@@ -56,6 +57,16 @@ export async function POST(request: NextRequest) {
 
     const validatedLimit = Math.min(Math.max(1, limit), MAX_LIMIT);
 
+    // キャッシュチェック
+    const cacheKey = makeCacheKey('ranking', { tableName, limit: validatedLimit });
+    const ttl = getCacheTTL('ranking');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
+    }
+
     const db = Database.getInstance();
 
     const query = `
@@ -72,10 +83,11 @@ export async function POST(request: NextRequest) {
     
     const data = await db.select<BaseRankingData>(query, [validatedLimit]);
 
-    return NextResponse.json({
-      success: true,
-      data: data,
-    } as ApiResponse<BaseRankingData>);
+    const responseData = { success: true, data: data } as ApiResponse<BaseRankingData>;
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
+    });
     
   } catch (error) {
     console.error('API Error:', error);

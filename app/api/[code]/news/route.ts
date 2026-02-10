@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 interface NewsRecord extends RowDataPacket {
   id: number;
@@ -31,6 +32,16 @@ export async function POST(
         { success: false, error: 'Stock code is required' },
         { status: 400 }
       );
+    }
+
+    // キャッシュチェック
+    const cacheKey = makeCacheKey('code-news', { code, limit, days, excludeId, page, targetDate });
+    const ttl = getCacheTTL('news');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
     }
 
     const db = Database.getInstance();
@@ -126,8 +137,8 @@ export async function POST(
     }));
 
     // ページネーション情報を含むレスポンス
-    return NextResponse.json({ 
-      success: true, 
+    const responseData = {
+      success: true,
       data: formattedNews,
       pagination: {
         currentPage: page,
@@ -135,6 +146,10 @@ export async function POST(
         totalItems,
         limit
       }
+    };
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
     });
   } catch (error) {
     console.error('News API Error:', error);

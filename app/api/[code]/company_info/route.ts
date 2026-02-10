@@ -3,6 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import winston from 'winston';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 // ロガーの設定
 const logger = winston.createLogger({
@@ -36,6 +37,17 @@ interface CompanyFullInfo extends CompanyRecord {
 export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json();
+
+    // キャッシュチェック（株価は市場時間帯に頻繁に変わる）
+    const cacheKey = makeCacheKey('company-info', { code });
+    const ttl = getCacheTTL('market');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
+    }
+
     const db = Database.getInstance();
 
     const query = `
@@ -46,9 +58,10 @@ export async function POST(request: NextRequest) {
     `;
 
     const results = (await db.select(query, [code])) as CompanyFullInfo[];
-    return NextResponse.json({
-      success: true,
-      data: results,
+    const responseData = { success: true, data: results };
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
     });
   } catch (error) {
     logger.error(`--- [18] Error in main block --- ${error}`);

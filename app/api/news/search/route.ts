@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 interface PostRow extends RowDataPacket {
   id: number;
@@ -18,36 +19,6 @@ interface CountResult extends RowDataPacket {
   total: number;
 }
 
-// --- インメモリキャッシュ ---
-interface CacheEntry {
-  data: unknown;
-  timestamp: number;
-}
-
-const cache = new Map<string, CacheEntry>();
-
-// 時間帯に応じたキャッシュTTL（秒）
-// 12:30〜13:30, 15:30〜16:30 は更新時間帯 → 短いTTL
-// それ以外は記事が変わらない → 長いTTL
-function getCacheTTL(): number {
-  const now = new Date();
-  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-  const h = jst.getHours();
-  const m = jst.getMinutes();
-  const minutes = h * 60 + m;
-
-  // 12:25〜13:30 → 更新時間帯（2分キャッシュ）
-  if (minutes >= 745 && minutes <= 810) return 120;
-  // 15:25〜16:30 → 更新時間帯（2分キャッシュ）
-  if (minutes >= 925 && minutes <= 990) return 120;
-  // それ以外 → 10分キャッシュ
-  return 600;
-}
-
-function getCacheKey(params: Record<string, unknown>): string {
-  return JSON.stringify(params);
-}
-
 export async function POST(req: Request) {
   try {
     const {
@@ -62,11 +33,11 @@ export async function POST(req: Request) {
     } = await req.json();
 
     // キャッシュチェック
-    const cacheKey = getCacheKey({ pickup, company_code, keyword, from_date, to_date, limit, page, site_type });
-    const ttl = getCacheTTL();
-    const cached = cache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < ttl * 1000) {
-      return NextResponse.json(cached.data, {
+    const cacheKey = makeCacheKey('news-search', { pickup, company_code, keyword, from_date, to_date, limit, page, site_type });
+    const ttl = getCacheTTL('news');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
         headers: {
           'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`,
           'X-Cache': 'HIT',
@@ -205,15 +176,7 @@ export async function POST(req: Request) {
     };
 
     // キャッシュに保存
-    cache.set(cacheKey, { data: responseData, timestamp: Date.now() });
-
-    // 古いキャッシュエントリを定期的に削除（100エントリ超えたら）
-    if (cache.size > 100) {
-      const now = Date.now();
-      for (const [key, entry] of cache) {
-        if (now - entry.timestamp > 600_000) cache.delete(key);
-      }
-    }
+    cacheSet(cacheKey, responseData);
 
     return NextResponse.json(responseData, {
       headers: {

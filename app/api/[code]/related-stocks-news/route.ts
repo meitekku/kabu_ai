@@ -2,18 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { ServerToDate } from '@/utils/format/ServerToDate';
 import { RowDataPacket } from 'mysql2';
+import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
   const database = Database.getInstance();
-  
+
   try {
     const { code } = await params;
     const body = await request.json();
     const limit = body.limit || 5;
     const excludeId = body.excludeId;
+
+    // キャッシュチェック
+    const cacheKey = makeCacheKey('related-news', { code, limit, excludeId });
+    const ttl = getCacheTTL('news');
+    const cached = cacheGet(cacheKey, ttl);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'HIT' }
+      });
+    }
 
     // 関連銘柄のコードを取得
     const relatedStocksQuery = `
@@ -68,7 +79,11 @@ export async function POST(
       created_at: ServerToDate(row.created_at)
     }));
 
-    return NextResponse.json({ data: formattedResults });
+    const responseData = { data: formattedResults };
+    cacheSet(cacheKey, responseData);
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`, 'X-Cache': 'MISS' }
+    });
   } catch (error) {
     console.error('Error fetching related stocks news:', error);
     return NextResponse.json(
