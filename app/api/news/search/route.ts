@@ -18,6 +18,36 @@ interface CountResult extends RowDataPacket {
   total: number;
 }
 
+// --- インメモリキャッシュ ---
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry>();
+
+// 時間帯に応じたキャッシュTTL（秒）
+// 12:30〜13:30, 15:30〜16:30 は更新時間帯 → 短いTTL
+// それ以外は記事が変わらない → 長いTTL
+function getCacheTTL(): number {
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const h = jst.getHours();
+  const m = jst.getMinutes();
+  const minutes = h * 60 + m;
+
+  // 12:25〜13:30 → 更新時間帯（2分キャッシュ）
+  if (minutes >= 745 && minutes <= 810) return 120;
+  // 15:25〜16:30 → 更新時間帯（2分キャッシュ）
+  if (minutes >= 925 && minutes <= 990) return 120;
+  // それ以外 → 10分キャッシュ
+  return 600;
+}
+
+function getCacheKey(params: Record<string, unknown>): string {
+  return JSON.stringify(params);
+}
+
 export async function POST(req: Request) {
   try {
     const {
@@ -31,46 +61,31 @@ export async function POST(req: Request) {
       site_type = 0   // サイトタイプ
     } = await req.json();
 
+    // キャッシュチェック
+    const cacheKey = getCacheKey({ pickup, company_code, keyword, from_date, to_date, limit, page, site_type });
+    const ttl = getCacheTTL();
+    const cached = cache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < ttl * 1000) {
+      return NextResponse.json(cached.data, {
+        headers: {
+          'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`,
+          'X-Cache': 'HIT',
+        }
+      });
+    }
+
     const db = Database.getInstance();
-    
-    // 総件数を取得するクエリ
-    let countQuery = `
-      SELECT COUNT(DISTINCT p.id) as total
-      FROM post p
-      LEFT JOIN post_code pc ON p.id = pc.post_id
-      LEFT JOIN company c ON pc.code = c.code
-      WHERE p.accept = 1
-    `;
 
-    // データを取得するクエリ
-    let query = `
-      SELECT DISTINCT
-        p.id,
-        pc.code,
-        p.title,
-        p.content,
-        p.site,
-        p.pickup,
-        p.created_at,
-        p.updated_at,
-        c.name as company_name
-      FROM post p
-      LEFT JOIN post_code pc ON p.id = pc.post_id
-      LEFT JOIN company c ON pc.code = c.code
-      WHERE p.accept = 1
-    `;
-
-    const conditions = [];
+    const conditions: string[] = [];
     const values: (string | number | boolean | null)[] = [];
+    const needsJoin = !!company_code;
 
     if (site_type !== undefined) {
       if (Array.isArray(site_type)) {
-        // 配列の場合、IN句を使用
         const placeholders = site_type.map(() => '?').join(',');
         conditions.push(`p.site IN (${placeholders})`);
         values.push(...site_type);
       } else {
-        // 単一値の場合は完全一致
         conditions.push('p.site = ?');
         values.push(site_type);
       }
@@ -102,24 +117,59 @@ export async function POST(req: Request) {
       values.push(to_date);
     }
 
-    // 条件を結合
-    if (conditions.length > 0) {
-      const whereClause = ` AND ${conditions.join(' AND ')}`;
-      query += whereClause;
-      countQuery += whereClause;
+    const whereClause = conditions.length > 0
+      ? ` AND ${conditions.join(' AND ')}`
+      : '';
+
+    let countQuery: string;
+    let query: string;
+
+    if (needsJoin) {
+      // company_codeフィルタ時はJOINが必要
+      countQuery = `
+        SELECT COUNT(DISTINCT p.id) as total
+        FROM post p
+        INNER JOIN post_code pc ON p.id = pc.post_id
+        WHERE p.accept = 1${whereClause}
+      `;
+      query = `
+        SELECT p.id, pc.code, p.title, SUBSTRING(p.content, 1, 500) as content,
+          p.site, p.pickup, p.created_at, p.updated_at,
+          c.name as company_name
+        FROM post p
+        INNER JOIN post_code pc ON p.id = pc.post_id
+        LEFT JOIN company c ON pc.code = c.code
+        WHERE p.accept = 1${whereClause}
+        ORDER BY p.created_at DESC
+      `;
+    } else {
+      // JOINなしのサブクエリ方式（高速）
+      countQuery = `
+        SELECT COUNT(*) as total
+        FROM post p
+        WHERE p.accept = 1${whereClause}
+      `;
+      query = `
+        SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content,
+          p.site, p.pickup, p.created_at, p.updated_at,
+          (SELECT pc.code FROM post_code pc WHERE pc.post_id = p.id LIMIT 1) as code,
+          (SELECT c.name FROM post_code pc2 JOIN company c ON pc2.code = c.code WHERE pc2.post_id = p.id LIMIT 1) as company_name
+        FROM post p
+        WHERE p.accept = 1${whereClause}
+        ORDER BY p.created_at DESC
+      `;
     }
 
-    // ソート順を追加
-    query += ` ORDER BY p.created_at DESC`;
-
-    // ページネーションのためのLIMITとOFFSETを追加
+    // ページネーション
     const offset = (page - 1) * limit;
     query += ` LIMIT ? OFFSET ?`;
+
+    const countValues = [...values];
     values.push(limit);
     values.push(offset);
 
     // 総件数を取得
-    const [totalResult] = await db.select<CountResult>(countQuery, values.slice(0, -2));
+    const [totalResult] = await db.select<CountResult>(countQuery, countValues);
     const total = totalResult.total;
 
     // データを取得
@@ -146,12 +196,30 @@ export async function POST(req: Request) {
       }).replace(/\//g, '-').replace(/,/g, '')
     }));
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: formattedPosts,
       total: total,
       totalPages: Math.ceil(total / limit),
       currentPage: page
+    };
+
+    // キャッシュに保存
+    cache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
+    // 古いキャッシュエントリを定期的に削除（100エントリ超えたら）
+    if (cache.size > 100) {
+      const now = Date.now();
+      for (const [key, entry] of cache) {
+        if (now - entry.timestamp > 600_000) cache.delete(key);
+      }
+    }
+
+    return NextResponse.json(responseData, {
+      headers: {
+        'Cache-Control': `public, s-maxage=${ttl}, stale-while-revalidate=${ttl * 2}`,
+        'X-Cache': 'MISS',
+      }
     });
 
   } catch (error) {
