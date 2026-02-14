@@ -106,6 +106,9 @@ jobs:
             # --- ステージングでビルド（本番は稼働中） ---
             cd "$STAGING"
 
+            # ビルド用に空のuploadsディレクトリを作成（symlinkはNG: Turbopackが処理できない）
+            mkdir -p public/uploads
+
             echo "Installing Node.js dependencies..."
             npm ci
 
@@ -113,15 +116,9 @@ jobs:
             npm run build
 
             # --- ビルド後のセットアップ ---
-            # standalone用のpublicディレクトリ
-            mkdir -p .next/standalone/public
-            cp -r public/* .next/standalone/public/ 2>/dev/null || true
-
-            # uploadsは永続ディレクトリへのシンボリックリンク
+            # uploadsは永続ディレクトリへのシンボリックリンク（standaloneのみ）
             rm -rf .next/standalone/public/uploads
             ln -sf "$UPLOADS" .next/standalone/public/uploads
-            rm -rf public/uploads
-            ln -sf "$UPLOADS" public/uploads
 
             # uploadsのパーミッション設定
             chown -R root:root "$UPLOADS"
