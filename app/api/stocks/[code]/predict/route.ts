@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 120;
 
-const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const GLM_API_URL = process.env.GLM_API_URL || 'https://ollama.kabu-ai.jp/glm/api/paas/v4/chat/completions';
 
 // 日本の祝日判定
 function getJapaneseHolidays(year: number): Set<string> {
