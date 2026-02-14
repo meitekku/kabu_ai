@@ -62,6 +62,24 @@ export async function GET(
     }
 
     if (!fileBuffer || !foundPath) {
+      // ローカル開発環境のみ: 本番サーバーからプロキシ
+      if (process.env.NODE_ENV !== 'production') {
+        try {
+          const remoteUrl = `http://133.130.102.77:3000/uploads/${relativePath}`;
+          const remoteRes = await fetch(remoteUrl);
+          if (remoteRes.ok) {
+            const remoteBuffer = await remoteRes.arrayBuffer();
+            const ext = path.extname(relativePath).toLowerCase();
+            const contentType = getContentType(ext);
+            const response = new NextResponse(Buffer.from(remoteBuffer));
+            response.headers.set('Content-Type', contentType);
+            response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+            return response;
+          }
+        } catch {
+          // プロキシ失敗時は404を返す
+        }
+      }
       return new NextResponse('Image not found', { status: 404 });
     }
 

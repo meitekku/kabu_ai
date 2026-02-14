@@ -95,6 +95,12 @@ export async function POST(req: Request) {
     let countQuery: string;
     let query: string;
 
+    // contentからimg srcを抽出するSQLサブ式（シングル/ダブルクォート両対応）
+    const imageExtract = `CASE
+      WHEN LOCATE('src=\\'', p.content) > 0 THEN SUBSTRING_INDEX(SUBSTRING(p.content, LOCATE('src=\\'', p.content) + 5), '\\'', 1)
+      WHEN LOCATE('src="', p.content) > 0 THEN SUBSTRING_INDEX(SUBSTRING(p.content, LOCATE('src="', p.content) + 5), '"', 1)
+      ELSE NULL END`;
+
     if (needsJoin) {
       // company_codeフィルタ時はJOINが必要
       countQuery = `
@@ -106,7 +112,8 @@ export async function POST(req: Request) {
       query = `
         SELECT p.id, pc.code, p.title, SUBSTRING(p.content, 1, 500) as content,
           p.site, p.pickup, p.created_at, p.updated_at,
-          c.name as company_name
+          c.name as company_name,
+          ${imageExtract} as image_path
         FROM post p
         INNER JOIN post_code pc ON p.id = pc.post_id
         LEFT JOIN company c ON pc.code = c.code
@@ -124,7 +131,8 @@ export async function POST(req: Request) {
         SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content,
           p.site, p.pickup, p.created_at, p.updated_at,
           (SELECT pc.code FROM post_code pc WHERE pc.post_id = p.id LIMIT 1) as code,
-          (SELECT c.name FROM post_code pc2 JOIN company c ON pc2.code = c.code WHERE pc2.post_id = p.id LIMIT 1) as company_name
+          (SELECT c.name FROM post_code pc2 JOIN company c ON pc2.code = c.code WHERE pc2.post_id = p.id LIMIT 1) as company_name,
+          ${imageExtract} as image_path
         FROM post p
         WHERE p.accept = 1${whereClause}
         ORDER BY p.created_at DESC

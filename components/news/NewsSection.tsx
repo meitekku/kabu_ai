@@ -13,6 +13,7 @@ interface Post {
   company_name: string;
   site: number;
   image_url?: string;
+  image_path?: string;
 }
 
 export default function NewsSection() {
@@ -60,7 +61,7 @@ export default function NewsSection() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {news.map((item) => {
           const imageMatch = item.content.match(/<img[^>]+src=['"]([^'">]+)['"]/);
-          const imageUrl = imageMatch ? imageMatch[1] : null;
+          const imageUrl = item.image_path || item.image_url || (imageMatch ? imageMatch[1] : null);
 
           return (
             <Link href={`/${item.code}/news/article/${item.id}`} key={item.id} className="block h-full">
