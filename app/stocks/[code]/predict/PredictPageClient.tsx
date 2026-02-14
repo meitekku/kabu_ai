@@ -211,6 +211,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
           hideNewsTooltips={true}
           predictionData={report.dailyForecasts.map(f => ({
             date: f.date,
+            predictedOpen: f.predictedOpen ?? f.predictedClose,
             predictedClose: f.predictedClose,
             predictedHigh: f.predictedHigh,
             predictedLow: f.predictedLow,
@@ -222,46 +223,52 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         />
       </div>
 
-      {/* 3. Summary + Confidence */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        <div className="flex-1">
-          <h2 className="text-xl font-bold mb-2">予測概要</h2>
-          <p className="text-muted-foreground leading-relaxed">{report.summary}</p>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <ConfidenceCircle confidence={report.confidence} />
-          <span className="text-xs text-muted-foreground">信頼度</span>
-        </div>
+      {/* 3. Summary */}
+      <div>
+        <h2 className="text-xl font-bold mb-2">予測概要</h2>
+        <p className="text-muted-foreground leading-relaxed">{report.summary}</p>
       </div>
 
-      {/* 4. Daily forecast table */}
-      <div className="border rounded-lg overflow-hidden">
-        <h3 className="text-lg font-semibold p-4 pb-2">日別予測</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">日付</th>
-                <th className="text-right p-3 font-medium">予測終値</th>
-                <th className="text-right p-3 font-medium hidden md:table-cell">予測高値</th>
-                <th className="text-right p-3 font-medium hidden md:table-cell">予測安値</th>
-                <th className="text-left p-3 font-medium">根拠</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.dailyForecasts.map((f, i) => (
-                <tr key={i} className="border-b last:border-0">
-                  <td className="p-3 whitespace-nowrap">{f.date}</td>
-                  <td className="p-3 text-right font-mono">{f.predictedClose.toLocaleString()}</td>
-                  <td className="p-3 text-right font-mono hidden md:table-cell">{f.predictedHigh.toLocaleString()}</td>
-                  <td className="p-3 text-right font-mono hidden md:table-cell">{f.predictedLow.toLocaleString()}</td>
-                  <td className="p-3 text-muted-foreground text-xs">{f.reasoning}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* 4. Content Sections */}
+      {report.technicalAnalysis && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-500" />
+            テクニカル分析
+          </h3>
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.technicalAnalysis}</p>
         </div>
-      </div>
+      )}
+
+      {report.fundamentalAnalysis && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
+            ファンダメンタルズ分析
+          </h3>
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.fundamentalAnalysis}</p>
+        </div>
+      )}
+
+      {report.catalystAnalysis && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <Newspaper className="w-5 h-5 text-orange-500" />
+            カタリスト・材料分析
+          </h3>
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.catalystAnalysis}</p>
+        </div>
+      )}
+
+      {report.investmentStrategy && (
+        <div className="border rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+            <BrainCircuit className="w-5 h-5 text-purple-500" />
+            投資戦略
+          </h3>
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.investmentStrategy}</p>
+        </div>
+      )}
 
       {/* 5. Overall Analysis */}
       <div className="border rounded-lg p-4">
