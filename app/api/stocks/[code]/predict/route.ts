@@ -146,6 +146,7 @@ interface QuarterlyResultRecord {
 
 interface DailyForecast {
   date: string;
+  predictedOpen: number;
   predictedClose: number;
   predictedHigh: number;
   predictedLow: number;
@@ -162,14 +163,17 @@ interface TrendDirection {
 interface PredictionResult {
   summary: string;
   trends: {
-    shortTerm: TrendDirection; // 短期(1-3日)
-    midTerm: TrendDirection;   // 中期(1-2週間)
-    longTerm: TrendDirection;  // 長期(1ヶ月)
+    oneWeek: TrendDirection;   // 1週間予測
+    twoWeeks: TrendDirection;  // 2週間予測
+    oneMonth: TrendDirection;  // 1ヶ月予測
   };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
+  technicalAnalysis: string;
+  fundamentalAnalysis: string;
+  catalystAnalysis: string;
+  investmentStrategy: string;
   riskFactors: string[];
-  confidence: number;
   quality_score?: number;
 }
 
@@ -188,16 +192,48 @@ export async function POST(
       );
     }
 
-    const headersList = await headers();
+    const db = Database.getInstance();
+
+    // 認証・キャッシュチェックを並列実行
+    const [headersList, cookieStore, cacheResult] = await Promise.all([
+      headers(),
+      cookies(),
+      db.select<{ prediction_data: string; report_html: string }>(
+        `SELECT prediction_data, report_html FROM prediction_cache
+         WHERE code = ? AND prediction_date = CURDATE()`,
+        [code]
+      ),
+    ]);
+
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id || null;
     const clientIp = getClientIp(headersList);
-
-    const db = Database.getInstance();
-
-    // 管理者チェック（legacyクッキー認証）
-    const cookieStore = await cookies();
     const isAdmin = !!cookieStore.get('username')?.value;
+
+    // キャッシュヒット: 利用ログを記録して即返却（認証チェック不要）
+    if (cacheResult.length > 0) {
+      // 利用ログは非同期で記録（レスポンスをブロックしない）
+      db.insert(
+        `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [uuidv4(), fingerprint, clientIp, userId, code, false]
+      ).catch((err: unknown) => console.error('Usage log error:', err));
+
+      let predictionData;
+      try {
+        predictionData = typeof cacheResult[0].prediction_data === 'string'
+          ? JSON.parse(cacheResult[0].prediction_data)
+          : cacheResult[0].prediction_data;
+      } catch {
+        predictionData = cacheResult[0].prediction_data;
+      }
+
+      return NextResponse.json({
+        success: true,
+        report: predictionData,
+        cached: true,
+      });
+    }
 
     // プレミアム会員チェック
     let isPremium = false;
@@ -209,7 +245,7 @@ export async function POST(
       isPremium = users[0]?.subscription_status === 'active';
     }
 
-    // 利用制限チェック（管理者はスキップ）
+    // 利用制限チェック（管理者・プレミアムはスキップ）
     if (!isPremium && !isAdmin) {
       if (userId) {
         const usageResult = await db.select<{ count: number }>(
@@ -234,40 +270,6 @@ export async function POST(
           );
         }
       }
-    }
-
-    // キャッシュチェック
-    const cacheResult = await db.select<{
-      prediction_data: string;
-      report_html: string;
-    }>(
-      `SELECT prediction_data, report_html FROM prediction_cache
-       WHERE code = ? AND prediction_date = CURDATE()`,
-      [code]
-    );
-
-    if (cacheResult.length > 0) {
-      // キャッシュヒット: 利用ログを記録して返却
-      await db.insert(
-        `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-        [uuidv4(), fingerprint, clientIp, userId, code, isPremium]
-      );
-
-      let predictionData;
-      try {
-        predictionData = typeof cacheResult[0].prediction_data === 'string'
-          ? JSON.parse(cacheResult[0].prediction_data)
-          : cacheResult[0].prediction_data;
-      } catch {
-        predictionData = cacheResult[0].prediction_data;
-      }
-
-      return NextResponse.json({
-        success: true,
-        report: predictionData,
-        cached: true,
-      });
     }
 
     // データ収集
@@ -350,7 +352,7 @@ export async function POST(
 
     // 営業日リストを生成
     const latestDate = new Date(latestPrice.date);
-    const businessDays = getNextBusinessDays(latestDate, 10);
+    const businessDays = getNextBusinessDays(latestDate, 20);
     const businessDaysText = businessDays.join(', ');
 
     const prompt = `あなたはプロの株式アナリストです。機関投資家向けの高品質な分析レポートを作成するつもりで、以下のデータに基づき今後2週間（10営業日）の株価を日足で予測してください。投資家に価値ある具体的な分析を提供することを最優先にしてください。
@@ -481,81 +483,22 @@ ${businessDaysText}
       return JSON.parse(jsonStr);
     }
 
-    // 品質レビュー関数
-    async function reviewPrediction(
-      predictionDataToReview: PredictionResult,
-      reviewCompanyName: string,
-      reviewCode: string,
-    ): Promise<{ score: number; feedback: string }> {
-      const reviewPrompt = `あなたは株式分析レポートの品質管理担当です。以下の株価予測レポートを厳格に品質評価してください。
-
-## 評価対象
-- 銘柄: ${reviewCompanyName}（${reviewCode}）
-- レポート内容:
-${JSON.stringify(predictionDataToReview, null, 2)}
-
-## 評価基準（各20点、合計100点）
-1. **日本語の自然さ（20点）**: 文法的に正しいか、読みやすい日本語か、プロのアナリストが書いたような文体か
-2. **論理的一貫性（20点）**: summaryとoverallAnalysisとdailyForecastsの内容が矛盾していないか、trendsの方向性とdailyForecastsの価格推移が一致しているか
-3. **具体性（20点）**: summaryに具体的な数値が含まれているか、overallAnalysisに具体的な指標・数値が含まれているか、riskFactorsに具体的なシナリオがあるか
-4. **分析の深さ（20点）**: テクニカル・ファンダメンタルズの両面からの分析があるか、overallAnalysisが十分な長さ（300文字以上）か
-5. **データの妥当性（20点）**: 予測価格が現実的な範囲か、trendsのstrengthが適切か、confidenceの値が分析内容と整合しているか
-
-## 回答形式
-以下のJSON形式で回答してください。JSON以外のテキストは含めないでください。
-
-{
-  "score": 合計スコア（0-100の整数）,
-  "feedback": "改善すべき点を具体的に指摘。どの評価基準で減点されたか、どう改善すべきかを明記（200文字以上）"
-}`;
-
-      const reviewResult = await callGlmApi(
-        [{ role: 'user', content: reviewPrompt }],
-        0.3,
-        2048,
-      );
-
-      if (!reviewResult.ok || !reviewResult.content) {
-        return { score: 80, feedback: 'レビューAPI呼び出し失敗のためスキップ' };
-      }
-
-      try {
-        const parsed = JSON.parse(
-          reviewResult.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        );
-        return {
-          score: typeof parsed.score === 'number' ? parsed.score : 80,
-          feedback: parsed.feedback || 'フィードバックなし',
-        };
-      } catch {
-        return { score: 80, feedback: 'レビュー結果の解析に失敗のためスキップ' };
-      }
-    }
-
-    // 予測生成（最大3回: 初回 + 再生成最大2回）
+    // 予測生成（パース失敗時のみリトライ、最大2回）
     let predictionData: PredictionResult | null = null;
-    let qualityScore = 0;
-    let lastFeedback = '';
-    const maxAttempts = 3;
+    const maxAttempts = 2;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      // プロンプトにフィードバックを追加（再生成時）
-      let currentPrompt = prompt;
-      if (attempt > 0 && lastFeedback) {
-        currentPrompt += `\n\n## 前回の品質レビューフィードバック（必ず改善すること）\n${lastFeedback}`;
-      }
-
       const messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [];
       if (chartImage) {
         messages.push({
           role: 'user',
           content: [
-            { type: 'text', text: currentPrompt },
+            { type: 'text', text: prompt },
             { type: 'image_url', image_url: { url: `data:image/png;base64,${chartImage}` } },
           ],
         });
       } else {
-        messages.push({ role: 'user', content: currentPrompt });
+        messages.push({ role: 'user', content: prompt });
       }
 
       const glmResult = await callGlmApi(messages);
@@ -573,6 +516,7 @@ ${JSON.stringify(predictionDataToReview, null, 2)}
 
       try {
         predictionData = parseJsonResponse(glmResult.content!);
+        break;
       } catch (parseError) {
         console.error(`Failed to parse GLM response (attempt ${attempt + 1}):`, parseError);
         console.error('Raw response:', glmResult.content);
@@ -584,22 +528,6 @@ ${JSON.stringify(predictionDataToReview, null, 2)}
         }
         continue;
       }
-
-      // 品質レビュー
-      const review = await reviewPrediction(predictionData, companyName, code);
-      qualityScore = review.score;
-      lastFeedback = review.feedback;
-
-      console.log(`Prediction quality review (attempt ${attempt + 1}): score=${qualityScore}`);
-
-      if (qualityScore >= 80) {
-        break;
-      }
-
-      // 最終試行でもスコア不足の場合はそのまま使用
-      if (attempt === maxAttempts - 1) {
-        console.log(`Max attempts reached, using prediction with score ${qualityScore}`);
-      }
     }
 
     if (!predictionData) {
@@ -608,9 +536,6 @@ ${JSON.stringify(predictionDataToReview, null, 2)}
         { status: 500 }
       );
     }
-
-    // 品質スコアをデータに含める
-    predictionData.quality_score = qualityScore;
 
     // 後処理: 祝日・土日の予測日を除外
     if (predictionData.dailyForecasts) {
@@ -626,25 +551,23 @@ ${JSON.stringify(predictionDataToReview, null, 2)}
       });
     }
 
-    // キャッシュ保存
+    // キャッシュ保存と利用ログ記録を非同期で実行（レスポンスをブロックしない）
     const reportHtml = `<h3>${companyName}（${code}）の株価予測</h3><p>${predictionData.summary}</p>`;
-    try {
-      await db.insert(
+    const predictionJson = JSON.stringify(predictionData);
+
+    Promise.all([
+      db.insert(
         `INSERT INTO prediction_cache (code, prediction_date, report_html, prediction_data, created_at)
          VALUES (?, CURDATE(), ?, ?, NOW())
          ON DUPLICATE KEY UPDATE report_html = VALUES(report_html), prediction_data = VALUES(prediction_data), created_at = NOW()`,
-        [code, reportHtml, JSON.stringify(predictionData)]
-      );
-    } catch (cacheError) {
-      console.error('Cache save error:', cacheError);
-    }
-
-    // 利用ログ記録
-    await db.insert(
-      `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [uuidv4(), fingerprint, clientIp, userId, code, isPremium]
-    );
+        [code, reportHtml, predictionJson]
+      ).catch((err: unknown) => console.error('Cache save error:', err)),
+      db.insert(
+        `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [uuidv4(), fingerprint, clientIp, userId, code, isPremium]
+      ).catch((err: unknown) => console.error('Usage log error:', err)),
+    ]);
 
     return NextResponse.json({
       success: true,

@@ -253,24 +253,27 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           })) : formattedData;
           // 予測データがある場合はマージ
           if (predictionData && predictionData.length > 0) {
-            const predictionEntries: ExtendedChartData[] = predictionData.map(p => ({
-              date: p.date,
-              open: p.predictedClose,
-              high: p.predictedHigh,
-              low: p.predictedLow,
-              close: p.predictedClose,
-              volume: 0,
-              highLowBar: [p.predictedLow, p.predictedHigh] as [number, number],
-              candlestick: [p.predictedClose, p.predictedClose] as [number, number],
-              color: p.predictedClose >= (convertedData[convertedData.length - 1]?.close ?? p.predictedClose) ? '#ff0000' : '#0000ff',
-              ma5: 0,
-              ma25: 0,
-              ma75: 0,
-              code: code,
-              isPrediction: true,
-              predictionHigh: p.predictedHigh,
-              predictionLow: p.predictedLow,
-            }));
+            const predictionEntries: ExtendedChartData[] = predictionData.map(p => {
+              const open = p.predictedOpen ?? p.predictedClose;
+              return {
+                date: p.date,
+                open,
+                high: p.predictedHigh,
+                low: p.predictedLow,
+                close: p.predictedClose,
+                volume: 0,
+                highLowBar: [p.predictedLow, p.predictedHigh] as [number, number],
+                candlestick: [Math.min(open, p.predictedClose), Math.max(open, p.predictedClose)] as [number, number],
+                color: p.predictedClose >= open ? '#ff0000' : '#0000ff',
+                ma5: 0,
+                ma25: 0,
+                ma75: 0,
+                code: code,
+                isPrediction: true,
+                predictionHigh: p.predictedHigh,
+                predictionLow: p.predictedLow,
+              };
+            });
             // 予測同士の色を前日比で計算
             for (let i = 1; i < predictionEntries.length; i++) {
               predictionEntries[i].color = predictionEntries[i].close >= predictionEntries[i - 1].close ? '#ff0000' : '#0000ff';

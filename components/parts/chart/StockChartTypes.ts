@@ -55,6 +55,7 @@ export interface PredictionDataPoint {
   predictedClose: number;
   predictedHigh: number;
   predictedLow: number;
+  predictedOpen?: number;
 }
 
 // StockChartProps

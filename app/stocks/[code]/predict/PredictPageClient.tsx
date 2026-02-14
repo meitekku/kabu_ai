@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 interface DailyForecast {
   date: string;
+  predictedOpen?: number;
   predictedClose: number;
   predictedHigh: number;
   predictedLow: number;
@@ -26,14 +27,17 @@ interface TrendDirection {
 interface PredictionReport {
   summary: string;
   trends?: {
-    shortTerm: TrendDirection;
-    midTerm: TrendDirection;
-    longTerm: TrendDirection;
+    oneWeek: TrendDirection;
+    twoWeeks: TrendDirection;
+    oneMonth: TrendDirection;
   };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
   riskFactors: string[];
-  confidence: number;
+  technicalAnalysis?: string;
+  fundamentalAnalysis?: string;
+  catalystAnalysis?: string;
+  investmentStrategy?: string;
 }
 
 interface PredictPageClientProps {
@@ -41,123 +45,109 @@ interface PredictPageClientProps {
 }
 
 const ANALYSIS_STEPS = [
-  'チャートパターンを分析中...',
-  '出来高トレンドを解析中...',
-  '最新ニュースを読み込み中...',
-  '業績データを確認中...',
-  'AI予測モデルを実行中...',
+  { icon: Database, label: 'データ取得中', description: '株価・出来高データを収集しています' },
+  { icon: Newspaper, label: 'ニュース分析中', description: '最新ニュースと業績データを確認しています' },
+  { icon: BrainCircuit, label: 'AI分析中', description: 'AIモデルが株価パターンを解析しています' },
+  { icon: BarChart3, label: '品質チェック中', description: '予測レポートの精度を検証しています' },
+  { icon: FileCheck, label: 'レポート生成中', description: '予測結果をまとめています' },
 ];
 
-function AnalyzingAnimation({ progress }: { progress: number }) {
-  const [currentStep, setCurrentStep] = useState(0);
+const STEP_TIMINGS = [2000, 4000, 15000, 25000];
+
+function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev + 1) % ANALYSIS_STEPS.length);
-    }, 2500);
+      setElapsed((prev) => prev + 1);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-      {/* Background animation */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <svg className="w-full h-full opacity-5" viewBox="0 0 800 400">
-          <path
-            d="M0 200 Q100 150 200 180 Q300 210 400 170 Q500 130 600 190 Q700 250 800 200"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            className="text-emerald-500 animate-pulse"
-          />
-          <path
-            d="M0 220 Q100 180 200 200 Q300 220 400 190 Q500 160 600 210 Q700 260 800 220"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-emerald-400/50 animate-pulse"
-            style={{ animationDelay: '0.5s' }}
-          />
-        </svg>
-      </div>
-
-      <div className="relative z-10 w-full max-w-md space-y-8 text-center">
-        {/* Icon */}
-        <div className="flex justify-center">
-          <div className="p-4 rounded-full bg-emerald-500/10 animate-pulse">
-            <TrendingUp className="w-10 h-10 text-emerald-500" />
-          </div>
-        </div>
-
-        {/* Title */}
-        <h2 className="text-2xl font-bold">AIが分析中...</h2>
-
-        {/* Progress bar */}
-        <div className="w-full">
-          <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">{Math.round(progress)}%</p>
-        </div>
-
-        {/* Cycling analysis steps */}
-        <div className="h-8 relative">
-          {ANALYSIS_STEPS.map((step, i) => (
-            <p
-              key={i}
-              className={`absolute inset-0 text-sm text-muted-foreground transition-opacity duration-500 ${
-                i === currentStep ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {step}
-            </p>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ConfidenceCircle({ confidence }: { confidence: number }) {
-  const radius = 40;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (confidence / 100) * circumference;
-
-  const getColor = (c: number) => {
-    if (c >= 70) return 'text-emerald-500';
-    if (c >= 40) return 'text-amber-500';
-    return 'text-red-500';
+  const formatTime = (s: number) => {
+    const min = Math.floor(s / 60);
+    const sec = s % 60;
+    return min > 0 ? `${min}分${sec}秒` : `${sec}秒`;
   };
 
   return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width="100" height="100" className="-rotate-90">
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          className="text-muted"
-        />
-        <circle
-          cx="50"
-          cy="50"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className={`${getColor(confidence)} transition-all duration-1000 ease-out`}
-        />
-      </svg>
-      <span className="absolute text-lg font-bold">{confidence}%</span>
+    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+      <div className="relative z-10 w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="flex justify-center">
+            <div className="p-4 rounded-full bg-emerald-500/10 animate-pulse">
+              <TrendingUp className="w-10 h-10 text-emerald-500" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold">AIが分析中...</h2>
+          <p className="text-sm text-muted-foreground">経過時間: {formatTime(elapsed)}</p>
+        </div>
+
+        {/* Step indicator */}
+        <div className="space-y-1">
+          {ANALYSIS_STEPS.map((step, i) => {
+            const StepIcon = step.icon;
+            const isCompleted = i < activeStep;
+            const isActive = i === activeStep;
+            const isPending = i > activeStep;
+
+            return (
+              <div key={i} className="flex items-start gap-4">
+                {/* Step circle + connector */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
+                      isCompleted
+                        ? 'bg-emerald-500 text-white'
+                        : isActive
+                          ? 'bg-emerald-500/20 border-2 border-emerald-500'
+                          : 'bg-muted border-2 border-muted-foreground/20'
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <Check className="w-5 h-5" />
+                    ) : isActive ? (
+                      <StepIcon className="w-5 h-5 text-emerald-500 animate-pulse" />
+                    ) : (
+                      <StepIcon className="w-5 h-5 text-muted-foreground/40" />
+                    )}
+                  </div>
+                  {i < ANALYSIS_STEPS.length - 1 && (
+                    <div
+                      className={`w-0.5 h-6 transition-colors duration-500 ${
+                        isCompleted ? 'bg-emerald-500' : 'bg-muted-foreground/20'
+                      }`}
+                    />
+                  )}
+                </div>
+
+                {/* Step text */}
+                <div className={`pt-2 pb-4 ${isPending ? 'opacity-40' : ''}`}>
+                  <p
+                    className={`text-sm font-medium transition-colors duration-500 ${
+                      isActive ? 'text-emerald-500' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {step.label}
+                    {isCompleted && (
+                      <span className="ml-2 text-xs text-emerald-500">完了</span>
+                    )}
+                  </p>
+                  {(isActive || isCompleted) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tip text */}
+        <p className="text-xs text-muted-foreground text-center">
+          AIが複数のデータソースを分析してレポートを作成します。通常30秒〜1分ほどかかります。
+        </p>
+      </div>
     </div>
   );
 }
@@ -200,9 +190,9 @@ function TrendCard({ label, trend }: { label: string; trend: TrendDirection }) {
 function TrendSection({ trends }: { trends: NonNullable<PredictionReport['trends']> }) {
   return (
     <div className="grid grid-cols-3 gap-3">
-      <TrendCard label="短期 1-3日" trend={trends.shortTerm} />
-      <TrendCard label="中期 1-2週" trend={trends.midTerm} />
-      <TrendCard label="長期 1ヶ月" trend={trends.longTerm} />
+      <TrendCard label="1週間" trend={trends.oneWeek} />
+      <TrendCard label="2週間" trend={trends.twoWeeks} />
+      <TrendCard label="1ヶ月" trend={trends.oneMonth} />
     </div>
   );
 }
@@ -310,27 +300,30 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
   const fingerprint = useFingerprint();
   const [state, setState] = useState<'loading' | 'complete' | 'error'>('loading');
   const [report, setReport] = useState<PredictionReport | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const hasFetched = useRef(false);
+  const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Fake progress animation
+  // Time-based step progression
   useEffect(() => {
     if (state !== 'loading') return;
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        // Slow down as it approaches 90%
-        const increment = Math.max(0.5, (90 - prev) * 0.05);
-        return Math.min(90, prev + increment);
-      });
-    }, 200);
+    // Schedule step transitions based on expected API timing
+    let cumulative = 0;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    STEP_TIMINGS.forEach((delay, i) => {
+      cumulative += delay;
+      const timer = setTimeout(() => {
+        setActiveStep((prev) => Math.max(prev, i + 1));
+      }, cumulative);
+      timers.push(timer);
+    });
+    stepTimers.current = timers;
 
-    return () => clearInterval(interval);
+    return () => {
+      timers.forEach(clearTimeout);
+    };
   }, [state]);
 
   const fetchPrediction = useCallback(async () => {
@@ -339,11 +332,12 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
 
     try {
       // Check cache first
+      setActiveStep(0);
       const cacheRes = await fetch(`/api/stocks/${code}/predict/cache`);
       const cacheData = await cacheRes.json();
 
       if (cacheData.cached && cacheData.data) {
-        setProgress(100);
+        stepTimers.current.forEach(clearTimeout);
         setReport(cacheData.data);
         setState('complete');
         return;
@@ -362,14 +356,18 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
       }
 
       const data = await res.json();
-      setProgress(100);
 
-      // Small delay for animation completion
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Clear remaining timers and complete
+      stepTimers.current.forEach(clearTimeout);
+      setActiveStep(ANALYSIS_STEPS.length);
+
+      // Brief delay for final step to visually complete
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       setReport(data.report);
       setState('complete');
     } catch (err) {
+      stepTimers.current.forEach(clearTimeout);
       setErrorMessage(err instanceof Error ? err.message : '予測の取得に失敗しました');
       setState('error');
     }
@@ -397,7 +395,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
 
       {/* Content */}
       {state === 'loading' && (
-        <AnalyzingAnimation progress={progress} />
+        <AnalyzingAnimation activeStep={activeStep} />
       )}
 
       {state === 'complete' && report && (
@@ -417,7 +415,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
               onClick={() => {
                 hasFetched.current = false;
                 setState('loading');
-                setProgress(0);
+                setActiveStep(0);
                 fetchPrediction();
               }}
             >

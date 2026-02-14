@@ -88,8 +88,8 @@ const YahooBBSRanking: React.FC<YahooBBSRankingProps> = ({
         className="w-40 p-2 border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
       >
         <option value="">yahooランキング</option>
-        {companies.map((company) => (
-          <option key={company.code} value={company.code}>
+        {companies.map((company, index) => (
+          <option key={`${company.code}-${index}`} value={company.code}>
             {company.code} {company.company_name}
           </option>
         ))}
