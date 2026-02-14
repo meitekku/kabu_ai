@@ -1,6 +1,6 @@
 "use client";
 
-import { AuthProvider, AdminProtectedRoute } from "@/components/auth";
+import { AdminProtectedRoute } from "@/components/auth";
 
 export default function AdminLayout({
   children,
@@ -8,10 +8,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
-      <AdminProtectedRoute>
-        <main className="dashboard-content">{children}</main>
-      </AdminProtectedRoute>
-    </AuthProvider>
+    <AdminProtectedRoute>
+      <main className="dashboard-content">{children}</main>
+    </AdminProtectedRoute>
   );
 }

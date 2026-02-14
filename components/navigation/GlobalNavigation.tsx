@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/components/auth';
+
+const ADMIN_EMAIL = "smartaiinvest@gmail.com";
 
 const NAVIGATION_LINKS = [
   { href: '/admin/accept_ai', label: '承認リスト' },
@@ -15,25 +18,9 @@ const NAVIGATION_LINKS = [
 ] as const;
 
 const GlobalNavigation = () => {
-  const [isLogin, setIsLogin] = useState(false);
+  const { user, isLogin } = useAuth();
   const pathname = usePathname();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth', {
-          method: 'GET',
-          credentials: 'include',
-        });
-        const data = await response.json();
-        setIsLogin(data.isLogin);
-      } catch (error) {
-        console.error('Authentication check failed:', error);
-      }
-    };
-
-    checkAuth();
-  }, []);
+  const isAdmin = isLogin && user?.email === ADMIN_EMAIL;
 
   // 現在のURLが記事ページかどうかをチェック
   const newsArticleMatch = pathname?.match(/^\/([^/]+)\/news\/article\/([^/]+)$/);
@@ -49,7 +36,7 @@ const GlobalNavigation = () => {
 
   return (
     <>
-      {isLogin && (
+      {isAdmin && (
         <nav className="fixed top-0 left-0 right-0 bg-gray-800 text-white z-50 py-1 px-2">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center h-full">
@@ -69,7 +56,7 @@ const GlobalNavigation = () => {
           </div>
         </nav>
       )}
-      <div className={`transition-all duration-300 ease-in-out ${isLogin ? 'h-8' : 'h-0'}`} />
+      <div className={`transition-all duration-300 ease-in-out ${isAdmin ? 'h-8' : 'h-0'}`} />
     </>
   );
 };

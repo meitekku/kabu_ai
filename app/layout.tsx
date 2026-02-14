@@ -3,6 +3,7 @@ import LayoutClient from '@/components/layout/LayoutClient'
 import MobileTopAd from '@/components/common/MobileTopAd'
 import { metadata, gtag } from './metadata'
 import Script from 'next/script'
+import { AuthProvider } from '@/components/auth'
 
 export { metadata }
 
@@ -22,10 +23,12 @@ export default function RootLayout({
         <Script id="google-analytics" strategy="afterInteractive">
           {gtag}
         </Script>
-        <MobileTopAd />
-        <LayoutClient>
-          {children}
-        </LayoutClient>
+        <AuthProvider>
+          <MobileTopAd />
+          <LayoutClient>
+            {children}
+          </LayoutClient>
+        </AuthProvider>
       </body>
     </html>
   )
