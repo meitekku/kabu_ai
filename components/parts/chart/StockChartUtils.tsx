@@ -112,30 +112,16 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   
   console.log(`記事の絞り込み結果: 全${articles.length}件 → ${articlesByDate.size}日分の記事`);
   
-  // 最新の記事を1つだけ取得（日付に関係なく）
-  let latestArticle: NewsArticle | null = null;
-  if (articles.length > 0) {
-    latestArticle = articles.reduce((latest: NewsArticle, current: NewsArticle) => {
-      return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
-    });
-    console.log(`最新記事: 日付=${formatDate(latestArticle.created_at)}, ID=${latestArticle.id}, タイトル="${latestArticle.title.substring(0, 30)}..."`);
-  }
-  
   // 整形
   return sortedData.map((item, index) => {
     const isPositive = item.close >= item.open;
     const date = new Date(item.date);
     const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-    
+
     // その日付の記事を取得（各日付で1つのみ）
     const chartDateStr = formatDate(item.date);
     const dayArticle = articlesByDate.get(chartDateStr);
-    const dayArticles = dayArticle ? [dayArticle] : [];
-    
-    // 最新記事を表示する（最後のデータポイントの場合）
-    const articlesToShow = (index === sortedData.length - 1 && latestArticle && dayArticles.length === 0) 
-      ? [latestArticle] 
-      : dayArticles;
+    const articlesToShow = dayArticle ? [dayArticle] : [];
     
     if (articlesToShow.length > 0) {
       console.log(`チャート[${index}]: 日付=${dateStr}, 記事数=${articlesToShow.length}, 記事="${articlesToShow[0].title.substring(0, 30)}..."`);
