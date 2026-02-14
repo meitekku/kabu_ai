@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
   const username = req.cookies.get('username');
 
   return NextResponse.json({

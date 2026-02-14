@@ -52,7 +52,7 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   }, [chartImageUrl, title, content]);
 
   // 画像を圧縮する関数
-  const compressImage = async (file: File): Promise<string> => {
+  const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);

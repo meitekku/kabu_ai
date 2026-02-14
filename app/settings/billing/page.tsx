@@ -4,7 +4,7 @@ import DefaultTemplate from "@/components/template/DefaultTemplate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, CreditCard, AlertCircle, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/auth-client";
 
@@ -24,17 +24,7 @@ export default function BillingPage() {
     const router = useRouter();
     const { data: session, isPending: sessionLoading } = useSession();
 
-    useEffect(() => {
-        if (!sessionLoading) {
-            if (!session?.user) {
-                router.push('/login');
-            } else {
-                fetchSubscription();
-            }
-        }
-    }, [session, sessionLoading, router]);
-
-    const fetchSubscription = async () => {
+    const fetchSubscription = useCallback(async () => {
         try {
             const response = await fetch('/api/subscription');
             if (response.ok) {
@@ -52,7 +42,17 @@ export default function BillingPage() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        if (!sessionLoading) {
+            if (!session?.user) {
+                router.push('/login');
+            } else {
+                fetchSubscription();
+            }
+        }
+    }, [session, sessionLoading, router, fetchSubscription]);
 
     const handleCheckout = async () => {
         setLoading(true);

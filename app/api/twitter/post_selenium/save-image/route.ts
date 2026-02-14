@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GETリクエストハンドラー（APIの動作確認用）
-export async function GET() {
+export function GET() {
   return NextResponse.json({
     message: '画像保存API',
     description: 'Base64エンコードされた画像データをサーバーに保存します',

@@ -1,8 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
-import { headers } from 'next/headers';
-import { cookies } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 
 function getClientIp(headersList: Headers): string {
   const forwardedFor = headersList.get('x-forwarded-for');

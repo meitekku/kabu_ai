@@ -465,7 +465,7 @@ async function generateSampleChartImage(): Promise<string> {
 }
 
 // より詳細なSVGチャートを生成する関数
-async function generateDetailedSVGChart(): Promise<string> {
+function generateDetailedSVGChart(): string {
   try {
     const now = new Date();
     const basePrice = 2450;

@@ -6,7 +6,6 @@ import {
     CheckCircle2,
     TrendingUp,
     MessageSquare,
-    Sparkles,
     ArrowRight,
     Crown,
     BarChart3,

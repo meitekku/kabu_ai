@@ -152,7 +152,7 @@ function formatFileSize(bytes: number): string {
 }
 
 // 画像を最適化する関数（Canvas API使用）
-async function optimizeImageBuffer(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; mimeType: string }> {
+function optimizeImageBuffer(buffer: Buffer, mimeType: string): { buffer: Buffer; mimeType: string } {
   const MAX_SIZE = 4.5 * 1024 * 1024; // 4.5MB（安全マージン）
   
   // ファイルサイズが制限内の場合はそのまま返す
@@ -578,9 +578,9 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
 }
 
 // GET メソッドのハンドラー（APIの動作確認用）
-export async function GET() {
+export function GET() {
   const envValidation = validateEnvironmentVariables();
-  
+
   return NextResponse.json({
     status: 'Twitter API endpoint is ready',
     environmentVariablesSet: envValidation.valid,

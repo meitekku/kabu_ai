@@ -96,7 +96,7 @@ function logDetailedReport(report: PythonErrorReport) {
 }
 
 // Pythonスクリプトを実行する関数
-async function executePythonScript(
+function executePythonScript(
   message?: string,
   encodedMessage?: string,
   hasEmoji?: boolean,
@@ -446,7 +446,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GETリクエストハンドラー（APIの動作確認用）
-export async function GET() {
+export function GET() {
   return NextResponse.json({
     message: 'Twitter投稿API',
     version: '3.1 - Emoji Support & Enhanced Error Reporting & Virtual Environment Support',

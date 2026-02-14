@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GETリクエスト（動作確認用）
-export async function GET() {
+export function GET() {
   return NextResponse.json({
     message: '画像一時アップロードAPI',
     description: 'Twitter投稿用の画像を一時的にアップロードするエンドポイント',

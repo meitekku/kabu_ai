@@ -446,7 +446,7 @@ export default function TwitterPythonButton({
 
 
   // 手動で画像を選択
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🖼️ [IMAGE DEBUG] handleImageChange呼び出し');
     console.log('🖼️ [IMAGE DEBUG] 現在の状態 - imageUrl存在:', !!imageUrl);
     console.log('🖼️ [IMAGE DEBUG] 現在の状態 - isManuallySelected:', isManuallySelected);

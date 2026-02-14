@@ -73,11 +73,15 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   newsInstitution,
   targetDate
 }, ref) => {
-  // tabletHeight が未指定の場合、pcHeight と mobileHeight の中間値をデフォルトにする
-  const tabletHeight = tabletHeightProp ?? {
-    upper: Math.round((pcHeight.upper + mobileHeight.upper) / 2),
-    lower: Math.round((pcHeight.lower + mobileHeight.lower) / 2),
-  };
+  // 高さの値をuseMemoで安定化（依存配列の不安定を防止）
+  const { upper: pcUpper, lower: pcLower } = pcHeight;
+  const { upper: mobileUpper, lower: mobileLower } = mobileHeight;
+  const stablePcHeight = useMemo(() => ({ upper: pcUpper, lower: pcLower }), [pcUpper, pcLower]);
+  const stableMobileHeight = useMemo(() => ({ upper: mobileUpper, lower: mobileLower }), [mobileUpper, mobileLower]);
+  const tabletHeight = useMemo(() => tabletHeightProp ?? {
+    upper: Math.round((stablePcHeight.upper + stableMobileHeight.upper) / 2),
+    lower: Math.round((stablePcHeight.lower + stableMobileHeight.lower) / 2),
+  }, [tabletHeightProp, stablePcHeight, stableMobileHeight]);
 
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,7 +183,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   // tooltip座標を再計算する関数
   const recalculateTooltipZones = useCallback(() => {
-    const chartHeight = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
+    const chartHeight = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'upper');
     const zones = calculateTooltipZones(
       data,
       actualChartPositionsRef.current,
@@ -189,7 +193,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       maxNewsTooltips
     );
     setTooltipZones(zones);
-  }, [data, containerWidth, pcHeight.upper, tabletHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
+  }, [data, containerWidth, stablePcHeight, tabletHeight, stableMobileHeight, showEmptyAreas, maxNewsTooltips]);
 
 
   const calculateCandleXPosition = useCallback((index: number, totalDataPoints: number, chartWidth: number) => {
@@ -224,11 +228,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   // refに関数を公開
   useImperativeHandle(ref, () => ({
-    exportAsImage: async () => {
-      return exportAsImage(chartContainerRef, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo);
+    exportAsImage: () => {
+      return exportAsImage(chartContainerRef, colors, stablePcHeight, tabletHeight, stableMobileHeight, company_name, companyInfo);
     },
     isTooltipRendered: () => isTooltipRendered
-  }), [colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo, isTooltipRendered]);
+  }), [colors, stablePcHeight, tabletHeight, stableMobileHeight, company_name, companyInfo, isTooltipRendered]);
 
   // データ取得用のuseEffect
   useEffect(() => {
@@ -331,7 +335,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     if (asImage && isChartReady && data.length > 0) {
       const generateImage = async () => {
         try {
-          const url = await exportAsImage(chartContainerRef, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo);
+          const url = await exportAsImage(chartContainerRef, colors, stablePcHeight, tabletHeight, stableMobileHeight, company_name, companyInfo);
           setImageUrl(url);
           if (onImageGenerated) {
             onImageGenerated(url);
@@ -340,14 +344,14 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           console.error('Failed to generate image:', error);
         }
       };
-      
+
       setTimeout(generateImage, 500);
     }
-  }, [asImage, isChartReady, data, onImageGenerated, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo]);
+  }, [asImage, isChartReady, data, onImageGenerated, colors, stablePcHeight, tabletHeight, stableMobileHeight, company_name, companyInfo]);
 
   if (loading) {
-    const upperH = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
-    const lowerH = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'lower');
+    const upperH = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'upper');
+    const lowerH = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'lower');
     return (
       <div className="mt-2 flex items-center justify-center" style={{ width, height: `${upperH + lowerH + 8}px`, backgroundColor: colors.background }}>
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
@@ -362,9 +366,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       <StockChartImage
         chartContainerRef={chartContainerRef}
         colors={colors}
-        pcHeight={pcHeight}
+        pcHeight={stablePcHeight}
         tabletHeight={tabletHeight}
-        mobileHeight={mobileHeight}
+        mobileHeight={stableMobileHeight}
         company_name={company_name}
         companyInfo={companyInfo}
         code={code}
@@ -391,7 +395,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         ref={upperChartRef}
         className="relative"
         style={{
-          height: `${getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper')}px`,
+          height: `${getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'upper')}px`,
           backgroundColor: colors.background
         }}
       >
@@ -439,7 +443,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
           
           // チャートの高さを取得
-          const chartHeight = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
+          const chartHeight = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'upper');
           
           // ロウソク足の中心座標を計算
           let candleX;
@@ -704,7 +708,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       <div 
         className="relative -mt-1"
         style={{
-          height: `${getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'lower')}px`,
+          height: `${getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'lower')}px`,
           backgroundColor: colors.background
         }}
       >

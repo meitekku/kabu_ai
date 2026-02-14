@@ -6,7 +6,7 @@ export async function POST(): Promise<NextResponse> {
   try {
     const pythonScriptPath = path.join(process.cwd(), 'python', 'get_data', 'aricleSummarize.py');
     
-    return new Promise<NextResponse>((resolve) => {
+    return await new Promise<NextResponse>((resolve) => {
       // 本番環境では仮想環境のPythonを使用
       const pythonExecutable = process.env.NODE_ENV === 'production' 
         ? '/var/www/kabu_ai/venv/bin/python' 

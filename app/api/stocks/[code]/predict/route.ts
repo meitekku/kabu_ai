@@ -1,8 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
-import { headers } from 'next/headers';
-import { cookies } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 120;
