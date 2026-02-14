@@ -110,6 +110,7 @@ jobs:
             mkdir -p public/uploads
 
             echo "Installing Node.js dependencies..."
+            rm -rf node_modules
             npm ci
 
             echo "Building application..."
