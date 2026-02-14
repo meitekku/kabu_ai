@@ -116,6 +116,9 @@ jobs:
             npm run build
 
             # --- ビルド後のセットアップ ---
+            # .env.localをstandaloneにコピー（standalone server.jsがprocess.chdir(__dirname)するため必須）
+            cp "$STAGING/.env.local" .next/standalone/.env.local
+
             # uploadsは永続ディレクトリへのシンボリックリンク（standaloneのみ）
             rm -rf .next/standalone/public/uploads
             ln -sf "$UPLOADS" .next/standalone/public/uploads
