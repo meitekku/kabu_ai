@@ -185,6 +185,23 @@ const Header = () => {
           <div className="p-2"></div>
           <div className="iiarea pr-4 flex items-center justify-end gap-2"></div>
         </div>
+        <div className="md:flex md:justify-center">
+          <div className="overflow-x-auto">
+            <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
+              <div className="flex space-x-4">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className="flex items-center space-x-4 p-2">
+                    <div className="animate-pulse flex items-center space-x-4">
+                      <div className="h-4 bg-gray-200 rounded w-16"></div>
+                      <div className="h-4 bg-gray-200 rounded w-14"></div>
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
     }>
       <HeaderInner />

@@ -47,40 +47,29 @@ const GlobalNavigation = () => {
     });
   }
 
-  if (!isLogin) {
-    return null;
-  }
-
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 bg-gray-800 text-white z-50 py-1 px-2">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center h-full">
-            <div className="flex items-center space-x-4 text-sm">
-              {NAVIGATION_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="hover:text-gray-300"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              {additionalLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="hover:text-gray-300 text-blue-300"
-                >
-                  {link.label}
-                </Link>
-              ))}
+      {isLogin && (
+        <nav className="fixed top-0 left-0 right-0 bg-gray-800 text-white z-50 py-1 px-2">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center h-full">
+              <div className="flex items-center space-x-4 text-sm">
+                {NAVIGATION_LINKS.map((link) => (
+                  <Link key={link.href} href={link.href} className="hover:text-gray-300">
+                    {link.label}
+                  </Link>
+                ))}
+                {additionalLinks.map((link) => (
+                  <Link key={link.href} href={link.href} className="hover:text-gray-300 text-blue-300">
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </nav>
-      {/* コンテンツのためのマージン */}
-      <div className="mt-8" />
+        </nav>
+      )}
+      <div className={`transition-all duration-300 ease-in-out ${isLogin ? 'h-8' : 'h-0'}`} />
     </>
   );
 };
