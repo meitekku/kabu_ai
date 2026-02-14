@@ -85,7 +85,7 @@ export const StockChartTooltip: React.FC<StockChartTooltipProps> = ({ item, tool
           <div
             key={latestArticle.id}
             className="relative text-xs font-medium text-gray-700 hover:text-blue-600 cursor-pointer p-1 rounded-lg transition-all duration-200 ease-out hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 line-clamp-3"
-            onClick={() => window.location.href = `/${code}/news/article/${latestArticle.id}`}
+            onClick={() => window.location.href = `/stocks/${code}/news/${latestArticle.id}`}
             role="button"
             tabIndex={0}
             title={displayTitle}

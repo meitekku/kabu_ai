@@ -85,7 +85,7 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
   };
 
   const handleItemClick = (code: string) => {
-    router.push(`/${code}/news`);
+    router.push(`/stocks/${code}/news`);
   };
 
   const renderContent = () => {

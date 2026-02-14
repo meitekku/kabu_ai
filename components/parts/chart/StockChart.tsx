@@ -481,7 +481,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                         const article = item.articles[0];
                         const articleCode = item.code || code;
                         if (typeof window !== 'undefined') {
-                          window.location.href = `/${articleCode}/news/article/${article.id}`;
+                          window.location.href = `/stocks/${articleCode}/news/${article.id}`;
                         }
                       }}
                     >
@@ -610,13 +610,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 if (typeof window !== 'undefined') {
-                  window.location.href = `/${articleCode}/news/article/${article.id}`;
+                  window.location.href = `/stocks/${articleCode}/news/${article.id}`;
                 }
               }
             }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
-            <XAxis 
+            <XAxis
               dataKey="date" 
               tick={{ fontSize: 12, fill: colors.text }} 
               interval="preserveStartEnd" 
@@ -721,7 +721,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 const article = e.activePayload[0].payload.articles[0];
                 const articleCode = e.activePayload[0].payload.code || code;
                 if (typeof window !== 'undefined') {
-                  window.location.href = `/${articleCode}/news/article/${article.id}`;
+                  window.location.href = `/stocks/${articleCode}/news/${article.id}`;
                 }
               }
             }}

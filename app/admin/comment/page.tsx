@@ -87,7 +87,7 @@ export default function Home() {
 
   const fetchCompanyInfo = async (code: string): Promise<CompanyInfo | null> => {
     try {
-      const dbResponse = await fetch(`/api/${code}/company_info`, {
+      const dbResponse = await fetch(`/api/stocks/${code}/company_info`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),

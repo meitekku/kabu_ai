@@ -157,7 +157,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
 
     // Only navigate if enableNavigation is true
     if (enableNavigation) {
-      router.push(`/${company.id}/news`);
+      router.push(`/stocks/${company.id}/news`);
     }
   };
 

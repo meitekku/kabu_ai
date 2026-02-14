@@ -53,7 +53,50 @@ const nextConfig = {
     ];
   },
   async redirects() {
-    return [];
+    return [
+      // 記事詳細: /:code/news/article/:id → /stocks/:code/news/:id
+      {
+        source: '/:code(\\d{4})/news/article/:id(\\d+)',
+        destination: '/stocks/:code/news/:id',
+        permanent: true,
+      },
+      // 記事リスト: /:code/news/article/list → /stocks/:code/news/list
+      {
+        source: '/:code(\\d{4})/news/article/list',
+        destination: '/stocks/:code/news/list',
+        permanent: true,
+      },
+      // 予測: /:code/news/predict → /stocks/:code/predict
+      {
+        source: '/:code(\\d{4})/news/predict',
+        destination: '/stocks/:code/predict',
+        permanent: true,
+      },
+      // バリュエーション: /:code/news/valuation → /stocks/:code/valuation
+      {
+        source: '/:code(\\d{4})/news/valuation',
+        destination: '/stocks/:code/valuation',
+        permanent: true,
+      },
+      // ニュース一覧: /:code/news → /stocks/:code/news
+      {
+        source: '/:code(\\d{4})/news',
+        destination: '/stocks/:code/news',
+        permanent: true,
+      },
+      // 最新ニュース: /news/list/latest → /news/latest
+      {
+        source: '/news/list/latest',
+        destination: '/news/latest',
+        permanent: true,
+      },
+      // "all"コードの記事: /all/news/article/:id → /stocks/all/news/:id
+      {
+        source: '/all/news/article/:id(\\d+)',
+        destination: '/stocks/all/news/:id',
+        permanent: true,
+      },
+    ];
   },
   assetPrefix: '',
   distDir: '.next',

@@ -44,7 +44,7 @@ const AllArticleAdminPage = () => {
     console.log('fetchNews called with days:', daysRef.current);
     try {
       setLoading(true);
-      const response = await fetch('/api/all/news', {
+      const response = await fetch('/api/stocks/all/news', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,7 +155,7 @@ const AllArticleAdminPage = () => {
         <div className="divide-y divide-gray-100">
           {news.map((item) => (
             <Link 
-              href={`/all/news/article/${item.id}`}
+              href={`/stocks/all/news/${item.id}`}
               key={item.id}
               className="block"
             >

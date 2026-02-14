@@ -133,7 +133,7 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
   useEffect(() => {
     const fetchArticle = async () => {
       try {
-        const response = await fetch(`/api/${code}/news/article/${id}`, {
+        const response = await fetch(`/api/stocks/${code}/news/${id}`, {
           method: 'POST'
         });
         if (!response.ok) {
@@ -269,7 +269,7 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
     <div className="mx-auto">
       <div className="mb-4">
         <Link 
-          href={`/${code}/news`}
+          href={`/stocks/${code}/news`}
           className="text-blue-600 hover:text-blue-800"
         >
           ← ニュース一覧に戻る
@@ -282,7 +282,7 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
           </div>
           <div className="flex justify-between items-center mt-2">
             <div className="text-sm text-gray-600">
-              <Link href={`/${code}/news`} className="text-blue-600 hover:text-blue-700 transition-colors">
+              <Link href={`/stocks/${code}/news`} className="text-blue-600 hover:text-blue-700 transition-colors">
                 {article.company_name}
               </Link> <br/>
               {ServerToDate(article.created_at)}

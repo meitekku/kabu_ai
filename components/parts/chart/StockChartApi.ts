@@ -1,7 +1,7 @@
 // 会社情報を取得する関数
 export const fetchCompanyInfo = async (code: string) => {
   try {
-    const response = await fetch(`/api/${code}/company_info`, {
+    const response = await fetch(`/api/stocks/${code}/company_info`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

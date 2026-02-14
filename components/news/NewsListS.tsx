@@ -148,7 +148,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <Link 
-                    href={`/all/news/article/${item.id}`}
+                    href={`/stocks/all/news/${item.id}`}
                     className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
                     style={{
                       display: '-webkit-box',
@@ -205,7 +205,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
       {more ? (
         <div className="text-right">
           <Link 
-            href="/news/list/latest"
+            href="/news/latest"
             className="font-bold hover:text-red-700 text-sm"
           >
             もっと見る ›

@@ -177,7 +177,7 @@ function PredictionChart({ report, code }: { report: PredictionReport; code: str
   useEffect(() => {
     const fetchActualData = async () => {
       try {
-        const res = await fetch(`/api/${code}/chart`);
+        const res = await fetch(`/api/stocks/${code}/chart`);
         if (!res.ok) throw new Error('Chart data fetch failed');
         const data = await res.json();
 
@@ -442,7 +442,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
 
     try {
       // Check cache first
-      const cacheRes = await fetch(`/api/${code}/predict/cache`);
+      const cacheRes = await fetch(`/api/stocks/${code}/predict/cache`);
       const cacheData = await cacheRes.json();
 
       if (cacheData.cached && cacheData.data) {
@@ -463,7 +463,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
       }
 
       // Call prediction API
-      const res = await fetch(`/api/${code}/predict`, {
+      const res = await fetch(`/api/stocks/${code}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fingerprint, chartImage }),
@@ -498,7 +498,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
     <div className="max-w-4xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href={`/${code}/news`}>
+        <Link href={`/stocks/${code}/news`}>
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-1" />
             戻る
@@ -535,7 +535,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
           <h2 className="text-xl font-bold">予測の取得に失敗しました</h2>
           <p className="text-muted-foreground">{errorMessage}</p>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => router.push(`/${code}/news`)}>
+            <Button variant="outline" onClick={() => router.push(`/stocks/${code}/news`)}>
               ニュースに戻る
             </Button>
             <Button

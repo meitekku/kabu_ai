@@ -59,7 +59,7 @@ export default function NewsListPage() {
     
     try {
       setLoading(true);
-      const response = await fetch(`/api/${code}/news`, {
+      const response = await fetch(`/api/stocks/${code}/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ export default function NewsListPage() {
       links.push(
         <Link
           key="prev"
-          href={`/${code}/news/article/list?page=${currentPage - 1}`}
+          href={`/stocks/${code}/news/list?page=${currentPage - 1}`}
           className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
         >
           前へ
@@ -165,7 +165,7 @@ export default function NewsListPage() {
       links.push(
         <Link
           key={i}
-          href={`/${code}/news/article/list?page=${i}`}
+          href={`/stocks/${code}/news/list?page=${i}`}
           className={`px-3 py-2 text-sm border border-gray-300 rounded-md ${
             i === currentPage
               ? 'bg-blue-500 text-white border-blue-500'
@@ -182,7 +182,7 @@ export default function NewsListPage() {
       links.push(
         <Link
           key="next"
-          href={`/${code}/news/article/list?page=${currentPage + 1}`}
+          href={`/stocks/${code}/news/list?page=${currentPage + 1}`}
           className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
         >
           次へ
@@ -218,7 +218,7 @@ export default function NewsListPage() {
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
           <Link 
-            href={`/${code}/news/article/${item.id}`}
+            href={`/stocks/${code}/news/${item.id}`}
             key={item.id}
             className="block"
           >

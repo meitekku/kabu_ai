@@ -80,7 +80,7 @@ const ValuationPageClient = ({ code }: { code: string }) => {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const res = await fetch(`/api/${code}/valuation-report`);
+        const res = await fetch(`/api/stocks/${code}/valuation-report`);
         const data = await res.json();
         if (data.success && data.data) {
           setReport(data.data);

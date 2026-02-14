@@ -20,7 +20,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/${code}/company_info`, {
+        const response = await fetch(`/api/stocks/${code}/company_info`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

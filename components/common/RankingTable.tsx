@@ -53,7 +53,7 @@ export default function RankingTable({ title, tableName, data }: RankingTablePro
           data.map((item: BaseRankingData, index: number) => (
             <Link 
               key={`${tableName}-${item.code}-${index}`}
-              href={`/${item.code}/news`}
+              href={`/stocks/${item.code}/news`}
               className={`px-4 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
             >
               <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 font-bold text-xs ${getRankingStyle(index)}`}>

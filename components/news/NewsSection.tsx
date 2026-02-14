@@ -64,7 +64,7 @@ export default function NewsSection() {
           const imageUrl = item.image_path || item.image_url || (imageMatch ? imageMatch[1] : null);
 
           return (
-            <Link href={`/${item.code}/news/article/${item.id}`} key={item.id} className="block h-full">
+            <Link href={`/stocks/${item.code}/news/${item.id}`} key={item.id} className="block h-full">
               <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
                 <div className="relative w-full aspect-[2/1]">
                   {imageUrl ? (
@@ -73,6 +73,7 @@ export default function NewsSection() {
                       alt={item.title}
                       fill
                       className="object-cover object-top"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">

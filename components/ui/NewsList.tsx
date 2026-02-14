@@ -57,7 +57,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
     console.log('fetchNews called with:', { code, limit, excludeId });
     try {
       setLoading(true);
-      const response = await fetch(`/api/${code}/news`, {
+      const response = await fetch(`/api/stocks/${code}/news`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
           <Link 
-            href={`/${code}/news/article/${item.id}`}
+            href={`/stocks/${code}/news/${item.id}`}
             key={item.id}
             className="block"
           >
@@ -190,7 +190,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
       {showMoreButton && code && (
         <div className="text-right">
           <Link 
-            href={`/${code}/news/article/list`}
+            href={`/stocks/${code}/news/list`}
             className="font-bold hover:text-red-700 text-sm"
           >
             もっとみる ›

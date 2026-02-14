@@ -79,7 +79,7 @@ const PostTitleList: React.FC<PostTitleListProps> = ({
           }}
         >
           <a 
-            href={`https://kabu-ai.jp/${post.code || '0000'}/news/article/${post.id}`}
+            href={`https://kabu-ai.jp/stocks/${post.code || '0000'}/news/${post.id}`}
             className="hover:text-blue-500 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
@@ -427,7 +427,7 @@ export default function PostForm({
             body: JSON.stringify({
               title: formData.title,
               content: formData.content,
-              url: `https://kabu-ai.jp/${formData.code}/news/article/${data.data.id}`
+              url: `https://kabu-ai.jp/stocks/${formData.code}/news/${data.data.id}`
             }),
           });
           
@@ -443,7 +443,7 @@ export default function PostForm({
         setRefreshTrigger(prev => prev + 1);  // リストの更新をトリガー
         
         if (redirectAfterPost) {
-          router.push(`/${formData.code}/news/article/${data.data.id}`);
+          router.push(`/stocks/${formData.code}/news/${data.data.id}`);
         } else {
           setFormData(prev => ({
             ...prev,
@@ -609,7 +609,7 @@ export default function PostForm({
 
           {postId && postId !== 'new' && (
             <a
-              href={`/${formData.code}/news/article/${postId}`}
+              href={`/stocks/${formData.code}/news/${postId}`}
               className="text-blue-500 hover:text-blue-600 text-sm mt-2 text-center lg:text-left"
             >
               記事を見る

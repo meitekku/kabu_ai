@@ -24,7 +24,7 @@ export function PredictionButton({ code }: PredictionButtonProps) {
 
     setIsChecking(true);
     try {
-      const res = await fetch(`/api/${code}/predict/check-usage`, {
+      const res = await fetch(`/api/stocks/${code}/predict/check-usage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fingerprint }),
@@ -32,7 +32,7 @@ export function PredictionButton({ code }: PredictionButtonProps) {
       const data = await res.json();
 
       if (data.canPredict) {
-        router.push(`/${code}/news/predict`);
+        router.push(`/stocks/${code}/predict`);
       } else if (data.requireLogin) {
         setShowLoginModal(true);
       } else if (data.requirePremium) {
@@ -41,7 +41,7 @@ export function PredictionButton({ code }: PredictionButtonProps) {
     } catch (error) {
       console.error('Failed to check prediction usage:', error);
       // On error, navigate anyway and let the predict page handle it
-      router.push(`/${code}/news/predict`);
+      router.push(`/stocks/${code}/predict`);
     } finally {
       setIsChecking(false);
     }

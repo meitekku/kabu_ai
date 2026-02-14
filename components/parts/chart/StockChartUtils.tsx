@@ -48,7 +48,7 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   console.log('========================');
 
   // 株価データ取得
-  const chartResponse = await fetch(`/api/${code}/chart`, {
+  const chartResponse = await fetch(`/api/stocks/${code}/chart`, {
     method: 'POST',
     body: JSON.stringify({ 
       code, 
@@ -71,7 +71,7 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
     target_date: formattedDate
   });
   
-  const newsResponse = await fetch(`/api/${code}/news`, {
+  const newsResponse = await fetch(`/api/stocks/${code}/news`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 

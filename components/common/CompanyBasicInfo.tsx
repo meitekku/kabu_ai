@@ -22,7 +22,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   useEffect(() => {
     const fetchCompanyInfo = async () => {
       try {
-        const response = await fetch(`/api/${code}/company_info`, {
+        const response = await fetch(`/api/stocks/${code}/company_info`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code }),
@@ -178,7 +178,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           <div>{formatMarketCap(info.market_cap)}</div>
         </div>
       </div>
-      <Link href={`/${code}/news/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
+      <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
         バリュエーション分析 →
       </Link>
     </div>

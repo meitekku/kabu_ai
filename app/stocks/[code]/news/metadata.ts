@@ -39,7 +39,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
           title: title + ' | 株AI',
           description,
           type: 'website',
-          url: `https://kabu-ai.jp/${code}/news`,
+          url: `https://kabu-ai.jp/stocks/${code}/news`,
           siteName: '株AI',
           locale: 'ja_JP',
         },

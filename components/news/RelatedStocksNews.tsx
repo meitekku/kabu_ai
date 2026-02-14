@@ -49,7 +49,7 @@ const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProp
       
       try {
         setLoading(true);
-        const response = await fetch(`/api/${code}/related-stocks-news`, {
+        const response = await fetch(`/api/stocks/${code}/related-stocks-news`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProp
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
           <Link 
-            href={`/${item.code}/news/article/${item.id}`}
+            href={`/stocks/${item.code}/news/${item.id}`}
             key={item.id}
             className="block"
           >
