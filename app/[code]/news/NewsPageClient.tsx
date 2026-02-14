@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import StockChart from '@/components/parts/chart/StockChart';
 import NewsList from '@/components/ui/NewsList';
 import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
+import { PredictionButton } from '@/components/prediction/PredictionButton';
 
 interface NewsPageClientProps {
   code: string;
@@ -25,13 +26,14 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
   return (
     <div>
       <CompanyBasicInfo code={code} />
-      <StockChart 
+      <StockChart
         code={code}
         pcHeight={{ upper: 200, lower: 100 }}
         mobileHeight={{ upper: 120, lower: 80 }}
         width={"100%"}
         maxNewsTooltips={4}
       />
+      <PredictionButton code={code} />
       <NewsList title="最新ニュース" showMoreButton={true} />
     </div>
   );

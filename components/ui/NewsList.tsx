@@ -29,11 +29,12 @@ interface NewsListProps {
   excludeId?: string;
   h3Title?: string;
   showMoreButton?: boolean;
+  code?: string;
 }
 
-const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreButton = false }: NewsListProps) => {
+const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreButton = false, code: codeProp }: NewsListProps) => {
   const params = useParams();
-  const code = params.code as string;
+  const code = codeProp || (params.code as string);
   const limit = parseInt(num);
 
   const [news, setNews] = useState<NewsItem[]>([]);

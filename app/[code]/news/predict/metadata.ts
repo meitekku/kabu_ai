@@ -1,11 +1,10 @@
 import { Metadata } from 'next';
 
-// ページメタデータ設定
 const PAGE_METADATA = {
-  title: '{companyName}({code})の株価・チャート・ニュース',
-  description: '{companyName}(証券コード:{code})の株価チャート・最新ニュース・AI分析情報を掲載。株価推移・企業業績・関連ニュースをまとめて確認できます。投資判断にお役立てください。',
-  fallbackTitle: '証券コード{code}の株価・チャート・ニュース',
-  fallbackDescription: '証券コード{code}の株価チャート・最新ニュース・AI分析情報を掲載。株価推移・関連ニュースをまとめて確認できます。',
+  title: '{companyName}({code})のAI株価予測',
+  description: '{companyName}(証券コード:{code})のAI株価予測。過去のチャートパターン・出来高・ニュースをAIが分析し、今後の株価推移を予測します。',
+  fallbackTitle: '証券コード{code}のAI株価予測',
+  fallbackDescription: '証券コード{code}のAI株価予測。AIが過去データを分析し、今後の株価推移を予測します。',
 };
 
 type Props = {
@@ -18,7 +17,6 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
   const { code } = await params;
 
   try {
-    // 本番環境では内部API呼び出しを避け、直接データベースアクセス
     const { Database } = await import('@/lib/database/Mysql');
     const db = Database.getInstance();
 
@@ -39,7 +37,7 @@ export const generateMetadata = async ({ params }: Props): Promise<Metadata> => 
           title: title + ' | 株AI',
           description,
           type: 'website',
-          url: `https://kabu-ai.jp/${code}/news`,
+          url: `https://kabu-ai.jp/${code}/news/predict`,
           siteName: '株AI',
           locale: 'ja_JP',
         },

@@ -300,11 +300,11 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
       </div>
 
       <div className="mt-8 border-t border-gray-200 pt-6">
-        <NewsList num="3" excludeId={id} h3Title={`${article.company_name}の最新の記事`} />
+        <NewsList num="3" excludeId={id} h3Title={`${article.company_name}の最新の記事`} code={article.code} />
       </div>
 
       <div className="mt-8">
-        <RelatedStocksNews code={code} excludeId={id} limit={5} />
+        <RelatedStocksNews code={article.code} excludeId={id} limit={5} />
       </div>
 
       {imageModalOpen && (

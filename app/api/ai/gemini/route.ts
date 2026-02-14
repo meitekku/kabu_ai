@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Gemini APIキーを環境変数から取得
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const GLM_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 export async function POST(req: Request) {
   try {
@@ -14,31 +12,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Required field 'text' is missing." }, { status: 400 });
     }
 
-    let result;
+    if (!process.env.GLM_API_KEY) {
+      return NextResponse.json({ error: 'GLM_API_KEY is not configured.' }, { status: 500 });
+    }
+
+    const modelName = imageFile ? 'glm-4v-flash' : 'glm-4.7-flashx';
+
+    let messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>;
 
     if (imageFile) {
-      // 画像付きの場合
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      // 画像をbase64に変換
       const imageBuffer = await imageFile.arrayBuffer();
       const imageBase64 = Buffer.from(imageBuffer).toString('base64');
-      
-      const imagePart = {
-        inlineData: {
-          data: imageBase64,
-          mimeType: imageFile.type
-        }
-      };
 
-      const response = await model.generateContent([textData, imagePart]);
-      result = response.response.text();
+      messages = [{
+        role: 'user',
+        content: [
+          { type: 'text', text: textData },
+          { type: 'image_url', image_url: { url: `data:${imageFile.type};base64,${imageBase64}` } },
+        ],
+      }];
     } else {
-      // テキストのみの場合
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const response = await model.generateContent(textData);
-      result = response.response.text();
+      messages = [{ role: 'user', content: textData }];
     }
+
+    const response = await fetch(GLM_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GLM_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('GLM API Error:', response.status, errorText);
+      return NextResponse.json({
+        error: 'Failed to process request with GLM API.',
+        details: errorText,
+      }, { status: 500 });
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content || '';
 
     return NextResponse.json({
       success: true,
@@ -48,9 +67,9 @@ export async function POST(req: Request) {
     });
 
   } catch (error) {
-    console.error('Gemini API Error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to process request with Gemini API.',
+    console.error('GLM API Error:', error);
+    return NextResponse.json({
+      error: 'Failed to process request with GLM API.',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

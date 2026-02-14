@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface CompanyInfo {
   code: string;
@@ -177,6 +178,9 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           <div>{formatMarketCap(info.market_cap)}</div>
         </div>
       </div>
+      <Link href={`/${code}/news/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
+        バリュエーション分析 →
+      </Link>
     </div>
   );
 };

@@ -16,7 +16,21 @@
 | データベース | MySQL 8.0+ |
 | UI | Tailwind CSS + shadcn/ui + Radix UI |
 | メール | Resend |
-| AI | Google Gemini API |
+| AI | GLM-4 (智譜AI / Zhipu AI) |
+
+---
+
+## AI API ルール
+
+**AIのAPIを使用する場合は必ずGLM-4を使用すること。**
+
+- テキスト生成: `glm-4.7-flashx`
+- 画像入力対応（Vision）: `glm-4v-flash`
+- APIエンドポイント: `https://open.bigmodel.cn/api/paas/v4/chat/completions`
+- 認証: `Authorization: Bearer ${GLM_API_KEY}`
+- OpenAI互換フォーマット（messages形式）
+
+Google Gemini, OpenAI GPT等の他のAI APIは使用しないこと。
 
 ---
 

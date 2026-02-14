@@ -24,6 +24,13 @@
 .DS_Store
 *.pem
 
+# python cache
+__pycache__/
+*.pyc
+
+# debug logs
+debug_logs/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -49,3 +56,6 @@ next-env.d.ts
 /twitter_profiles/
 twitter_chrome_profile/
 twitter_mobile_profile/
+
+# application log
+application.log

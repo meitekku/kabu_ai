@@ -1,19 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Send, User, Bot, Loader2, Crown } from 'lucide-react';
+import { PremiumModal } from '@/components/common/PremiumModal';
+import { Send, User, Bot, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -28,7 +20,6 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfaceProps) {
-  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>(
     initialMessages.map((msg, i) => ({
       id: `initial-${i}`,
@@ -155,45 +146,15 @@ export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfacePro
     }
   };
 
-  const handleGoPremium = () => {
-    setShowLimitDialog(false);
-    router.push('/premium');
-  };
-
   return (
     <div className="flex flex-col h-full bg-background pb-[140px]">
       {/* 利用制限ポップアップ */}
-      <Dialog open={showLimitDialog} onOpenChange={setShowLimitDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-yellow-500" />
-              本日の無料利用回数を超えました
-            </DialogTitle>
-            <DialogDescription className="pt-2">
-              無料プランでは1日3回までチャットをご利用いただけます。
-              プレミアム会員になると、無制限でAIアシスタントをご利用いただけます。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950 dark:to-orange-950 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <h4 className="font-semibold text-sm mb-2">プレミアム会員の特典</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>・AIチャット無制限</li>
-                <li>・高精度な株価予測機能</li>
-                <li>・リアルタイム市場分析</li>
-                <li>・決算説明会の要約</li>
-              </ul>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleGoPremium} className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600">
-              <Crown className="w-4 h-4 mr-2" />
-              プレミアム会員になる
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PremiumModal
+        open={showLimitDialog}
+        onOpenChange={setShowLimitDialog}
+        title="本日の無料利用回数を超えました"
+        description="無料プランでは1日3回までチャットをご利用いただけます。プレミアム会員になると、無制限でAIアシスタントをご利用いただけます。"
+      />
 
       {/* メッセージエリア */}
       <ScrollArea ref={scrollRef} className="flex-1 p-4">

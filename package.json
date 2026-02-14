@@ -13,7 +13,7 @@
   "dependencies": {
     "@ai-sdk/openai": "^2.0.77",
     "@ai-sdk/react": "^2.0.108",
-    "@google/generative-ai": "^0.24.1",
+    "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@hookform/resolvers": "^3.9.1",
     "@mui/material": "^6.1.9",
     "@radix-ui/react-avatar": "^1.1.2",
