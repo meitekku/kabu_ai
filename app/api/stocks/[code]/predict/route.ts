@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 120;
@@ -183,6 +184,10 @@ export async function POST(
 
     const db = Database.getInstance();
 
+    // 管理者チェック（legacyクッキー認証）
+    const cookieStore = await cookies();
+    const isAdmin = !!cookieStore.get('username')?.value;
+
     // プレミアム会員チェック
     let isPremium = false;
     if (userId) {
@@ -193,8 +198,8 @@ export async function POST(
       isPremium = users[0]?.subscription_status === 'active';
     }
 
-    // 利用制限チェック
-    if (!isPremium) {
+    // 利用制限チェック（管理者はスキップ）
+    if (!isPremium && !isAdmin) {
       if (userId) {
         const usageResult = await db.select<{ count: number }>(
           `SELECT COUNT(*) as count FROM prediction_usage_log WHERE user_id = ?`,

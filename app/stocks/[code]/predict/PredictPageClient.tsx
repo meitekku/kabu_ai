@@ -1,23 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Area,
-  ReferenceLine,
-} from 'recharts';
 import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
-import type { StockChartRef } from '@/components/parts/chart/StockChartTypes';
 import Link from 'next/link';
 
 interface DailyForecast {
@@ -163,159 +151,6 @@ function ConfidenceCircle({ confidence }: { confidence: number }) {
   );
 }
 
-interface ChartDataPoint {
-  date: string;
-  actual?: number;
-  predicted?: number;
-  predictedHigh?: number;
-  predictedLow?: number;
-}
-
-function PredictionChart({ report, code }: { report: PredictionReport; code: string }) {
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-
-  useEffect(() => {
-    const fetchActualData = async () => {
-      try {
-        const res = await fetch(`/api/stocks/${code}/chart`);
-        if (!res.ok) throw new Error('Chart data fetch failed');
-        const data = await res.json();
-
-        // Build actual data points (last 20 days)
-        const actualPoints: ChartDataPoint[] = (data.slice(-20) as Array<{ date: string; close: number }>).map(
-          (d: { date: string; close: number }) => ({
-            date: d.date,
-            actual: d.close,
-          })
-        );
-
-        // Build predicted data points with overlap on last actual date
-        const lastActual = actualPoints[actualPoints.length - 1];
-        const predictedPoints: ChartDataPoint[] = report.dailyForecasts.map((f) => ({
-          date: f.date,
-          predicted: f.predictedClose,
-          predictedHigh: f.predictedHigh,
-          predictedLow: f.predictedLow,
-        }));
-
-        // Add overlap point: last actual also shows as first predicted
-        if (lastActual && predictedPoints.length > 0) {
-          lastActual.predicted = lastActual.actual;
-        }
-
-        setChartData([...actualPoints, ...predictedPoints]);
-      } catch {
-        // Fallback: only show predicted data
-        const points: ChartDataPoint[] = report.dailyForecasts.map((f) => ({
-          date: f.date,
-          predicted: f.predictedClose,
-          predictedHigh: f.predictedHigh,
-          predictedLow: f.predictedLow,
-        }));
-        setChartData(points);
-      }
-    };
-    fetchActualData();
-  }, [code, report.dailyForecasts]);
-
-  if (chartData.length === 0) return null;
-
-  // Find boundary date (first predicted-only point)
-  const boundaryDate = chartData.find((d) => d.predicted !== undefined && d.actual === undefined)?.date;
-
-  return (
-    <div className="w-full h-64 md:h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
-          <defs>
-            <linearGradient id="predictGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity={0.2} />
-              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-          <XAxis
-            dataKey="date"
-            tick={{ fontSize: 11 }}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            width={50}
-            domain={['auto', 'auto']}
-          />
-          <Tooltip
-            contentStyle={{ fontSize: 12 }}
-            formatter={(value: number, name: string) => {
-              const labels: Record<string, string> = {
-                actual: '実績',
-                predicted: '予測',
-                predictedHigh: '予測高値',
-                predictedLow: '予測安値',
-              };
-              return [value?.toLocaleString(), labels[name] || name];
-            }}
-          />
-          {boundaryDate && (
-            <ReferenceLine
-              x={boundaryDate}
-              stroke="#9ca3af"
-              strokeDasharray="4 4"
-              label={{ value: '予測', position: 'top', fontSize: 11, fill: '#9ca3af' }}
-            />
-          )}
-          <Area
-            type="monotone"
-            dataKey="predicted"
-            fill="url(#predictGradient)"
-            stroke="none"
-          />
-          <Line
-            type="monotone"
-            dataKey="actual"
-            stroke="#3b82f6"
-            strokeWidth={2}
-            dot={false}
-            name="actual"
-            connectNulls={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="predicted"
-            stroke="#10b981"
-            strokeWidth={2}
-            strokeDasharray="6 3"
-            dot={false}
-            name="predicted"
-            connectNulls={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="predictedHigh"
-            stroke="#10b981"
-            strokeWidth={1}
-            strokeDasharray="2 2"
-            dot={false}
-            name="predictedHigh"
-            opacity={0.4}
-            connectNulls={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="predictedLow"
-            stroke="#10b981"
-            strokeWidth={1}
-            strokeDasharray="2 2"
-            dot={false}
-            name="predictedLow"
-            opacity={0.4}
-            connectNulls={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 function PredictionReport({ report, code }: { report: PredictionReport; code: string }) {
   return (
@@ -332,18 +167,17 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Chart - StockChart（記事ラベル付き） */}
       <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">予測チャート</h3>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground mb-2">
-          <span className="flex items-center gap-1">
-            <span className="w-4 h-0.5 bg-blue-500 inline-block" /> 実績
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-4 h-0.5 bg-emerald-500 inline-block border-dashed" style={{ borderTop: '2px dashed #10b981', height: 0 }} /> 予測
-          </span>
-        </div>
-        <PredictionChart report={report} code={code} />
+        <h3 className="text-lg font-semibold mb-3">株価チャート</h3>
+        <StockChart
+          code={code}
+          pcHeight={{ upper: 200, lower: 100 }}
+          tabletHeight={{ upper: 180, lower: 96 }}
+          mobileHeight={{ upper: 120, lower: 80 }}
+          width="100%"
+          maxNewsTooltips={4}
+        />
       </div>
 
       {/* Daily forecast table */}
@@ -410,7 +244,6 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
 export default function PredictPageClient({ code }: PredictPageClientProps) {
   const router = useRouter();
   const fingerprint = useFingerprint();
-  const chartRef = useRef<StockChartRef>(null);
   const [state, setState] = useState<'loading' | 'complete' | 'error'>('loading');
   const [report, setReport] = useState<PredictionReport | null>(null);
   const [progress, setProgress] = useState(0);
@@ -452,21 +285,11 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
         return;
       }
 
-      // Get chart image for the API
-      let chartImage: string | undefined;
-      try {
-        if (chartRef.current) {
-          chartImage = await chartRef.current.exportAsImage();
-        }
-      } catch {
-        // Chart image is optional
-      }
-
       // Call prediction API
       const res = await fetch(`/api/stocks/${code}/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint, chartImage }),
+        body: JSON.stringify({ fingerprint }),
       });
 
       if (!res.ok) {
@@ -506,18 +329,6 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
         </Link>
         <h1 className="text-xl font-bold">AI株価予測</h1>
         <span className="text-sm text-muted-foreground">({code})</span>
-      </div>
-
-      {/* Hidden chart for image export */}
-      <div className="hidden">
-        <StockChart
-          ref={chartRef}
-          code={code}
-          asImage={true}
-          pcHeight={{ upper: 200, lower: 100 }}
-          mobileHeight={{ upper: 120, lower: 80 }}
-          width="800px"
-        />
       </div>
 
       {/* Content */}

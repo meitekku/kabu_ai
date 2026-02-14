@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 function getClientIp(headersList: Headers): string {
   const forwardedFor = headersList.get('x-forwarded-for');
@@ -41,6 +42,10 @@ export async function POST(
 
     const db = Database.getInstance();
 
+    // 管理者チェック
+    const cookieStore = await cookies();
+    const isAdmin = !!cookieStore.get('username')?.value;
+
     // プレミアム会員チェック
     let isPremium = false;
     if (userId) {
@@ -51,7 +56,7 @@ export async function POST(
       isPremium = users[0]?.subscription_status === 'active';
     }
 
-    if (isPremium) {
+    if (isPremium || isAdmin) {
       return NextResponse.json({
         canPredict: true,
         remainingUses: -1,
