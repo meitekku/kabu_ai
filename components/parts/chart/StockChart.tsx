@@ -6,11 +6,13 @@ import {
   ComposedChart,
   Bar,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Cell,
+  ReferenceLine,
   RectangleProps
 } from 'recharts';
 import { ExtendedChartData } from './types/StockChartTypes';
@@ -71,7 +73,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   theme = 'default',
   company_name = false,
   newsInstitution,
-  targetDate
+  targetDate,
+  hideNewsTooltips = false,
+  predictionData
 }, ref) => {
   // 高さの値をuseMemoで安定化（依存配列の不安定を防止）
   const { upper: pcUpper, lower: pcLower } = pcHeight;
@@ -84,6 +88,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   }, [tabletHeightProp, stablePcHeight, stableMobileHeight]);
 
   const [data, setData] = useState<ExtendedChartData[]>([]);
+  const [predictionStartIndex, setPredictionStartIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredData, setHoveredData] = useState<ExtendedChartData | null>(null);
@@ -246,7 +251,36 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             ...item,
             color: convertBlueToGreen(item.color)
           })) : formattedData;
-          setData(convertedData);
+          // 予測データがある場合はマージ
+          if (predictionData && predictionData.length > 0) {
+            const predictionEntries: ExtendedChartData[] = predictionData.map(p => ({
+              date: p.date,
+              open: p.predictedClose,
+              high: p.predictedHigh,
+              low: p.predictedLow,
+              close: p.predictedClose,
+              volume: 0,
+              highLowBar: [p.predictedLow, p.predictedHigh] as [number, number],
+              candlestick: [p.predictedClose, p.predictedClose] as [number, number],
+              color: p.predictedClose >= (convertedData[convertedData.length - 1]?.close ?? p.predictedClose) ? '#ff0000' : '#0000ff',
+              ma5: 0,
+              ma25: 0,
+              ma75: 0,
+              code: code,
+              isPrediction: true,
+              predictionHigh: p.predictedHigh,
+              predictionLow: p.predictedLow,
+            }));
+            // 予測同士の色を前日比で計算
+            for (let i = 1; i < predictionEntries.length; i++) {
+              predictionEntries[i].color = predictionEntries[i].close >= predictionEntries[i - 1].close ? '#ff0000' : '#0000ff';
+            }
+            setPredictionStartIndex(convertedData.length);
+            const mergedData = [...convertedData, ...predictionEntries];
+            setData(mergedData);
+          } else {
+            setData(convertedData);
+          }
           setIsChartReady(true);
           
           // 記事付きデータがある場合のみログ出力（重複防止）
@@ -296,7 +330,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, theme, company_name, logOnce, newsInstitution, targetDate]);
+  }, [code, theme, company_name, logOnce, newsInstitution, targetDate, predictionData]);
 
   // 初期位置の計算
   useEffect(() => {
@@ -410,7 +444,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         </div>
 
         {/* Tooltip配置 */}
-        {isChartReady && !asImage && tooltipZones.map((zone, index) => {
+        {isChartReady && !asImage && !hideNewsTooltips && tooltipZones.map((zone, index) => {
           // 空白領域の表示
           if (zone.index === -1) {
             return (
@@ -694,12 +728,41 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   key={`cell-${index}`}
                   fill={entry.color}
                   stroke={entry.color}
+                  fillOpacity={entry.isPrediction ? 0.4 : 1}
+                  strokeOpacity={entry.isPrediction ? 0.5 : 1}
+                  strokeDasharray={entry.isPrediction ? '4 2' : undefined}
                 />
               ))}
             </Bar>
             <Line type="monotone" dataKey="ma5" stroke={colors.ma5Color} dot={false} name="MA(5)" />
             <Line type="monotone" dataKey="ma25" stroke={colors.ma25Color} dot={false} name="MA(25)" />
             <Line type="monotone" dataKey="ma75" stroke={colors.ma75Color} dot={false} name="MA(75)" />
+            {predictionStartIndex !== null && data[predictionStartIndex] && (
+              <ReferenceLine
+                x={data[predictionStartIndex].date}
+                stroke="#9ca3af"
+                strokeDasharray="6 4"
+                strokeWidth={1.5}
+                label={{
+                  value: '予測開始',
+                  position: 'top',
+                  fill: '#9ca3af',
+                  fontSize: 10,
+                }}
+              />
+            )}
+            {predictionStartIndex !== null && (
+              <Area
+                dataKey="predictionHigh"
+                type="monotone"
+                fill="rgba(16, 185, 129, 0.08)"
+                stroke="rgba(16, 185, 129, 0.3)"
+                strokeWidth={1}
+                isAnimationActive={false}
+                name="predictionRange"
+                connectNulls={false}
+              />
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -791,12 +854,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 // 黒テーマの時だけ青色系を緑色系に変換
                 const originalColor = entry.color;
                 const convertedColor = theme === 'black' ? convertBlueToGreen(originalColor) : originalColor;
-                
+
                 return (
                   <Cell
                     key={`volume-cell-${index}`}
-                    fill={convertedColor === '#ff0000' ? colors.volumeUpFill : colors.volumeDownFill}
-                    stroke={convertedColor === '#ff0000' ? colors.volumeUpStroke : colors.volumeDownStroke}
+                    fill={entry.isPrediction ? 'transparent' : (convertedColor === '#ff0000' ? colors.volumeUpFill : colors.volumeDownFill)}
+                    stroke={entry.isPrediction ? 'transparent' : (convertedColor === '#ff0000' ? colors.volumeUpStroke : colors.volumeDownStroke)}
                   />
                 );
               })}

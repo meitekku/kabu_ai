@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
@@ -17,8 +17,19 @@ interface DailyForecast {
   reasoning: string;
 }
 
+interface TrendDirection {
+  direction: 'up' | 'neutral' | 'down';
+  strength: number;
+  reason: string;
+}
+
 interface PredictionReport {
   summary: string;
+  trends?: {
+    shortTerm: TrendDirection;
+    midTerm: TrendDirection;
+    longTerm: TrendDirection;
+  };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
   riskFactors: string[];
@@ -152,10 +163,76 @@ function ConfidenceCircle({ confidence }: { confidence: number }) {
 }
 
 
+function StrengthDots({ strength }: { strength: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={`inline-block w-2.5 h-2.5 rounded-full ${
+            i <= strength ? 'bg-current' : 'bg-muted'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TrendCard({ label, trend }: { label: string; trend: TrendDirection }) {
+  const config = {
+    up: { Icon: TrendingUp, color: 'text-emerald-500', borderColor: 'border-emerald-200 dark:border-emerald-900' },
+    neutral: { Icon: ArrowRight, color: 'text-gray-400', borderColor: 'border-gray-200 dark:border-gray-700' },
+    down: { Icon: TrendingDown, color: 'text-red-500', borderColor: 'border-red-200 dark:border-red-900' },
+  }[trend.direction];
+
+  return (
+    <div className={`border rounded-lg p-4 flex flex-col items-center gap-2 ${config.borderColor}`}>
+      <span className="text-xs text-muted-foreground font-medium">{label}</span>
+      <config.Icon className={`w-8 h-8 ${config.color}`} />
+      <div className={config.color}>
+        <StrengthDots strength={trend.strength} />
+      </div>
+      <p className="text-xs text-muted-foreground text-center leading-snug">{trend.reason}</p>
+    </div>
+  );
+}
+
+function TrendSection({ trends }: { trends: NonNullable<PredictionReport['trends']> }) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <TrendCard label="短期 1-3日" trend={trends.shortTerm} />
+      <TrendCard label="中期 1-2週" trend={trends.midTerm} />
+      <TrendCard label="長期 1ヶ月" trend={trends.longTerm} />
+    </div>
+  );
+}
+
 function PredictionReport({ report, code }: { report: PredictionReport; code: string }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
-      {/* Summary + Confidence */}
+      {/* 1. Trend Arrows */}
+      {report.trends && <TrendSection trends={report.trends} />}
+
+      {/* 2. Chart with prediction overlay (no news tooltips) */}
+      <div className="border rounded-lg p-4">
+        <h3 className="text-lg font-semibold mb-3">株価チャート</h3>
+        <StockChart
+          code={code}
+          hideNewsTooltips={true}
+          predictionData={report.dailyForecasts.map(f => ({
+            date: f.date,
+            predictedClose: f.predictedClose,
+            predictedHigh: f.predictedHigh,
+            predictedLow: f.predictedLow,
+          }))}
+          pcHeight={{ upper: 250, lower: 100 }}
+          tabletHeight={{ upper: 220, lower: 96 }}
+          mobileHeight={{ upper: 160, lower: 80 }}
+          width="100%"
+        />
+      </div>
+
+      {/* 3. Summary + Confidence */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
         <div className="flex-1">
           <h2 className="text-xl font-bold mb-2">予測概要</h2>
@@ -167,20 +244,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         </div>
       </div>
 
-      {/* Chart - StockChart（記事ラベル付き） */}
-      <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">株価チャート</h3>
-        <StockChart
-          code={code}
-          pcHeight={{ upper: 200, lower: 100 }}
-          tabletHeight={{ upper: 180, lower: 96 }}
-          mobileHeight={{ upper: 120, lower: 80 }}
-          width="100%"
-          maxNewsTooltips={4}
-        />
-      </div>
-
-      {/* Daily forecast table */}
+      {/* 4. Daily forecast table */}
       <div className="border rounded-lg overflow-hidden">
         <h3 className="text-lg font-semibold p-4 pb-2">日別予測</h3>
         <div className="overflow-x-auto">
@@ -209,13 +273,13 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         </div>
       </div>
 
-      {/* Overall Analysis */}
+      {/* 5. Overall Analysis */}
       <div className="border rounded-lg p-4">
         <h3 className="text-lg font-semibold mb-2">総合分析</h3>
         <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.overallAnalysis}</p>
       </div>
 
-      {/* Risk Factors */}
+      {/* 6. Risk Factors */}
       {report.riskFactors.length > 0 && (
         <div className="border rounded-lg p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -233,7 +297,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         </div>
       )}
 
-      {/* Disclaimer */}
+      {/* 7. Disclaimer */}
       <p className="text-xs text-muted-foreground text-center py-4 border-t">
         ※ AI予測は参考情報です。投資は自己責任で行ってください。
       </p>

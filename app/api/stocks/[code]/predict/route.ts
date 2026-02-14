@@ -153,12 +153,24 @@ interface DailyForecast {
   reasoning: string;
 }
 
+interface TrendDirection {
+  direction: 'up' | 'neutral' | 'down';
+  strength: number; // 1-5
+  reason: string;
+}
+
 interface PredictionResult {
   summary: string;
+  trends: {
+    shortTerm: TrendDirection; // 短期(1-3日)
+    midTerm: TrendDirection;   // 中期(1-2週間)
+    longTerm: TrendDirection;  // 長期(1ヶ月)
+  };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
   riskFactors: string[];
   confidence: number;
+  quality_score?: number;
 }
 
 export async function POST(
@@ -341,7 +353,7 @@ export async function POST(
     const businessDays = getNextBusinessDays(latestDate, 10);
     const businessDaysText = businessDays.join(', ');
 
-    const prompt = `あなたは株式アナリストです。以下のデータに基づいて、今後2週間（10営業日）の株価を日足で予測してください。
+    const prompt = `あなたはプロの株式アナリストです。機関投資家向けの高品質な分析レポートを作成するつもりで、以下のデータに基づき今後2週間（10営業日）の株価を日足で予測してください。投資家に価値ある具体的な分析を提供することを最優先にしてください。
 
 ## 銘柄情報
 - 銘柄コード: ${code}
@@ -350,9 +362,11 @@ export async function POST(
 ## 直近の株価データ（60日分）
 ${priceText}
 
-## トレンド
+## トレンドサマリー
 - 直近5日の変動率: ${trend5d}%
 - 直近20日の変動率: ${trend20d}%
+- 直近終値: ${latestPrice.close}円
+- 直近出来高: ${latestPrice.volume}
 
 ## 年次業績（直近5年）
 ${annualText}
@@ -363,16 +377,38 @@ ${quarterlyText}
 ## 最新ニュース（直近7日）
 ${newsText}
 
-${chartImage ? '## チャート画像\n添付のチャート画像も分析に活用してください。テクニカル指標のパターンを読み取り予測に反映させてください。' : ''}
+${chartImage ? '## チャート画像\n添付のチャート画像も分析に活用してください。移動平均線、ボリンジャーバンド、RSI、MACDなどのテクニカル指標のパターンを読み取り予測に反映させてください。' : ''}
 
 ## 予測対象の営業日（この10日分を必ず全て予測すること）
 ${businessDaysText}
+
+## 分析の指針
+1. **テクニカル分析**: 移動平均線（5日・25日・75日）のゴールデンクロス/デッドクロス、支持線・抵抗線、出来高の変化、RSI・MACDの動向を考慮
+2. **ファンダメンタルズ分析**: 業績トレンド（増収増益か減収減益か）、PER・PBRの水準感、セクター動向を考慮
+3. **カタリスト**: ニュースの影響（ポジティブ/ネガティブ）、決算発表スケジュール、マクロ経済要因を考慮
 
 ## 回答形式
 以下のJSON形式で回答してください。JSON以外のテキストは含めないでください。
 
 {
-  "summary": "予測の要約（2-3文）",
+  "summary": "予測の要約。具体的な数値（予想株価レンジ、変動率など）を含む3-5文で記述。例: '${companyName}は現在値${latestPrice.close}円から...'",
+  "trends": {
+    "shortTerm": {
+      "direction": "up" または "neutral" または "down",
+      "strength": 1-5の数値（1=弱い, 5=非常に強い）,
+      "reason": "短期（1-3日）のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
+    },
+    "midTerm": {
+      "direction": "up" または "neutral" または "down",
+      "strength": 1-5の数値,
+      "reason": "中期（1-2週間）のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
+    },
+    "longTerm": {
+      "direction": "up" または "neutral" または "down",
+      "strength": 1-5の数値,
+      "reason": "長期（1ヶ月）のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
+    }
+  },
   "dailyForecasts": [
     {
       "date": "YYYY-MM-DD",
@@ -380,19 +416,26 @@ ${businessDaysText}
       "predictedHigh": 数値,
       "predictedLow": 数値,
       "predictedVolume": 数値,
-      "reasoning": "この日の予測根拠（20文字以内で簡潔に）"
+      "reasoning": "この日の予測根拠を具体的に30文字程度で記述"
     }
   ],
-  "overallAnalysis": "全体的な分析（テクニカル・ファンダメンタルズの両面から）",
-  "riskFactors": ["リスク要因1", "リスク要因2", ...],
+  "overallAnalysis": "テクニカル分析とファンダメンタルズ分析の両面から詳細に記述。移動平均線の位置関係、出来高トレンド、業績の成長率、バリュエーション水準など具体的な数値を交えて300文字以上で分析",
+  "riskFactors": [
+    "具体的なリスク要因1（数値やシナリオを含む。例: '25日移動平均線(○○円)を下回った場合、○○円付近まで下落するリスク'）",
+    "具体的なリスク要因2",
+    "具体的なリスク要因3"
+  ],
   "confidence": 0-100の信頼度
 }
 
 注意:
 - 上記の10営業日分を必ず全て予測してください（土日祝は既に除外済み）
-- 価格は現実的な範囲で予測してください
-- reasoningは簡潔に20文字以内にしてください
-- confidenceは分析の確信度を0-100で示してください`;
+- 価格は現実的な範囲で予測してください（直近の値幅を参考に、極端な乖離は避ける）
+- summaryは抽象的な表現を避け、必ず具体的な株価水準や変動率を含めてください
+- overallAnalysisは投資判断に直結する分析を詳細に記述してください
+- riskFactorsは最低3つ、具体的な数値・シナリオを含めてください
+- trendsのdirectionは必ず "up", "neutral", "down" のいずれかを使用してください
+- trendsのstrengthは必ず1-5の整数を使用してください`;
 
     // GLM-4 API呼び出し
     if (!process.env.GLM_API_KEY) {
@@ -405,60 +448,169 @@ ${businessDaysText}
     // チャート画像がある場合はglm-4v-flash（Vision対応）、なければglm-4.7-flashx
     const modelName = chartImage ? 'glm-4v-flash' : 'glm-4.7-flashx';
 
-    const messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [];
-
-    if (chartImage) {
-      messages.push({
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: `data:image/png;base64,${chartImage}` } },
-        ],
+    // GLM API呼び出しヘルパー
+    async function callGlmApi(
+      apiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>,
+      temperature = 0.7,
+      maxTokens = 8192,
+    ): Promise<{ ok: boolean; content?: string; error?: string }> {
+      const resp = await fetch(GLM_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GLM_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: apiMessages,
+          temperature,
+          max_tokens: maxTokens,
+        }),
       });
-    } else {
-      messages.push({ role: 'user', content: prompt });
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        return { ok: false, error: errorText };
+      }
+      const data = await resp.json();
+      return { ok: true, content: data.choices?.[0]?.message?.content || '' };
     }
 
-    const glmResponse = await fetch(GLM_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GLM_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages,
-        temperature: 0.7,
-        max_tokens: 8192,
-      }),
-    });
+    // JSON解析ヘルパー
+    function parseJsonResponse(raw: string): PredictionResult {
+      const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(jsonStr);
+    }
 
-    if (!glmResponse.ok) {
-      const errorText = await glmResponse.text();
-      console.error('GLM API error:', glmResponse.status, errorText);
+    // 品質レビュー関数
+    async function reviewPrediction(
+      predictionDataToReview: PredictionResult,
+      reviewCompanyName: string,
+      reviewCode: string,
+    ): Promise<{ score: number; feedback: string }> {
+      const reviewPrompt = `あなたは株式分析レポートの品質管理担当です。以下の株価予測レポートを厳格に品質評価してください。
+
+## 評価対象
+- 銘柄: ${reviewCompanyName}（${reviewCode}）
+- レポート内容:
+${JSON.stringify(predictionDataToReview, null, 2)}
+
+## 評価基準（各20点、合計100点）
+1. **日本語の自然さ（20点）**: 文法的に正しいか、読みやすい日本語か、プロのアナリストが書いたような文体か
+2. **論理的一貫性（20点）**: summaryとoverallAnalysisとdailyForecastsの内容が矛盾していないか、trendsの方向性とdailyForecastsの価格推移が一致しているか
+3. **具体性（20点）**: summaryに具体的な数値が含まれているか、overallAnalysisに具体的な指標・数値が含まれているか、riskFactorsに具体的なシナリオがあるか
+4. **分析の深さ（20点）**: テクニカル・ファンダメンタルズの両面からの分析があるか、overallAnalysisが十分な長さ（300文字以上）か
+5. **データの妥当性（20点）**: 予測価格が現実的な範囲か、trendsのstrengthが適切か、confidenceの値が分析内容と整合しているか
+
+## 回答形式
+以下のJSON形式で回答してください。JSON以外のテキストは含めないでください。
+
+{
+  "score": 合計スコア（0-100の整数）,
+  "feedback": "改善すべき点を具体的に指摘。どの評価基準で減点されたか、どう改善すべきかを明記（200文字以上）"
+}`;
+
+      const reviewResult = await callGlmApi(
+        [{ role: 'user', content: reviewPrompt }],
+        0.3,
+        2048,
+      );
+
+      if (!reviewResult.ok || !reviewResult.content) {
+        return { score: 80, feedback: 'レビューAPI呼び出し失敗のためスキップ' };
+      }
+
+      try {
+        const parsed = JSON.parse(
+          reviewResult.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        );
+        return {
+          score: typeof parsed.score === 'number' ? parsed.score : 80,
+          feedback: parsed.feedback || 'フィードバックなし',
+        };
+      } catch {
+        return { score: 80, feedback: 'レビュー結果の解析に失敗のためスキップ' };
+      }
+    }
+
+    // 予測生成（最大3回: 初回 + 再生成最大2回）
+    let predictionData: PredictionResult | null = null;
+    let qualityScore = 0;
+    let lastFeedback = '';
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      // プロンプトにフィードバックを追加（再生成時）
+      let currentPrompt = prompt;
+      if (attempt > 0 && lastFeedback) {
+        currentPrompt += `\n\n## 前回の品質レビューフィードバック（必ず改善すること）\n${lastFeedback}`;
+      }
+
+      const messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [];
+      if (chartImage) {
+        messages.push({
+          role: 'user',
+          content: [
+            { type: 'text', text: currentPrompt },
+            { type: 'image_url', image_url: { url: `data:image/png;base64,${chartImage}` } },
+          ],
+        });
+      } else {
+        messages.push({ role: 'user', content: currentPrompt });
+      }
+
+      const glmResult = await callGlmApi(messages);
+
+      if (!glmResult.ok) {
+        console.error('GLM API error:', glmResult.error);
+        if (attempt === maxAttempts - 1) {
+          return NextResponse.json(
+            { success: false, error: 'AI APIの呼び出しに失敗しました。再度お試しください。' },
+            { status: 500 }
+          );
+        }
+        continue;
+      }
+
+      try {
+        predictionData = parseJsonResponse(glmResult.content!);
+      } catch (parseError) {
+        console.error(`Failed to parse GLM response (attempt ${attempt + 1}):`, parseError);
+        console.error('Raw response:', glmResult.content);
+        if (attempt === maxAttempts - 1) {
+          return NextResponse.json(
+            { success: false, error: '予測データの解析に失敗しました。再度お試しください。' },
+            { status: 500 }
+          );
+        }
+        continue;
+      }
+
+      // 品質レビュー
+      const review = await reviewPrediction(predictionData, companyName, code);
+      qualityScore = review.score;
+      lastFeedback = review.feedback;
+
+      console.log(`Prediction quality review (attempt ${attempt + 1}): score=${qualityScore}`);
+
+      if (qualityScore >= 80) {
+        break;
+      }
+
+      // 最終試行でもスコア不足の場合はそのまま使用
+      if (attempt === maxAttempts - 1) {
+        console.log(`Max attempts reached, using prediction with score ${qualityScore}`);
+      }
+    }
+
+    if (!predictionData) {
       return NextResponse.json(
-        { success: false, error: 'AI APIの呼び出しに失敗しました。再度お試しください。' },
+        { success: false, error: '予測データの生成に失敗しました。再度お試しください。' },
         { status: 500 }
       );
     }
 
-    const glmData = await glmResponse.json();
-    const result = glmData.choices?.[0]?.message?.content || '';
-
-    // JSONパース
-    let predictionData: PredictionResult;
-    try {
-      // マークダウンコードブロックを除去
-      const jsonStr = result.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      predictionData = JSON.parse(jsonStr);
-    } catch (parseError) {
-      console.error('Failed to parse GLM response:', parseError);
-      console.error('Raw response:', result);
-      return NextResponse.json(
-        { success: false, error: '予測データの解析に失敗しました。再度お試しください。' },
-        { status: 500 }
-      );
-    }
+    // 品質スコアをデータに含める
+    predictionData.quality_score = qualityScore;
 
     // 後処理: 祝日・土日の予測日を除外
     if (predictionData.dailyForecasts) {

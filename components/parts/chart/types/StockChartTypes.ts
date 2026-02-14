@@ -20,4 +20,7 @@ export interface ExtendedChartData {
   articles?: NewsArticle[];
   code: string;
   settlement?: number;
+  isPrediction?: boolean;
+  predictionHigh?: number;
+  predictionLow?: number;
 } 

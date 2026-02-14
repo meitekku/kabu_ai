@@ -22,6 +22,9 @@ export interface ExtendedChartData {
   articles?: NewsArticle[];
   code: string;
   settlement?: number;
+  isPrediction?: boolean;
+  predictionHigh?: number;
+  predictionLow?: number;
 }
 
 export interface CompanyInfo {
@@ -47,6 +50,13 @@ export interface ChartMargins {
 export const UPPER_CHART_MARGIN: ChartMargins = { top: 10, right: 5, bottom: 5, left: 30 };
 export const LOWER_CHART_MARGIN: ChartMargins = { top: 0, right: 5, bottom: 20, left: 30 };
 
+export interface PredictionDataPoint {
+  date: string;
+  predictedClose: number;
+  predictedHigh: number;
+  predictedLow: number;
+}
+
 // StockChartProps
 export interface StockChartProps {
   code: string;
@@ -63,6 +73,8 @@ export interface StockChartProps {
   company_name?: boolean;
   newsInstitution?: string;
   targetDate?: Date;
+  hideNewsTooltips?: boolean;
+  predictionData?: PredictionDataPoint[];
 }
 
 export interface StockChartRef {
