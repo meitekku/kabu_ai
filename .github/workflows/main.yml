@@ -30,7 +30,7 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: lint-and-typecheck
     steps:
       - uses: actions/checkout@v4
@@ -44,13 +44,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 133.130.102.77 >> ~/.ssh/known_hosts
 
-      - name: Sync and remote deploy
+      - name: Sync files to staging directory
         env:
           SSH_USER: root
           SSH_HOST: 133.130.102.77
-          TARGET: /var/www/kabu_ai
         run: |
-          echo "Syncing files..."
+          echo "Syncing files to staging directory..."
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_rsa" \
             . \
@@ -60,166 +59,127 @@ jobs:
             --exclude='.env*' \
             --exclude='public/uploads' \
             --exclude='venv' \
-            $SSH_USER@$SSH_HOST:$TARGET
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging
 
-          echo "Syncing uploads directory..."
+          echo "Syncing uploads to persistent directory..."
           rsync -avz \
             -e "ssh -i ~/.ssh/id_rsa" \
             public/uploads/ \
-            $SSH_USER@$SSH_HOST:$TARGET/public/uploads/
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_uploads/
 
-          echo "Running remote commands..."
-          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << EOF
-            set +e  # Continue on error to prevent blocking
+      - name: Build in staging and zero-downtime swap
+        env:
+          SSH_USER: root
+          SSH_HOST: 133.130.102.77
+        run: |
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+            set -e
 
-            # 必ず正しいディレクトリへ移動
-            cd $TARGET
+            STAGING=/var/www/kabu_ai_staging
+            PRODUCTION=/var/www/kabu_ai
+            OLD=/var/www/kabu_ai_old
+            UPLOADS=/var/www/kabu_ai_uploads
 
-            # アップロードディレクトリの作成と権限設定（存在しない場合のみ）
-            if [ ! -d "public/uploads/post_images" ]; then
-              mkdir -p public/uploads/post_images
-              chmod -R 777 public/uploads
+            echo "=== Zero-downtime deploy start ==="
+
+            # --- 永続uploadsディレクトリの初期化 ---
+            mkdir -p "$UPLOADS/post_images"
+
+            # 初回のみ: 既存uploadsを永続ディレクトリに移行
+            if [ -d "$PRODUCTION/public/uploads" ] && [ ! -L "$PRODUCTION/public/uploads" ]; then
+              echo "Migrating uploads to persistent directory..."
+              cp -a "$PRODUCTION/public/uploads/"* "$UPLOADS/" 2>/dev/null || true
             fi
 
-            # ポート3000を使っているプロセスを強制終了
-            sudo lsof -ti:3000 | xargs -r sudo kill -9 || true
+            # --- ステージング環境の準備 ---
+            # .env.localをコピー
+            if [ -f "$PRODUCTION/.env.local" ]; then
+              cp "$PRODUCTION/.env.local" "$STAGING/.env.local"
+            fi
 
-            # 既存の PM2 プロセスを停止・削除
-            pm2 stop kabu_ai || true
-            pm2 delete kabu_ai || true
+            # Python venvを再利用（コピー）
+            if [ -d "$PRODUCTION/venv" ] && [ ! -d "$STAGING/venv" ]; then
+              echo "Reusing Python venv..."
+              cp -a "$PRODUCTION/venv" "$STAGING/venv"
+            fi
 
-            # キャッシュ削除、依存再インストール
-            rm -rf .next
-            npm ci || echo "npm install failed, continuing..."
-            
-            # ビルド実行（TypeScriptとESLintチェックは既に完了済み）
-            set -e
+            # --- ステージングでビルド（本番は稼働中） ---
+            cd "$STAGING"
+
+            echo "Installing Node.js dependencies..."
+            npm ci
+
             echo "Building application..."
             npm run build
-            set +e  # 以降のエラーでは停止しない
 
-            # Chrome/Chromiumのインストール（重要）
-            echo "🔍 === Chrome インストール開始 ==="
-            echo "🔍 現在のユーザー: $(whoami)"
-            echo "🔍 現在のディレクトリ: $(pwd)"
-            echo "🔍 利用可能なディスク容量: $(df -h /)"
-            
-            echo "🔍 Chrome GPGキーの追加中..."
-            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-            echo "🔍 Chromeリポジトリの追加中..."
-            echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-            
-            echo "🔍 パッケージリストの更新中..."
-            sudo apt update
-            
-            echo "🔍 Chrome安定版のインストール中..."
-            sudo apt install -y google-chrome-stable
-            
-            echo "🔍 === Chrome インストール確認 ==="
-            which google-chrome-stable || echo "❌ which google-chrome-stable が見つかりません"
-            ls -la /usr/bin/google-chrome* || echo "❌ /usr/bin/google-chrome* が見つかりません"
-            
-            if [ -f "/usr/bin/google-chrome-stable" ]; then
-                echo "✅ Chrome binary found: /usr/bin/google-chrome-stable"
-                google-chrome-stable --version || echo "❌ Chrome version check failed"
-                
-                # Chrome binary pathを環境変数に設定
-                export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable
-                echo "export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable" >> ~/.bashrc
-                echo "✅ CHROME_BINARY_PATH set to: $CHROME_BINARY_PATH"
-            else
-                echo "❌ Chrome binary not found at /usr/bin/google-chrome-stable"
-                echo "🔍 利用可能なブラウザを確認中..."
-                which google-chrome || echo "google-chrome not found"
-                which chromium-browser || echo "chromium-browser not found"
-                which chromium || echo "chromium not found"
-                
-                # 代替案としてchromium-browserを試す
-                echo "🔍 代替案: chromium-browser のインストール..."
-                sudo apt install -y chromium-browser
-                which chromium-browser && export CHROME_BINARY_PATH=/usr/bin/chromium-browser
-            fi
-            
-            echo "🔍 === Chrome インストール完了 ==="
-
-            # Python仮想環境のセットアップ（--copiesでシンボリックリンク問題を回避）
-            echo "🔍 === Python環境セットアップ開始 ==="
-            echo "🔍 Python バージョン: $(python3 --version)"
-            echo "🔍 pip バージョン: $(pip3 --version)"
-
-            if [ ! -d "venv" ]; then
-              echo "🔍 Python仮想環境を作成中..."
-              python3 -m venv venv --copies
-            else
-              echo "🔍 既存の仮想環境を使用"
-            fi
-            
-            echo "🔍 仮想環境をアクティベート中..."
-            source venv/bin/activate
-            echo "🔍 仮想環境のPython: $(which python)"
-            echo "🔍 仮想環境のpip: $(which pip)"
-            
-            echo "🔍 pipをアップグレード中..."
-            pip install --upgrade pip
-            
-            echo "🔍 Python依存関係をインストール中..."
-            pip install -r requirements.txt
-            
-            echo "🔍 インストール済みパッケージの確認:"
-            pip list | grep -E "(selenium|webdriver-manager|python-dotenv)"
-            
-            echo "🔍 === Python環境セットアップ完了 ==="
-
-            # publicディレクトリの設定
+            # --- ビルド後のセットアップ ---
+            # standalone用のpublicディレクトリ
             mkdir -p .next/standalone/public
-            cp -r public/* .next/standalone/public/
-            
-            # uploadsディレクトリの設定を改善
+            cp -r public/* .next/standalone/public/ 2>/dev/null || true
+
+            # uploadsは永続ディレクトリへのシンボリックリンク
             rm -rf .next/standalone/public/uploads
-            mkdir -p /var/www/kabu_ai/public/uploads
-            ln -sf /var/www/kabu_ai/public/uploads .next/standalone/public/uploads
+            ln -sf "$UPLOADS" .next/standalone/public/uploads
+            rm -rf public/uploads
+            ln -sf "$UPLOADS" public/uploads
 
-            # アップロードディレクトリの所有者とパーミッションを設定
-            chown -R root:root /var/www/kabu_ai/public
-            chmod -R 755 /var/www/kabu_ai/public
-            find /var/www/kabu_ai/public -type d -exec chmod 755 {} \;
-            find /var/www/kabu_ai/public -type f -exec chmod 644 {} \;
-            
-            # 画像ファイルのMIMEタイプを正しく設定
-            find /var/www/kabu_ai/public/uploads -name "*.png" -exec file {} \; | grep -v "PNG image" | cut -d: -f1 | while read f; do
-              echo "Fixing MIME type for: $f"
-              # 破損した画像ファイルを特定して修正
-            done
+            # uploadsのパーミッション設定
+            chown -R root:root "$UPLOADS"
+            find "$UPLOADS" -type d -exec chmod 755 {} \;
+            find "$UPLOADS" -type f -exec chmod 644 {} \;
 
-            # シンボリックリンクの確認
-            ls -la .next/standalone/public/uploads
-            ls -la public/uploads
+            # --- Chrome（未インストールの場合のみ） ---
+            if ! command -v google-chrome-stable &>/dev/null; then
+              echo "Installing Chrome..."
+              wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
+              echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+              apt-get update -qq && apt-get install -y -qq google-chrome-stable
+            else
+              echo "Chrome already installed: $(google-chrome-stable --version)"
+            fi
 
-            # 起動前の最終確認
-            echo "🔍 === 起動前の最終環境確認 ==="
-            echo "🔍 Chrome binary: $(which google-chrome-stable || echo 'NOT FOUND')"
-            echo "🔍 Python: $(which python || echo 'NOT FOUND')"
-            echo "🔍 Node.js: $(which node || echo 'NOT FOUND')"
-            echo "🔍 npm: $(which npm || echo 'NOT FOUND')"
-            echo "🔍 PM2: $(which pm2 || echo 'NOT FOUND')"
-            echo "🔍 仮想環境: $(ls -la venv/ || echo 'NOT FOUND')"
-            echo "🔍 環境変数確認:"
-            echo "  - CHROME_BINARY_PATH: $CHROME_BINARY_PATH"
-            echo "  - NODE_ENV: $NODE_ENV"
-            echo "  - PORT: $PORT"
-            
-            # PM2 で新規起動し、リストを保存
-            echo "🔍 === PM2でアプリケーション起動 ==="
-            NODE_ENV=production PORT=3000 CHROME_BINARY_PATH=/usr/bin/google-chrome-stable pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G || echo "PM2 start failed, attempting restart..."
-            pm2 restart kabu_ai || echo "PM2 restart failed, attempting force restart..."
-            pm2 save || echo "PM2 save failed, continuing..."
+            # --- Python venv更新 ---
+            if [ -f "requirements.txt" ]; then
+              if [ ! -d "venv" ]; then
+                python3 -m venv venv --copies
+              fi
+              source venv/bin/activate
+              pip install --upgrade pip -q
+              pip install -r requirements.txt -q
+              deactivate
+            fi
 
-            # 確認
-            echo "🔍 === 起動確認 ==="
-            sleep 5
-            netstat -tulpn | grep :3000 || echo "Port 3000 check failed"
-            pm2 list || echo "PM2 list failed"
-            pm2 show kabu_ai || echo "PM2 show failed"
-            
-            echo "Deployment completed - system will continue running even if some steps failed"
-          EOF
+            # === アトミックスワップ ===
+            echo "Swapping directories..."
+            rm -rf "$OLD"
+
+            if [ -d "$PRODUCTION" ]; then
+              mv "$PRODUCTION" "$OLD"
+            fi
+            mv "$STAGING" "$PRODUCTION"
+
+            # === PM2再起動（ダウンタイムはここだけ ~2-3秒） ===
+            cd "$PRODUCTION"
+            export NODE_ENV=production
+            export PORT=3000
+            export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable
+
+            if pm2 describe kabu_ai > /dev/null 2>&1; then
+              echo "Restarting PM2 process (downtime: ~2-3s)..."
+              pm2 restart kabu_ai --update-env
+            else
+              echo "Starting new PM2 process..."
+              pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
+            fi
+            pm2 save
+
+            # --- クリーンアップ ---
+            rm -rf "$OLD"
+
+            # --- 確認 ---
+            echo "=== Deploy verification ==="
+            sleep 3
+            pm2 list
+            netstat -tulpn | grep :3000 || echo "Warning: Port 3000 not yet listening"
+            echo "=== Zero-downtime deploy complete ==="
+          DEPLOY_EOF
