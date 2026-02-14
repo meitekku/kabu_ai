@@ -42,31 +42,8 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
 
   if (loading) {
     return (
-      <div className="w-full bg-white px-2 animate-pulse">
-        {/* 企業コード + 企業名 + 市場名 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-4 w-12 bg-gray-200 rounded"></div>
-            <div className="h-5 w-32 bg-gray-200 rounded"></div>
-          </div>
-          <div className="h-4 w-16 bg-gray-200 rounded"></div>
-        </div>
-
-        {/* 現在株価と値幅の表示 */}
-        <div className="flex items-baseline space-x-4 mt-1">
-          <div className="h-7 w-24 bg-gray-200 rounded"></div>
-          <div className="h-5 w-32 bg-gray-200 rounded"></div>
-        </div>
-
-        {/* 各種指標を4列で表示 */}
-        <div className="grid grid-cols-4 text-sm mt-2">
-          {[...Array(4)].map((_, index) => (
-            <div key={index}>
-              <div className="h-4 w-12 bg-gray-200 rounded mb-1"></div>
-              <div className="h-4 w-16 bg-gray-200 rounded"></div>
-            </div>
-          ))}
-        </div>
+      <div className="w-full bg-white px-2 min-h-[90px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-600"></div>
       </div>
     );
   }

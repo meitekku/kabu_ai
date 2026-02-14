@@ -325,22 +325,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   }, [asImage, isChartReady, data, onImageGenerated, colors, pcHeight, mobileHeight, company_name, companyInfo]);
 
   if (loading) {
+    const upperH = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+    const lowerH = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
     return (
-      <div className="mt-2 animate-pulse" style={{ width, backgroundColor: colors.background }}>
-        <div 
-          className="rounded"
-          style={{
-            height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
-            backgroundColor: colors.loadingBg
-          }}
-        ></div>
-        <div 
-          className="rounded mt-2"
-          style={{
-            height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
-            backgroundColor: colors.loadingBg
-          }}
-        ></div>
+      <div className="mt-2 flex items-center justify-center" style={{ width, height: `${upperH + lowerH + 8}px`, backgroundColor: colors.background }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
       </div>
     );
   }

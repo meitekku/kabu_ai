@@ -138,7 +138,13 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
     }
   }, [statusLabels]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="min-h-[400px] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
+      </div>
+    );
+  }
   if (error) {
     return <div className="text-red-500 p-4">Error: {error}</div>;
   }
