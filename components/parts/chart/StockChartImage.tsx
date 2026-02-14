@@ -23,6 +23,10 @@ interface StockChartImageProps {
     upper: number;
     lower: number;
   };
+  tabletHeight: {
+    upper: number;
+    lower: number;
+  };
   mobileHeight: {
     upper: number;
     lower: number;
@@ -39,6 +43,7 @@ export const exportAsImage = async (
   chartContainerRef: React.RefObject<HTMLDivElement | null>,
   colors: { background: string; gridColor: string },
   pcHeight: { upper: number; lower: number },
+  tabletHeight: { upper: number; lower: number },
   mobileHeight: { upper: number; lower: number },
   company_name: boolean,
   companyInfo: CompanyInfo | null
@@ -67,8 +72,9 @@ export const exportAsImage = async (
     }
 
     // 上段と下段のチャートの高さを計算（ヘッダーの高さを増加）
-    const upperHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-    const lowerHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const upperHeight = w >= 1024 ? pcHeight.upper : w >= 640 ? tabletHeight.upper : mobileHeight.upper;
+    const lowerHeight = w >= 1024 ? pcHeight.lower : w >= 640 ? tabletHeight.lower : mobileHeight.lower;
     const headerHeight = company_name && companyInfo ? 80 : 0; // 高さを増加（60→80）
     const totalHeight = upperHeight + lowerHeight + headerHeight + 8;
 

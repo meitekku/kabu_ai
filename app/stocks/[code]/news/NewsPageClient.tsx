@@ -29,6 +29,7 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
       <StockChart
         code={code}
         pcHeight={{ upper: 200, lower: 100 }}
+        tabletHeight={{ upper: 180, lower: 96 }}
         mobileHeight={{ upper: 120, lower: 80 }}
         width={"100%"}
         maxNewsTooltips={4}

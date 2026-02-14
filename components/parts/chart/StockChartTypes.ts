@@ -52,6 +52,7 @@ export interface StockChartProps {
   code: string;
   width?: string | number;
   pcHeight?: ChartDimensions;
+  tabletHeight?: ChartDimensions;
   mobileHeight?: ChartDimensions;
   asImage?: boolean;
   onImageGenerated?: (imageUrl: string) => void;

@@ -37,13 +37,28 @@ interface ExtendedRectangleProps extends RectangleProps {
 /* --------------------------------------------------
  * メインのチャートコンポーネント
  * -------------------------------------------------- */
-const StockChart = forwardRef<StockChartRef, StockChartProps>(({ 
+// 画面幅に応じたチャート高さを返すヘルパー
+function getResponsiveHeight(
+  pcHeight: { upper: number; lower: number },
+  tabletHeight: { upper: number; lower: number },
+  mobileHeight: { upper: number; lower: number },
+  dimension: 'upper' | 'lower'
+): number {
+  if (typeof window === 'undefined') return pcHeight[dimension];
+  const w = window.innerWidth;
+  if (w >= 1024) return pcHeight[dimension];
+  if (w >= 640) return tabletHeight[dimension];
+  return mobileHeight[dimension];
+}
+
+const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   code,
   width = '100%',
   pcHeight = {
     upper: 192,
     lower: 96
   },
+  tabletHeight: tabletHeightProp,
   mobileHeight = {
     upper: 148,
     lower: 80
@@ -58,6 +73,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   newsInstitution,
   targetDate
 }, ref) => {
+  // tabletHeight が未指定の場合、pcHeight と mobileHeight の中間値をデフォルトにする
+  const tabletHeight = tabletHeightProp ?? {
+    upper: Math.round((pcHeight.upper + mobileHeight.upper) / 2),
+    lower: Math.round((pcHeight.lower + mobileHeight.lower) / 2),
+  };
+
   const [data, setData] = useState<ExtendedChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -158,7 +179,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
 
   // tooltip座標を再計算する関数
   const recalculateTooltipZones = useCallback(() => {
-    const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+    const chartHeight = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
     const zones = calculateTooltipZones(
       data,
       actualChartPositionsRef.current,
@@ -168,7 +189,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       maxNewsTooltips
     );
     setTooltipZones(zones);
-  }, [data, containerWidth, pcHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
+  }, [data, containerWidth, pcHeight.upper, tabletHeight.upper, mobileHeight.upper, showEmptyAreas, maxNewsTooltips]);
 
 
   const calculateCandleXPosition = useCallback((index: number, totalDataPoints: number, chartWidth: number) => {
@@ -204,10 +225,10 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   // refに関数を公開
   useImperativeHandle(ref, () => ({
     exportAsImage: async () => {
-      return exportAsImage(chartContainerRef, colors, pcHeight, mobileHeight, company_name, companyInfo);
+      return exportAsImage(chartContainerRef, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo);
     },
     isTooltipRendered: () => isTooltipRendered
-  }), [colors, pcHeight, mobileHeight, company_name, companyInfo, isTooltipRendered]);
+  }), [colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo, isTooltipRendered]);
 
   // データ取得用のuseEffect
   useEffect(() => {
@@ -310,7 +331,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     if (asImage && isChartReady && data.length > 0) {
       const generateImage = async () => {
         try {
-          const url = await exportAsImage(chartContainerRef, colors, pcHeight, mobileHeight, company_name, companyInfo);
+          const url = await exportAsImage(chartContainerRef, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo);
           setImageUrl(url);
           if (onImageGenerated) {
             onImageGenerated(url);
@@ -322,11 +343,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       
       setTimeout(generateImage, 500);
     }
-  }, [asImage, isChartReady, data, onImageGenerated, colors, pcHeight, mobileHeight, company_name, companyInfo]);
+  }, [asImage, isChartReady, data, onImageGenerated, colors, pcHeight, tabletHeight, mobileHeight, company_name, companyInfo]);
 
   if (loading) {
-    const upperH = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
-    const lowerH = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower;
+    const upperH = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
+    const lowerH = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'lower');
     return (
       <div className="mt-2 flex items-center justify-center" style={{ width, height: `${upperH + lowerH + 8}px`, backgroundColor: colors.background }}>
         <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
@@ -342,6 +363,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         chartContainerRef={chartContainerRef}
         colors={colors}
         pcHeight={pcHeight}
+        tabletHeight={tabletHeight}
         mobileHeight={mobileHeight}
         company_name={company_name}
         companyInfo={companyInfo}
@@ -369,7 +391,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         ref={upperChartRef}
         className="relative"
         style={{
-          height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper}px`,
+          height: `${getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper')}px`,
           backgroundColor: colors.background
         }}
       >
@@ -417,7 +439,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           const tooltipLeft = Math.max(5, Math.min(containerWidth - 145, zone.xPosition));
           
           // チャートの高さを取得
-          const chartHeight = typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.upper : mobileHeight.upper;
+          const chartHeight = getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'upper');
           
           // ロウソク足の中心座標を計算
           let candleX;
@@ -682,7 +704,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
       <div 
         className="relative -mt-1"
         style={{
-          height: `${typeof window !== 'undefined' && window.innerWidth >= 768 ? pcHeight.lower : mobileHeight.lower}px`,
+          height: `${getResponsiveHeight(pcHeight, tabletHeight, mobileHeight, 'lower')}px`,
           backgroundColor: colors.background
         }}
       >
