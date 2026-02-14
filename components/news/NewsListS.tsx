@@ -22,6 +22,24 @@ interface NewsListSProps {
   more?: boolean;
 }
 
+function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  if (error) return null;
+  return (
+    <div className="flex-shrink-0 w-20 h-20 relative">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className="object-cover rounded"
+        sizes="80px"
+        unoptimized
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1秒
 
@@ -166,36 +184,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
                 </div>
                 
                 {imageUrl && (
-                  <div className="flex-shrink-0 w-20 h-20 relative">
-                    {/* First try with Next.js Image component */}
-                    <Image
-                      src={imageUrl}
-                      alt={item.title || ''}
-                      fill
-                      className="object-cover rounded"
-                      sizes="80px"
-                      onError={(e) => {
-                        // Hide the Next.js Image and show fallback
-                        e.currentTarget.style.display = 'none';
-                        const fallbackImg = e.currentTarget.parentElement?.querySelector('.fallback-img') as HTMLImageElement;
-                        if (fallbackImg) {
-                          fallbackImg.style.display = 'block';
-                        }
-                      }}
-                    />
-                    
-                    {/* Fallback regular img tag */}
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      className="fallback-img absolute inset-0 w-full h-full object-cover rounded"
-                      src={imageUrl}
-                      alt={item.title || ''}
-                      style={{ display: 'none' }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
+                  <NewsThumbnail src={imageUrl} alt={item.title || ''} />
                 )}
               </div>
             </div>

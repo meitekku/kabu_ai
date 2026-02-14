@@ -16,6 +16,43 @@ interface Post {
   image_path?: string;
 }
 
+function NewsCard({ item }: { item: Post }) {
+  const [imgError, setImgError] = useState(false);
+  const imageMatch = item.content.match(/<img[^>]+src=['"]([^'">]+)['"]/);
+  const imageUrl = item.image_path || item.image_url || (imageMatch ? imageMatch[1] : null);
+
+  return (
+    <Link href={`/stocks/${item.code}/news/${item.id}`} className="block h-full">
+      <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
+        <div className="relative w-full aspect-[2/1]">
+          {imageUrl && !imgError ? (
+            <Image
+              src={imageUrl}
+              alt={item.title}
+              fill
+              className="object-cover object-top"
+              unoptimized
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-400">No Image</span>
+            </div>
+          )}
+        </div>
+        <div className="p-2 flex flex-col flex-grow">
+          <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{item.title}</h3>
+          <div className="mt-2 flex items-center justify-end">
+            {item.company_name && (
+              <span className="text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function NewsSection() {
   const [pickupNews, setPickupNews] = useState<Post[]>([]);
   const [marketNews, setMarketNews] = useState<Post[]>([]);
@@ -59,40 +96,9 @@ export default function NewsSection() {
     <div className="mb-8">
       <h2 className="text-xl font-bold mb-2">{title}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {news.map((item) => {
-          const imageMatch = item.content.match(/<img[^>]+src=['"]([^'">]+)['"]/);
-          const imageUrl = item.image_path || item.image_url || (imageMatch ? imageMatch[1] : null);
-
-          return (
-            <Link href={`/stocks/${item.code}/news/${item.id}`} key={item.id} className="block h-full">
-              <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
-                <div className="relative w-full aspect-[2/1]">
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover object-top"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <span className="text-gray-400">No Image</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-2 flex flex-col flex-grow">
-                  <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{item.title}</h3>
-                  <div className="mt-2 flex items-center justify-end">
-                    {item.company_name && (
-                      <span className="text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+        {news.map((item) => (
+          <NewsCard key={item.id} item={item} />
+        ))}
       </div>
     </div>
   );
