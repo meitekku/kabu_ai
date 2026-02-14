@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
 import { useState, useRef, useEffect, Suspense } from 'react';
-import { Crown, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { Crown, Settings, LogOut, LogIn, ChevronDown } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
 
 const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {
@@ -141,9 +141,10 @@ const HeaderContent = ({ isRoot, pathname, user }: {
           ) : showLoginButton ? (
             <Link
               href="/login?test=1"
-              className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors"
+              className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors flex items-center gap-1"
             >
-              ログイン
+              <LogIn className="w-4 h-4 md:hidden" />
+              <span className="hidden md:inline">ログイン</span>
             </Link>
           ) : null}
         </div>
