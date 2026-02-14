@@ -2,291 +2,377 @@
 
 import DefaultTemplate from "@/components/template/DefaultTemplate";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, TrendingUp, MessageSquare, Sparkles, Brain, ArrowRight, Zap } from "lucide-react";
+import {
+    CheckCircle2,
+    TrendingUp,
+    MessageSquare,
+    Sparkles,
+    ArrowRight,
+    Crown,
+    BarChart3,
+    LineChart,
+    Shield,
+    Clock,
+} from "lucide-react";
 import Link from "next/link";
 
 export default function PremiumPage() {
     return (
         <DefaultTemplate>
-            <div className="min-h-screen bg-[#020617] text-slate-50 font-sans selection:bg-emerald-500/30 overflow-hidden">
-
-                {/* Background Elements */}
+            <div className="min-h-screen bg-[#0a0a0f] text-slate-50 selection:bg-amber-500/30 overflow-hidden">
+                {/* Ambient background */}
                 <div className="fixed inset-0 z-0 pointer-events-none">
-                    <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px]"></div>
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/10 rounded-full blur-[120px]"></div>
-                    <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-purple-500/5 rounded-full blur-[100px]"></div>
-                    <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.03]"></div>
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-amber-500/8 via-orange-500/4 to-transparent rounded-full blur-[100px]" />
+                    <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px]" />
+                    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px]" />
                 </div>
 
                 <div className="relative z-10">
-                    {/* Hero Section */}
-                    <section className="pt-24 pb-16 md:pt-32 md:pb-20">
-                        <div className="container mx-auto px-4 text-center">
-                            <div className="inline-flex items-center justify-center px-3 py-1 mb-6 rounded-full border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-sm">
-                                <Sparkles className="w-3 h-3 text-emerald-400 mr-2" />
-                                <span className="text-xs font-bold text-emerald-300 tracking-wide uppercase">Premium Features</span>
+                    {/* Hero */}
+                    <section className="pt-20 pb-12 md:pt-28 md:pb-16">
+                        <div className="max-w-5xl mx-auto px-4 text-center">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-amber-500/25 bg-amber-500/5 backdrop-blur-sm">
+                                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                <span className="text-xs font-semibold text-amber-300 tracking-widest uppercase">
+                                    Premium
+                                </span>
                             </div>
 
-                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 leading-tight">
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">AIが変える、</span>
-                                <br className="hidden md:block" />
-                                <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]">株式投資の未来</span>
+                            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
+                                <span className="bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
+                                    AIを味方につけた
+                                </span>
+                                <br />
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 via-amber-400 to-orange-400">
+                                    投資判断
+                                </span>
                             </h1>
 
-                            <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-                                膨大なデータから瞬時に答えを導き出す<span className="text-slate-200 font-medium">AI分析</span>と、
-                                <span className="text-slate-200 font-medium">高精度な株価予測</span>で、
-                                あなたの投資判断を強力にサポートします。
+                            <p className="text-base md:text-lg text-slate-400 mb-10 max-w-xl mx-auto leading-relaxed">
+                                銘柄について何でも聞ける
+                                <span className="text-slate-200">AIチャット</span>と、
+                                過去データから未来を読む
+                                <span className="text-slate-200">株価予測</span>。
+                                <br className="hidden md:block" />
+                                2つのAI機能で、投資の精度が変わります。
                             </p>
 
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <Link href="/settings/billing">
-                                    <Button
-                                        size="lg"
-                                        className="h-12 px-8 text-base bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)]"
-                                    >
-                                        プレミアムプランを見る
-                                    </Button>
-                                </Link>
-                                <Button variant="ghost" size="lg" className="h-12 px-8 text-base text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-full">
-                                    機能の詳細 <ArrowRight className="ml-2 w-4 h-4" />
+                            <Link href="/settings/billing">
+                                <Button
+                                    size="lg"
+                                    className="h-12 px-8 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full shadow-[0_0_24px_rgba(245,158,11,0.25)] transition-all hover:scale-[1.03] hover:shadow-[0_0_32px_rgba(245,158,11,0.4)]"
+                                >
+                                    月額¥3,000で始める
+                                    <ArrowRight className="ml-2 w-4 h-4" />
                                 </Button>
-                            </div>
+                            </Link>
                         </div>
                     </section>
 
-                    {/* Bento Grid Features */}
-                    <section className="py-12 md:py-16">
-                        <div className="container mx-auto px-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                                {/* Feature 1: AI Q&A (Large) */}
-                                <div className="md:col-span-2 p-1 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                                    <div className="h-full bg-slate-950/80 rounded-[22px] p-6 md:p-8 relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                            <MessageSquare className="w-32 h-32" />
+                    {/* Two pillars */}
+                    <section className="py-12 md:py-20">
+                        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Pillar 1: AI Chat */}
+                            <div className="group rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-sm overflow-hidden transition-colors hover:border-blue-500/30">
+                                {/* Top accent */}
+                                <div className="h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+
+                                <div className="p-6 md:p-8">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                            <MessageSquare className="w-5 h-5 text-blue-400" />
                                         </div>
-
-                                        <div className="relative z-10">
-                                            <div className="flex items-center mb-4">
-                                                <div className="p-2 bg-blue-500/20 rounded-lg mr-3">
-                                                    <MessageSquare className="w-6 h-6 text-blue-400" />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-white">AIに質問する</h3>
-                                            </div>
-
-                                            <p className="text-slate-400 mb-6 max-w-md">
-                                                「この銘柄の競合は？」「過去のトレンドは？」
-                                                自然な言葉で質問するだけで、AIが膨大なデータを分析し回答します。
-                                            </p>
-
-                                            {/* Mock Chat UI */}
-                                            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg max-w-lg">
-                                                <div className="space-y-3">
-                                                    <div className="flex justify-end">
-                                                        <div className="bg-blue-600/80 text-white text-sm rounded-2xl rounded-tr-sm py-2 px-3 shadow-md">
-                                                            トヨタの決算、どうだった？
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex justify-start">
-                                                        <div className="bg-slate-800 text-slate-300 text-sm rounded-2xl rounded-tl-sm py-2 px-3 border border-slate-700">
-                                                            <span className="text-emerald-400 font-bold">好調です。</span> 営業利益は前年比+15%増。特にハイブリッド車が...
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <h2 className="text-xl font-bold text-white">AIチャット</h2>
                                     </div>
-                                </div>
-
-                                {/* Feature 2: Prediction (Tall) */}
-                                <div className="md:row-span-2 p-1 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                                    <div className="h-full bg-slate-950/80 rounded-[22px] p-6 md:p-8 relative overflow-hidden group">
-                                        <div className="absolute bottom-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                                            <TrendingUp className="w-40 h-40" />
-                                        </div>
-
-                                        <div className="relative z-10">
-                                            <div className="flex items-center mb-4">
-                                                <div className="p-2 bg-emerald-500/20 rounded-lg mr-3">
-                                                    <TrendingUp className="w-6 h-6 text-emerald-400" />
-                                                </div>
-                                                <h3 className="text-xl font-bold text-white">AI株価予測</h3>
-                                            </div>
-
-                                            <p className="text-slate-400 mb-6">
-                                                過去のパターンを学習したAIが、未来のトレンドを高精度に予測。
-                                            </p>
-
-                                            <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-lg">
-                                                <div className="flex justify-between items-end mb-2">
-                                                    <div>
-                                                        <div className="text-xs text-slate-500">AAPL Forecast</div>
-                                                        <div className="text-lg font-bold text-white">$182.45</div>
-                                                    </div>
-                                                    <div className="text-emerald-400 text-sm font-bold">+2.4%</div>
-                                                </div>
-                                                <div className="h-32 flex items-end justify-between gap-1">
-                                                    {[40, 35, 50, 45, 60, 55, 70].map((h, i) => (
-                                                        <div key={i} className="w-full bg-slate-800 rounded-sm relative overflow-hidden">
-                                                            <div className={`absolute bottom-0 w-full ${i >= 5 ? 'bg-emerald-500' : 'bg-slate-700'}`} style={{ height: `${h}%` }}></div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-6 space-y-3">
-                                                <div className="flex items-center text-sm text-slate-300">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2" />
-                                                    <span>トレンド転換点を検知</span>
-                                                </div>
-                                                <div className="flex items-center text-sm text-slate-300">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mr-2" />
-                                                    <span>売買シグナル通知</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Feature 3: Small 1 */}
-                                <div className="p-1 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                                    <div className="h-full bg-slate-950/80 rounded-[22px] p-6 relative overflow-hidden group hover:bg-slate-900 transition-colors">
-                                        <div className="flex items-center mb-3">
-                                            <Brain className="w-5 h-5 text-purple-400 mr-2" />
-                                            <h3 className="font-bold text-white">深層学習</h3>
-                                        </div>
-                                        <p className="text-sm text-slate-400">
-                                            数百万のデータポイントを分析し、人間では気づけないパターンを発見。
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Feature 4: Small 2 */}
-                                <div className="p-1 rounded-3xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-800 backdrop-blur-sm">
-                                    <div className="h-full bg-slate-950/80 rounded-[22px] p-6 relative overflow-hidden group hover:bg-slate-900 transition-colors">
-                                        <div className="flex items-center mb-3">
-                                            <Zap className="w-5 h-5 text-yellow-400 mr-2" />
-                                            <h3 className="font-bold text-white">リアルタイム</h3>
-                                        </div>
-                                        <p className="text-sm text-slate-400">
-                                            市場の変化を24時間365日監視。チャンスを逃しません。
-                                        </p>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Detailed Section: AI Q&A */}
-                    <section className="py-16 md:py-24 border-t border-slate-800/50 bg-slate-900/20">
-                        <div className="container mx-auto px-4">
-                            <div className="flex flex-col md:flex-row items-center gap-12 max-w-6xl mx-auto">
-                                <div className="flex-1">
-                                    <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-4">
-                                        INTERACTIVE ANALYSIS
-                                    </div>
-                                    <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                                        知りたいことは、<br />
-                                        <span className="text-blue-400">AIに聞くだけ。</span>
-                                    </h2>
-                                    <p className="text-slate-400 mb-8 leading-relaxed">
-                                        決算書を読み込む必要はありません。「この会社の強みは？」「リスク要因は？」と質問すれば、AIが瞬時に要約・分析して答えます。
+                                    <p className="text-sm text-slate-400 mb-6">
+                                        銘柄の業績、競合、リスクまで。
+                                        自然な言葉で聞くだけで、AIが即座に分析・回答。
                                     </p>
-                                    <ul className="space-y-4">
-                                        {[
-                                            "決算説明会の要約",
-                                            "競合他社との比較分析",
-                                            "ニュースのポジネガ判定"
-                                        ].map((item, i) => (
-                                            <li key={i} className="flex items-center text-slate-300 bg-slate-900/50 p-3 rounded-lg border border-slate-800">
-                                                <CheckCircle2 className="w-5 h-5 text-blue-500 mr-3 flex-shrink-0" />
-                                                {item}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div className="flex-1 w-full">
-                                    <div className="relative rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                                        <div className="p-6 space-y-6">
-                                            {/* User Question 1 */}
-                                            <div className="flex gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">U</div>
-                                                <div className="flex-1 bg-slate-800 rounded-2xl rounded-tl-none p-4 text-sm text-slate-300">
-                                                    トヨタ自動車の今期の見通しを教えて。
+
+                                    {/* Chat demo */}
+                                    <div className="rounded-xl bg-[#0d1117] border border-slate-800 overflow-hidden">
+                                        <div className="px-4 py-2.5 border-b border-slate-800 flex items-center gap-2">
+                                            <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
+                                            <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
+                                            <span className="ml-2 text-[11px] text-slate-500">AI Chat</span>
+                                        </div>
+                                        <div className="p-4 space-y-3">
+                                            <div className="flex justify-end">
+                                                <div className="bg-blue-600 text-white text-[13px] rounded-2xl rounded-br-md py-2 px-3.5 max-w-[75%]">
+                                                    ソニーの今期の業績見通しは？
                                                 </div>
                                             </div>
-
-                                            {/* AI Answer 1 */}
-                                            <div className="flex gap-4 flex-row-reverse">
-                                                <div className="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center">
-                                                    <Sparkles className="w-4 h-4 text-white" />
-                                                </div>
-                                                <div className="flex-1 bg-blue-900/20 border border-blue-500/20 rounded-2xl rounded-tr-none p-4 text-sm text-slate-200">
-                                                    <p className="mb-2 font-bold text-blue-400">AI Analysis:</p>
-                                                    <p>今期は<span className="text-white font-bold">増収増益</span>の見込みです。特に北米市場でのハイブリッド車販売が好調で、円安効果も寄与しています。営業利益は過去最高を更新する可能性があります。</p>
-                                                </div>
-                                            </div>
-
-                                            {/* User Question 2 */}
-                                            <div className="flex gap-4">
-                                                <div className="w-8 h-8 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-slate-300">U</div>
-                                                <div className="flex-1 bg-slate-800 rounded-2xl rounded-tl-none p-4 text-sm text-slate-300">
-                                                    リスク要因はある？
+                                            <div className="flex justify-start">
+                                                <div className="bg-slate-800/80 text-slate-300 text-[13px] rounded-2xl rounded-bl-md py-2.5 px-3.5 max-w-[85%] border border-slate-700/50">
+                                                    <span className="text-blue-400 font-semibold">
+                                                        ソニーグループ(6758)
+                                                    </span>
+                                                    の今期は
+                                                    <span className="text-emerald-400 font-semibold">
+                                                        増収増益
+                                                    </span>
+                                                    の見通しです。ゲーム&amp;ネットワーク事業が牽引し、営業利益は前年比
+                                                    <span className="text-white font-semibold">
+                                                        +12%
+                                                    </span>
+                                                    を予想...
                                                 </div>
                                             </div>
-
-                                            {/* AI Answer 2 */}
-                                            <div className="flex gap-4 flex-row-reverse">
-                                                <div className="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center">
-                                                    <Sparkles className="w-4 h-4 text-white" />
+                                            <div className="flex justify-end">
+                                                <div className="bg-blue-600 text-white text-[13px] rounded-2xl rounded-br-md py-2 px-3.5 max-w-[75%]">
+                                                    競合と比べてどう？
                                                 </div>
-                                                <div className="flex-1 bg-blue-900/20 border border-blue-500/20 rounded-2xl rounded-tr-none p-4 text-sm text-slate-200">
-                                                    <p>主なリスクは以下の通りです：</p>
-                                                    <ul className="list-disc list-inside mt-2 space-y-1 text-slate-300">
-                                                        <li>為替変動（円高への反転）</li>
-                                                        <li>原材料価格の高騰</li>
-                                                        <li>中国市場でのEV競争激化</li>
-                                                    </ul>
+                                            </div>
+                                            <div className="flex justify-start">
+                                                <div className="bg-slate-800/80 text-slate-300 text-[13px] rounded-2xl rounded-bl-md py-2.5 px-3.5 max-w-[85%] border border-slate-700/50">
+                                                    任天堂・バンナムと比較すると、ソニーは
+                                                    <span className="text-white font-semibold">
+                                                        サブスク収益の安定性
+                                                    </span>
+                                                    が強み。PS Plusの会員数は...
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    {/* Chat features */}
+                                    <div className="mt-6 grid grid-cols-1 gap-2">
+                                        {[
+                                            "銘柄の強み・リスクを瞬時に把握",
+                                            "決算データに基づいた正確な回答",
+                                            "質問回数は無制限",
+                                        ].map((text, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-2.5 text-sm text-slate-300"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                                                {text}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
+                            </div>
+
+                            {/* Pillar 2: Stock Prediction */}
+                            <div className="group rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-sm overflow-hidden transition-colors hover:border-emerald-500/30">
+                                <div className="h-px bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+
+                                <div className="p-6 md:p-8">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                            <TrendingUp className="w-5 h-5 text-emerald-400" />
+                                        </div>
+                                        <h2 className="text-xl font-bold text-white">AI株価予測</h2>
+                                    </div>
+                                    <p className="text-sm text-slate-400 mb-6">
+                                        過去の値動きパターンをAIが学習。
+                                        翌日以降のトレンドを予測し、売買タイミングの参考に。
+                                    </p>
+
+                                    {/* Chart demo */}
+                                    <div className="rounded-xl bg-[#0d1117] border border-slate-800 overflow-hidden">
+                                        <div className="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <LineChart className="w-3.5 h-3.5 text-slate-500" />
+                                                <span className="text-[11px] text-slate-500">
+                                                    AI Prediction
+                                                </span>
+                                            </div>
+                                            <span className="text-[11px] text-slate-600">7日間</span>
+                                        </div>
+                                        <div className="p-4">
+                                            <div className="flex items-baseline justify-between mb-1">
+                                                <div>
+                                                    <div className="text-[11px] text-slate-500 mb-0.5">
+                                                        トヨタ自動車 (7203)
+                                                    </div>
+                                                    <div className="text-2xl font-bold text-white tracking-tight">
+                                                        ¥3,245
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-emerald-400 text-sm font-bold">
+                                                        +3.2%
+                                                    </div>
+                                                    <div className="text-[11px] text-slate-500">
+                                                        予測上昇率
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Mini chart */}
+                                            <div className="mt-3 flex items-end gap-[3px] h-28">
+                                                {[
+                                                    { h: 45, past: true },
+                                                    { h: 38, past: true },
+                                                    { h: 52, past: true },
+                                                    { h: 48, past: true },
+                                                    { h: 55, past: true },
+                                                    { h: 62, past: false },
+                                                    { h: 70, past: false },
+                                                ].map((bar, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="flex-1 rounded-sm relative overflow-hidden"
+                                                        style={{ height: "100%" }}
+                                                    >
+                                                        <div
+                                                            className={`absolute bottom-0 w-full rounded-t-sm transition-all ${
+                                                                bar.past
+                                                                    ? "bg-slate-700"
+                                                                    : "bg-gradient-to-t from-emerald-600 to-emerald-400"
+                                                            }`}
+                                                            style={{ height: `${bar.h}%` }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="flex justify-between mt-2 text-[10px] text-slate-600">
+                                                <span>過去5日</span>
+                                                <span className="text-emerald-500 font-medium">
+                                                    予測 2日
+                                                </span>
+                                            </div>
+
+                                            {/* Signal */}
+                                            <div className="mt-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                                <span className="text-xs text-emerald-300 font-medium">
+                                                    上昇トレンド継続の可能性が高い
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Prediction features */}
+                                    <div className="mt-6 grid grid-cols-1 gap-2">
+                                        {[
+                                            "過去データからAIがトレンドを予測",
+                                            "上昇・下降シグナルを表示",
+                                            "すべての銘柄に対応",
+                                        ].map((text, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-2.5 text-sm text-slate-300"
+                                            >
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                                {text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Why Premium */}
+                    <section className="py-12 md:py-16">
+                        <div className="max-w-4xl mx-auto px-4">
+                            <div className="text-center mb-10">
+                                <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                                    プレミアムで得られること
+                                </h2>
+                                <p className="text-sm text-slate-400">
+                                    無料プランとの違い
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {[
+                                    {
+                                        icon: MessageSquare,
+                                        color: "blue",
+                                        title: "AIチャット無制限",
+                                        desc: "無料プランは1日3回まで。プレミアムなら何度でも質問OK。",
+                                    },
+                                    {
+                                        icon: BarChart3,
+                                        color: "emerald",
+                                        title: "株価予測の利用",
+                                        desc: "AIによる株価トレンド予測機能はプレミアム限定。",
+                                    },
+                                    {
+                                        icon: Shield,
+                                        color: "amber",
+                                        title: "優先サポート",
+                                        desc: "不具合や要望に優先的に対応。あなたの声を反映。",
+                                    },
+                                ].map((item, i) => {
+                                    const colorMap: Record<string, string> = {
+                                        blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                                        emerald:
+                                            "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+                                        amber: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                                    };
+                                    const c = colorMap[item.color];
+
+                                    return (
+                                        <div
+                                            key={i}
+                                            className="rounded-xl border border-slate-800 bg-slate-900/30 p-5 text-center"
+                                        >
+                                            <div
+                                                className={`inline-flex p-2.5 rounded-lg border mb-3 ${c}`}
+                                            >
+                                                <item.icon className="w-5 h-5" />
+                                            </div>
+                                            <h3 className="font-bold text-white text-sm mb-1.5">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-xs text-slate-400 leading-relaxed">
+                                                {item.desc}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </section>
 
                     {/* CTA */}
-                    <section className="py-20">
-                        <div className="container mx-auto px-4">
-                            <div className="max-w-4xl mx-auto relative">
-                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 blur-3xl -z-10 rounded-full"></div>
-                                <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-700 rounded-3xl p-8 md:p-12 text-center shadow-2xl">
-                                    <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
-                                        投資のプロフェッショナルな洞察を、<br className="hidden md:block" />
-                                        あなたの手元に。
+                    <section className="py-16 md:py-20">
+                        <div className="max-w-3xl mx-auto px-4">
+                            <div className="relative rounded-2xl overflow-hidden">
+                                {/* Glow */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/15 blur-2xl -z-10 scale-110" />
+
+                                <div className="border border-amber-500/20 bg-slate-900/60 backdrop-blur-xl rounded-2xl p-8 md:p-12 text-center">
+                                    <Crown className="w-10 h-10 text-amber-400 mx-auto mb-4" />
+
+                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                                        月額¥3,000でAIを活用
                                     </h2>
-                                    <p className="text-lg text-slate-400 mb-8 max-w-2xl mx-auto">
-                                        まずは無料トライアルで、AIの威力を体験してください。
+                                    <p className="text-sm text-slate-400 mb-8 max-w-md mx-auto">
+                                        AIチャット無制限 + 株価予測。
+                                        いつでもキャンセル可能です。
                                     </p>
+
                                     <Link href="/settings/billing">
                                         <Button
                                             size="lg"
-                                            className="h-14 px-10 text-lg bg-white text-slate-950 hover:bg-slate-200 font-bold rounded-full transition-all hover:scale-105 shadow-lg"
+                                            className="h-12 px-10 text-sm font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-full shadow-[0_0_24px_rgba(245,158,11,0.3)] transition-all hover:scale-[1.03]"
                                         >
-                                            今すぐ始める
+                                            プレミアムに申し込む
                                         </Button>
                                     </Link>
-                                    <p className="mt-4 text-sm text-slate-500">
-                                        クレジットカード不要 • いつでもキャンセル可能
-                                    </p>
+
+                                    <div className="mt-6 flex items-center justify-center gap-4 text-xs text-slate-500">
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock className="w-3 h-3" />
+                                            いつでも解約OK
+                                        </div>
+                                        <div className="w-px h-3 bg-slate-700" />
+                                        <div className="flex items-center gap-1.5">
+                                            <Shield className="w-3 h-3" />
+                                            Stripe安全決済
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </section>
-
                 </div>
             </div>
         </DefaultTemplate>
