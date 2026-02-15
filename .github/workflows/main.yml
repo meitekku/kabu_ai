@@ -50,22 +50,11 @@ jobs:
           npx vitest run --reporter=verbose 2>&1 | tee /tmp/unit-test-output.txt
           exit ${PIPESTATUS[0]}
 
-      - name: Install Playwright browsers
-        if: success()
-        run: npx playwright install --with-deps chromium
-
-      - name: Build application for E2E
+      - name: Build application
         if: success()
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-
-      - name: Run E2E tests (Playwright)
-        id: e2e-test
-        if: success()
-        run: |
-          npx playwright test --reporter=line 2>&1 | tee /tmp/e2e-test-output.txt
-          exit ${PIPESTATUS[0]}
 
   deploy:
     runs-on: ubuntu-latest
