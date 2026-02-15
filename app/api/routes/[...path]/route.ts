@@ -81,7 +81,9 @@ export async function GET(
           // プロキシ失敗時は404を返す
         }
       }
-      return new NextResponse('Image not found', { status: 404 });
+      const notFound = new NextResponse('Image not found', { status: 404 });
+      notFound.headers.set('Cache-Control', 'no-store, must-revalidate');
+      return notFound;
     }
 
     const ext = path.extname(foundPath).toLowerCase();
