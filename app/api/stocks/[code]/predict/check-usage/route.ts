@@ -41,9 +41,10 @@ export async function POST(
 
     const db = Database.getInstance();
 
-    // 管理者チェック
+    // 管理者チェック（better-auth + レガシークッキー両対応）
+    const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
     const cookieStore = await cookies();
-    const isAdmin = !!cookieStore.get('username')?.value;
+    const isAdmin = !!cookieStore.get('username')?.value || session?.user?.email === ADMIN_EMAIL;
 
     // プレミアム会員チェック
     let isPremium = false;

@@ -217,7 +217,8 @@ export async function POST(
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id || null;
     const clientIp = getClientIp(headersList);
-    const isAdmin = !!cookieStore.get('username')?.value;
+    const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
+    const isAdmin = !!cookieStore.get('username')?.value || session?.user?.email === ADMIN_EMAIL;
 
     // キャッシュヒット: 利用ログを記録して即返却（認証チェック不要）
     if (cacheResult.length > 0) {
