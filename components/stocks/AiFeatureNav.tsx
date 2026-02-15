@@ -47,7 +47,7 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
 
   return (
     <>
-      <div className="my-5 mx-auto max-w-lg">
+      <div className="my-2 mx-auto max-w-lg">
         {/* Container with premium border */}
         <div className="relative rounded-2xl bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-900/80 border border-gray-200/60 dark:border-gray-700/60 shadow-sm overflow-hidden">
           {/* Subtle top accent line */}
@@ -82,7 +82,7 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
                   AI株価予想
                 </div>
                 <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  5日間の株価を予測
+                  1ヶ月間の株価を予測
                 </div>
               </div>
             </button>
