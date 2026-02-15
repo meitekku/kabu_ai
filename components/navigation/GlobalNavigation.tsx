@@ -9,6 +9,7 @@ const ADMIN_EMAIL = "smartaiinvest@gmail.com";
 
 const NAVIGATION_LINKS = [
   { href: '/admin/accept_ai', label: '承認リスト' },
+  { href: '/admin/accept_ai_us', label: 'US承認リスト' },
   { href: '/admin/prompt', label: 'プロンプト変更' },
   { href: '/admin/prompt/article-prompt', label: '確認' },
   { href: '/admin/all-article', label: 'コメントコピー' },

@@ -22,6 +22,8 @@ interface ApprovalItem {
 interface ApprovalListProps {
   items: ApprovalItem[];
   fetchData: () => Promise<void>;
+  approveSiteNumber?: number;
+  apiEndpoint?: string;
 }
 
 const AutoResizeTextarea: React.FC<{
@@ -59,7 +61,7 @@ const AutoResizeTextarea: React.FC<{
   );
 };
 
-const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
+const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData, approveSiteNumber = 70, apiEndpoint = '/api/admin/accept_ai' }) => {
   // タイトル入力用 refs
   const inputRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const chartRefs = useRef<Record<number, StockChartRef | null>>({});
@@ -154,10 +156,10 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
     try {
       setIsUpdating(prev => ({ ...prev, [id]: true }));
       setError(null);
-      const response = await fetch('/api/admin/accept_ai', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'update', table: 'post', data: { accept: 1, site: 70 }, conditions: { id } }),
+        body: JSON.stringify({ type: 'update', table: 'post', data: { accept: 1, site: approveSiteNumber }, conditions: { id } }),
       });
       const result = await response.json();
       if (result.success) await fetchData();
@@ -171,7 +173,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({ items, fetchData }) => {
 
   const handleReject = async (id: number) => {
     try {
-      const response = await fetch('/api/admin/accept_ai', {
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'update', table: 'post', data: { accept: 2 }, conditions: { id } }),
