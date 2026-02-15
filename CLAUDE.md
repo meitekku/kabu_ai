@@ -24,7 +24,7 @@
 
 **AIのAPIを使用する場合は必ずGLM-4を使用すること。**
 
-- テキスト生成: `glm-4.7-flashx`
+- テキスト生成: `glm-4-plus`（予測API等で使用。旧glm-4.7-flashxは推論トークン消費で低速のため変更）
 - 画像入力対応（Vision）: `glm-4v-flash`
 - APIエンドポイント: `https://open.bigmodel.cn/api/paas/v4/chat/completions`
 - 認証: `Authorization: Bearer ${GLM_API_KEY}`
