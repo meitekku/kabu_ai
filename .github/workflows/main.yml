@@ -67,66 +67,6 @@ jobs:
           npx playwright test --reporter=line 2>&1 | tee /tmp/e2e-test-output.txt
           exit ${PIPESTATUS[0]}
 
-      - name: Upload test results
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            /tmp/unit-test-output.txt
-            /tmp/e2e-test-output.txt
-            playwright-report/
-          retention-days: 7
-
-  auto-repair:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: test
-    if: failure()
-    permissions:
-      contents: write
-      issues: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Download test results
-        uses: actions/download-artifact@v4
-        with:
-          name: test-results
-          path: /tmp/test-results
-        continue-on-error: true
-
-      - name: Run tests and capture output
-        id: rerun-tests
-        continue-on-error: true
-        run: |
-          npx vitest run --reporter=verbose 2>&1 | tee /tmp/test-output.txt || true
-
-      - name: Auto-repair with Claude API
-        if: steps.rerun-tests.outcome == 'failure' || true
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x scripts/auto-repair.sh
-          # Use re-captured output or downloaded artifact
-          TEST_FILE="/tmp/test-output.txt"
-          if [ -f "/tmp/test-results/unit-test-output.txt" ]; then
-            TEST_FILE="/tmp/test-results/unit-test-output.txt"
-          fi
-          ./scripts/auto-repair.sh "$TEST_FILE" "unit"
-
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15

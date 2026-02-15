@@ -807,6 +807,48 @@ npm run lint:fix     # ESLint 自動修正
 npx tsc --noEmit --skipLibCheck
 ```
 
+### テスト
+
+```bash
+npx vitest run                    # ユニットテスト（Vitest）
+npx playwright test               # E2Eテスト（Playwright）
+npm run test:all                  # 全テスト実行
+```
+
+### CI監視・修復
+
+```bash
+./scripts/ci-watch.sh             # pushした後のCI結果を監視
+./scripts/ci-repair-loop.sh [N]   # push→CI監視→失敗時修復→再push（最大N回、デフォルト3）
+```
+
+---
+
+## テスト構成
+
+```
+__tests__/
+├── setup.ts                            # グローバルセットアップ（Next.jsモック）
+├── unit/
+│   └── components/
+│       ├── auth/LoginForm.test.tsx      # ログインフォーム（14テスト）
+│       └── news/
+│           ├── NewsSection.test.tsx     # トップページニュース（9テスト）
+│           └── NewsListS.test.tsx       # ニュースリスト（11テスト）
+└── e2e/
+    ├── login.spec.ts                   # ログインE2E
+    └── top-page.spec.ts               # TOPページ画像表示E2E
+```
+
+**設定ファイル:**
+- `vitest.config.ts` — Vitest設定（jsdom環境、`@`エイリアス）
+- `playwright.config.ts` — Playwright設定（chromium、localhost:3000）
+- `tsconfig.test.json` — テスト用TypeScript設定（vitest/globals型）
+
+**CI/CD:** `.github/workflows/main.yml`
+- `lint-and-typecheck` → `test`（Vitest + Playwright） → `deploy`
+- テスト失敗時はローカルの `ci-repair-loop.sh` で `gh` CLI経由で修復
+
 ---
 
 ## 主要ページ
