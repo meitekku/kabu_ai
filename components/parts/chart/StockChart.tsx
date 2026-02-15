@@ -117,19 +117,27 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   // テーマに基づく色設定
   const colors = getThemeColors(theme);
 
-  // Y軸のドメインを事前に計算する関数
+  // Y軸のドメインを事前に計算する関数（きれいな区切りに丸める）
   const calculateYDomain = useCallback(() => {
     if (data.length === 0) return { min: 0, max: 100 };
-    
+
     const allValues = data.flatMap(d => [d.high, d.low]);
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
     const valueRange = maxValue - minValue;
     const padding = valueRange * 0.1;
-    
+
+    // きれいな区切り値を計算
+    const magnitude = Math.pow(10, Math.floor(Math.log10(valueRange)));
+    const normalized = valueRange / magnitude;
+    const niceStep = normalized <= 1.5 ? magnitude * 0.2
+      : normalized <= 3 ? magnitude * 0.5
+      : normalized <= 7 ? magnitude
+      : magnitude * 2;
+
     return {
-      min: minValue - padding,
-      max: maxValue + padding
+      min: Math.floor((minValue - padding) / niceStep) * niceStep,
+      max: Math.ceil((maxValue + padding) / niceStep) * niceStep
     };
   }, [data]);
 
@@ -399,7 +407,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         }}
       >
         {/* 価格情報を左上に表示 */}
-        <div className="absolute top-1 left-14 z-30 pointer-events-none">
+        <div className="absolute top-1 left-20 z-30 pointer-events-none">
           <div className="text-[10px] space-y-0.5 px-1 py-0.5 rounded" style={{ backgroundColor: colors.infoBg }}>
             <div style={{ color: colors.textSecondary }}>始値:{displayData.open.toLocaleString()}</div>
             <div style={{ color: colors.textSecondary }}>高値:{displayData.high.toLocaleString()}</div>
@@ -623,10 +631,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               interval="preserveStartEnd" 
               hide
             />
-            <YAxis 
+            <YAxis
               domain={[calculateYDomain().min, calculateYDomain().max]}
-              tick={{ fontSize: 12, dx: -5, fill: colors.text }} 
-              width={25}
+              tick={{ fontSize: 11, dx: -3, fill: colors.text }}
+              width={45}
+              allowDecimals={false}
+              tickFormatter={(value: number) => value.toLocaleString()}
             />
             <Tooltip 
               content={() => null}
@@ -729,10 +739,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 strokeWidth={2}
                 label={{
                   value: `¥${Math.round(data[data.length - 1].predictionClose!).toLocaleString()}`,
-                  position: 'top',
+                  position: 'left',
                   fill: '#10b981',
                   fontSize: 11,
                   fontWeight: 'bold',
+                  offset: 8,
                 }}
               />
             )}
@@ -749,7 +760,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
         }}
       >
         {/* 出来高情報を左上に表示 */}
-        <div className="absolute top-1 left-14 z-30 pointer-events-none">
+        <div className="absolute top-1 left-20 z-30 pointer-events-none">
           <div className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: colors.infoBg }}>
             <div style={{ color: colors.textSecondary }}>
               出来高:{(displayData.volume / 10000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}万株
@@ -791,9 +802,9 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
             <XAxis dataKey="date" tick={{ fontSize: 12, fill: colors.text }} interval="preserveStartEnd" />
             <YAxis
-              tick={{ fontSize: 12, dx: -5, fill: colors.text }}
+              tick={{ fontSize: 11, dx: -3, fill: colors.text }}
               tickFormatter={(value: number) => formatNumber(value / 10000)}
-              width={25}
+              width={45}
             />
             <Tooltip 
               content={() => null}

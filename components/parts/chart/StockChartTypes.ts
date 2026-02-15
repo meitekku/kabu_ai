@@ -48,7 +48,7 @@ export interface ChartMargins {
 }
 
 // チャートのマージン設定を定数化
-export const UPPER_CHART_MARGIN: ChartMargins = { top: 10, right: 5, bottom: 5, left: 30 };
+export const UPPER_CHART_MARGIN: ChartMargins = { top: 22, right: 5, bottom: 5, left: 30 };
 export const LOWER_CHART_MARGIN: ChartMargins = { top: 0, right: 5, bottom: 20, left: 30 };
 
 export interface PredictionDataPoint {
