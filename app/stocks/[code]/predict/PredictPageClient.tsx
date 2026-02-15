@@ -7,8 +7,7 @@ import { FaXTwitter, FaLine, FaFacebookF } from 'react-icons/fa6';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
-import StockChart from '@/components/parts/chart/StockChart';
-import type { StockChartRef } from '@/components/parts/chart/StockChart';
+import StockChart, { type StockChartRef } from '@/components/parts/chart/StockChart';
 import Link from 'next/link';
 
 interface DailyForecast {
