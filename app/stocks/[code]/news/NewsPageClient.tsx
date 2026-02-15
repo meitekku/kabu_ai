@@ -5,6 +5,7 @@ import StockChart from '@/components/parts/chart/StockChart';
 import NewsList from '@/components/ui/NewsList';
 import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
 import { PredictionButton } from '@/components/prediction/PredictionButton';
+import USCommentList from '@/components/parts/us/USCommentList';
 
 interface NewsPageClientProps {
   code: string;
@@ -12,6 +13,7 @@ interface NewsPageClientProps {
 
 const NewsPageClient = ({ code }: NewsPageClientProps) => {
   const [error, setError] = useState<string | null>(null);
+  const isUSStock = /^[A-Z]+$/.test(code);
 
   useEffect(() => {
     if (!code) {
@@ -34,10 +36,14 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
         width={"100%"}
         maxNewsTooltips={4}
       />
-      <PredictionButton code={code} />
-      <NewsList title="最新ニュース" showMoreButton={true} />
+      {!isUSStock && <PredictionButton code={code} />}
+      {isUSStock ? (
+        <USCommentList code={code} />
+      ) : (
+        <NewsList title="最新ニュース" showMoreButton={true} />
+      )}
     </div>
   );
 };
 
-export default NewsPageClient; 
+export default NewsPageClient;

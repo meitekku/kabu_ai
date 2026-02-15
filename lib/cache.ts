@@ -23,10 +23,12 @@ const TTL_CONFIGS: Record<TTLProfile, () => number> = {
     if ((m >= 745 && m <= 810) || (m >= 925 && m <= 990)) return 120;
     return 600;
   },
-  // 株価・企業情報: 市場時間(9:00-15:30)は3分、それ以外は30分
+  // 株価・企業情報: 市場時間(JP 9:00-15:30, US 23:30-06:00 JST)は3分、それ以外は30分
   market: () => {
     const m = getJSTMinutes();
-    if (m >= 540 && m <= 930) return 180;
+    const isJP = m >= 540 && m <= 930;    // 9:00-15:30 JST
+    const isUS = m >= 1410 || m <= 360;   // 23:30-06:00 JST
+    if (isJP || isUS) return 180;
     return 1800;
   },
   // ランキング: 常に10分

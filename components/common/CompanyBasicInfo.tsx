@@ -107,7 +107,10 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     switch (market) {
       case 1:
         return '東証P';
-      // 必要に応じて他のケースも追加
+      case 2: return '東証S';
+      case 3: return '東証G';
+      case 11: return 'ETF';
+      case 100: return 'US';
       default:
         return '市場不明';
     }
@@ -132,6 +135,16 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
   };
 
+  const formatMarketCapUS = (value: number | null | undefined): string => {
+    if (value == null || isNaN(value)) return '-';
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    return `$${value.toLocaleString()}`;
+  };
+
+  const isUS = info.market === 100;
+
   return (
     <div className="w-full bg-white px-2">
       {/* 企業コード + 企業名 + 市場名 */}
@@ -146,7 +159,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       {/* 現在株価と値幅の表示 */}
       <div className="flex items-baseline space-x-4 mt-1">
         <div className="text-2xl font-bold">
-          {formatPrice(info.current_price)}円
+          {isUS ? `$${formatPrice(info.current_price)}` : `${formatPrice(info.current_price)}円`}
         </div>
         <div
           className={`text-lg ${
@@ -154,7 +167,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           }`}
         >
           {parseFloat(info.price_change) >= 0 ? '+' : ''}
-          {formatPrice(info.price_change)} (
+          {isUS ? '$' : ''}{formatPrice(info.price_change)} (
           {formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
         </div>
       </div>
@@ -175,12 +188,14 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
         </div>
         <div>
           <div className="text-gray-600">時価総額</div>
-          <div>{formatMarketCap(info.market_cap)}</div>
+          <div>{isUS ? formatMarketCapUS(info.market_cap) : formatMarketCap(info.market_cap)}</div>
         </div>
       </div>
-      <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
-        バリュエーション分析 →
-      </Link>
+      {!isUS && (
+        <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
+          バリュエーション分析 →
+        </Link>
+      )}
     </div>
   );
 };
