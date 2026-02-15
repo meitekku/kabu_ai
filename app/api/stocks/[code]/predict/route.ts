@@ -175,6 +175,13 @@ interface PredictionResult {
   investmentStrategy: string;
   riskFactors: string[];
   quality_score?: number;
+  scores?: {
+    technical: number;
+    fundamental: number;
+    catalyst: number;
+    strategy: number;
+    overall: number;
+  };
 }
 
 export async function POST(
@@ -474,18 +481,29 @@ ${businessDaysText}
     "具体的なリスク要因1（数値やシナリオを含む。例: '25日移動平均線(○○円)を下回った場合、○○円付近まで下落するリスク'）",
     "具体的なリスク要因2",
     "具体的なリスク要因3"
-  ]
+  ],
+  "scores": {
+    "technical": 0-100の数値（テクニカル分析の評価スコア。チャートパターンの明確さ、テクニカル指標の一致度、トレンドの信頼性を評価）,
+    "fundamental": 0-100の数値（ファンダメンタルズの評価スコア。業績の堅実さ、成長性、バリュエーションの割安度を評価）,
+    "catalyst": 0-100の数値（カタリスト・材料の評価スコア。材料のインパクト、ポジティブ/ネガティブの明確さを評価）,
+    "strategy": 0-100の数値（投資戦略の実行性スコア。リスクリワード比、エントリー条件の明確さを評価）,
+    "overall": 0-100の数値（総合評価スコア。全分析を総合した投資魅力度）
+  }
 }
 
 注意:
 - 上記の20営業日分を必ず全て予測してください（土日祝は既に除外済み）
 - 価格は現実的な範囲で予測してください（直近の値幅を参考に、極端な乖離は避ける）
+- 日々の価格変動は自然な上下動を含むようにしてください。単調な上昇・下降パターンは非現実的です
+- 連続する数日間は上昇と下降が交互に現れるなど、リアルな市場の値動きを再現してください
+- 1日の変動率は通常±0.5%〜2%程度に収めてください（ただし重大な材料がある場合は例外）
 - summaryは抽象的な表現を避け、必ず具体的な株価水準や変動率を含めてください
 - overallAnalysisは投資判断に直結する分析を詳細に記述してください
 - technicalAnalysis、fundamentalAnalysis、catalystAnalysis、investmentStrategyはそれぞれ指定文字数以上で詳細に記述してください
 - riskFactorsは最低3つ、具体的な数値・シナリオを含めてください
 - trendsのdirectionは必ず "up", "neutral", "down" のいずれかを使用してください
-- trendsのstrengthは必ず1-5の整数を使用してください`;
+- trendsのstrengthは必ず1-5の整数を使用してください
+- scoresの各項目は必ず0-100の整数を使用してください`;
 
     // GLM-4 API呼び出し
     if (!process.env.GLM_API_KEY) {

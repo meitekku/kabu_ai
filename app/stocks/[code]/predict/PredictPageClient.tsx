@@ -24,6 +24,14 @@ interface TrendDirection {
   reason: string;
 }
 
+interface PredictionScores {
+  technical: number;
+  fundamental: number;
+  catalyst: number;
+  strategy: number;
+  overall: number;
+}
+
 interface PredictionReport {
   summary: string;
   trends?: {
@@ -38,6 +46,7 @@ interface PredictionReport {
   fundamentalAnalysis?: string;
   catalystAnalysis?: string;
   investmentStrategy?: string;
+  scores?: PredictionScores;
 }
 
 interface PredictPageClientProps {
@@ -187,6 +196,23 @@ function TrendCard({ label, trend }: { label: string; trend: TrendDirection }) {
   );
 }
 
+function ScoreBadge({ score }: { score?: number }) {
+  if (score == null) return null;
+  const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const color = clamped >= 80
+    ? 'text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800'
+    : clamped >= 60
+      ? 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800'
+      : clamped >= 40
+        ? 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800'
+        : 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950/40 dark:border-red-800';
+  return (
+    <span className={`inline-flex items-center justify-center text-xs font-bold border rounded-full px-2 py-0.5 ml-2 ${color}`}>
+      {clamped}<span className="text-[10px] font-normal ml-0.5">/100</span>
+    </span>
+  );
+}
+
 function TrendSection({ trends }: { trends: NonNullable<PredictionReport['trends']> }) {
   return (
     <div className="grid grid-cols-3 gap-3">
@@ -235,6 +261,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-500" />
             テクニカル分析
+            <ScoreBadge score={report.scores?.technical} />
           </h3>
           <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.technicalAnalysis}</p>
         </div>
@@ -245,6 +272,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
             ファンダメンタルズ分析
+            <ScoreBadge score={report.scores?.fundamental} />
           </h3>
           <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.fundamentalAnalysis}</p>
         </div>
@@ -255,6 +283,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <Newspaper className="w-5 h-5 text-orange-500" />
             カタリスト・材料分析
+            <ScoreBadge score={report.scores?.catalyst} />
           </h3>
           <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.catalystAnalysis}</p>
         </div>
@@ -265,6 +294,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
             <BrainCircuit className="w-5 h-5 text-purple-500" />
             投資戦略
+            <ScoreBadge score={report.scores?.strategy} />
           </h3>
           <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.investmentStrategy}</p>
         </div>
@@ -272,7 +302,10 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
 
       {/* 5. Overall Analysis */}
       <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-2">総合分析</h3>
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          総合分析
+          <ScoreBadge score={report.scores?.overall} />
+        </h3>
         <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.overallAnalysis}</p>
       </div>
 

@@ -254,31 +254,36 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           // 予測データがある場合はマージ
           if (predictionData && predictionData.length > 0) {
             const predictionEntries: ExtendedChartData[] = predictionData.map(p => {
-              const open = p.predictedOpen ?? p.predictedClose;
+              const close = p.predictedClose;
               return {
                 date: p.date,
-                open,
+                open: close,
                 high: p.predictedHigh,
                 low: p.predictedLow,
-                close: p.predictedClose,
+                close,
                 volume: 0,
-                highLowBar: [p.predictedLow, p.predictedHigh] as [number, number],
-                candlestick: [Math.min(open, p.predictedClose), Math.max(open, p.predictedClose)] as [number, number],
-                color: p.predictedClose >= open ? '#ff0000' : '#0000ff',
-                ma5: 0,
-                ma25: 0,
-                ma75: 0,
+                // ローソク足を非表示にするためゼロ高さに設定
+                highLowBar: [close, close] as [number, number],
+                candlestick: [close, close] as [number, number],
+                color: 'transparent',
+                ma5: null,
+                ma25: null,
+                ma75: null,
                 code: code,
                 isPrediction: true,
                 predictionHigh: p.predictedHigh,
                 predictionLow: p.predictedLow,
+                predictionClose: close,
               };
             });
-            // 予測同士の色を前日比で計算
-            for (let i = 1; i < predictionEntries.length; i++) {
-              predictionEntries[i].color = predictionEntries[i].close >= predictionEntries[i - 1].close ? '#ff0000' : '#0000ff';
-            }
             setPredictionStartIndex(convertedData.length);
+            // 最後の実データにpredictionCloseを設定してラインを接続
+            if (convertedData.length > 0) {
+              convertedData[convertedData.length - 1] = {
+                ...convertedData[convertedData.length - 1],
+                predictionClose: convertedData[convertedData.length - 1].close,
+              };
+            }
             const mergedData = [...convertedData, ...predictionEntries];
             setData(mergedData);
           } else {
@@ -754,17 +759,36 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 }}
               />
             )}
+            {/* 予測レンジバンド（High-Low間の塗りつぶし） */}
             {predictionStartIndex !== null && (
-              <Area
-                dataKey="predictionHigh"
-                type="monotone"
-                fill="rgba(16, 185, 129, 0.08)"
-                stroke="rgba(16, 185, 129, 0.3)"
-                strokeWidth={1}
-                isAnimationActive={false}
-                name="predictionRange"
-                connectNulls={false}
-              />
+              <>
+                <Area
+                  dataKey="predictionHigh"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill="rgba(16, 185, 129, 0.08)"
+                  stroke="none"
+                  isAnimationActive={false}
+                  connectNulls={false}
+                />
+                <Area
+                  dataKey="predictionLow"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill={colors.background}
+                  stroke="none"
+                  isAnimationActive={false}
+                  connectNulls={false}
+                />
+              </>
+            )}
+            {/* 予測ライン */}
+            {predictionStartIndex !== null && (
+              <>
+                <Line type="monotone" dataKey="predictionHigh" stroke="rgba(16, 185, 129, 0.35)" strokeWidth={1} strokeDasharray="4 3" dot={false} isAnimationActive={false} connectNulls={false} name="予測高値" />
+                <Line type="monotone" dataKey="predictionLow" stroke="rgba(16, 185, 129, 0.35)" strokeWidth={1} strokeDasharray="4 3" dot={false} isAnimationActive={false} connectNulls={false} name="予測安値" />
+                <Line type="monotone" dataKey="predictionClose" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls={false} name="予測終値" />
+              </>
             )}
           </ComposedChart>
         </ResponsiveContainer>

@@ -16,15 +16,16 @@ export interface ExtendedChartData {
   highLowBar: [number, number];
   candlestick: [number, number];
   color: string;
-  ma5: number;
-  ma25: number;
-  ma75: number;
+  ma5: number | null;
+  ma25: number | null;
+  ma75: number | null;
   articles?: NewsArticle[];
   code: string;
   settlement?: number;
   isPrediction?: boolean;
   predictionHigh?: number;
   predictionLow?: number;
+  predictionClose?: number | null;
 }
 
 export interface CompanyInfo {
