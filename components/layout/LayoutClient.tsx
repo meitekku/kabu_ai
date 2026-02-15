@@ -35,7 +35,7 @@ export default function LayoutClient({
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
-      <Header />
+      <Header isDark={isPremiumPage} />
       <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1000px] px-4 my-6 sm:px-6'} overflow-x-auto`}>
         <div className="flex flex-col md:flex-row gap-10 min-w-0">
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
@@ -48,7 +48,7 @@ export default function LayoutClient({
           )}
         </div>
       </div>
-      <Footer />
+      <Footer isDark={isPremiumPage} />
     </div>
   )
 }

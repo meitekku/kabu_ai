@@ -11,6 +11,8 @@ interface ValuationReport {
   pbr: number | null;
   industry_avg_per: number | null;
   industry_avg_pbr: number | null;
+  expected_per: number | null;
+  expected_pbr: number | null;
   per_evaluation: string;
   pbr_evaluation: string;
   report_content: string;
@@ -38,6 +40,7 @@ export async function GET(
 
     const results = await db.select<ValuationReport>(
       `SELECT id, code, per, pbr, industry_avg_per, industry_avg_pbr,
+              expected_per, expected_pbr,
               per_evaluation, pbr_evaluation, report_content, report_type, created_at
        FROM valuation_report
        WHERE code = ?

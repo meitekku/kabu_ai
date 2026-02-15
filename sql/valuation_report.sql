@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS valuation_report (
   pbr DECIMAL(10,2) NULL,
   industry_avg_per DECIMAL(10,2) NULL,
   industry_avg_pbr DECIMAL(10,2) NULL,
+  expected_per DECIMAL(10,2) NULL,
+  expected_pbr DECIMAL(10,2) NULL,
   per_evaluation VARCHAR(20) NOT NULL DEFAULT 'neutral',
   pbr_evaluation VARCHAR(20) NOT NULL DEFAULT 'neutral',
   report_content TEXT NOT NULL,

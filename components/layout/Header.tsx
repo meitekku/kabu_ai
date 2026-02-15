@@ -96,10 +96,11 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
   );
 };
 
-const HeaderContent = ({ isRoot, pathname, user }: {
+const HeaderContent = ({ isRoot, pathname, user, isDark }: {
   isRoot: boolean;
   pathname: string;
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
+  isDark?: boolean;
 }) => {
   const [showLoginButton, setShowLoginButton] = useState(false);
   const searchParams = useSearchParams();
@@ -113,11 +114,11 @@ const HeaderContent = ({ isRoot, pathname, user }: {
   }, [searchParams]);
 
   const commonClasses = "logo pl-4 text-center w-full text-xl";
-  const icon = <Image src='/logo.webp' alt='' width={100} height={50} />;
+  const icon = <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center">
       {pathname.includes('/admin/') ? (
-        <span className="text-xl font-bold">薬剤師ニュース</span>
+        <span className={`text-xl font-bold ${isDark ? 'text-white' : ''}`}>株AI 管理画面</span>
       ) : (
         icon
       )}
@@ -125,7 +126,7 @@ const HeaderContent = ({ isRoot, pathname, user }: {
   );
 
   return (
-    <header className="border-b border-gray-200">
+    <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
       <div className="grid grid-cols-[1fr_60%_1fr] items-center w-full">
         {isRoot ? (
           <h1 className={commonClasses}>{logoLink}</h1>
@@ -133,7 +134,7 @@ const HeaderContent = ({ isRoot, pathname, user }: {
           <div className={commonClasses}>{logoLink}</div>
         )}
         <div className="p-2">
-          <CompanySearch/>
+          <CompanySearch isDark={isDark}/>
         </div>
         <div className="iiarea pr-4 flex items-center justify-end gap-2">
           {user ? (
@@ -167,21 +168,21 @@ const HeaderContent = ({ isRoot, pathname, user }: {
   );
 };
 
-const HeaderInner = () => {
+const HeaderInner = ({ isDark }: { isDark?: boolean }) => {
   const pathname = usePathname();
   const isRoot = pathname === "/";
   const { data: session } = useSession();
 
-  return <HeaderContent isRoot={isRoot} pathname={pathname} user={session?.user || null} />;
+  return <HeaderContent isRoot={isRoot} pathname={pathname} user={session?.user || null} isDark={isDark} />;
 };
 
-const Header = () => {
+const Header = ({ isDark }: { isDark?: boolean }) => {
   return (
     <Suspense fallback={
-      <header className="border-b border-gray-200">
+      <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800' : 'bg-white border-gray-200'}`}>
         <div className="grid grid-cols-[1fr_60%_1fr] items-center w-full">
           <div className="logo pl-4 text-center w-full text-xl">
-            <Image src='/logo.webp' alt='' width={100} height={50} />
+            <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />
           </div>
           <div className="p-2"></div>
           <div className="iiarea pr-4 flex items-center justify-end gap-2"></div>
@@ -193,9 +194,9 @@ const Header = () => {
                 {[0,1,2,3].map(i => (
                   <div key={i} className="flex items-center space-x-4 p-2">
                     <div className="animate-pulse flex items-center space-x-4">
-                      <div className="h-4 bg-gray-200 rounded w-16"></div>
-                      <div className="h-4 bg-gray-200 rounded w-14"></div>
-                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-16`}></div>
+                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-14`}></div>
+                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-12`}></div>
                     </div>
                   </div>
                 ))}
@@ -205,7 +206,7 @@ const Header = () => {
         </div>
       </header>
     }>
-      <HeaderInner />
+      <HeaderInner isDark={isDark} />
     </Suspense>
   );
 };
