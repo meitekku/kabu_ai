@@ -162,6 +162,8 @@ interface TrendDirection {
 
 interface PredictionResult {
   summary: string;
+  themes: string[];
+  risks: string[];
   trends: {
     oneWeek: TrendDirection;   // 1週間予測
     twoWeeks: TrendDirection;  // 2週間予測
@@ -444,6 +446,12 @@ ${businessDaysText}
 
 {
   "summary": "予測の要約。具体的な数値（予想株価レンジ、変動率など）を含む3-5文で記述。例: '${companyName}は現在値${latestPrice.close}円から...'",
+  "themes": [
+    "この銘柄に関連する投資テーマ・キーワード（例: 'AI・人工知能', '半導体', 'DX推進', 'EV関連' など）。3-5個を簡潔に記述"
+  ],
+  "risks": [
+    "主要リスクを1行で簡潔に要約（例: '半導体市況の悪化による業績下振れリスク'）。2-3個を記述"
+  ],
   "trends": {
     "oneWeek": {
       "direction": "up" または "neutral" または "down",

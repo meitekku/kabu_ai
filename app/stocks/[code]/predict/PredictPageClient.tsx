@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
@@ -34,6 +34,8 @@ interface PredictionScores {
 
 interface PredictionReport {
   summary: string;
+  themes?: string[];
+  risks?: string[];
   trends?: {
     oneWeek: TrendDirection;
     twoWeeks: TrendDirection;
@@ -254,6 +256,43 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
         <h2 className="text-xl font-bold mb-2">予測概要</h2>
         <p className="text-muted-foreground leading-relaxed">{report.summary}</p>
       </div>
+
+      {/* 3.5 Themes & Risks */}
+      {((report.themes && report.themes.length > 0) || (report.risks && report.risks.length > 0)) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {report.themes && report.themes.length > 0 && (
+            <div className="border rounded-lg p-4 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                <Tag className="w-4 h-4 text-blue-500" />
+                関連テーマ
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {report.themes.map((theme, i) => (
+                  <span key={i} className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    {theme}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {report.risks && report.risks.length > 0 && (
+            <div className="border rounded-lg p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-amber-500" />
+                主要リスク
+              </h3>
+              <ul className="space-y-1">
+                {report.risks.map((risk, i) => (
+                  <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="text-amber-500 mt-0.5">•</span>
+                    {risk}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 4. Content Sections */}
       {report.technicalAnalysis && (
