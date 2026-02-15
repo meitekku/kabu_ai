@@ -164,7 +164,7 @@ function ScoreBadge({ score }: { score?: number }) {
         ? 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800'
         : 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-950/40 dark:border-red-800';
   return (
-    <span className={`inline-flex items-center justify-center text-xs font-bold border rounded-full px-2 py-0.5 ml-2 ${color}`}>
+    <span className={`inline-flex items-center justify-center text-xs font-bold border rounded-full px-2 py-0.5 ml-auto ${color}`}>
       {clamped}<span className="text-[10px] font-normal ml-0.5">/100</span>
     </span>
   );

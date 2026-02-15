@@ -13,6 +13,7 @@ import {
   Tooltip,
   Cell,
   ReferenceLine,
+  ReferenceDot,
   RectangleProps
 } from 'recharts';
 import { ExtendedChartData } from './types/StockChartTypes';
@@ -244,11 +245,14 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               };
             });
             setPredictionStartIndex(convertedData.length);
-            // 最後の実データにpredictionCloseを設定してラインを接続
+            // 最後の実データにprediction値を設定してライン・バンドを接続
             if (convertedData.length > 0) {
+              const lastActual = convertedData[convertedData.length - 1];
               convertedData[convertedData.length - 1] = {
-                ...convertedData[convertedData.length - 1],
-                predictionClose: convertedData[convertedData.length - 1].close,
+                ...lastActual,
+                predictionClose: lastActual.close,
+                predictionHigh: lastActual.close,
+                predictionLow: lastActual.close,
               };
             }
             const mergedData = [...convertedData, ...predictionEntries];
@@ -713,6 +717,24 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 <Line type="monotone" dataKey="predictionLow" stroke="rgba(16, 185, 129, 0.35)" strokeWidth={1} strokeDasharray="4 3" dot={false} isAnimationActive={false} connectNulls={false} name="予測安値" />
                 <Line type="monotone" dataKey="predictionClose" stroke="#10b981" strokeWidth={2.5} dot={false} isAnimationActive={false} connectNulls={false} name="予測終値" />
               </>
+            )}
+            {/* 最終予測価格のマーカー */}
+            {predictionStartIndex !== null && data.length > 0 && data[data.length - 1]?.isPrediction && data[data.length - 1]?.predictionClose && (
+              <ReferenceDot
+                x={data[data.length - 1].date}
+                y={data[data.length - 1].predictionClose!}
+                r={5}
+                fill="#10b981"
+                stroke="white"
+                strokeWidth={2}
+                label={{
+                  value: `¥${Math.round(data[data.length - 1].predictionClose!).toLocaleString()}`,
+                  position: 'top',
+                  fill: '#10b981',
+                  fontSize: 11,
+                  fontWeight: 'bold',
+                }}
+              />
             )}
           </ComposedChart>
         </ResponsiveContainer>
