@@ -815,12 +815,21 @@ npx playwright test               # E2Eテスト（Playwright）
 npm run test:all                  # 全テスト実行
 ```
 
-### CI監視・修復
+### CI監視・自動修復
 
 ```bash
 ./scripts/ci-watch.sh             # pushした後のCI結果を監視
-./scripts/ci-repair-loop.sh [N]   # push→CI監視→失敗時修復→再push（最大N回、デフォルト3）
+./scripts/ci-repair-loop.sh       # push→CI監視→失敗ならログ保存してexit 2
+./scripts/ci-repair-loop.sh --no-push  # pushせずCI監視のみ
 ```
+
+**Exit codes:** `0`=成功, `1`=致命的エラー, `2`=修復必要（ログ: `/tmp/ci-failure-kabu_ai.log`）
+
+**Claude Code自動修復フロー:**
+1. `./scripts/ci-repair-loop.sh` を実行
+2. exit 2 なら `/tmp/ci-failure-kabu_ai.log` を読んで修正→commit
+3. 再度 `./scripts/ci-repair-loop.sh` を実行
+4. exit 0 になるまで繰り返す（最大3回程度）
 
 ---
 
