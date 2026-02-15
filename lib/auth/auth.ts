@@ -69,6 +69,9 @@ export const auth = new Proxy({} as ReturnType<typeof betterAuth>, {
   get(_target, prop) {
     return (getAuth() as Record<string | symbol, unknown>)[prop];
   },
+  has(_target, prop) {
+    return prop in getAuth();
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;
