@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield, Loader2, X as XIcon } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield, Loader2, X } from 'lucide-react';
+import { FaXTwitter, FaLine, FaFacebookF } from 'react-icons/fa6';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
@@ -327,7 +328,17 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   const [report, setReport] = useState<PredictionReport | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
-  const [shareModal, setShareModal] = useState<{ platform: 'twitter' | 'line' | 'facebook'; loading: boolean; imageUrl: string | null; text: string; url: string } | null>(null);
+  const [shareModal, setShareModal] = useState<{
+    platform: 'twitter' | 'line' | 'facebook';
+    loading: boolean;
+    posting: boolean;
+    imageUrl: string | null;
+    text: string;
+    url: string;
+    posted: boolean;
+    tweetUrl: string | null;
+    error: string | null;
+  } | null>(null);
   const hasFetched = useRef(false);
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const chartRef = useRef<StockChartRef | null>(null);
@@ -428,7 +439,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
     const shareUrl = `https://kabu-ai.jp/stocks/${code}/predict`;
     const shareText = `${displayName} AI株価予測\n\n${report.summary}\n\n#株AI #AI株価予測`;
 
-    setShareModal({ platform, loading: true, imageUrl: null, text: shareText, url: shareUrl });
+    setShareModal({ platform, loading: true, posting: false, imageUrl: null, text: shareText, url: shareUrl, posted: false, tweetUrl: null, error: null });
 
     // チャート画像をキャプチャ
     if (chartRef.current) {
@@ -443,14 +454,38 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
     }
   }, [report, code, companyName]);
 
-  const executeShare = useCallback(() => {
+  const executeShare = useCallback(async () => {
     if (!shareModal) return;
-    const { platform, text, url } = shareModal;
+    const { platform, text, url, imageUrl } = shareModal;
+
+    if (platform === 'twitter') {
+      // X: API経由で画像付き投稿
+      setShareModal(prev => prev ? { ...prev, posting: true, error: null } : null);
+      try {
+        const res = await fetch('/api/twitter/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tweetContent: text,
+            url,
+            imageUrl: imageUrl || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setShareModal(prev => prev ? { ...prev, posting: false, posted: true, tweetUrl: data.tweetUrl } : null);
+        } else {
+          setShareModal(prev => prev ? { ...prev, posting: false, error: data.message || '投稿に失敗しました' } : null);
+        }
+      } catch {
+        setShareModal(prev => prev ? { ...prev, posting: false, error: '投稿に失敗しました' } : null);
+      }
+      return;
+    }
+
+    // LINE / Facebook: URL intentでシェア
     let dest = '';
     switch (platform) {
-      case 'twitter':
-        dest = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        break;
       case 'line':
         dest = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
         break;
@@ -482,25 +517,21 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
               className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
               aria-label="Xでシェア"
             >
-              <XIcon className="w-4 h-4 text-white" />
+              <FaXTwitter className="w-4 h-4 text-white" />
             </button>
             <button
               onClick={() => openSharePreview('line')}
-              className="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-full bg-[#06C755] hover:bg-[#05b34c] flex items-center justify-center transition-colors"
               aria-label="LINEでシェア"
             >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current">
-                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.066-.023.132-.033.2-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.28-.63.63-.63.349 0 .63.285.63.63v4.771h-.006zM9.973 8.108c0-.345-.282-.63-.631-.63-.345 0-.627.285-.627.63v4.771c0 .346.282.629.63.629.346 0 .628-.283.628-.629V8.108zm-4.418 5.4h-.59l.004-.002.004-.002h.582c.346 0 .629-.285.629-.63 0-.345-.285-.63-.631-.63H3.624a.669.669 0 0 0-.199.031c-.256.086-.43.325-.43.595v4.772c0 .346.282.629.63.629.348 0 .63-.283.63-.629V16.1h1.297c.348 0 .629-.283.629-.63 0-.345-.282-.63-.63-.63H4.255v-1.332h1.3zm14.916-11.113c-5.031-5.031-13.199-5.031-18.232 0-5.031 5.031-5.031 13.199 0 18.232 5.031 5.031 13.199 5.031 18.232 0 5.031-5.033 5.031-13.201 0-18.232z"/>
-              </svg>
+              <FaLine className="w-4 h-4 text-white" />
             </button>
             <button
               onClick={() => openSharePreview('facebook')}
-              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors"
+              className="w-8 h-8 rounded-full bg-[#1877F2] hover:bg-[#1565d8] flex items-center justify-center transition-colors"
               aria-label="Facebookでシェア"
             >
-              <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current">
-                <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5Z" />
-              </svg>
+              <FaFacebookF className="w-4 h-4 text-white" />
             </button>
           </div>
         )}
@@ -540,7 +571,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
 
       {/* シェアプレビューポップアップ */}
       {shareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShareModal(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !shareModal.posting && setShareModal(null)}>
           <div className="bg-background border rounded-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* ヘッダー: タイトル左・投稿ボタン右・☓ボタン右上 */}
             <div className="flex items-center justify-between p-4 pb-0">
@@ -548,20 +579,52 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
                 {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェア
               </h3>
               <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={executeShare}
-                  disabled={shareModal.loading}
-                >
-                  投稿する
-                </Button>
-                <button onClick={() => setShareModal(null)} className="text-muted-foreground hover:text-foreground p-1">
-                  <XIcon className="w-5 h-5" />
+                {shareModal.posted ? (
+                  shareModal.tweetUrl && (
+                    <a href={shareModal.tweetUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+                      投稿を確認
+                    </a>
+                  )
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={executeShare}
+                    disabled={shareModal.loading || shareModal.posting}
+                    className={
+                      shareModal.platform === 'twitter' ? 'bg-black hover:bg-gray-800 text-white' :
+                      shareModal.platform === 'line' ? 'bg-[#06C755] hover:bg-[#05b34c] text-white' :
+                      'bg-[#1877F2] hover:bg-[#1565d8] text-white'
+                    }
+                  >
+                    {shareModal.posting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        投稿中...
+                      </>
+                    ) : '投稿する'}
+                  </Button>
+                )}
+                <button onClick={() => !shareModal.posting && setShareModal(null)} className="text-muted-foreground hover:text-foreground p-1">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
             <div className="p-4 space-y-4">
+              {/* 投稿成功メッセージ */}
+              {shareModal.posted && (
+                <div className="border rounded-lg p-3 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800">
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">投稿が完了しました</p>
+                </div>
+              )}
+
+              {/* エラーメッセージ */}
+              {shareModal.error && (
+                <div className="border rounded-lg p-3 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800">
+                  <p className="text-sm text-red-700 dark:text-red-400">{shareModal.error}</p>
+                </div>
+              )}
+
               {/* チャート画像プレビュー */}
               <div className="border rounded-lg overflow-hidden bg-muted">
                 {shareModal.loading ? (
