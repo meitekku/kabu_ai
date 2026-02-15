@@ -52,7 +52,7 @@ const ANALYSIS_STEPS = [
   { icon: FileCheck, label: 'レポート生成中', description: '予測結果をまとめています' },
 ];
 
-const STEP_TIMINGS = [2000, 4000, 15000, 25000];
+const STEP_TIMINGS = [3000, 10000, 60000, 120000];
 
 function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -145,7 +145,7 @@ function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
 
         {/* Tip text */}
         <p className="text-xs text-muted-foreground text-center">
-          AIが複数のデータソースを分析してレポートを作成します。通常30秒〜1分ほどかかります。
+          AIが複数のデータソースを分析してレポートを作成します。通常2〜4分ほどかかります。
         </p>
       </div>
     </div>
@@ -379,7 +379,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
       }
 
       // Poll cache until result is ready
-      const maxPolls = 60; // 最大3分間（3秒 x 60回）
+      const maxPolls = 120; // 最大6分間（3秒 x 120回）
       for (let i = 0; i < maxPolls; i++) {
         await new Promise((resolve) => setTimeout(resolve, 3000));
 

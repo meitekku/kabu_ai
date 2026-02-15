@@ -29,6 +29,21 @@ export async function GET(
     if (cacheResult.length > 0) {
       // 処理中の場合
       if (cacheResult[0].prediction_data === '{"status":"processing"}') {
+        // 5分以上経過したprocessingフラグは古いので削除
+        const staleCheck = await db.select<{ created_at: string }>(
+          `SELECT created_at FROM prediction_cache
+           WHERE code = ? AND prediction_date = CURDATE()
+           AND prediction_data = '{"status":"processing"}'
+           AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)`,
+          [code]
+        );
+        if (staleCheck.length > 0) {
+          await db.insert(
+            `DELETE FROM prediction_cache WHERE code = ? AND prediction_date = CURDATE() AND prediction_data = '{"status":"processing"}'`,
+            [code]
+          );
+          return NextResponse.json({ cached: false });
+        }
         return NextResponse.json({ cached: false, processing: true });
       }
 
