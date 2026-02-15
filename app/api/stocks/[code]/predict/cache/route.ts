@@ -27,6 +27,11 @@ export async function GET(
     );
 
     if (cacheResult.length > 0) {
+      // 処理中の場合
+      if (cacheResult[0].prediction_data === '{"status":"processing"}') {
+        return NextResponse.json({ cached: false, processing: true });
+      }
+
       let predictionData;
       try {
         predictionData = typeof cacheResult[0].prediction_data === 'string'

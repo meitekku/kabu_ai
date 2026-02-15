@@ -272,6 +272,52 @@ export async function POST(
       }
     }
 
+    // 既に処理中かチェック
+    const processingCheck = await db.select<{ prediction_data: string }>(
+      `SELECT prediction_data FROM prediction_cache
+       WHERE code = ? AND prediction_date = CURDATE()`,
+      [code]
+    );
+    if (processingCheck.length > 0 && processingCheck[0].prediction_data === '{"status":"processing"}') {
+      return NextResponse.json({ success: true, status: 'processing' });
+    }
+
+    // 処理中フラグを設定
+    await db.insert(
+      `INSERT INTO prediction_cache (code, prediction_date, report_html, prediction_data, created_at)
+       VALUES (?, CURDATE(), '{"status":"processing"}', '{"status":"processing"}', NOW())
+       ON DUPLICATE KEY UPDATE report_html = '{"status":"processing"}', prediction_data = '{"status":"processing"}', created_at = NOW()`,
+      [code]
+    );
+
+    // 利用ログを先に記録
+    db.insert(
+      `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [uuidv4(), fingerprint, clientIp, userId, code, isPremium]
+    ).catch((err: unknown) => console.error('Usage log error:', err));
+
+    // バックグラウンドで予測を実行（レスポンスをブロックしない）
+    generatePrediction(code, db, chartImage).catch((err) => {
+      console.error('Background prediction error:', err);
+      // エラー時はprocessingフラグを削除
+      db.insert(
+        `DELETE FROM prediction_cache WHERE code = ? AND prediction_date = CURDATE() AND prediction_data = '{"status":"processing"}'`,
+        [code]
+      ).catch(() => {});
+    });
+
+    return NextResponse.json({ success: true, status: 'processing' });
+  } catch (error) {
+    console.error('Prediction API error:', error);
+    return NextResponse.json(
+      { success: false, error: '予測処理中にエラーが発生しました' },
+      { status: 500 }
+    );
+  }
+}
+
+async function generatePrediction(code: string, db: Database, chartImage?: string) {
     // データ収集
     const [prices, companyInfo, news, annualResults, quarterlyResults] = await Promise.all([
       // 直近60日の株価
@@ -313,10 +359,7 @@ export async function POST(
     ]);
 
     if (prices.length === 0) {
-      return NextResponse.json(
-        { success: false, error: '株価データが見つかりません' },
-        { status: 404 }
-      );
+      throw new Error('株価データが見つかりません');
     }
 
     const companyName = companyInfo[0]?.name || code;
@@ -446,10 +489,7 @@ ${businessDaysText}
 
     // GLM-4 API呼び出し
     if (!process.env.GLM_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: 'GLM_API_KEYが設定されていません。管理者にお問い合わせください。' },
-        { status: 500 }
-      );
+      throw new Error('GLM_API_KEYが設定されていません');
     }
 
     // チャート画像がある場合はglm-4v-flash（Vision対応）、なければglm-4.7-flashx
@@ -472,14 +512,50 @@ ${businessDaysText}
           messages: apiMessages,
           temperature,
           max_tokens: maxTokens,
+          stream: true,
         }),
       });
       if (!resp.ok) {
         const errorText = await resp.text();
         return { ok: false, error: errorText };
       }
-      const data = await resp.json();
-      return { ok: true, content: data.choices?.[0]?.message?.content || '' };
+
+      // SSEストリームを読み取り、contentを結合
+      const reader = resp.body?.getReader();
+      if (!reader) {
+        return { ok: false, error: 'No response body' };
+      }
+
+      const decoder = new TextDecoder();
+      let content = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const data = trimmed.slice(6);
+          if (data === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(data);
+            const delta = chunk.choices?.[0]?.delta;
+            if (delta?.content) {
+              content += delta.content;
+            }
+          } catch {
+            // skip malformed chunks
+          }
+        }
+      }
+
+      return { ok: true, content };
     }
 
     // JSON解析ヘルパー
@@ -511,10 +587,7 @@ ${businessDaysText}
       if (!glmResult.ok) {
         console.error('GLM API error:', glmResult.error);
         if (attempt === maxAttempts - 1) {
-          return NextResponse.json(
-            { success: false, error: 'AI APIの呼び出しに失敗しました。再度お試しください。' },
-            { status: 500 }
-          );
+          throw new Error('AI APIの呼び出しに失敗しました');
         }
         continue;
       }
@@ -526,20 +599,14 @@ ${businessDaysText}
         console.error(`Failed to parse GLM response (attempt ${attempt + 1}):`, parseError);
         console.error('Raw response:', glmResult.content);
         if (attempt === maxAttempts - 1) {
-          return NextResponse.json(
-            { success: false, error: '予測データの解析に失敗しました。再度お試しください。' },
-            { status: 500 }
-          );
+          throw new Error('予測データの解析に失敗しました');
         }
         continue;
       }
     }
 
     if (!predictionData) {
-      return NextResponse.json(
-        { success: false, error: '予測データの生成に失敗しました。再度お試しください。' },
-        { status: 500 }
-      );
+      throw new Error('予測データの生成に失敗しました');
     }
 
     // 後処理: 祝日・土日の予測日を除外
@@ -556,34 +623,16 @@ ${businessDaysText}
       });
     }
 
-    // キャッシュ保存と利用ログ記録を非同期で実行（レスポンスをブロックしない）
+    // キャッシュ保存（processingフラグを実データで上書き）
     const reportHtml = `<h3>${companyName}（${code}）の株価予測</h3><p>${predictionData.summary}</p>`;
     const predictionJson = JSON.stringify(predictionData);
 
-    Promise.all([
-      db.insert(
-        `INSERT INTO prediction_cache (code, prediction_date, report_html, prediction_data, created_at)
-         VALUES (?, CURDATE(), ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE report_html = VALUES(report_html), prediction_data = VALUES(prediction_data), created_at = NOW()`,
-        [code, reportHtml, predictionJson]
-      ).catch((err: unknown) => console.error('Cache save error:', err)),
-      db.insert(
-        `INSERT INTO prediction_usage_log (id, fingerprint, ip_address, user_id, code, is_premium, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-        [uuidv4(), fingerprint, clientIp, userId, code, isPremium]
-      ).catch((err: unknown) => console.error('Usage log error:', err)),
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      report: predictionData,
-      cached: false,
-    });
-  } catch (error) {
-    console.error('Prediction API error:', error);
-    return NextResponse.json(
-      { success: false, error: '予測処理中にエラーが発生しました' },
-      { status: 500 }
+    await db.insert(
+      `INSERT INTO prediction_cache (code, prediction_date, report_html, prediction_data, created_at)
+       VALUES (?, CURDATE(), ?, ?, NOW())
+       ON DUPLICATE KEY UPDATE report_html = VALUES(report_html), prediction_data = VALUES(prediction_data), created_at = NOW()`,
+      [code, reportHtml, predictionJson]
     );
-  }
+
+    console.log(`Prediction completed for ${code}`);
 }

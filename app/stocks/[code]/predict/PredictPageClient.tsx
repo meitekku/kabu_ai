@@ -350,29 +350,44 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
         return;
       }
 
-      // Call prediction API
-      const res = await fetch(`/api/stocks/${code}/predict`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fingerprint }),
-      });
+      // If not already processing, start prediction
+      if (!cacheData.processing) {
+        const res = await fetch(`/api/stocks/${code}/predict`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fingerprint }),
+        });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Prediction failed' }));
-        throw new Error(err.error || 'Prediction failed');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Prediction failed' }));
+          throw new Error(err.error || 'Prediction failed');
+        }
       }
 
-      const data = await res.json();
+      // Poll cache until result is ready
+      const maxPolls = 60; // 最大3分間（3秒 x 60回）
+      for (let i = 0; i < maxPolls; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // Clear remaining timers and complete
-      stepTimers.current.forEach(clearTimeout);
-      setActiveStep(ANALYSIS_STEPS.length);
+        const pollRes = await fetch(`/api/stocks/${code}/predict/cache`);
+        const pollData = await pollRes.json();
 
-      // Brief delay for final step to visually complete
-      await new Promise((resolve) => setTimeout(resolve, 400));
+        if (pollData.cached && pollData.data) {
+          stepTimers.current.forEach(clearTimeout);
+          setActiveStep(ANALYSIS_STEPS.length);
+          await new Promise((resolve) => setTimeout(resolve, 400));
+          setReport(pollData.data);
+          setState('complete');
+          return;
+        }
 
-      setReport(data.report);
-      setState('complete');
+        if (!pollData.processing) {
+          // processing フラグがない = エラーで終了した
+          throw new Error('予測の生成に失敗しました。再度お試しください。');
+        }
+      }
+
+      throw new Error('予測がタイムアウトしました。再度お試しください。');
     } catch (err) {
       stepTimers.current.forEach(clearTimeout);
       setErrorMessage(err instanceof Error ? err.message : '予測の取得に失敗しました');
