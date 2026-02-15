@@ -42,6 +42,7 @@ interface PredictionReport {
 
 interface PredictPageClientProps {
   code: string;
+  companyName?: string;
 }
 
 const ANALYSIS_STEPS = [
@@ -316,7 +317,7 @@ function PredictionReport({ report, code }: { report: PredictionReport; code: st
   );
 }
 
-export default function PredictPageClient({ code }: PredictPageClientProps) {
+export default function PredictPageClient({ code, companyName }: PredictPageClientProps) {
   const router = useRouter();
   const fingerprint = useFingerprint();
   const [state, setState] = useState<'loading' | 'complete' | 'error'>('loading');
@@ -425,6 +426,7 @@ export default function PredictPageClient({ code }: PredictPageClientProps) {
             戻る
           </Button>
         </Link>
+        {companyName && <span className="text-lg font-semibold">{companyName}</span>}
         <h1 className="text-xl font-bold">AI株価予測</h1>
         <span className="text-sm text-muted-foreground">({code})</span>
       </div>
