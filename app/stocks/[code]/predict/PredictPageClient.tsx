@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, AlertTriangle, ShieldAlert, TrendingUp, TrendingDown, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
@@ -18,12 +18,6 @@ interface DailyForecast {
   reasoning: string;
 }
 
-interface TrendDirection {
-  direction: 'up' | 'neutral' | 'down';
-  strength: number;
-  reason: string;
-}
-
 interface PredictionScores {
   technical: number;
   fundamental: number;
@@ -36,11 +30,6 @@ interface PredictionReport {
   summary: string;
   themes?: string[];
   risks?: string[];
-  trends?: {
-    oneWeek: TrendDirection;
-    twoWeeks: TrendDirection;
-    oneMonth: TrendDirection;
-  };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
   riskFactors: string[];
@@ -164,31 +153,6 @@ function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
 }
 
 
-function StrengthScore({ strength }: { strength: number }) {
-  return (
-    <span className="text-lg font-bold tabular-nums">{strength}<span className="text-xs font-normal text-muted-foreground">/5</span></span>
-  );
-}
-
-function TrendCard({ label, trend }: { label: string; trend: TrendDirection }) {
-  const config = {
-    up: { Icon: TrendingUp, color: 'text-emerald-500', borderColor: 'border-emerald-200 dark:border-emerald-900' },
-    neutral: { Icon: ArrowRight, color: 'text-gray-400', borderColor: 'border-gray-200 dark:border-gray-700' },
-    down: { Icon: TrendingDown, color: 'text-red-500', borderColor: 'border-red-200 dark:border-red-900' },
-  }[trend.direction];
-
-  return (
-    <div className={`border rounded-lg p-4 flex flex-col items-center gap-2 ${config.borderColor}`}>
-      <span className="text-xs text-muted-foreground font-medium">{label}</span>
-      <config.Icon className={`w-8 h-8 ${config.color}`} />
-      <div className={config.color}>
-        <StrengthScore strength={trend.strength} />
-      </div>
-      <p className="text-xs text-muted-foreground text-center leading-snug">{trend.reason}</p>
-    </div>
-  );
-}
-
 function ScoreBadge({ score }: { score?: number }) {
   if (score == null) return null;
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
@@ -206,23 +170,10 @@ function ScoreBadge({ score }: { score?: number }) {
   );
 }
 
-function TrendSection({ trends }: { trends: NonNullable<PredictionReport['trends']> }) {
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      <TrendCard label="1週間" trend={trends.oneWeek} />
-      <TrendCard label="2週間" trend={trends.twoWeeks} />
-      <TrendCard label="1ヶ月" trend={trends.oneMonth} />
-    </div>
-  );
-}
-
 function PredictionReport({ report, code }: { report: PredictionReport; code: string }) {
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
-      {/* 1. Trend Arrows */}
-      {report.trends && <TrendSection trends={report.trends} />}
-
-      {/* 2. Chart with prediction overlay (no news tooltips) */}
+      {/* 1. Chart with prediction overlay (no news tooltips) */}
       <div className="border rounded-lg p-4">
         <h3 className="text-lg font-semibold mb-3">株価チャート</h3>
         <StockChart

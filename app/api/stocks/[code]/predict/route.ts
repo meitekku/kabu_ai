@@ -93,6 +93,26 @@ function getNextBusinessDays(startDate: Date, count: number): string[] {
   return result;
 }
 
+function calculateVolatility(prices: PriceRecord[]): { avgDailyReturn: string; dailyVolatility: string; avgRange: string } {
+  const closes = prices.slice().reverse().map(p => Number(p.close));
+  const dailyReturns: number[] = [];
+  for (let i = 1; i < closes.length; i++) {
+    dailyReturns.push((closes[i] - closes[i - 1]) / closes[i - 1] * 100);
+  }
+  const avgReturn = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;
+  const variance = dailyReturns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / dailyReturns.length;
+  const stdDev = Math.sqrt(variance);
+
+  const ranges = prices.map(p => (Number(p.high) - Number(p.low)) / Number(p.close) * 100);
+  const avgRange = ranges.reduce((a, b) => a + b, 0) / ranges.length;
+
+  return {
+    avgDailyReturn: avgReturn.toFixed(3),
+    dailyVolatility: stdDev.toFixed(3),
+    avgRange: avgRange.toFixed(3),
+  };
+}
+
 function getClientIp(headersList: Headers): string {
   const forwardedFor = headersList.get('x-forwarded-for');
   if (forwardedFor) {
@@ -154,21 +174,10 @@ interface DailyForecast {
   reasoning: string;
 }
 
-interface TrendDirection {
-  direction: 'up' | 'neutral' | 'down';
-  strength: number; // 1-5
-  reason: string;
-}
-
 interface PredictionResult {
   summary: string;
   themes: string[];
   risks: string[];
-  trends: {
-    oneWeek: TrendDirection;   // 1週間予測
-    twoWeeks: TrendDirection;  // 2週間予測
-    oneMonth: TrendDirection;  // 1ヶ月予測
-  };
   dailyForecasts: DailyForecast[];
   overallAnalysis: string;
   technicalAnalysis: string;
@@ -330,20 +339,17 @@ export async function POST(
 async function generatePrediction(code: string, db: Database, chartImage?: string) {
     // データ収集
     const [prices, companyInfo, news, annualResults, quarterlyResults] = await Promise.all([
-      // 直近60日の株価
       db.select<PriceRecord>(
         `SELECT date, open, high, low, close, volume FROM price
          WHERE code = ? ORDER BY date DESC LIMIT 60`,
         [code]
       ),
-      // 会社情報
       db.select<CompanyRecord>(
         `SELECT c.code, c.name, ci.settlement_date FROM company c
          LEFT JOIN company_info ci ON c.code = ci.code
          WHERE c.code = ?`,
         [code]
       ),
-      // 直近7日のニュース
       db.select<NewsRecord>(
         `SELECT p.title, p.created_at FROM post p
          JOIN post_code pc ON p.id = pc.post_id
@@ -352,14 +358,12 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
          ORDER BY p.created_at DESC LIMIT 20`,
         [code]
       ),
-      // 年次業績
       db.select<AnnualResultRecord>(
         `SELECT period, revenue, operating_profit, net_income, eps
          FROM kabutan_annual_results WHERE stock_code = ?
          ORDER BY period DESC LIMIT 5`,
         [code]
       ).catch(() => [] as AnnualResultRecord[]),
-      // 四半期業績
       db.select<QuarterlyResultRecord>(
         `SELECT period, revenue, operating_profit, net_income
          FROM kabutan_quarterly_results WHERE stock_code = ?
@@ -373,15 +377,9 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
     }
 
     const companyName = companyInfo[0]?.name || code;
-
-    // プロンプト構築
-    const priceText = prices
-      .slice()
-      .reverse()
-      .map((p) => `${p.date}: 始値${p.open} 高値${p.high} 安値${p.low} 終値${p.close} 出来高${p.volume}`)
-      .join('\n');
-
+    const volatility = calculateVolatility(prices);
     const latestPrice = prices[0];
+
     const price5dAgo = prices[4] || prices[prices.length - 1];
     const price20dAgo = prices[19] || prices[prices.length - 1];
     const trend5d = latestPrice && price5dAgo
@@ -390,6 +388,14 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
     const trend20d = latestPrice && price20dAgo
       ? ((Number(latestPrice.close) - Number(price20dAgo.close)) / Number(price20dAgo.close) * 100).toFixed(2)
       : '不明';
+
+    const priceText = prices.slice().reverse()
+      .map((p) => `${p.date}: 始値${p.open} 高値${p.high} 安値${p.low} 終値${p.close} 出来高${p.volume}`)
+      .join('\n');
+
+    const recentPriceText = prices.slice(0, 20).slice().reverse()
+      .map((p) => `${p.date}: 始値${p.open} 高値${p.high} 安値${p.low} 終値${p.close} 出来高${p.volume}`)
+      .join('\n');
 
     const newsText = news.length > 0
       ? news.map((n) => `- [${n.created_at}] ${n.title}`).join('\n')
@@ -403,131 +409,19 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
       ? quarterlyResults.map((r) => `${r.period}: 売上${r.revenue} 営業利益${r.operating_profit} 純利益${r.net_income}`).join('\n')
       : '四半期業績データなし';
 
-    // 営業日リストを生成
     const latestDate = new Date(latestPrice.date);
     const businessDays = getNextBusinessDays(latestDate, 20);
     const businessDaysText = businessDays.join(', ');
 
-    const prompt = `あなたはプロの株式アナリストです。機関投資家向けの高品質な分析レポートを作成するつもりで、以下のデータに基づき今後1ヶ月（20営業日）の株価を日足で予測してください。投資家に価値ある具体的な分析を提供することを最優先にしてください。
-
-## 銘柄情報
-- 銘柄コード: ${code}
-- 会社名: ${companyName}
-
-## 直近の株価データ（60日分）
-${priceText}
-
-## トレンドサマリー
-- 直近5日の変動率: ${trend5d}%
-- 直近20日の変動率: ${trend20d}%
-- 直近終値: ${latestPrice.close}円
-- 直近出来高: ${latestPrice.volume}
-
-## 年次業績（直近5年）
-${annualText}
-
-## 四半期業績（直近8四半期）
-${quarterlyText}
-
-## 最新ニュース（直近7日）
-${newsText}
-
-${chartImage ? '## チャート画像\n添付のチャート画像も分析に活用してください。移動平均線、ボリンジャーバンド、RSI、MACDなどのテクニカル指標のパターンを読み取り予測に反映させてください。' : ''}
-
-## 予測対象の営業日（この20日分を必ず全て予測すること）
-${businessDaysText}
-
-## 分析の指針
-1. **テクニカル分析**: 移動平均線（5日・25日・75日）のゴールデンクロス/デッドクロス、支持線・抵抗線、出来高の変化、RSI・MACDの動向を考慮
-2. **ファンダメンタルズ分析**: 業績トレンド（増収増益か減収減益か）、PER・PBRの水準感、セクター動向を考慮
-3. **カタリスト**: ニュースの影響（ポジティブ/ネガティブ）、決算発表スケジュール、マクロ経済要因を考慮
-
-## 回答形式
-以下のJSON形式で回答してください。JSON以外のテキストは含めないでください。
-
-{
-  "summary": "予測の要約。具体的な数値（予想株価レンジ、変動率など）を含む3-5文で記述。例: '${companyName}は現在値${latestPrice.close}円から...'",
-  "themes": [
-    "この銘柄に関連する投資テーマ・キーワード（例: 'AI・人工知能', '半導体', 'DX推進', 'EV関連' など）。3-5個を簡潔に記述"
-  ],
-  "risks": [
-    "主要リスクを1行で簡潔に要約（例: '半導体市況の悪化による業績下振れリスク'）。2-3個を記述"
-  ],
-  "trends": {
-    "oneWeek": {
-      "direction": "up" または "neutral" または "down",
-      "strength": 1-5の数値（1=弱い, 5=非常に強い）,
-      "reason": "1週間予測のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
-    },
-    "twoWeeks": {
-      "direction": "up" または "neutral" または "down",
-      "strength": 1-5の数値,
-      "reason": "2週間予測のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
-    },
-    "oneMonth": {
-      "direction": "up" または "neutral" または "down",
-      "strength": 1-5の数値,
-      "reason": "1ヶ月予測のトレンド判断根拠を具体的な数値・指標を交えて50文字程度で記述"
-    }
-  },
-  "dailyForecasts": [
-    {
-      "date": "YYYY-MM-DD",
-      "predictedOpen": 数値,
-      "predictedClose": 数値,
-      "predictedHigh": 数値,
-      "predictedLow": 数値,
-      "predictedVolume": 数値,
-      "reasoning": "この日の予測根拠を具体的に30文字程度で記述"
-    }
-  ],
-  "overallAnalysis": "テクニカル分析とファンダメンタルズ分析の両面から詳細に記述。移動平均線の位置関係、出来高トレンド、業績の成長率、バリュエーション水準など具体的な数値を交えて300文字以上で分析",
-  "technicalAnalysis": "テクニカル分析の詳細。移動平均線（5日・25日・75日）の位置関係、ゴールデンクロス/デッドクロスの有無、RSI・MACDの数値と方向性、ボリンジャーバンドの位置、支持線・抵抗線の価格水準、出来高の変化パターンなどを具体的な数値を交えて200文字以上で記述",
-  "fundamentalAnalysis": "ファンダメンタルズ分析の詳細。直近の業績推移（売上・利益の成長率）、PER・PBRなどのバリュエーション指標、同業他社との比較、配当利回り、財務健全性などを具体的な数値を交えて200文字以上で記述",
-  "catalystAnalysis": "カタリスト・材料分析。直近のニュースや材料がもたらす株価への影響、今後予定されている決算発表・IR・業界イベント、マクロ経済要因（金利・為替・政策）の影響を具体的に150文字以上で記述",
-  "investmentStrategy": "投資戦略の提案。推奨エントリーポイント（買い場の価格帯）、利益確定の目標価格、損切りラインの設定、ポジションサイズの考え方、時間軸に応じた戦略の違いを具体的な数値を交えて150文字以上で記述",
-  "riskFactors": [
-    "具体的なリスク要因1（数値やシナリオを含む。例: '25日移動平均線(○○円)を下回った場合、○○円付近まで下落するリスク'）",
-    "具体的なリスク要因2",
-    "具体的なリスク要因3"
-  ],
-  "scores": {
-    "technical": 0-100の数値（テクニカル分析の評価スコア。チャートパターンの明確さ、テクニカル指標の一致度、トレンドの信頼性を評価）,
-    "fundamental": 0-100の数値（ファンダメンタルズの評価スコア。業績の堅実さ、成長性、バリュエーションの割安度を評価）,
-    "catalyst": 0-100の数値（カタリスト・材料の評価スコア。材料のインパクト、ポジティブ/ネガティブの明確さを評価）,
-    "strategy": 0-100の数値（投資戦略の実行性スコア。リスクリワード比、エントリー条件の明確さを評価）,
-    "overall": 0-100の数値（総合評価スコア。全分析を総合した投資魅力度）
-  }
-}
-
-注意:
-- 上記の20営業日分を必ず全て予測してください（土日祝は既に除外済み）
-- 価格は現実的な範囲で予測してください（直近の値幅を参考に、極端な乖離は避ける）
-- 日々の価格変動は自然な上下動を含むようにしてください。単調な上昇・下降パターンは非現実的です
-- 連続する数日間は上昇と下降が交互に現れるなど、リアルな市場の値動きを再現してください
-- 1日の変動率は通常±0.5%〜2%程度に収めてください（ただし重大な材料がある場合は例外）
-- summaryは抽象的な表現を避け、必ず具体的な株価水準や変動率を含めてください
-- overallAnalysisは投資判断に直結する分析を詳細に記述してください
-- technicalAnalysis、fundamentalAnalysis、catalystAnalysis、investmentStrategyはそれぞれ指定文字数以上で詳細に記述してください
-- riskFactorsは最低3つ、具体的な数値・シナリオを含めてください
-- trendsのdirectionは必ず "up", "neutral", "down" のいずれかを使用してください
-- trendsのstrengthは必ず1-5の整数を使用してください
-- scoresの各項目は必ず0-100の整数を使用してください`;
-
-    // GLM-4 API呼び出し
+    // GLM-4 API設定
     if (!process.env.GLM_API_KEY) {
       throw new Error('GLM_API_KEYが設定されていません');
     }
-
-    // チャート画像がある場合はglm-4v-flash（Vision対応）、なければglm-4.7-flashx
     const modelName = chartImage ? 'glm-4v-flash' : 'glm-4.7-flashx';
 
-    // GLM API呼び出しヘルパー
-    async function callGlmApi(
-      apiMessages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }>,
-      temperature = 0.7,
-      maxTokens = 8192,
-    ): Promise<{ ok: boolean; content?: string; error?: string }> {
+    type GlmMessage = { role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> };
+
+    async function callGlmApi(apiMessages: GlmMessage[], temperature = 0.7, maxTokens = 4096): Promise<string> {
       const resp = await fetch(GLM_API_URL, {
         method: 'POST',
         headers: {
@@ -543,28 +437,20 @@ ${businessDaysText}
         }),
       });
       if (!resp.ok) {
-        const errorText = await resp.text();
-        return { ok: false, error: errorText };
+        throw new Error(`GLM API error: ${await resp.text()}`);
       }
-
-      // SSEストリームを読み取り、contentを結合
       const reader = resp.body?.getReader();
-      if (!reader) {
-        return { ok: false, error: 'No response body' };
-      }
+      if (!reader) throw new Error('No response body');
 
       const decoder = new TextDecoder();
       let content = '';
       let buffer = '';
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
-
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith('data: ')) continue;
@@ -573,68 +459,254 @@ ${businessDaysText}
           try {
             const chunk = JSON.parse(data);
             const delta = chunk.choices?.[0]?.delta;
-            if (delta?.content) {
-              content += delta.content;
-            }
-          } catch {
-            // skip malformed chunks
+            if (delta?.content) content += delta.content;
+          } catch { /* skip malformed chunks */ }
+        }
+      }
+      return content;
+    }
+
+    // JSON解析ヘルパー（リトライ付き）
+    async function callAndParse<T>(prompt: string, maxTokens = 4096, useImage = false): Promise<T> {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const messages: GlmMessage[] = [];
+          if (useImage && chartImage) {
+            messages.push({
+              role: 'user',
+              content: [
+                { type: 'text', text: prompt },
+                { type: 'image_url', image_url: { url: `data:image/png;base64,${chartImage}` } },
+              ],
+            });
+          } else {
+            messages.push({ role: 'user', content: prompt });
           }
+          const raw = await callGlmApi(messages, 0.7, maxTokens);
+          const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          return JSON.parse(jsonStr) as T;
+        } catch (err) {
+          console.error(`Step parse/API error (attempt ${attempt + 1}):`, err);
+          if (attempt === 1) throw err;
         }
       }
-
-      return { ok: true, content };
+      throw new Error('unreachable');
     }
 
-    // JSON解析ヘルパー
-    function parseJsonResponse(raw: string): PredictionResult {
-      const jsonStr = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      return JSON.parse(jsonStr);
+    // ============================================================
+    // Step 1: テクニカル・ファンダメンタルズ・カタリスト分析
+    // ============================================================
+    const analysisPrompt = `あなたはプロの株式アナリストです。以下のデータに基づき、テクニカル分析・ファンダメンタルズ分析・カタリスト分析を行ってください。
+
+## 銘柄情報
+- 銘柄コード: ${code}
+- 会社名: ${companyName}
+
+## 直近の株価データ（60日分）
+${priceText}
+
+## トレンドサマリー
+- 直近5日の変動率: ${trend5d}%
+- 直近20日の変動率: ${trend20d}%
+- 直近終値: ${latestPrice.close}円
+- 直近出来高: ${latestPrice.volume}
+
+## ボラティリティ
+- 日次平均変動率: ${volatility.avgDailyReturn}%
+- 日次ボラティリティ（標準偏差）: ${volatility.dailyVolatility}%
+- 平均日中値幅: ${volatility.avgRange}%
+
+## 年次業績（直近5年）
+${annualText}
+
+## 四半期業績（直近8四半期）
+${quarterlyText}
+
+## 最新ニュース（直近7日）
+${newsText}
+
+${chartImage ? '## チャート画像\n添付のチャート画像も分析に活用してください。移動平均線、ボリンジャーバンド、RSI、MACDなどのテクニカル指標のパターンを読み取り予測に反映させてください。' : ''}
+
+## 回答形式
+以下のJSON形式のみで回答してください。JSON以外のテキストは含めないでください。
+
+{
+  "technicalAnalysis": "テクニカル分析の詳細。移動平均線（5日・25日・75日）の位置関係、ゴールデンクロス/デッドクロスの有無、RSI・MACDの数値と方向性、ボリンジャーバンドの位置、支持線・抵抗線の価格水準、出来高の変化パターンを具体的な数値を交えて200文字以上で記述",
+  "fundamentalAnalysis": "ファンダメンタルズ分析の詳細。直近の業績推移（売上・利益の成長率）、PER・PBRなどのバリュエーション指標、同業他社との比較、配当利回り、財務健全性を具体的な数値を交えて200文字以上で記述",
+  "catalystAnalysis": "カタリスト・材料分析。直近のニュースや材料がもたらす株価への影響、今後予定されている決算発表・IR・業界イベント、マクロ経済要因の影響を具体的に150文字以上で記述",
+  "themes": ["投資テーマ（例: 'AI・人工知能', '半導体', 'DX推進'）を3-5個"],
+  "risks": ["リスク要因を1行で簡潔に2-3個"],
+  "scores": {
+    "technical": "0-100の整数（テクニカル指標の一致度・トレンド信頼性）",
+    "fundamental": "0-100の整数（業績の堅実さ・成長性・バリュエーション割安度）",
+    "catalyst": "0-100の整数（材料のインパクト・明確さ）"
+  }
+}`;
+
+    interface AnalysisResult {
+      technicalAnalysis: string;
+      fundamentalAnalysis: string;
+      catalystAnalysis: string;
+      themes: string[];
+      risks: string[];
+      scores: { technical: number; fundamental: number; catalyst: number };
     }
 
-    // 予測生成（パース失敗時のみリトライ、最大2回）
-    let predictionData: PredictionResult | null = null;
-    const maxAttempts = 2;
+    console.log(`[${code}] Step 1/3: Analysis starting...`);
+    const analysis = await callAndParse<AnalysisResult>(analysisPrompt, 4096, !!chartImage);
+    console.log(`[${code}] Step 1/3: Analysis complete`);
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const messages: Array<{ role: string; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [];
-      if (chartImage) {
-        messages.push({
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: `data:image/png;base64,${chartImage}` } },
-          ],
-        });
-      } else {
-        messages.push({ role: 'user', content: prompt });
-      }
+    // ============================================================
+    // Step 2: 日足予測（ボラティリティ制約付き）
+    // ============================================================
+    const forecastPrompt = `あなたはプロの株式アナリストです。以下のデータと分析結果に基づき、今後20営業日の株価を日足で予測してください。
 
-      const glmResult = await callGlmApi(messages);
+## 銘柄情報
+- 銘柄コード: ${code}
+- 会社名: ${companyName}
+- 直近終値: ${latestPrice.close}円
 
-      if (!glmResult.ok) {
-        console.error('GLM API error:', glmResult.error);
-        if (attempt === maxAttempts - 1) {
-          throw new Error('AI APIの呼び出しに失敗しました');
-        }
-        continue;
-      }
+## ★ボラティリティ制約（最重要：この銘柄の実際の値動きに厳密に合わせること）
+- 日次平均変動率: ${volatility.avgDailyReturn}%
+- 日次ボラティリティ（標準偏差）: ${volatility.dailyVolatility}%
+- 平均日中値幅(High-Low): ${volatility.avgRange}%
+- **1日の終値変動率は日次ボラティリティ(${volatility.dailyVolatility}%)の範囲内に収めること**
+- **日中値幅(High-Low)は平均日中値幅(${volatility.avgRange}%)を基準にすること**
+- **重大な材料がある場合のみ、ボラティリティの1.5-2倍程度まで許容**
+- **ボラティリティが小さい銘柄は小さい変動、大きい銘柄は大きい変動にすること**
 
-      try {
-        predictionData = parseJsonResponse(glmResult.content!);
-        break;
-      } catch (parseError) {
-        console.error(`Failed to parse GLM response (attempt ${attempt + 1}):`, parseError);
-        console.error('Raw response:', glmResult.content);
-        if (attempt === maxAttempts - 1) {
-          throw new Error('予測データの解析に失敗しました');
-        }
-        continue;
-      }
+## 直近の株価データ（20日分）
+${recentPriceText}
+
+## 分析結果サマリー
+テクニカル: ${analysis.technicalAnalysis.slice(0, 200)}
+ファンダメンタルズ: ${analysis.fundamentalAnalysis.slice(0, 200)}
+カタリスト: ${analysis.catalystAnalysis.slice(0, 150)}
+
+## 予測対象の営業日（この20日分を必ず全て予測すること）
+${businessDaysText}
+
+## 回答形式
+以下のJSON形式のみで回答してください。JSON以外のテキストは含めないでください。
+
+{
+  "dailyForecasts": [
+    {
+      "date": "YYYY-MM-DD",
+      "predictedOpen": 数値,
+      "predictedClose": 数値,
+      "predictedHigh": 数値,
+      "predictedLow": 数値,
+      "predictedVolume": 数値,
+      "reasoning": "この日の予測根拠を30文字程度で記述"
+    }
+  ]
+}
+
+注意:
+- 上記の20営業日分を必ず全て予測してください
+- 日々の価格変動は自然な上下動を含むようにしてください
+- 連続する数日間は上昇と下降が交互に現れるなど、リアルな市場の値動きを再現してください
+- **最重要: 1日の変動率は日次ボラティリティ(${volatility.dailyVolatility}%)を基準に、この銘柄の過去の値動きと一致させてください**`;
+
+    interface ForecastResult {
+      dailyForecasts: DailyForecast[];
     }
 
-    if (!predictionData) {
-      throw new Error('予測データの生成に失敗しました');
+    console.log(`[${code}] Step 2/3: Forecast starting...`);
+    const forecast = await callAndParse<ForecastResult>(forecastPrompt, 4096);
+    console.log(`[${code}] Step 2/3: Forecast complete`);
+
+    // 予測結果から統計を計算
+    const forecastCloses = forecast.dailyForecasts.map(f => f.predictedClose);
+    const forecastMin = Math.min(...forecastCloses);
+    const forecastMax = Math.max(...forecastCloses);
+    const forecastLast = forecastCloses[forecastCloses.length - 1] || Number(latestPrice.close);
+    const forecastChange = ((forecastLast - Number(latestPrice.close)) / Number(latestPrice.close) * 100).toFixed(2);
+
+    // ============================================================
+    // Step 3: サマリー・投資戦略・総合分析
+    // ============================================================
+    const summaryPrompt = `あなたはプロの株式アナリストです。以下の分析結果と予測データを総合し、投資家向けのサマリーレポートを作成してください。
+
+## 銘柄情報
+- 銘柄コード: ${code}
+- 会社名: ${companyName}
+- 直近終値: ${latestPrice.close}円
+
+## テクニカル分析（スコア: ${analysis.scores.technical}/100）
+${analysis.technicalAnalysis}
+
+## ファンダメンタルズ分析（スコア: ${analysis.scores.fundamental}/100）
+${analysis.fundamentalAnalysis}
+
+## カタリスト分析（スコア: ${analysis.scores.catalyst}/100）
+${analysis.catalystAnalysis}
+
+## 関連テーマ
+${analysis.themes.join(', ')}
+
+## 主要リスク
+${analysis.risks.join(', ')}
+
+## 株価予測結果
+- 予測期間: ${businessDays[0]} 〜 ${businessDays[businessDays.length - 1]}
+- 予測株価レンジ: ${Math.round(forecastMin)}円 〜 ${Math.round(forecastMax)}円
+- 期間変動率: ${forecastChange}%
+- 予測最終日の終値: ${Math.round(forecastLast)}円
+
+## 回答形式
+以下のJSON形式のみで回答してください。JSON以外のテキストは含めないでください。
+
+{
+  "summary": "予測の要約。具体的な数値（予想株価レンジ、変動率など）を含む3-5文で記述。例: '${companyName}は現在値${latestPrice.close}円から...'",
+  "overallAnalysis": "テクニカル分析とファンダメンタルズ分析の両面から詳細に記述。移動平均線の位置関係、出来高トレンド、業績の成長率、バリュエーション水準など具体的な数値を交えて300文字以上で分析",
+  "investmentStrategy": "投資戦略の提案。推奨エントリーポイント（買い場の価格帯）、利益確定の目標価格、損切りラインの設定、時間軸に応じた戦略を具体的な数値を交えて150文字以上で記述",
+  "riskFactors": [
+    "具体的なリスク要因1（数値やシナリオを含む。例: '25日移動平均線(○○円)を下回った場合、○○円付近まで下落するリスク'）",
+    "具体的なリスク要因2",
+    "具体的なリスク要因3"
+  ],
+  "scores": {
+    "strategy": "0-100の整数（リスクリワード比、エントリー条件の明確さを評価）",
+    "overall": "0-100の整数（全分析を総合した投資魅力度）"
+  }
+}`;
+
+    interface SummaryResult {
+      summary: string;
+      overallAnalysis: string;
+      investmentStrategy: string;
+      riskFactors: string[];
+      scores: { strategy: number; overall: number };
     }
+
+    console.log(`[${code}] Step 3/3: Summary starting...`);
+    const summaryData = await callAndParse<SummaryResult>(summaryPrompt, 3072);
+    console.log(`[${code}] Step 3/3: Summary complete`);
+
+    // ============================================================
+    // 結果を統合
+    // ============================================================
+    const predictionData: PredictionResult = {
+      summary: summaryData.summary,
+      themes: analysis.themes || [],
+      risks: analysis.risks || [],
+      dailyForecasts: forecast.dailyForecasts || [],
+      overallAnalysis: summaryData.overallAnalysis,
+      technicalAnalysis: analysis.technicalAnalysis,
+      fundamentalAnalysis: analysis.fundamentalAnalysis,
+      catalystAnalysis: analysis.catalystAnalysis,
+      investmentStrategy: summaryData.investmentStrategy,
+      riskFactors: summaryData.riskFactors || [],
+      scores: {
+        technical: analysis.scores?.technical || 0,
+        fundamental: analysis.scores?.fundamental || 0,
+        catalyst: analysis.scores?.catalyst || 0,
+        strategy: summaryData.scores?.strategy || 0,
+        overall: summaryData.scores?.overall || 0,
+      },
+    };
 
     // 後処理: 祝日・土日の予測日を除外
     if (predictionData.dailyForecasts) {
@@ -650,7 +722,7 @@ ${businessDaysText}
       });
     }
 
-    // キャッシュ保存（processingフラグを実データで上書き）
+    // キャッシュ保存
     const reportHtml = `<h3>${companyName}（${code}）の株価予測</h3><p>${predictionData.summary}</p>`;
     const predictionJson = JSON.stringify(predictionData);
 
@@ -661,5 +733,5 @@ ${businessDaysText}
       [code, reportHtml, predictionJson]
     );
 
-    console.log(`Prediction completed for ${code}`);
+    console.log(`Prediction completed for ${code} (3 API calls)`);
 }
