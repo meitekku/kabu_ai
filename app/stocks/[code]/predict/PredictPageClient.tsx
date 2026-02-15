@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield, Share2, Loader2, X } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, ShieldAlert, TrendingUp, Check, Database, Newspaper, BarChart3, BrainCircuit, FileCheck, Tag, Shield, Loader2, X as XIcon } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import StockChart from '@/components/parts/chart/StockChart';
@@ -326,9 +327,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   const [report, setReport] = useState<PredictionReport | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
-  const [isSharing, setIsSharing] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareData, setShareData] = useState<{ text: string; url: string; imageBlob: Blob | null } | null>(null);
+  const [shareModal, setShareModal] = useState<{ platform: 'twitter' | 'line' | 'facebook'; loading: boolean; imageUrl: string | null; text: string; url: string } | null>(null);
   const hasFetched = useRef(false);
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const chartRef = useRef<StockChartRef | null>(null);
@@ -422,90 +421,46 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
     }
   }, [fingerprint, fetchPrediction]);
 
-  const handleShare = useCallback(async () => {
+  const openSharePreview = useCallback(async (platform: 'twitter' | 'line' | 'facebook') => {
     if (!report) return;
-    setIsSharing(true);
 
-    try {
-      const displayName = companyName ? `${companyName}(${code})` : code;
-      const shareUrl = `https://kabu-ai.jp/stocks/${code}/predict`;
-      const shareText = `${displayName} AI株価予測\n\n${report.summary}\n\n#株AI #AI株価予測`;
+    const displayName = companyName ? `${companyName}(${code})` : code;
+    const shareUrl = `https://kabu-ai.jp/stocks/${code}/predict`;
+    const shareText = `${displayName} AI株価予測\n\n${report.summary}\n\n#株AI #AI株価予測`;
 
-      // チャート画像をキャプチャ
-      let imageBlob: Blob | null = null;
-      if (chartRef.current) {
-        try {
-          const dataUrl = await chartRef.current.exportAsImage();
-          const res = await fetch(dataUrl);
-          imageBlob = await res.blob();
-        } catch (e) {
-          console.warn('チャート画像のキャプチャに失敗:', e);
-        }
+    setShareModal({ platform, loading: true, imageUrl: null, text: shareText, url: shareUrl });
+
+    // チャート画像をキャプチャ
+    if (chartRef.current) {
+      try {
+        const dataUrl = await chartRef.current.exportAsImage();
+        setShareModal(prev => prev ? { ...prev, loading: false, imageUrl: dataUrl } : null);
+      } catch {
+        setShareModal(prev => prev ? { ...prev, loading: false } : null);
       }
-
-      // Web Share API（ファイル共有対応）を試行
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        const sharePayload: ShareData = { text: shareText, url: shareUrl };
-
-        if (imageBlob && navigator.canShare) {
-          const file = new File([imageBlob], `prediction-${code}.png`, { type: 'image/png' });
-          const withFile = { ...sharePayload, files: [file] };
-          if (navigator.canShare(withFile)) {
-            sharePayload.files = [file];
-          }
-        }
-
-        await navigator.share(sharePayload);
-      } else {
-        // フォールバック: SNSシェアモーダルを表示
-        setShareData({ text: shareText, url: shareUrl, imageBlob });
-        setShowShareModal(true);
-      }
-    } catch (err) {
-      // ユーザーがシェアをキャンセルした場合は無視
-      if (err instanceof Error && err.name !== 'AbortError') {
-        console.error('シェアエラー:', err);
-      }
-    } finally {
-      setIsSharing(false);
+    } else {
+      setShareModal(prev => prev ? { ...prev, loading: false } : null);
     }
   }, [report, code, companyName]);
 
-  const handleSNSShare = useCallback((platform: 'twitter' | 'line' | 'facebook') => {
-    if (!shareData) return;
-    const { text, url } = shareData;
-    let shareUrl = '';
+  const executeShare = useCallback(() => {
+    if (!shareModal) return;
+    const { platform, text, url } = shareModal;
+    let dest = '';
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        dest = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
         break;
       case 'line':
-        shareUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+        dest = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
         break;
       case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        dest = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
         break;
     }
-    window.open(shareUrl, '_blank');
-    setShowShareModal(false);
-  }, [shareData]);
-
-  const handleCopyLink = useCallback(async () => {
-    if (!shareData) return;
-    try {
-      await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
-      setShowShareModal(false);
-    } catch {
-      // fallback
-      const textarea = document.createElement('textarea');
-      textarea.value = `${shareData.text}\n${shareData.url}`;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      setShowShareModal(false);
-    }
-  }, [shareData]);
+    window.open(dest, '_blank');
+    setShareModal(null);
+  }, [shareModal]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -521,20 +476,33 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
         <h1 className="text-xl font-bold">AI株価予測</h1>
         <span className="text-sm text-muted-foreground">({code})</span>
         {state === 'complete' && report && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={handleShare}
-            disabled={isSharing}
-          >
-            {isSharing ? (
-              <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-            ) : (
-              <Share2 className="w-4 h-4 mr-1" />
-            )}
-            シェア
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => openSharePreview('twitter')}
+              className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
+              aria-label="Xでシェア"
+            >
+              <XIcon className="w-4 h-4 text-white" />
+            </button>
+            <button
+              onClick={() => openSharePreview('line')}
+              className="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-colors"
+              aria-label="LINEでシェア"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.066-.023.132-.033.2-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.28-.63.63-.63.349 0 .63.285.63.63v4.771h-.006zM9.973 8.108c0-.345-.282-.63-.631-.63-.345 0-.627.285-.627.63v4.771c0 .346.282.629.63.629.346 0 .628-.283.628-.629V8.108zm-4.418 5.4h-.59l.004-.002.004-.002h.582c.346 0 .629-.285.629-.63 0-.345-.285-.63-.631-.63H3.624a.669.669 0 0 0-.199.031c-.256.086-.43.325-.43.595v4.772c0 .346.282.629.63.629.348 0 .63-.283.63-.629V16.1h1.297c.348 0 .629-.283.629-.63 0-.345-.282-.63-.63-.63H4.255v-1.332h1.3zm14.916-11.113c-5.031-5.031-13.199-5.031-18.232 0-5.031 5.031-5.031 13.199 0 18.232 5.031 5.031 13.199 5.031 18.232 0 5.031-5.033 5.031-13.201 0-18.232z"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => openSharePreview('facebook')}
+              className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors"
+              aria-label="Facebookでシェア"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-white fill-current">
+                <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5Z" />
+              </svg>
+            </button>
+          </div>
         )}
       </div>
 
@@ -570,49 +538,49 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
         </div>
       )}
 
-      {/* SNSシェアモーダル（Web Share API非対応ブラウザ用） */}
-      {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowShareModal(false)}>
-          <div className="bg-background border rounded-xl p-6 w-full max-w-sm mx-4 space-y-4" onClick={e => e.stopPropagation()}>
+      {/* シェアプレビューポップアップ */}
+      {shareModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShareModal(null)}>
+          <div className="bg-background border rounded-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">シェア</h3>
-              <button onClick={() => setShowShareModal(false)} className="text-muted-foreground hover:text-foreground">
-                <X className="w-5 h-5" />
+              <h3 className="text-lg font-semibold">
+                {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェア
+              </h3>
+              <button onClick={() => setShareModal(null)} className="text-muted-foreground hover:text-foreground">
+                <XIcon className="w-5 h-5" />
               </button>
             </div>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => handleSNSShare('twitter')}
-                className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
-                aria-label="Xでシェア"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-              <button
-                onClick={() => handleSNSShare('line')}
-                className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center transition-colors"
-                aria-label="LINEでシェア"
-              >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 text-white fill-current">
-                  <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.066-.023.132-.033.2-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.28-.63.63-.63.349 0 .63.285.63.63v4.771h-.006zM9.973 8.108c0-.345-.282-.63-.631-.63-.345 0-.627.285-.627.63v4.771c0 .346.282.629.63.629.346 0 .628-.283.628-.629V8.108zm-4.418 5.4h-.59l.004-.002.004-.002h.582c.346 0 .629-.285.629-.63 0-.345-.285-.63-.631-.63H3.624a.669.669 0 0 0-.199.031c-.256.086-.43.325-.43.595v4.772c0 .346.282.629.63.629.348 0 .63-.283.63-.629V16.1h1.297c.348 0 .629-.283.629-.63 0-.345-.282-.63-.63-.63H4.255v-1.332h1.3zm14.916-11.113c-5.031-5.031-13.199-5.031-18.232 0-5.031 5.031-5.031 13.199 0 18.232 5.031 5.031 13.199 5.031 18.232 0 5.031-5.033 5.031-13.201 0-18.232z"/>
-                </svg>
-              </button>
-              <button
-                onClick={() => handleSNSShare('facebook')}
-                className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center transition-colors"
-                aria-label="Facebookでシェア"
-              >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 text-white fill-current">
-                  <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5Z" />
-                </svg>
-              </button>
+
+            {/* チャート画像プレビュー */}
+            <div className="border rounded-lg overflow-hidden bg-muted">
+              {shareModal.loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">チャート画像を生成中...</span>
+                </div>
+              ) : shareModal.imageUrl ? (
+                <Image src={shareModal.imageUrl} alt="チャートプレビュー" width={800} height={400} className="w-full h-auto" unoptimized />
+              ) : (
+                <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                  画像を取得できませんでした
+                </div>
+              )}
             </div>
-            <button
-              onClick={handleCopyLink}
-              className="w-full py-2.5 px-4 rounded-lg border text-sm font-medium hover:bg-muted transition-colors"
+
+            {/* シェアテキストプレビュー */}
+            <div className="border rounded-lg p-3 bg-muted/50">
+              <p className="text-sm whitespace-pre-wrap break-words">{shareModal.text}</p>
+              <p className="text-xs text-blue-500 mt-2">{shareModal.url}</p>
+            </div>
+
+            {/* シェア実行ボタン */}
+            <Button
+              className="w-full"
+              onClick={executeShare}
+              disabled={shareModal.loading}
             >
-              リンクをコピー
-            </button>
+              {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェアする
+            </Button>
           </div>
         </div>
       )}
