@@ -541,46 +541,49 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
       {/* シェアプレビューポップアップ */}
       {shareModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShareModal(null)}>
-          <div className="bg-background border rounded-xl p-6 w-full max-w-lg mx-4 space-y-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
+          <div className="bg-background border rounded-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            {/* ヘッダー: タイトル左・投稿ボタン右・☓ボタン右上 */}
+            <div className="flex items-center justify-between p-4 pb-0">
               <h3 className="text-lg font-semibold">
                 {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェア
               </h3>
-              <button onClick={() => setShareModal(null)} className="text-muted-foreground hover:text-foreground">
-                <XIcon className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={executeShare}
+                  disabled={shareModal.loading}
+                >
+                  投稿する
+                </Button>
+                <button onClick={() => setShareModal(null)} className="text-muted-foreground hover:text-foreground p-1">
+                  <XIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
-            {/* チャート画像プレビュー */}
-            <div className="border rounded-lg overflow-hidden bg-muted">
-              {shareModal.loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">チャート画像を生成中...</span>
-                </div>
-              ) : shareModal.imageUrl ? (
-                <Image src={shareModal.imageUrl} alt="チャートプレビュー" width={800} height={400} className="w-full h-auto" unoptimized />
-              ) : (
-                <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                  画像を取得できませんでした
-                </div>
-              )}
-            </div>
+            <div className="p-4 space-y-4">
+              {/* チャート画像プレビュー */}
+              <div className="border rounded-lg overflow-hidden bg-muted">
+                {shareModal.loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-sm text-muted-foreground">チャート画像を生成中...</span>
+                  </div>
+                ) : shareModal.imageUrl ? (
+                  <Image src={shareModal.imageUrl} alt="チャートプレビュー" width={800} height={400} className="w-full h-auto" unoptimized />
+                ) : (
+                  <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                    画像を取得できませんでした
+                  </div>
+                )}
+              </div>
 
-            {/* シェアテキストプレビュー */}
-            <div className="border rounded-lg p-3 bg-muted/50">
-              <p className="text-sm whitespace-pre-wrap break-words">{shareModal.text}</p>
-              <p className="text-xs text-blue-500 mt-2">{shareModal.url}</p>
+              {/* シェアテキストプレビュー */}
+              <div className="border rounded-lg p-3 bg-muted/50">
+                <p className="text-sm whitespace-pre-wrap break-words">{shareModal.text}</p>
+                <p className="text-xs text-blue-500 mt-2">{shareModal.url}</p>
+              </div>
             </div>
-
-            {/* シェア実行ボタン */}
-            <Button
-              className="w-full"
-              onClick={executeShare}
-              disabled={shareModal.loading}
-            >
-              {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェアする
-            </Button>
           </div>
         </div>
       )}
