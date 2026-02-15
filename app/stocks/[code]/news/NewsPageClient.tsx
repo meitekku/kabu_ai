@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import StockChart from '@/components/parts/chart/StockChart';
 import NewsList from '@/components/ui/NewsList';
 import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
-import { PredictionButton } from '@/components/prediction/PredictionButton';
+import { AiFeatureNav } from '@/components/stocks/AiFeatureNav';
 import USCommentList from '@/components/parts/us/USCommentList';
 
 interface NewsPageClientProps {
@@ -36,7 +36,7 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
         width={"100%"}
         maxNewsTooltips={4}
       />
-      {!isUSStock && <PredictionButton code={code} />}
+      {!isUSStock && <AiFeatureNav code={code} />}
       {isUSStock ? (
         <USCommentList code={code} />
       ) : (
