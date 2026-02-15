@@ -100,7 +100,7 @@ export const detectEmptyGridCells = (
   return grid;
 };
 
-// 指定された位置に140×60のtooltip領域を確保できるかチェック
+// 指定された位置にtooltip領域を確保できるかチェック
 const canPlaceTooltip = (
   x: number,
   y: number,
@@ -109,10 +109,10 @@ const canPlaceTooltip = (
   containerWidth: number,
   chartHeight: number,
   overlapTolerance: number = 0.25,
-  tooltipMargin: number = 30  // 20 → 30
+  tooltipMargin: number = 15
 ): boolean => {
-  const tooltipWidth = 140;
-  const tooltipHeight = 60;
+  const tooltipWidth = 110;
+  const tooltipHeight = 44;
   
   // 境界チェック
   if (x < 0 || y < 0 || x + tooltipWidth > containerWidth || y + tooltipHeight > chartHeight) {
@@ -186,15 +186,15 @@ const findClosestTooltipArea = (
   containerWidth: number,
   chartHeight: number
 ): TooltipArea | null => {
-  const tooltipWidth = 140;
-  const tooltipHeight = 60;
-  const stepSize = 10; // より細かく探索
+  const tooltipWidth = 110;
+  const tooltipHeight = 44;
+  const stepSize = 15;
   const possibleAreas: TooltipArea[] = [];
   
   // 全ての可能な位置を探索
   for (let x = 0; x <= containerWidth - tooltipWidth; x += stepSize) {
     for (let y = 0; y <= chartHeight - tooltipHeight; y += stepSize) {
-      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 30)) {
+      if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 15)) {
         // ツールチップの中心とロウソク足の中心の距離を計算
         const tooltipCenterX = x + tooltipWidth / 2;
         const tooltipCenterY = y + tooltipHeight / 2;
@@ -224,7 +224,7 @@ const adjustXPositionIfNeeded = (
   x: number,
   existingZones: TooltipZone[],
   containerWidth: number,
-  tooltipWidth: number = 140,
+  tooltipWidth: number = 110,
   xOffset: number = 15
 ): number => {
   let adjustedX = x;
@@ -353,13 +353,13 @@ export const calculateTooltipZones = (
   
   // 残った空白領域を表示する場合
   if (showEmptyAreas) {
-    const tooltipWidth = 140;
-    const tooltipHeight = 60;
+    const tooltipWidth = 110;
+    const tooltipHeight = 44;
     const stepSize = 15;
     
     for (let x = 0; x <= containerWidth - tooltipWidth; x += stepSize) {
       for (let y = 0; y <= chartHeight - tooltipHeight; y += stepSize) {
-        if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 30)) {
+        if (canPlaceTooltip(x, y, emptyCells, occupiedAreas, containerWidth, chartHeight, 0.25, 15)) {
           const adjustedX = adjustXPositionIfNeeded(x, zones, containerWidth);
           
           zones.push({
@@ -385,66 +385,3 @@ export const calculateTooltipZones = (
   return zones;
 };
 
-// デバッグ用：配置順序と距離を可視化
-export const debugVisualizeLayoutWithDistance = (
-  canvas: HTMLCanvasElement,
-  emptyCells: GridCell[],
-  zones: TooltipZone[],
-  data: ExtendedChartData[],
-  actualChartPositions: number[],
-  containerWidth: number,
-  chartHeight: number
-) => {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  
-  // グリッドセルを描画
-  emptyCells.forEach(cell => {
-    ctx.fillStyle = cell.isEmpty ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)';
-    ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
-    ctx.strokeStyle = cell.isEmpty ? 'rgba(0, 255, 0, 0.3)' : 'rgba(255, 0, 0, 0.3)';
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
-  });
-  
-  // ゾーンとロウソク足の接続線を描画
-  zones.forEach((zone, index) => {
-    if (zone.isNewsTooltip && zone.index >= 0) {
-      const candleCenter = getCandleCenter(
-        data[zone.index],
-        zone.index,
-        actualChartPositions,
-        containerWidth,
-        chartHeight,
-        data
-      );
-      
-      // ロウソク足からツールチップへの線を描画
-      ctx.strokeStyle = 'rgba(255, 0, 255, 0.5)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.moveTo(candleCenter.x, candleCenter.y);
-      ctx.lineTo(zone.xPosition + 70, zone.yPosition + 30); // ツールチップの中心
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    
-    // ツールチップ領域を描画
-    const opacity = 0.8 - (index * 0.05);
-    ctx.fillStyle = zone.isNewsTooltip 
-      ? `rgba(255, 0, 0, ${Math.max(0.2, opacity)})` 
-      : `rgba(0, 0, 255, ${Math.max(0.2, opacity)})`;
-    ctx.fillRect(zone.xPosition, zone.yPosition, 140, 60);
-    ctx.strokeStyle = zone.isNewsTooltip ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(zone.xPosition, zone.yPosition, 140, 60);
-    
-    // 優先度番号を表示
-    ctx.fillStyle = 'white';
-    ctx.fillRect(zone.xPosition + 2, zone.yPosition + 2, 30, 20);
-    ctx.fillStyle = zone.isNewsTooltip ? 'red' : 'blue';
-    ctx.font = 'bold 14px Arial';
-    ctx.fillText(`${index + 1}`, zone.xPosition + 8, zone.yPosition + 16);
-  });
-};

@@ -35,17 +35,9 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   // 対象日付の設定（デフォルトは2ヶ月前）
   const date = targetDate || new Date();
   date.setMonth(date.getMonth() - 2);
-  
+
   // 日付をYYYY-MM-DD形式に変換
   const formattedDate = date.toISOString().split('T')[0];
-  
-  // 記事抽出条件をログ出力
-  console.log('===== 記事抽出条件 =====');
-  console.log('銘柄コード:', code);
-  console.log('対象日付:', formattedDate, '以降');
-  console.log('ニュース機関フィルタ:', newsInstitution || 'なし（全機関）');
-  console.log('取得件数上限:', 60);
-  console.log('========================');
 
   // 株価データ取得
   const chartResponse = await fetch(`/api/stocks/${code}/chart`, {
@@ -64,13 +56,6 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   }
 
   // 記事データ取得
-  console.log('記事APIリクエスト:', {
-    limit: 60,
-    page: 1,
-    institution: newsInstitution,
-    target_date: formattedDate
-  });
-  
   const newsResponse = await fetch(`/api/stocks/${code}/news`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -85,8 +70,7 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   const newsResult = await newsResponse.json();
   if (!newsResult.success) throw new Error('News API returned error');
   const articles: NewsArticle[] = newsResult.data || [];
-  
-  console.log('記事取得結果: 全', articles.length, '件');
+
   // 日付でソート
   const sortedData = chartResult.data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   // 移動平均
@@ -103,14 +87,11 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
       // その日付の記事がまだない、または新しい記事の場合は更新
       if (!existingArticle || new Date(article.created_at) > new Date(existingArticle.created_at)) {
         articlesByDate.set(articleDateStr, article);
-        console.log(`記事選択: 日付=${articleDateStr}, 記事ID=${article.id}, タイトル="${article.title.substring(0, 30)}..."`);
       }
     } catch {
       // エラーは無視
     }
   });
-  
-  console.log(`記事の絞り込み結果: 全${articles.length}件 → ${articlesByDate.size}日分の記事`);
   
   // 整形
   return sortedData.map((item, index) => {
@@ -122,11 +103,7 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
     const chartDateStr = formatDate(item.date);
     const dayArticle = articlesByDate.get(chartDateStr);
     const articlesToShow = dayArticle ? [dayArticle] : [];
-    
-    if (articlesToShow.length > 0) {
-      console.log(`チャート[${index}]: 日付=${dateStr}, 記事数=${articlesToShow.length}, 記事="${articlesToShow[0].title.substring(0, 30)}..."`);
-    }
-    
+
     return {
       date: dateStr,
       open: item.open,
