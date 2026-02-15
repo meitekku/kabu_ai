@@ -21,6 +21,7 @@ async function fileExists(filePath: string): Promise<boolean> {
 function getUploadBasePaths(): string[] {
   if (process.env.NODE_ENV === 'production') {
     return [
+      '/var/www/kabu_ai_uploads',
       '/var/www/kabu_ai/public/uploads',
       '/var/www/kabu_ai/.next/standalone/public/uploads'
     ];

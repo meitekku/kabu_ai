@@ -35,8 +35,8 @@ function NewsCard({ item }: { item: Post }) {
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-400">No Image</span>
+            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
+              <span className="text-red-400 text-sm font-medium text-center line-clamp-3">{item.title}</span>
             </div>
           )}
         </div>

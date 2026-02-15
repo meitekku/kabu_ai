@@ -3,12 +3,10 @@ import { generateRandomString } from '@/utils/common/randomString';
 import path from 'path';
 import fs from 'fs/promises';
 
-// アップロード先のベースディレクトリを定義
-const UPLOAD_BASE_DIR = process.env.NODE_ENV === 'production' 
-  ? '/var/www/kabu_ai/.next/standalone/public/uploads'
+// アップロード先のベースディレクトリ（ビルドで消えない永続ディレクトリ）
+const UPLOAD_BASE_DIR = process.env.NODE_ENV === 'production'
+  ? '/var/www/kabu_ai_uploads'
   : path.join(process.cwd(), 'public/uploads');
-
-const PUBLIC_UPLOAD_DIR = '/var/www/kabu_ai/public/uploads';
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,41 +35,26 @@ export async function POST(req: NextRequest) {
     
     // 保存先ディレクトリのパスを作成
     const uploadDir = path.join(UPLOAD_BASE_DIR, 'post_images', year.toString(), month);
-    const publicUploadDir = process.env.NODE_ENV === 'production' 
-      ? path.join(PUBLIC_UPLOAD_DIR, 'post_images', year.toString(), month)
-      : null;
-    
+
     // ディレクトリが存在しない場合は作成
     await fs.mkdir(uploadDir, { recursive: true });
-    if (publicUploadDir) {
-      await fs.mkdir(publicUploadDir, { recursive: true });
-    }
-    
+
     // ランダム文字列を生成して一意のファイル名を作成
     const fileExtension = path.extname(file.name);
     const fileNameWithoutExt = path.basename(file.name, fileExtension);
     const randomString = generateRandomString(8);
     const newFileName = `${fileNameWithoutExt}_${randomString}${fileExtension}`;
-    
+
     // ファイルの保存先パス
     const filePath = path.join(uploadDir, newFileName);
-    const publicFilePath = publicUploadDir ? path.join(publicUploadDir, newFileName) : null;
-    
+
     // ArrayBufferに変換
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // ファイルを保存
     await fs.writeFile(filePath, buffer);
-    if (publicFilePath) {
-      await fs.writeFile(publicFilePath, buffer);
-    }
-    
-    // ファイルの権限を777に設定
     await fs.chmod(filePath, 0o777);
-    if (publicFilePath) {
-      await fs.chmod(publicFilePath, 0o777);
-    }
     
     // 相対パスを生成（URL用）
     const relativePath = `/uploads/post_images/${year}/${month}/${newFileName}`;
