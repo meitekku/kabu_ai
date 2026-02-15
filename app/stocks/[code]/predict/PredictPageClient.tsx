@@ -164,18 +164,9 @@ function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
 }
 
 
-function StrengthDots({ strength }: { strength: number }) {
+function StrengthScore({ strength }: { strength: number }) {
   return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span
-          key={i}
-          className={`inline-block w-2.5 h-2.5 rounded-full ${
-            i <= strength ? 'bg-current' : 'bg-muted'
-          }`}
-        />
-      ))}
-    </div>
+    <span className="text-lg font-bold tabular-nums">{strength}<span className="text-xs font-normal text-muted-foreground">/5</span></span>
   );
 }
 
@@ -191,7 +182,7 @@ function TrendCard({ label, trend }: { label: string; trend: TrendDirection }) {
       <span className="text-xs text-muted-foreground font-medium">{label}</span>
       <config.Icon className={`w-8 h-8 ${config.color}`} />
       <div className={config.color}>
-        <StrengthDots strength={trend.strength} />
+        <StrengthScore strength={trend.strength} />
       </div>
       <p className="text-xs text-muted-foreground text-center leading-snug">{trend.reason}</p>
     </div>

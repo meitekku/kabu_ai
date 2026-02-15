@@ -220,18 +220,19 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
           // 予測データがある場合はマージ
           if (predictionData && predictionData.length > 0) {
             const predictionEntries: ExtendedChartData[] = predictionData.map(p => {
+              const open = p.predictedOpen ?? p.predictedClose;
               const close = p.predictedClose;
+              const isPositive = close >= open;
               return {
                 date: p.date,
-                open: close,
+                open,
                 high: p.predictedHigh,
                 low: p.predictedLow,
                 close,
                 volume: 0,
-                // ローソク足を非表示にするためゼロ高さに設定
-                highLowBar: [close, close] as [number, number],
-                candlestick: [close, close] as [number, number],
-                color: 'transparent',
+                highLowBar: [p.predictedLow, p.predictedHigh] as [number, number],
+                candlestick: [open, close] as [number, number],
+                color: isPositive ? '#ff0000' : '#0000ff',
                 ma5: null,
                 ma25: null,
                 ma75: null,
