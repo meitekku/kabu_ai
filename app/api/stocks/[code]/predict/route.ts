@@ -412,7 +412,6 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
 
     const latestDate = new Date(latestPrice.date);
     const businessDays = getNextBusinessDays(latestDate, 20);
-    const businessDaysText = businessDays.join(', ');
 
     // GLM-4 API設定
     if (!process.env.GLM_API_KEY) {

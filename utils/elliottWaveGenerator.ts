@@ -75,11 +75,6 @@ function randNormal(rng: () => number, mean = 0, stddev = 1): number {
   return mean + stddev * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
 }
 
-/** Clamp value to [min, max]. */
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 /** Round to integer (stock prices in JPY are typically whole numbers). */
 function roundPrice(v: number): number {
   return Math.round(v * 10) / 10;
@@ -178,7 +173,7 @@ function buildWaveSegments(
   const totalMag = magnitudes.reduce((a, b) => a + b, 0);
 
   // Allocate days proportionally, ensuring each wave gets at least 1 day
-  let rawDays = magnitudes.map(m => Math.max(1, Math.round((m / totalMag) * totalDays)));
+  const rawDays = magnitudes.map(m => Math.max(1, Math.round((m / totalMag) * totalDays)));
   let daySum = rawDays.reduce((a, b) => a + b, 0);
 
   // Adjust to match totalDays exactly: add/remove from Wave 3 (longest wave)
