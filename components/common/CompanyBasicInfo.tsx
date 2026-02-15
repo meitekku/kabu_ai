@@ -157,19 +157,26 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       </div>
 
       {/* 現在株価と値幅の表示 */}
-      <div className="flex items-baseline space-x-4 mt-1">
-        <div className="text-2xl font-bold">
-          {isUS ? `$${formatPrice(info.current_price)}` : `${formatPrice(info.current_price)}円`}
+      <div className="flex items-baseline justify-between mt-1">
+        <div className="flex items-baseline space-x-4">
+          <div className="text-2xl font-bold">
+            {isUS ? `$${formatPrice(info.current_price)}` : `${formatPrice(info.current_price)}円`}
+          </div>
+          <div
+            className={`text-lg ${
+              parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'
+            }`}
+          >
+            {parseFloat(info.price_change) >= 0 ? '+' : ''}
+            {isUS ? '$' : ''}{formatPrice(info.price_change)} (
+            {formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
+          </div>
         </div>
-        <div
-          className={`text-lg ${
-            parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'
-          }`}
-        >
-          {parseFloat(info.price_change) >= 0 ? '+' : ''}
-          {isUS ? '$' : ''}{formatPrice(info.price_change)} (
-          {formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
-        </div>
+        {!isUS && (info.trailing_pe || info.price_to_book) && (
+          <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700">
+            バリュエーション分析 →
+          </Link>
+        )}
       </div>
 
       {/* 各種指標を4列で表示 */}
@@ -191,11 +198,6 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           <div>{isUS ? formatMarketCapUS(info.market_cap) : formatMarketCap(info.market_cap)}</div>
         </div>
       </div>
-      {!isUS && (
-        <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 mt-1 inline-block">
-          バリュエーション分析 →
-        </Link>
-      )}
     </div>
   );
 };
