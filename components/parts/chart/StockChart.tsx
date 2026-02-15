@@ -14,6 +14,7 @@ import {
   Cell,
   ReferenceLine,
   ReferenceDot,
+  Label,
   RectangleProps
 } from 'recharts';
 import { ExtendedChartData } from './types/StockChartTypes';
@@ -733,19 +734,54 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               <ReferenceDot
                 x={data[data.length - 1].date}
                 y={data[data.length - 1].predictionClose!}
-                r={5}
+                r={7}
                 fill="#10b981"
                 stroke="white"
-                strokeWidth={2}
-                label={{
-                  value: `¥${Math.round(data[data.length - 1].predictionClose!).toLocaleString()}`,
-                  position: 'left',
-                  fill: '#10b981',
-                  fontSize: 11,
-                  fontWeight: 'bold',
-                  offset: 8,
-                }}
-              />
+                strokeWidth={2.5}
+              >
+                <Label content={({ viewBox }) => {
+                  if (!viewBox || !('x' in viewBox) || !('y' in viewBox)) return null;
+                  const { x, y } = viewBox as { x: number; y: number };
+                  const price = `¥${Math.round(data[data.length - 1].predictionClose!).toLocaleString()}`;
+                  const boxW = price.length * 10 + 20;
+                  const boxH = 28;
+                  const gap = 14;
+                  return (
+                    <g>
+                      <defs>
+                        <filter id="priceBadgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="1" stdDeviation="2" floodOpacity="0.25" />
+                        </filter>
+                      </defs>
+                      <rect
+                        x={x - boxW - gap}
+                        y={y - boxH / 2}
+                        width={boxW}
+                        height={boxH}
+                        rx={6}
+                        ry={6}
+                        fill="#10b981"
+                        filter="url(#priceBadgeShadow)"
+                      />
+                      <polygon
+                        points={`${x - gap},${y - 5} ${x - gap},${y + 5} ${x - gap + 7},${y}`}
+                        fill="#10b981"
+                      />
+                      <text
+                        x={x - boxW / 2 - gap}
+                        y={y}
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill="white"
+                        fontSize={15}
+                        fontWeight="bold"
+                      >
+                        {price}
+                      </text>
+                    </g>
+                  );
+                }} />
+              </ReferenceDot>
             )}
           </ComposedChart>
         </ResponsiveContainer>
