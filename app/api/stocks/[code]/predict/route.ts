@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const maxDuration = 120;
 
-const GLM_API_URL = process.env.GLM_API_URL || 'https://ollama.kabu-ai.jp/glm/api/paas/v4/chat/completions';
+const GLM_API_URL = process.env.GLM_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 // 日本の祝日判定
 function getJapaneseHolidays(year: number): Set<string> {
@@ -614,7 +614,7 @@ ${businessDaysText}
     }
 
     console.log(`[${code}] Step 2/3: Forecast starting...`);
-    const forecast = await callAndParse<ForecastResult>(forecastPrompt, 4096);
+    const forecast = await callAndParse<ForecastResult>(forecastPrompt, 8192);
     console.log(`[${code}] Step 2/3: Forecast complete`);
 
     // 予測結果から統計を計算
@@ -682,7 +682,7 @@ ${analysis.risks.join(', ')}
     }
 
     console.log(`[${code}] Step 3/3: Summary starting...`);
-    const summaryData = await callAndParse<SummaryResult>(summaryPrompt, 3072);
+    const summaryData = await callAndParse<SummaryResult>(summaryPrompt, 8192);
     console.log(`[${code}] Step 3/3: Summary complete`);
 
     // ============================================================

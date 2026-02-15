@@ -34,6 +34,45 @@ function EvaluationBadge({ evaluation }: { evaluation: string }) {
   );
 }
 
+// New component for summary
+function ValuationSummary({
+  per,
+  pbr,
+  perEvaluation,
+  pbrEvaluation,
+}: {
+  per: number | null;
+  pbr: number | null;
+  perEvaluation: string;
+  pbrEvaluation: string;
+}) {
+  if (per === null || pbr === null) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="text-center">
+          <h3 className="text-sm text-gray-500 font-medium mb-1">現在のPER</h3>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-4xl font-black text-gray-800">{per.toFixed(2)}<span className="text-lg ml-1 font-bold">倍</span></span>
+            <EvaluationBadge evaluation={perEvaluation} />
+          </div>
+        </div>
+        <div className="text-center border-t border-gray-100 pt-6 sm:border-t-0 sm:pt-0 sm:border-l sm:border-gray-100">
+          <h3 className="text-sm text-gray-500 font-medium mb-1">現在のPBR</h3>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-4xl font-black text-gray-800">{pbr.toFixed(2)}<span className="text-lg ml-1 font-bold">倍</span></span>
+            <EvaluationBadge evaluation={pbrEvaluation} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function ReportTypeBadge({ type }: { type: string }) {
   const isWeekly = type === 'weekly';
   return (
@@ -221,6 +260,13 @@ const ValuationPageClient = ({ code }: { code: string }) => {
                 <ReportTypeBadge type={report.report_type} />
               </div>
             </div>
+
+            <ValuationSummary
+              per={report.per ? Number(report.per) : null}
+              pbr={report.pbr ? Number(report.pbr) : null}
+              perEvaluation={report.per_evaluation}
+              pbrEvaluation={report.pbr_evaluation}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ValuationCard 

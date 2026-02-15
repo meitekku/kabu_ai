@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const GLM_API_URL = process.env.GLM_API_URL || 'https://ollama.kabu-ai.jp/glm/api/paas/v4/chat/completions';
+const GLM_API_URL = process.env.GLM_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
 export async function POST(req: Request) {
   try {
