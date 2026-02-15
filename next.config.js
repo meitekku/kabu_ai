@@ -2,6 +2,7 @@
 const nextConfig = {
   turbopack: {},
   output: 'standalone',
+  serverExternalPackages: ['mysql2', 'better-auth', 'twitter-api-v2'],
   images: {
     remotePatterns: [
       {
@@ -17,7 +18,6 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: ['133.130.102.77:3000'],
-      serverComponentsExternalPackages: ['twitter-api-v2']
     },
   },
   webpack: (config, { isServer }) => {
