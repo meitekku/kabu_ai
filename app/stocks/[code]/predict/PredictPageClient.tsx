@@ -40,6 +40,7 @@ interface PredictionReport {
   fundamentalAnalysis?: string;
   catalystAnalysis?: string;
   investmentStrategy?: string;
+  currentPrice?: number;
   scores?: PredictionScores;
 }
 
@@ -437,7 +438,19 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
 
     const displayName = companyName ? `${companyName}(${code})` : code;
     const shareUrl = `https://kabu-ai.jp/stocks/${code}/predict`;
-    const shareText = `${displayName} AI株価予測\n\n${report.summary}\n\n#株AI #AI株価予測`;
+
+    // 1ヶ月後の予測価格と変動率を計算
+    const lastForecast = report.dailyForecasts[report.dailyForecasts.length - 1];
+    const predictedPrice = lastForecast ? Math.round(lastForecast.predictedClose) : null;
+    const currentPrice = report.currentPrice;
+    let priceLine = '';
+    if (predictedPrice && currentPrice) {
+      const changePercent = ((predictedPrice - currentPrice) / currentPrice * 100).toFixed(1);
+      const sign = Number(changePercent) >= 0 ? '+' : '';
+      priceLine = `\n1ヶ月後予想: ${predictedPrice.toLocaleString()}円（${sign}${changePercent}%） 現在値: ${Math.round(currentPrice).toLocaleString()}円`;
+    }
+
+    const shareText = `${displayName} AI株価予測${priceLine}\n${report.summary}\n#株AI #AI株価予測`;
 
     setShareModal({ platform, loading: true, posting: false, imageUrl: null, text: shareText, url: shareUrl, posted: false, tweetUrl: null, error: null });
 

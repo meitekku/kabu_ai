@@ -186,6 +186,7 @@ interface PredictionResult {
   catalystAnalysis: string;
   investmentStrategy: string;
   riskFactors: string[];
+  currentPrice?: number;
   quality_score?: number;
   scores?: {
     technical: number;
@@ -755,6 +756,7 @@ ${analysis.risks.join(', ')}
       catalystAnalysis: analysis.catalystAnalysis,
       investmentStrategy: summaryData.investmentStrategy,
       riskFactors: summaryData.riskFactors || [],
+      currentPrice: Number(latestPrice.close),
       scores: {
         technical: analysis.scores?.technical || 0,
         fundamental: analysis.scores?.fundamental || 0,
