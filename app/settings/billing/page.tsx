@@ -7,6 +7,7 @@ import { CheckCircle2, CreditCard, AlertCircle, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth/auth-client";
+import Link from "next/link";
 
 interface SubscriptionInfo {
     isPremium: boolean;
@@ -284,20 +285,37 @@ export default function BillingPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button
-                                    onClick={handleCheckout}
-                                    disabled={loading}
-                                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            処理中...
-                                        </>
-                                    ) : (
-                                        '今すぐ申し込む'
-                                    )}
-                                </Button>
+                                <div className="w-full space-y-3">
+                                    <Button
+                                        onClick={handleCheckout}
+                                        disabled={loading}
+                                        className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                処理中...
+                                            </>
+                                        ) : (
+                                            '今すぐ申し込む'
+                                        )}
+                                    </Button>
+                                    <p className="text-xs text-slate-500">
+                                        申込みにより
+                                        <Link href="/terms" className="mx-1 text-emerald-700 underline">
+                                            利用規約
+                                        </Link>
+                                        ・
+                                        <Link href="/privacy-policy" className="mx-1 text-emerald-700 underline">
+                                            プライバシーポリシー
+                                        </Link>
+                                        ・
+                                        <Link href="/commercial-transactions" className="mx-1 text-emerald-700 underline">
+                                            特定商取引法に基づく表記
+                                        </Link>
+                                        をご確認ください。
+                                    </p>
+                                </div>
                             </CardFooter>
                         </Card>
                     )}

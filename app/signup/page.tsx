@@ -180,6 +180,17 @@ function SignUpForm() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "処理中..." : "登録"}
           </Button>
+          <p className="text-xs text-center text-gray-500">
+            登録により
+            <Link href="/terms" className="mx-1 text-blue-600 underline">
+              利用規約
+            </Link>
+            と
+            <Link href="/privacy-policy" className="mx-1 text-blue-600 underline">
+              プライバシーポリシー
+            </Link>
+            に同意したものとみなされます。
+          </p>
         </form>
 
         <div className="relative">

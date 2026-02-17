@@ -63,6 +63,21 @@ export default function PremiumPage() {
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
+                            <p className="mt-4 text-xs text-slate-500">
+                                申込み前に
+                                <Link href="/terms" className="mx-1 underline hover:text-slate-300">
+                                    利用規約
+                                </Link>
+                                ・
+                                <Link href="/privacy-policy" className="mx-1 underline hover:text-slate-300">
+                                    プライバシーポリシー
+                                </Link>
+                                ・
+                                <Link href="/commercial-transactions" className="mx-1 underline hover:text-slate-300">
+                                    特定商取引法に基づく表記
+                                </Link>
+                                をご確認ください。
+                            </p>
                         </div>
                     </section>
 
@@ -345,6 +360,17 @@ export default function PremiumPage() {
                                             プレミアムプランに登録する
                                         </Button>
                                     </Link>
+                                    <p className="mt-4 text-xs text-slate-500">
+                                        申込みにより
+                                        <Link href="/terms" className="mx-1 underline hover:text-slate-300">
+                                            利用規約
+                                        </Link>
+                                        および
+                                        <Link href="/privacy-policy" className="mx-1 underline hover:text-slate-300">
+                                            プライバシーポリシー
+                                        </Link>
+                                        に同意したものとみなされます。
+                                    </p>
 
                                     <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm font-medium text-slate-500">
                                         <div className="flex items-center gap-2">
