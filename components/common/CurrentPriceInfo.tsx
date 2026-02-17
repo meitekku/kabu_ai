@@ -12,6 +12,16 @@ interface CompanyData {
   diff_percent: number | null;
 }
 
+export const CurrentPriceInfoSkeleton = ({ isDark = false }: { isDark?: boolean }) => (
+  <div className="flex items-center space-x-4 p-2">
+    <div className="animate-pulse flex items-center space-x-4">
+      <div className={`h-4 rounded w-16 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+      <div className={`h-4 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+      <div className={`h-4 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+    </div>
+  </div>
+);
+
 export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
   const [data, setData] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,15 +55,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
   }, [code]);
 
   if (loading) {
-    return (
-      <div className="flex items-center space-x-4 p-2">
-        <div className="animate-pulse flex items-center space-x-4">
-          <div className="h-4 bg-gray-200 rounded w-16"></div>
-          <div className="h-4 bg-gray-200 rounded w-14"></div>
-          <div className="h-4 bg-gray-200 rounded w-12"></div>
-        </div>
-      </div>
-    );
+    return <CurrentPriceInfoSkeleton />;
   }
 
   if (error) return <div className="text-red-500">{error}</div>;
@@ -66,7 +68,6 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
     isPriceUp = data.diff_percent < 0;
     priceColor = isPriceUp ? 'text-blue-500' : 'text-red-500';
   }
-  console.log(data);
 
   return (
     <div className="flex items-center space-x-4 p-2">
@@ -85,4 +86,4 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
       )}
     </div>
   );
-}; 
+};

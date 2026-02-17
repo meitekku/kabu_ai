@@ -1,7 +1,7 @@
 'use client';
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
-import { CurrentPriceInfo } from "@/components/common/CurrentPriceInfo";
+import { CurrentPriceInfo, CurrentPriceInfoSkeleton } from "@/components/common/CurrentPriceInfo";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
@@ -180,13 +180,9 @@ const Header = ({ isDark }: { isDark?: boolean }) => {
           <div className="overflow-x-auto">
             <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
               <div className="flex space-x-4">
-                {[0,1,2,3].map(i => (
-                  <div key={i} className="flex items-center space-x-4 p-2">
-                    <div className="animate-pulse flex items-center space-x-4">
-                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-16`}></div>
-                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-14`}></div>
-                      <div className={`h-4 ${isDark ? 'bg-slate-800' : 'bg-gray-200'} rounded w-12`}></div>
-                    </div>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i}>
+                    <CurrentPriceInfoSkeleton isDark={isDark} />
                   </div>
                 ))}
               </div>
