@@ -185,6 +185,8 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
         if (selectedIndex >= 0) {
           const selectedCompany = currentList[selectedIndex];
           navigateToNews(selectedCompany);
+        } else if (!showHistory && suggestions.length === 1) {
+          navigateToNews(suggestions[0]);
         }
         break;
       case 'Escape':
