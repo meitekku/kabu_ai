@@ -189,20 +189,32 @@ jobs:
             fi
             mv "$STAGING" "$PRODUCTION"
 
-            # === PM2再起動（ダウンタイムはここだけ ~2-3秒） ===
+            # === PM2グレースフルリロード（cluster mode） ===
             cd "$PRODUCTION"
-            export NODE_ENV=production
-            export PORT=3000
-            export CHROME_BINARY_PATH=/usr/bin/google-chrome-stable
 
             if pm2 describe kabu_ai > /dev/null 2>&1; then
-              echo "Restarting PM2 process (downtime: ~2-3s)..."
-              pm2 restart kabu_ai --update-env
+              echo "Reloading PM2 process in cluster mode..."
+              pm2 startOrReload ecosystem.config.cjs --only kabu_ai --update-env
             else
-              echo "Starting new PM2 process..."
-              pm2 start npm --name "kabu_ai" -- start --max-memory-restart 1G
+              echo "Starting PM2 process in cluster mode..."
+              pm2 start ecosystem.config.cjs --only kabu_ai --update-env
             fi
             pm2 save
+
+            echo "Waiting for local health check..."
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:3000/favicon.ico > /dev/null; then
+                echo "Health check passed."
+                break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                echo "Health check failed after reload."
+                exit 1
+              fi
+
+              sleep 2
+            done
 
             # --- クリーンアップ ---
             rm -rf "$OLD"
