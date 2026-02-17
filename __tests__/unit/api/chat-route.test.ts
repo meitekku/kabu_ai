@@ -2,12 +2,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type DbSelectFn = (query: string, params?: Array<string | number | boolean | null>) => Promise<unknown[]>;
 type DbInsertFn = (query: string, params?: Array<string | number | boolean | null>) => Promise<number>;
+type SessionValue = {
+  user?: {
+    id?: string;
+    email?: string;
+  };
+} | null;
+type GetSessionFn = () => Promise<SessionValue>;
+type CookieValue = { value: string } | undefined;
+type CookieGetFn = (name: string) => CookieValue;
 
-const { mockSelect, mockInsert, mockGetSession, mockHeaders } = vi.hoisted(() => {
+const { mockSelect, mockInsert, mockGetSession, mockHeaders, mockCookies, mockCookieGet } = vi.hoisted(() => {
+  const mockCookieGet = vi.fn<CookieGetFn>(() => undefined);
+
   return {
     mockSelect: vi.fn<DbSelectFn>(),
     mockInsert: vi.fn<DbInsertFn>(),
-    mockGetSession: vi.fn(() => Promise.resolve(null)),
+    mockGetSession: vi.fn<GetSessionFn>(() => Promise.resolve(null)),
     mockHeaders: vi.fn(() =>
       Promise.resolve(
         new Headers({
@@ -15,6 +26,12 @@ const { mockSelect, mockInsert, mockGetSession, mockHeaders } = vi.hoisted(() =>
           'x-forwarded-for': '203.0.113.10',
         })
       )
+    ),
+    mockCookieGet,
+    mockCookies: vi.fn(() =>
+      Promise.resolve({
+        get: (name: string) => mockCookieGet(name),
+      })
     ),
   };
 });
@@ -38,6 +55,7 @@ vi.mock('@/lib/auth/auth', () => ({
 
 vi.mock('next/headers', () => ({
   headers: mockHeaders,
+  cookies: mockCookies,
 }));
 
 import { POST } from '@/app/api/chat/route';
@@ -51,6 +69,7 @@ describe('POST /api/chat (GLM)', () => {
     process.env.GLM_CHAT_MODEL = 'glm-4-plus';
 
     mockGetSession.mockResolvedValue(null);
+    mockCookieGet.mockReturnValue(undefined);
 
     mockSelect.mockImplementation((query: string) => {
       if (query.includes('SELECT COUNT(*) as count FROM chat_usage_log')) {
@@ -119,6 +138,7 @@ describe('POST /api/chat (GLM)', () => {
       body: JSON.stringify({
         messages: [{ role: 'user', content: '7203の直近材料を教えて' }],
         stockCode: '7203',
+        fingerprint: 'visitor-test-id',
       }),
     });
 
@@ -140,6 +160,86 @@ describe('POST /api/chat (GLM)', () => {
     );
     expect(assistantInsert).toBeDefined();
     expect(assistantInsert?.[1]?.[3]).toBe('トヨタの要約');
+
+    const usageInsert = mockInsert.mock.calls.find(
+      (call) =>
+        typeof call[0] === 'string' &&
+        call[0].includes('INSERT INTO chat_usage_log')
+    );
+    expect(usageInsert).toBeDefined();
+    expect(usageInsert?.[1]?.[1]).toBe('visitor-test-id');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('returns requireLogin when guest daily limit is reached', async () => {
+    mockSelect.mockImplementation((query: string) => {
+      if (query.includes('SELECT COUNT(*) as count FROM chat_usage_log')) {
+        return Promise.resolve([{ count: 1 }]);
+      }
+      return Promise.resolve([]);
+    });
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const req = new Request('http://localhost/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: '今日の相場どう？' }],
+        fingerprint: 'visitor-test-id',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(429);
+
+    const data = await res.json() as { requireLogin?: boolean; requirePremium?: boolean };
+    expect(data.requireLogin).toBe(true);
+    expect(data.requirePremium).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('returns requirePremium when logged-in daily limit is reached', async () => {
+    mockGetSession.mockResolvedValue({
+      user: {
+        id: 'user-1',
+        email: 'user@example.com',
+      },
+    });
+
+    mockSelect.mockImplementation((query: string) => {
+      if (query.includes('SELECT subscription_status FROM user WHERE id = ?')) {
+        return Promise.resolve([{ subscription_status: 'inactive' }]);
+      }
+      if (query.includes('SELECT COUNT(*) as count FROM chat_usage_log')) {
+        return Promise.resolve([{ count: 3 }]);
+      }
+      return Promise.resolve([]);
+    });
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const req = new Request('http://localhost/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: 'ファンダ分析して' }],
+        fingerprint: 'visitor-test-id',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(429);
+
+    const data = await res.json() as { requireLogin?: boolean; requirePremium?: boolean };
+    expect(data.requirePremium).toBe(true);
+    expect(data.requireLogin).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
 
     vi.unstubAllGlobals();
   });
