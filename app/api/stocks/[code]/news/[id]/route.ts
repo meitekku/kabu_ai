@@ -20,7 +20,8 @@ export async function POST(
 ): Promise<NextResponse> {
   try {
     const db = Database.getInstance();
-    const { id } = await params;
+    const { code, id } = await params;
+    const isAllCode = code.toLowerCase() === 'all';
 
     const query = `
       SELECT 
@@ -34,9 +35,11 @@ export async function POST(
       LEFT JOIN post_code pc ON n.id = pc.post_id
       LEFT JOIN company c ON pc.code = c.code
       WHERE n.id = ?
+      ${isAllCode ? '' : 'AND pc.code = ?'}
     `;
 
-    const articles = await db.select<ArticleRow>(query, [id]);
+    const queryParams: string[] = isAllCode ? [id] : [id, code];
+    const articles = await db.select<ArticleRow>(query, queryParams);
 
     if (articles.length === 0) {
       return NextResponse.json(

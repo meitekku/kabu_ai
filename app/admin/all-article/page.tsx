@@ -153,12 +153,18 @@ const AllArticleAdminPage = () => {
         <div className="text-gray-500 p-4">当日15:30以降のニュースがありません。</div>
       ) : (
         <div className="divide-y divide-gray-100">
-          {news.map((item) => (
-            <Link 
-              href={`/stocks/all/news/${item.id}`}
-              key={item.id}
-              className="block"
-            >
+          {news.map((item) => {
+            const articleCode = item.code?.trim();
+            const articleHref = articleCode
+              ? `/stocks/${articleCode}/news/${item.id}`
+              : `/stocks/all/news/${item.id}`;
+
+            return (
+              <Link 
+                href={articleHref}
+                key={item.id}
+                className="block"
+              >
               <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
                 <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
                   <div className="flex flex-col">
@@ -172,8 +178,9 @@ const AllArticleAdminPage = () => {
                   </div>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

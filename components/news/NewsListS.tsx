@@ -156,6 +156,10 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
       <div className="space-y-4">
         {news.map((item) => {
           const imageUrl = item.image_path || extractImageFromContent(item.content);
+          const articleCode = item.code?.trim();
+          const articleHref = articleCode
+            ? `/stocks/${articleCode}/news/${item.id}`
+            : `/stocks/all/news/${item.id}`;
           
           return (
             <div key={item.id} className="border-b border-gray-100 pb-4">
@@ -166,7 +170,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <Link 
-                    href={`/stocks/all/news/${item.id}`}
+                    href={articleHref}
                     className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
                     style={{
                       display: '-webkit-box',

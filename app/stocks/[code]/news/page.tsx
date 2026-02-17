@@ -1,5 +1,6 @@
 import { generateMetadata } from './metadata';
 import NewsPageClient from './NewsPageClient';
+import { redirect } from 'next/navigation';
 
 export { generateMetadata };
 
@@ -12,6 +13,11 @@ type Props = {
 
 const NewsPage = async ({ params }: Props) => {
   const { code } = await params;
+
+  if (code.toLowerCase() === 'all') {
+    redirect('/news/latest');
+  }
+
   return <NewsPageClient code={code} />;
 };
 
