@@ -1,47 +1,30 @@
-'use client';
-
 import { ChatInterface } from '@/components/chat/ChatInterface';
-import { useSearchParams, notFound } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { notFound } from 'next/navigation';
 
-function ChatPageContent() {
-  const searchParams = useSearchParams();
-  const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
-  const rawStockCode = searchParams.get('code');
-  const stockCode =
-    rawStockCode && /^[A-Za-z0-9.-]{1,10}$/.test(rawStockCode.trim())
-      ? rawStockCode.trim().toUpperCase()
-      : undefined;
+type ChatPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    const defaultAllowedHosts = new Set([
-      'localhost',
-      '127.0.0.1',
-      'kabu-ai.jp',
-      'www.kabu-ai.jp',
-    ]);
-    const envAllowedHosts =
-      process.env.NEXT_PUBLIC_CHAT_ALLOWED_HOSTS?.split(',')
-        .map((host) => host.trim())
-        .filter(Boolean) ?? [];
-    const isAllowedHost =
-      defaultAllowedHosts.has(hostname) || envAllowedHosts.includes(hostname);
-    const hasTestParam = searchParams.get('test') === '1';
-    setIsAllowed(isAllowedHost || hasTestParam);
-  }, [searchParams]);
-
-  // 判定中はローディング表示
-  if (isAllowed === null) {
-    return (
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-emerald-500 rounded-full border-t-transparent"></div>
-      </div>
-    );
+function normalizeStockCode(raw: string | string[] | undefined): string | null {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) {
+    return null;
   }
 
-  // 許可ホストでも test=1 でもない場合は404
-  if (!isAllowed) {
+  const normalized = value.trim().toUpperCase();
+  if (!/^[A-Z0-9.-]{1,10}$/.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
+}
+
+export default async function ChatPage({ searchParams }: ChatPageProps) {
+  const params = await searchParams;
+  const stockCode = normalizeStockCode(params.code);
+
+  // /chat 単体アクセスは無効化し、銘柄コード付きURLのみ許可
+  if (!stockCode) {
     notFound();
   }
 
@@ -49,17 +32,5 @@ function ChatPageContent() {
     <div className="h-[calc(100vh-64px)]">
       <ChatInterface stockCode={stockCode} />
     </div>
-  );
-}
-
-export default function ChatPage() {
-  return (
-    <Suspense fallback={
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-emerald-500 rounded-full border-t-transparent"></div>
-      </div>
-    }>
-      <ChatPageContent />
-    </Suspense>
   );
 }

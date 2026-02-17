@@ -1,5 +1,3 @@
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
@@ -9,10 +7,16 @@ export const maxDuration = 30;
 
 // 非プレミアムユーザーの1日あたりの利用上限
 const FREE_USAGE_LIMIT = 3;
-const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-5-mini';
+const GLM_API_URL = process.env.GLM_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const CHAT_MODEL = process.env.GLM_CHAT_MODEL || 'glm-4-plus';
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
+  content: string;
+};
+
+type GlmMessage = {
+  role: 'system' | 'user' | 'assistant';
   content: string;
 };
 
@@ -245,6 +249,19 @@ ${quarterlyText}
 ${newsText}`;
 }
 
+function toGlmMessages(systemPrompt: string, messages: ChatMessage[]): GlmMessage[] {
+  const converted: GlmMessage[] = [{ role: 'system', content: systemPrompt }];
+
+  for (const message of messages) {
+    if (message.role === 'system') {
+      continue;
+    }
+    converted.push({ role: message.role, content: message.content });
+  }
+
+  return converted;
+}
+
 async function fetchStockContext(db: Database, stockCode: string): Promise<StockContext | null> {
   const [companyRows, priceRows, newsRows, annualRows, quarterlyRows] = await Promise.all([
     db.select<CompanyRow>(
@@ -362,9 +379,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GLM_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'AI設定エラー（OPENAI_API_KEY未設定）です。管理者にお問い合わせください。' }),
+        JSON.stringify({ error: 'AI設定エラー（GLM_API_KEY未設定）です。管理者にお問い合わせください。' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -464,25 +481,138 @@ export async function POST(req: Request) {
 ${stockContextText ? `\n以下の銘柄事前データを必ず参照して回答してください。\n${stockContextText}` : '\n銘柄データが不足している場合は、その旨を明示してください。'}
 `;
 
-    // AIからの返答をストリーミング
-    const result = streamText({
-      model: openai(CHAT_MODEL),
-      system: systemPrompt,
-      messages,
-      onFinish: async ({ text }) => {
-        // AIの返答を保存
+    const glmMessages = toGlmMessages(systemPrompt, messages);
+    const glmResponse = await fetch(GLM_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GLM_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: CHAT_MODEL,
+        messages: glmMessages,
+        stream: true,
+        temperature: 0.7,
+      }),
+    });
+
+    if (!glmResponse.ok) {
+      const errorText = await glmResponse.text();
+      console.error('GLM chat API error:', glmResponse.status, errorText);
+      return new Response(
+        JSON.stringify({ error: 'AI応答の生成に失敗しました。時間をおいて再度お試しください。' }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const upstreamReader = glmResponse.body?.getReader();
+    if (!upstreamReader) {
+      return new Response(
+        JSON.stringify({ error: 'AI応答ストリームの取得に失敗しました。' }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const encoder = new TextEncoder();
+    let assistantText = '';
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const decoder = new TextDecoder();
+        let buffer = '';
+
         try {
-          await db.insert(
-            'INSERT INTO chatbot_message (id, chatId, role, content, createdAt) VALUES (?, ?, ?, ?, NOW())',
-            [uuidv4(), currentChatId, 'assistant', text]
-          );
-        } catch (saveError) {
-          console.error('Failed to save assistant message:', saveError);
+          while (true) {
+            const { done, value } = await upstreamReader.read();
+            if (done) {
+              break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data:')) {
+                continue;
+              }
+
+              const data = trimmed.slice('data:'.length).trim();
+              if (!data || data === '[DONE]') {
+                continue;
+              }
+
+              try {
+                const chunk = JSON.parse(data);
+                const delta = chunk.choices?.[0]?.delta?.content;
+                const fullMessage = chunk.choices?.[0]?.message?.content;
+
+                const textPart =
+                  typeof delta === 'string' && delta
+                    ? delta
+                    : typeof fullMessage === 'string' && fullMessage
+                      ? fullMessage
+                      : '';
+
+                if (textPart) {
+                  assistantText += textPart;
+                  controller.enqueue(encoder.encode(textPart));
+                }
+              } catch {
+                // 不正なJSONチャンクは読み飛ばす
+              }
+            }
+          }
+
+          // GLMがSSEではなく通常JSONを返した場合のフォールバック
+          if (!assistantText && buffer.trim()) {
+            try {
+              const parsed = JSON.parse(buffer.trim());
+              const fullContent = parsed.choices?.[0]?.message?.content;
+              if (typeof fullContent === 'string' && fullContent) {
+                assistantText = fullContent;
+                controller.enqueue(encoder.encode(fullContent));
+              }
+            } catch {
+              // フォールバックでも解析不能なら無視
+            }
+          }
+
+          if (assistantText.trim()) {
+            try {
+              await db.insert(
+                'INSERT INTO chatbot_message (id, chatId, role, content, createdAt) VALUES (?, ?, ?, ?, NOW())',
+                [uuidv4(), currentChatId, 'assistant', assistantText]
+              );
+            } catch (saveError) {
+              console.error('Failed to save assistant message:', saveError);
+            }
+          }
+
+          controller.close();
+        } catch (streamError) {
+          console.error('GLM stream error:', streamError);
+          controller.error(streamError);
+        } finally {
+          try {
+            upstreamReader.releaseLock();
+          } catch {
+            // no-op
+          }
+        }
+      },
+      async cancel(reason) {
+        try {
+          await upstreamReader.cancel(reason as string);
+        } catch {
+          // no-op
         }
       },
     });
 
-    const response = result.toTextStreamResponse();
+    const response = new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
     response.headers.set('X-Chat-Id', currentChatId);
     if (stockContext) {
       response.headers.set('X-Stock-Code', stockContext.code);
