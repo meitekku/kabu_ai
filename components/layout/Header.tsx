@@ -2,7 +2,7 @@
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
 import { CurrentPriceInfo } from "@/components/common/CurrentPriceInfo";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
 import { useState, useRef, useEffect, Suspense } from 'react';
@@ -102,17 +102,6 @@ const HeaderContent = ({ isRoot, pathname, user, isDark }: {
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
   isDark?: boolean;
 }) => {
-  const [showLoginButton, setShowLoginButton] = useState(false);
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // localhostまたは?test=1パラメータがある場合のみログインボタンを表示
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-    const hasTestParam = searchParams.get("test") === "1";
-    setShowLoginButton(isLocalhost || hasTestParam);
-  }, [searchParams]);
-
   const commonClasses = "logo pl-4 text-center w-full text-xl";
   const icon = <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />;
   const logoLink = (
@@ -139,15 +128,15 @@ const HeaderContent = ({ isRoot, pathname, user, isDark }: {
         <div className="iiarea pr-4 flex items-center justify-end gap-2">
           {user ? (
             <UserMenu user={user} />
-          ) : showLoginButton ? (
+          ) : (
             <Link
-              href="/login?test=1"
+              href="/login"
               className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors flex items-center gap-1"
             >
               <LogIn className="w-4 h-4 md:hidden" />
               <span className="hidden md:inline">ログイン</span>
             </Link>
-          ) : null}
+          )}
         </div>
       </div>
       {!pathname.includes('/admin/') && (
