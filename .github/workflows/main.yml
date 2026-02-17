@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -30,7 +33,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     needs: lint-and-typecheck
     steps:
       - uses: actions/checkout@v4
@@ -44,11 +47,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit tests (Vitest)
-        id: unit-test
-        run: |
-          npx vitest run --reporter=verbose 2>&1 | tee /tmp/unit-test-output.txt
-          exit ${PIPESTATUS[0]}
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run integration tests
+        run: npm run test:integration
 
       - name: Build application
         if: success()
@@ -56,7 +59,18 @@ jobs:
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
+      - name: Install Playwright browser
+        if: success()
+        run: npx playwright install --with-deps chromium
+
+      - name: Run system tests (Playwright)
+        if: success()
+        run: npm run test:system
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: test

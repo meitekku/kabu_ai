@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, Loader2 } from 'lucide-react';
 import { useFingerprint } from '@/hooks/useFingerprint';
+import { useCloudflareTurnstile } from '@/hooks/useCloudflareTurnstile';
 import { LoginModal } from '@/components/common/LoginModal';
 import { PremiumModal } from '@/components/common/PremiumModal';
+import { CloudflareTurnstileModal } from '@/components/common/CloudflareTurnstileModal';
 
 interface PredictionButtonProps {
   code: string;
@@ -18,8 +20,27 @@ export function PredictionButton({ code }: PredictionButtonProps) {
   const [isChecking, setIsChecking] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showTurnstileModal, setShowTurnstileModal] = useState(false);
+  const [pendingPredict, setPendingPredict] = useState(false);
+  const {
+    enabled: turnstileEnabled,
+    verified: turnstileVerified,
+    isVerifying: turnstileVerifying,
+    error: turnstileError,
+    refreshStatus,
+    verifyToken,
+  } = useCloudflareTurnstile();
 
-  const handleClick = async () => {
+  const ensureTurnstileVerified = useCallback(async (): Promise<boolean> => {
+    if (!turnstileEnabled || turnstileVerified) {
+      return true;
+    }
+
+    const latestStatus = await refreshStatus();
+    return !latestStatus.enabled || latestStatus.verified;
+  }, [turnstileEnabled, turnstileVerified, refreshStatus]);
+
+  const runPredictionFlow = useCallback(async () => {
     if (!fingerprint || isChecking) return;
 
     setIsChecking(true);
@@ -45,7 +66,37 @@ export function PredictionButton({ code }: PredictionButtonProps) {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [fingerprint, isChecking, code, router]);
+
+  const handleClick = useCallback(async () => {
+    if (!fingerprint || isChecking) return;
+
+    const isHumanVerified = await ensureTurnstileVerified();
+    if (!isHumanVerified) {
+      setPendingPredict(true);
+      setShowTurnstileModal(true);
+      return;
+    }
+
+    await runPredictionFlow();
+  }, [fingerprint, isChecking, ensureTurnstileVerified, runPredictionFlow]);
+
+  const handleTurnstileVerify = useCallback(async (token: string): Promise<boolean> => {
+    const ok = await verifyToken(token, 'ai-feature-access');
+    if (!ok) {
+      return false;
+    }
+
+    const shouldRun = pendingPredict;
+    setPendingPredict(false);
+    setShowTurnstileModal(false);
+
+    if (shouldRun) {
+      await runPredictionFlow();
+    }
+
+    return true;
+  }, [verifyToken, pendingPredict, runPredictionFlow]);
 
   return (
     <>
@@ -72,6 +123,21 @@ export function PredictionButton({ code }: PredictionButtonProps) {
         open={showPremiumModal}
         onOpenChange={setShowPremiumModal}
         description="無料の株価予測回数を使い切りました。プレミアム会員になると無制限でAI株価予測をご利用いただけます。"
+      />
+
+      <CloudflareTurnstileModal
+        open={showTurnstileModal}
+        onOpenChange={(open) => {
+          setShowTurnstileModal(open);
+          if (!open) {
+            setPendingPredict(false);
+          }
+        }}
+        onVerify={handleTurnstileVerify}
+        isSubmitting={turnstileVerifying}
+        errorMessage={turnstileError}
+        title="Cloudflare認証"
+        description="株価予測をご利用の前にCloudflare認証を完了してください。"
       />
     </>
   );

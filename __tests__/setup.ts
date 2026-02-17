@@ -18,8 +18,11 @@ vi.mock("next/navigation", () => ({
     forward: vi.fn(),
     prefetch: vi.fn(),
   }),
+  useParams: () => ({}),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/",
+  notFound: vi.fn(),
+  redirect: vi.fn(),
 }));
 
 // Mock next/link

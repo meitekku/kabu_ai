@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { CompanyBasicInfoSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
 
 interface CompanyInfo {
   code: string;
@@ -42,11 +43,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   }, [code]);
 
   if (loading) {
-    return (
-      <div className="w-full bg-white px-2 min-h-[90px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-600"></div>
-      </div>
-    );
+    return <CompanyBasicInfoSkeleton />;
   }
 
   if (!info) return null;
@@ -146,7 +143,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   const isUS = info.market === 100;
 
   return (
-    <div className="w-full bg-white px-2">
+    <div data-testid="company-basic-info" className="w-full bg-white px-2">
       {/* 企業コード + 企業名 + 市場名 */}
       <div className="flex items-center justify-between">
         <h1 className="flex items-center space-x-2">

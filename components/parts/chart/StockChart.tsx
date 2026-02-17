@@ -27,6 +27,7 @@ import { getThemeColors, convertBlueToGreen } from './StockChartTheme';
 import { fetchCompanyInfo } from './StockChartApi';
 import { CompanyHeader } from './StockChartHeader';
 import { StockChartImage, exportAsImage } from './StockChartImage';
+import { StockChartSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
 
 // Add this type definition after imports
 interface ExtendedRectangleProps extends RectangleProps {
@@ -358,12 +359,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   }, [asImage, isChartReady, data, onImageGenerated, colors, stablePcHeight, tabletHeight, stableMobileHeight, company_name, companyInfo]);
 
   if (loading) {
-    const upperH = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'upper');
-    const lowerH = getResponsiveHeight(stablePcHeight, tabletHeight, stableMobileHeight, 'lower');
     return (
-      <div className="mt-2 flex items-center justify-center" style={{ width, height: `${upperH + lowerH + 8}px`, backgroundColor: colors.background }}>
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
-      </div>
+      <StockChartSkeleton
+        width={width}
+        pcHeight={stablePcHeight}
+        tabletHeight={tabletHeight}
+        mobileHeight={stableMobileHeight}
+      />
     );
   }
   if (error) return <div className="p-4" style={{ color: colors.errorText }}>Error:{error}</div>;
@@ -389,7 +391,12 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const displayData = hoveredData || data[data.length - 1];
 
   return (
-    <div className="mt-2" style={{ width, backgroundColor: colors.background }} ref={chartContainerRef}>
+    <div
+      data-testid="stock-chart"
+      className="mt-2"
+      style={{ width, backgroundColor: colors.background }}
+      ref={chartContainerRef}
+    >
       <CompanyHeader
         company_name={company_name}
         companyInfo={companyInfo}

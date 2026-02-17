@@ -7,6 +7,8 @@ import { FaXTwitter, FaLine, FaFacebookF } from 'react-icons/fa6';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useFingerprint } from '@/hooks/useFingerprint';
+import { useCloudflareTurnstile } from '@/hooks/useCloudflareTurnstile';
+import { CloudflareTurnstileModal } from '@/components/common/CloudflareTurnstileModal';
 import StockChart, { type StockChartRef } from '@/components/parts/chart/StockChart';
 import Link from 'next/link';
 
@@ -328,6 +330,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   const [report, setReport] = useState<PredictionReport | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showTurnstileModal, setShowTurnstileModal] = useState(false);
   const [shareModal, setShareModal] = useState<{
     platform: 'twitter' | 'line' | 'facebook';
     loading: boolean;
@@ -342,10 +345,19 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   const hasFetched = useRef(false);
   const stepTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const chartRef = useRef<StockChartRef | null>(null);
+  const {
+    enabled: turnstileEnabled,
+    verified: turnstileVerified,
+    requiresVerification: turnstileRequired,
+    isLoading: turnstileLoading,
+    isVerifying: turnstileVerifying,
+    error: turnstileError,
+    verifyToken,
+  } = useCloudflareTurnstile();
 
   // Time-based step progression
   useEffect(() => {
-    if (state !== 'loading') return;
+    if (state !== 'loading' || !hasFetched.current) return;
 
     // Schedule step transitions based on expected API timing
     let cumulative = 0;
@@ -363,6 +375,12 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
       timers.forEach(clearTimeout);
     };
   }, [state]);
+
+  useEffect(() => {
+    if (!turnstileLoading && turnstileRequired) {
+      setShowTurnstileModal(true);
+    }
+  }, [turnstileLoading, turnstileRequired]);
 
   const fetchPrediction = useCallback(async () => {
     if (!fingerprint || hasFetched.current) return;
@@ -427,10 +445,15 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   }, [fingerprint, code]);
 
   useEffect(() => {
-    if (fingerprint) {
+    if (fingerprint && !turnstileLoading && !turnstileRequired) {
       fetchPrediction();
     }
-  }, [fingerprint, fetchPrediction]);
+  }, [fingerprint, turnstileLoading, turnstileRequired, fetchPrediction]);
+
+  const handleTurnstileVerify = useCallback(
+    (token: string): Promise<boolean> => verifyToken(token, 'ai-feature-access'),
+    [verifyToken]
+  );
 
   const openSharePreview = useCallback(async (platform: 'twitter' | 'line' | 'facebook') => {
     if (!report) return;
@@ -549,9 +572,45 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
         )}
       </div>
 
+      <CloudflareTurnstileModal
+        open={showTurnstileModal}
+        onOpenChange={setShowTurnstileModal}
+        onVerify={handleTurnstileVerify}
+        isSubmitting={turnstileVerifying}
+        errorMessage={turnstileError}
+        title="Cloudflare認証"
+        description="株価予測を利用する前にCloudflare認証を完了してください。"
+      />
+
       {/* Content */}
       {state === 'loading' && (
-        <AnalyzingAnimation activeStep={activeStep} />
+        <>
+          {!fingerprint && (
+            <div className="min-h-[50vh] flex items-center justify-center text-sm text-muted-foreground">
+              端末情報を取得しています...
+            </div>
+          )}
+          {fingerprint && turnstileLoading && (
+            <div className="min-h-[50vh] flex items-center justify-center text-sm text-muted-foreground">
+              Cloudflare認証状態を確認しています...
+            </div>
+          )}
+          {fingerprint && !turnstileLoading && turnstileRequired && (
+            <div className="min-h-[50vh] flex flex-col items-center justify-center text-center space-y-4">
+              <ShieldAlert className="w-10 h-10 text-amber-500" />
+              <h2 className="text-xl font-bold">Cloudflare認証が必要です</h2>
+              <p className="text-muted-foreground text-sm">
+                株価予測を開始する前にCloudflare認証を完了してください。
+              </p>
+              <Button onClick={() => setShowTurnstileModal(true)}>
+                認証を開始する
+              </Button>
+            </div>
+          )}
+          {fingerprint && !turnstileLoading && !turnstileRequired && (
+            <AnalyzingAnimation activeStep={activeStep} />
+          )}
+        </>
       )}
 
       {state === 'complete' && report && (
@@ -572,7 +631,11 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
                 hasFetched.current = false;
                 setState('loading');
                 setActiveStep(0);
-                fetchPrediction();
+                if (turnstileEnabled && !turnstileVerified) {
+                  setShowTurnstileModal(true);
+                  return;
+                }
+                void fetchPrediction();
               }}
             >
               再試行

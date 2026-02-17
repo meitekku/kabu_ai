@@ -9,10 +9,13 @@
     "start": "node .next/standalone/server.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "vitest run __tests__/unit",
+    "test:integration": "vitest run __tests__/integration",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:all": "vitest run && playwright test"
+    "test:system": "playwright test",
+    "test:all": "npm run test && npm run test:system"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.77",

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
+import { NewsListSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
 
 interface NewsItem {
   id: number;
@@ -140,10 +141,17 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   }, [statusLabels]);
 
   if (loading) {
+    const skeletonRows = Number.isFinite(limit)
+      ? Math.min(12, Math.max(1, limit))
+      : 10;
+
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-600"></div>
-      </div>
+      <NewsListSkeleton
+        title={title}
+        h3Title={h3Title}
+        rowCount={skeletonRows}
+        showMoreButton={showMoreButton}
+      />
     );
   }
   if (error) {
@@ -155,7 +163,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   }
 
   return (
-    <div>
+    <div data-testid="news-list">
       {h3Title && (
         <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
       )}

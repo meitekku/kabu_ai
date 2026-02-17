@@ -10,7 +10,7 @@ type MockResponseBody = {
 const createMockResponse = (body: MockResponseBody, ok = true): Response =>
   ({
     ok,
-    json: async () => body
+    json: () => Promise.resolve(body)
   }) as Response;
 
 const createPrice = (
