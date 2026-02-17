@@ -17,9 +17,10 @@ interface Message {
 interface ChatInterfaceProps {
   chatId?: string;
   initialMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
+  stockCode?: string;
 }
 
-export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfaceProps) {
+export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>(
     initialMessages.map((msg, i) => ({
       id: `initial-${i}`,
@@ -34,6 +35,7 @@ export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfacePro
   const [showLimitDialog, setShowLimitDialog] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const normalizedStockCode = stockCode?.trim().toUpperCase();
 
   // テキストエリアの高さを自動調整
   const adjustTextareaHeight = useCallback(() => {
@@ -81,10 +83,21 @@ export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfacePro
             content: m.content,
           })),
           chatId: currentChatId,
+          stockCode: normalizedStockCode,
         }),
       });
 
       if (!response.ok) {
+        let errorMessage = 'チャットの送信に失敗しました';
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (typeof data.error === 'string' && data.error) {
+            errorMessage = data.error;
+          }
+        } catch {
+          // JSON以外のレスポンスはデフォルトメッセージを使用
+        }
+
         // 利用制限エラーの場合
         if (response.status === 429) {
           setShowLimitDialog(true);
@@ -92,7 +105,7 @@ export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfacePro
           setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
           return;
         }
-        throw new Error('チャットの送信に失敗しました');
+        throw new Error(errorMessage);
       }
 
       // チャットIDを取得
@@ -168,6 +181,11 @@ export function ChatInterface({ chatId, initialMessages = [] }: ChatInterfacePro
                 <br />
                 銘柄分析、投資戦略、市場動向など、なんでもお答えします。
               </p>
+              {normalizedStockCode && (
+                <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
+                  銘柄コード {normalizedStockCode} の直近データを読み込んで回答します。
+                </p>
+              )}
             </div>
           )}
 

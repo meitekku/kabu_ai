@@ -7,6 +7,11 @@ import { useEffect, useState, Suspense } from 'react';
 function ChatPageContent() {
   const searchParams = useSearchParams();
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
+  const rawStockCode = searchParams.get('code');
+  const stockCode =
+    rawStockCode && /^[A-Za-z0-9.-]{1,10}$/.test(rawStockCode.trim())
+      ? rawStockCode.trim().toUpperCase()
+      : undefined;
 
   useEffect(() => {
     const hostname = window.location.hostname;
@@ -42,7 +47,7 @@ function ChatPageContent() {
 
   return (
     <div className="h-[calc(100vh-64px)]">
-      <ChatInterface />
+      <ChatInterface stockCode={stockCode} />
     </div>
   );
 }

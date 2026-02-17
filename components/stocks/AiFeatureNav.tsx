@@ -89,7 +89,7 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
 
             {/* AIチャット */}
             <Link
-              href="/chat"
+              href={`/chat?code=${encodeURIComponent(code)}`}
               className="flex-1 group relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-gradient-to-br from-violet-500/[0.08] to-purple-500/[0.04] dark:from-violet-500/[0.12] dark:to-purple-500/[0.06] border border-violet-200/60 dark:border-violet-700/40 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-[0_0_24px_rgba(139,92,246,0.1)] transition-all duration-300 hover:-translate-y-0.5"
             >
               <div className="p-2.5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20 group-hover:shadow-violet-500/30 transition-shadow">

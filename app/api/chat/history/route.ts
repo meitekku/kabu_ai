@@ -4,15 +4,6 @@ import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
 import { RowDataPacket } from 'mysql2';
 
-// 本番環境かどうかをチェック
-function isProductionAccess(headersList: Headers, url: string): boolean {
-  const host = headersList.get('host') || '';
-  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
-  const urlObj = new URL(url);
-  const hasTestParam = urlObj.searchParams.get('test') === '1';
-  return !isLocalhost && !hasTestParam;
-}
-
 interface ChatRow extends RowDataPacket {
   id: string;
   title: string;
@@ -31,14 +22,6 @@ interface MessageRow extends RowDataPacket {
 export async function GET(req: Request) {
   try {
     const headersList = await headers();
-
-    // 本番環境ではアクセス拒否
-    if (isProductionAccess(headersList, req.url)) {
-      return NextResponse.json(
-        { error: 'この機能は現在利用できません' },
-        { status: 403 }
-      );
-    }
 
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id || 'anonymous';
@@ -76,14 +59,6 @@ export async function GET(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const headersList = await headers();
-
-    // 本番環境ではアクセス拒否
-    if (isProductionAccess(headersList, req.url)) {
-      return NextResponse.json(
-        { error: 'この機能は現在利用できません' },
-        { status: 403 }
-      );
-    }
 
     const session = await auth.api.getSession({ headers: headersList });
     if (!session?.user?.id) {
