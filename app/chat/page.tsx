@@ -10,9 +10,20 @@ function ChatPageContent() {
 
   useEffect(() => {
     const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const defaultAllowedHosts = new Set([
+      'localhost',
+      '127.0.0.1',
+      'kabu-ai.jp',
+      'www.kabu-ai.jp',
+    ]);
+    const envAllowedHosts =
+      process.env.NEXT_PUBLIC_CHAT_ALLOWED_HOSTS?.split(',')
+        .map((host) => host.trim())
+        .filter(Boolean) ?? [];
+    const isAllowedHost =
+      defaultAllowedHosts.has(hostname) || envAllowedHosts.includes(hostname);
     const hasTestParam = searchParams.get('test') === '1';
-    setIsAllowed(isLocalhost || hasTestParam);
+    setIsAllowed(isAllowedHost || hasTestParam);
   }, [searchParams]);
 
   // 判定中はローディング表示
@@ -24,7 +35,7 @@ function ChatPageContent() {
     );
   }
 
-  // 本番環境でtest=1がない場合は404
+  // 許可ホストでも test=1 でもない場合は404
   if (!isAllowed) {
     notFound();
   }
