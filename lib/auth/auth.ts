@@ -18,6 +18,7 @@ function createAuth() {
 
   return betterAuth({
     database: pool,
+    trustedOrigins: ["https://kabu-ai.jp"],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
