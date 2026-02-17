@@ -23,15 +23,15 @@ const logger = winston.createLogger({
 // インターフェースの再定義
 interface CompanyRecord {
   code: string;
-  company_name: string;
+  name: string;
 }
 
 interface CompanyFullInfo extends CompanyRecord {
-  industry: string;
-  market: string;
-  current_price?: number;
-  price_change?: string;
-  price_change_percent?: number;
+  industry: string | null;
+  market: number | null;
+  current_price: number | null;
+  price_change: string | null;
+  price_change_percent: number | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const query = `
       SELECT *
       FROM company c
-      JOIN company_info ci ON c.code = ci.code
+      LEFT JOIN company_info ci ON c.code = ci.code
       WHERE c.code = ?
     `;
 
