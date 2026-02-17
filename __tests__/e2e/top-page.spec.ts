@@ -70,9 +70,9 @@ test.describe("Top Page", () => {
       timeout: 15000,
     });
 
-    // Only check if news items loaded (not error/empty state)
-    const newsItems = await page.locator(".border-b.border-gray-100").count();
-    if (newsItems > 0) {
+    // Only check if actual news article links loaded (not ranking table items)
+    const newsArticleLinks = await page.locator('a[href*="/stocks/"][href*="/news/"]').count();
+    if (newsArticleLinks > 0) {
       await expect(page.getByText("もっと見る ›")).toBeVisible();
     }
   });

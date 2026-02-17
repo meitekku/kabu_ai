@@ -21,7 +21,7 @@ test.describe("Login Page", () => {
   });
 
   test("submit button is present", async ({ page }) => {
-    const submitButton = page.getByRole("button", { name: "ログイン" });
+    const submitButton = page.getByRole("button", { name: "ログイン", exact: true });
     await expect(submitButton).toBeVisible();
     await expect(submitButton).toBeEnabled();
   });
@@ -58,7 +58,7 @@ test.describe("Login Page", () => {
     await page.getByLabel("メールアドレス").fill("test@example.com");
     await page.getByLabel("パスワード").fill("password123");
 
-    await page.getByRole("button", { name: "ログイン" }).click();
+    await page.getByRole("button", { name: "ログイン", exact: true }).click();
 
     // Should briefly show loading state
     await expect(page.getByText("処理中...")).toBeVisible({ timeout: 2000 });
