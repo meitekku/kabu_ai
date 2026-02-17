@@ -110,7 +110,7 @@ describe("NewsListS", () => {
     });
   });
 
-  it("renders links to /stocks/all/news/:id", async () => {
+  it("renders links to /stocks/:code/news/:id when code exists", async () => {
     vi.useRealTimers();
     global.fetch = vi.fn(() =>
       Promise.resolve({
@@ -124,7 +124,38 @@ describe("NewsListS", () => {
 
     await waitFor(() => {
       const link = screen.getByText("トヨタの新戦略").closest("a");
-      expect(link).toHaveAttribute("href", "/stocks/all/news/1");
+      expect(link).toHaveAttribute("href", "/stocks/7203/news/1");
+    });
+  });
+
+  it("falls back to /stocks/all/news/:id when code is missing", async () => {
+    vi.useRealTimers();
+    const items = [
+      {
+        id: 99,
+        code: null,
+        title: "コードなし記事",
+        content: "<p>コード情報がない記事</p>",
+        created_at: "2026-01-11 06:00",
+        company_name: null,
+        site: 1,
+        pickup: 0,
+        image_path: null,
+      },
+    ];
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data: items, total: 1 }),
+      })
+    ) as unknown as typeof fetch;
+
+    render(<NewsListS />);
+
+    await waitFor(() => {
+      const link = screen.getByText("コードなし記事").closest("a");
+      expect(link).toHaveAttribute("href", "/stocks/all/news/99");
     });
   });
 
