@@ -1,6 +1,8 @@
 import { ChatInterface } from '@/components/chat/ChatInterface';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 type ChatPageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
@@ -30,7 +32,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
 
   return (
     <div className="h-[calc(100vh-64px)]">
-      <ChatInterface stockCode={stockCode} />
+      <ChatInterface key={stockCode} stockCode={stockCode} />
     </div>
   );
 }

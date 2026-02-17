@@ -4,7 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { LoginModal } from '@/components/common/LoginModal';
 import { PremiumModal } from '@/components/common/PremiumModal';
+import { useFingerprint } from '@/hooks/useFingerprint';
 import { Send, User, Bot, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +22,16 @@ interface ChatInterfaceProps {
   stockCode?: string;
 }
 
+interface CompanyInfoResponse {
+  success?: boolean;
+  data?: Array<{
+    name?: string;
+    company_name?: string;
+  }>;
+}
+
 export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatInterfaceProps) {
+  const fingerprint = useFingerprint();
   const [messages, setMessages] = useState<Message[]>(
     initialMessages.map((msg, i) => ({
       id: `initial-${i}`,
@@ -32,10 +43,27 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState(chatId);
-  const [showLimitDialog, setShowLimitDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showPremiumDialog, setShowPremiumDialog] = useState(false);
+  const [stockName, setStockName] = useState<string | null>(null);
+  const [hasUsedStarterQuestions, setHasUsedStarterQuestions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const normalizedStockCode = stockCode?.trim().toUpperCase();
+  const stockLabel = normalizedStockCode
+    ? stockName
+      ? `${stockName}（${normalizedStockCode}）`
+      : normalizedStockCode
+    : null;
+
+  const starterQuestions = stockLabel
+    ? [
+        `${stockLabel}の直近決算の注目ポイントを3つで教えて`,
+        `${stockLabel}の株価が動く主要な材料を整理して`,
+        `${stockLabel}を今買う場合のリスクを具体的に教えて`,
+        `${stockLabel}と同業他社を比較して強み・弱みを教えて`,
+      ]
+    : [];
 
   // テキストエリアの高さを自動調整
   const adjustTextareaHeight = useCallback(() => {
@@ -51,6 +79,47 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
     adjustTextareaHeight();
   }, [input, adjustTextareaHeight]);
 
+  useEffect(() => {
+    setHasUsedStarterQuestions(false);
+  }, [normalizedStockCode]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStockName(null);
+
+    if (!normalizedStockCode) {
+      return;
+    }
+
+    const fetchStockName = async () => {
+      try {
+        const response = await fetch(`/api/stocks/${normalizedStockCode}/company_info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: normalizedStockCode }),
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = (await response.json()) as CompanyInfoResponse;
+        const candidateName = data.data?.[0]?.name || data.data?.[0]?.company_name;
+        if (!cancelled && typeof candidateName === 'string' && candidateName.trim()) {
+          setStockName(candidateName.trim());
+        }
+      } catch {
+        // 企業名が取得できなくてもコード表示で継続する
+      }
+    };
+
+    fetchStockName();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedStockCode]);
+
   // 新しいメッセージが追加されたらスクロール
   useEffect(() => {
     if (scrollRef.current) {
@@ -60,7 +129,7 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !fingerprint) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -84,23 +153,34 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
           })),
           chatId: currentChatId,
           stockCode: normalizedStockCode,
+          fingerprint,
         }),
       });
 
       if (!response.ok) {
         let errorMessage = 'チャットの送信に失敗しました';
+        let requireLogin = false;
+        let requirePremium = false;
         try {
-          const data = (await response.json()) as { error?: string };
+          const data = (await response.json()) as { error?: string; requireLogin?: boolean; requirePremium?: boolean };
           if (typeof data.error === 'string' && data.error) {
             errorMessage = data.error;
           }
+          requireLogin = data.requireLogin === true;
+          requirePremium = data.requirePremium === true;
         } catch {
           // JSON以外のレスポンスはデフォルトメッセージを使用
         }
 
         // 利用制限エラーの場合
         if (response.status === 429) {
-          setShowLimitDialog(true);
+          if (requireLogin) {
+            setShowLoginDialog(true);
+          } else if (requirePremium) {
+            setShowPremiumDialog(true);
+          } else {
+            setShowPremiumDialog(true);
+          }
           // 送信したメッセージを削除
           setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
           return;
@@ -159,15 +239,46 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
     }
   };
 
+  const handleStarterQuestionClick = useCallback((question: string) => {
+    if (hasUsedStarterQuestions) {
+      return;
+    }
+
+    setInput(question);
+    setHasUsedStarterQuestions(true);
+
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) {
+        return;
+      }
+      textarea.focus();
+      textarea.setSelectionRange(question.length, question.length);
+    });
+  }, [hasUsedStarterQuestions]);
+
   return (
     <div className="flex flex-col h-full bg-background pb-[140px]">
-      {/* 利用制限ポップアップ */}
-      <PremiumModal
-        open={showLimitDialog}
-        onOpenChange={setShowLimitDialog}
-        title="本日の無料利用回数を超えました"
-        description="無料プランでは1日3回までチャットをご利用いただけます。プレミアム会員になると、無制限でAIアシスタントをご利用いただけます。"
+      <LoginModal
+        open={showLoginDialog}
+        onOpenChange={setShowLoginDialog}
+        description="無料のチャット回数（1日1回）を使い切りました。ログインすると1日3回まで無料でご利用いただけます。"
       />
+
+      <PremiumModal
+        open={showPremiumDialog}
+        onOpenChange={setShowPremiumDialog}
+        title="本日の無料利用回数を超えました"
+        description="無料プランではログインユーザーは1日3回までチャットをご利用いただけます。プレミアム会員になると、無制限でAIアシスタントをご利用いただけます。"
+      />
+
+      {stockLabel && (
+        <div className="border-b bg-muted/20">
+          <div className="max-w-3xl mx-auto px-4 py-2 text-sm text-muted-foreground">
+            対象銘柄: <span className="font-medium text-foreground">{stockLabel}</span>
+          </div>
+        </div>
+      )}
 
       {/* メッセージエリア */}
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
@@ -181,10 +292,29 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
                 <br />
                 銘柄分析、投資戦略、市場動向など、なんでもお答えします。
               </p>
-              {normalizedStockCode && (
+              {stockLabel && (
                 <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">
-                  銘柄コード {normalizedStockCode} の直近データを読み込んで回答します。
+                  {stockLabel} の直近データを読み込んで回答します。
                 </p>
+              )}
+              {!hasUsedStarterQuestions && starterQuestions.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs text-muted-foreground mb-2">最初の質問テンプレート（1回のみ表示）</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {starterQuestions.map((question) => (
+                      <Button
+                        key={question}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-2 px-3 text-xs whitespace-normal text-left"
+                        onClick={() => handleStarterQuestionClick(question)}
+                      >
+                        {question}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -251,16 +381,16 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="メッセージを入力... (Shift+Enterで改行)"
+              placeholder={fingerprint ? 'メッセージを入力... (Shift+Enterで改行)' : 'チャットを準備中...'}
               className="min-h-[60px] max-h-[200px] resize-none overflow-y-auto"
               style={{ height: '60px' }}
-              disabled={isLoading}
+              disabled={isLoading || !fingerprint}
             />
             <Button
               type="submit"
               size="icon"
               className="h-[60px] w-[60px] flex-shrink-0"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || !fingerprint}
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
