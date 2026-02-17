@@ -188,6 +188,28 @@ describe("NewsSection", () => {
     });
   });
 
+  it("uses initial data without making fetch calls", async () => {
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ success: true, data: [] }),
+      })
+    ) as unknown as typeof fetch;
+
+    render(
+      <NewsSection
+        initialPickupNews={mockPickupNews}
+        initialMarketNews={mockMarketNews}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ピックアップニュース")).toBeInTheDocument();
+      expect(screen.getByText("市場ニュース")).toBeInTheDocument();
+    });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it("makes two fetch calls (pickup=1 and pickup=2)", async () => {
     global.fetch = vi.fn(() =>
       Promise.resolve({

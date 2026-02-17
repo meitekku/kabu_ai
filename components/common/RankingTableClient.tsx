@@ -1,31 +1,51 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import RankingTable from './RankingTable';
 
-interface BaseRankingData {
+export interface BaseRankingData {
   code: string;
   name: string;
   diff_percent: number | null;
   current_price: number | null;
 }
 
+export type RankingTableName =
+  | 'ranking_yahoo_post'
+  | 'ranking_access'
+  | 'ranking_up'
+  | 'ranking_low'
+  | 'ranking_stop_high'
+  | 'ranking_stop_low'
+  | 'ranking_trading_value';
+
 type RankingTableClientProps = {
   title: string;
   tableName: string;
   limit?: number;
   initialData?: BaseRankingData[];
+  suspendFetch?: boolean;
 };
 
-export default function RankingTableClient({ title, tableName, limit = 10, initialData = [] }: RankingTableClientProps) {
-  const [data, setData] = useState<BaseRankingData[]>(initialData);
-  const [loading, setLoading] = useState(!initialData.length);
-  const initialDataRef = useRef(initialData);
+export default function RankingTableClient({
+  title,
+  tableName,
+  limit = 10,
+  initialData,
+  suspendFetch = false,
+}: RankingTableClientProps) {
+  const [data, setData] = useState<BaseRankingData[]>(initialData ?? []);
+  const [loading, setLoading] = useState(initialData === undefined);
 
   useEffect(() => {
-    if (initialDataRef.current.length > 0) {
-      setData(initialDataRef.current);
+    if (initialData !== undefined) {
+      setData(initialData);
       setLoading(false);
+      return;
+    }
+
+    if (suspendFetch) {
+      setLoading(true);
       return;
     }
 
@@ -60,7 +80,7 @@ export default function RankingTableClient({ title, tableName, limit = 10, initi
     };
 
     fetchData();
-  }, [tableName, limit]);
+  }, [initialData, tableName, limit, suspendFetch]);
 
   if (loading) {
     return (

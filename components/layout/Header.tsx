@@ -1,7 +1,7 @@
 'use client';
 
 import CompanySearch from "@/components/parts/common/CompanySearch";
-import { CurrentPriceInfo, CurrentPriceInfoSkeleton } from "@/components/common/CurrentPriceInfo";
+import { CurrentPriceInfo, CurrentPriceInfoSkeleton, type CompanyData } from "@/components/common/CurrentPriceInfo";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
@@ -96,11 +96,13 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
   );
 };
 
-const HeaderContent = ({ isRoot, pathname, user, isDark }: {
+const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetch = false }: {
   isRoot: boolean;
   pathname: string;
   user: { name?: string | null; email?: string | null; image?: string | null } | null;
   isDark?: boolean;
+  marketData?: Record<string, CompanyData>;
+  suspendFetch?: boolean;
 }) => {
   const commonClasses = "logo pl-4 text-center w-full text-xl";
   const icon = <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />;
@@ -142,13 +144,11 @@ const HeaderContent = ({ isRoot, pathname, user, isDark }: {
       {!pathname.includes('/admin/') && (
         <div className="md:flex md:justify-center">
           <div className="overflow-x-auto">
-            <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
-              <div className="flex space-x-4">
-                <CurrentPriceInfo code="0" />
-                <CurrentPriceInfo code="3" />
-                <CurrentPriceInfo code="1" />
-                <CurrentPriceInfo code="2" />
-              </div>
+            <div className="flex min-h-[52px] min-w-max items-center gap-2 px-2 py-1">
+              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} isDark={isDark} />
+              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} isDark={isDark} />
+              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} isDark={isDark} />
+              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} isDark={isDark} />
             </div>
           </div>
         </div>
@@ -157,15 +157,31 @@ const HeaderContent = ({ isRoot, pathname, user, isDark }: {
   );
 };
 
-const HeaderInner = ({ isDark }: { isDark?: boolean }) => {
+const HeaderInner = ({
+  isDark,
+  marketData,
+  suspendFetch,
+}: {
+  isDark?: boolean;
+  marketData?: Record<string, CompanyData>;
+  suspendFetch?: boolean;
+}) => {
   const pathname = usePathname();
   const isRoot = pathname === "/";
   const { data: session } = useSession();
 
-  return <HeaderContent isRoot={isRoot} pathname={pathname} user={session?.user || null} isDark={isDark} />;
+  return <HeaderContent isRoot={isRoot} pathname={pathname} user={session?.user || null} isDark={isDark} marketData={marketData} suspendFetch={suspendFetch} />;
 };
 
-const Header = ({ isDark }: { isDark?: boolean }) => {
+const Header = ({
+  isDark,
+  marketData,
+  suspendFetch = false,
+}: {
+  isDark?: boolean;
+  marketData?: Record<string, CompanyData>;
+  suspendFetch?: boolean;
+}) => {
   return (
     <Suspense fallback={
       <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800' : 'bg-white border-gray-200'}`}>
@@ -178,20 +194,16 @@ const Header = ({ isDark }: { isDark?: boolean }) => {
         </div>
         <div className="md:flex md:justify-center">
           <div className="overflow-x-auto">
-            <div className="flex items-center space-x-4 whitespace-nowrap min-w-min">
-              <div className="flex space-x-4">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i}>
-                    <CurrentPriceInfoSkeleton isDark={isDark} />
-                  </div>
-                ))}
-              </div>
+            <div className="flex min-h-[52px] min-w-max items-center gap-2 px-2 py-1">
+              {[0, 1, 2, 3].map((i) => (
+                <CurrentPriceInfoSkeleton key={i} isDark={isDark} />
+              ))}
             </div>
           </div>
         </div>
       </header>
     }>
-      <HeaderInner isDark={isDark} />
+      <HeaderInner isDark={isDark} marketData={marketData} suspendFetch={suspendFetch} />
     </Suspense>
   );
 };

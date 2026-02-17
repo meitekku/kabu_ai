@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -20,6 +20,11 @@ interface NewsListSProps {
   limit?: number;
   site?: number | number[];
   more?: boolean;
+  initialData?: {
+    news: NewsItem[];
+    total: number;
+    page?: number;
+  };
 }
 
 function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
@@ -43,14 +48,26 @@ function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1秒
 
-const NewsListS = ({ limit = 4, site = 0, more = false }: NewsListSProps) => {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListSProps) => {
+  const initialPage = initialData?.page ?? 1;
+  const hasInitialData = initialData !== undefined;
+  const skipInitialFetchRef = useRef(hasInitialData);
+  const [news, setNews] = useState<NewsItem[]>(initialData?.news ?? []);
+  const [loading, setLoading] = useState(!hasInitialData);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(
+    hasInitialData ? Math.max(1, Math.ceil(initialData.total / limit)) : 1
+  );
 
   useEffect(() => {
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const fetchNews = async (retryCount = 0) => {
       try {
         const response = await fetch(`/api/news/search`, {

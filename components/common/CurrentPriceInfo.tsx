@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 
 interface CurrentPriceInfoProps {
   code: string;
+  initialData?: CompanyData | null;
+  suspendFetch?: boolean;
+  isDark?: boolean;
 }
 
-interface CompanyData {
+export interface CompanyData {
   code: string;
   name: string;
   current_price: number | null;
@@ -22,12 +25,23 @@ export const CurrentPriceInfoSkeleton = ({ isDark = false }: { isDark?: boolean 
   </div>
 );
 
-export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
-  const [data, setData] = useState<CompanyData | null>(null);
-  const [loading, setLoading] = useState(true);
+export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initialData, suspendFetch = false, isDark = false }) => {
+  const [data, setData] = useState<CompanyData | null>(initialData ?? null);
+  const [loading, setLoading] = useState(initialData === undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (initialData !== undefined) {
+      setData(initialData ?? null);
+      setLoading(false);
+      return;
+    }
+
+    if (suspendFetch) {
+      setLoading(true);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const response = await fetch(`/api/stocks/${code}/company_info`, {
@@ -51,11 +65,11 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
       }
     };
 
-    fetchData();
-  }, [code]);
+    void fetchData();
+  }, [code, initialData, suspendFetch]);
 
   if (loading) {
-    return <CurrentPriceInfoSkeleton />;
+    return <CurrentPriceInfoSkeleton isDark={isDark} />;
   }
 
   if (error) return <div className="text-red-500">{error}</div>;
@@ -73,7 +87,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code }) => {
     <div className="flex items-center space-x-4 p-2">
       <div className="text-sm">{data.name}</div>
       <div className="text-sm">
-        {data.current_price 
+        {data.current_price
           ? `${data.current_price.toLocaleString()}`
           : '---'}
       </div>

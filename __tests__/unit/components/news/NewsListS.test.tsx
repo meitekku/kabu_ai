@@ -305,6 +305,34 @@ describe("NewsListS", () => {
     });
   });
 
+  it("uses initialData on first render without fetch", async () => {
+    vi.useRealTimers();
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data: [], total: 0 }),
+      })
+    ) as unknown as typeof fetch;
+
+    render(
+      <NewsListS
+        limit={4}
+        initialData={{
+          news: mockNewsItems,
+          total: mockNewsItems.length,
+          page: 1,
+        }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("トヨタの新戦略")).toBeInTheDocument();
+      expect(screen.getByText("ソニーの新製品")).toBeInTheDocument();
+    });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it("sends correct request body with site as array", async () => {
     vi.useRealTimers();
     global.fetch = vi.fn(() =>

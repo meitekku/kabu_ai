@@ -2,8 +2,24 @@
 
 import React from 'react';
 import Image from 'next/image';
-import domtoimage from 'dom-to-image';
 import { ChartTheme } from './StockChartTheme';
+
+type DomToImageApi = {
+  toSvg: (node: Node, options?: unknown) => Promise<string>;
+  toPng: (node: Node, options?: unknown) => Promise<string>;
+};
+
+let domToImagePromise: Promise<DomToImageApi> | null = null;
+
+const loadDomToImage = (): Promise<DomToImageApi> => {
+  if (!domToImagePromise) {
+    domToImagePromise = import('dom-to-image').then((module) => {
+      return (module.default ?? module) as unknown as DomToImageApi;
+    });
+  }
+
+  return domToImagePromise;
+};
 
 interface CompanyInfo {
   companyName: string;
@@ -54,6 +70,7 @@ export const exportAsImage = async (
 
   try {
     const container = chartContainerRef.current;
+    const domtoimage = await loadDomToImage();
 
     // フォントの読み込みを待つ
     if (typeof document !== 'undefined') {

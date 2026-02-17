@@ -6,29 +6,37 @@ import Image from 'next/image';
 
 interface Post {
   id: number;
-  code: string;
-  title: string;
-  content: string;
+  code: string | null;
+  title: string | null;
+  content: string | null;
   created_at: string;
-  company_name: string;
-  site: number;
+  company_name: string | null;
+  site: number | null;
   image_url?: string;
-  image_path?: string;
+  image_path?: string | null;
+}
+
+interface NewsSectionProps {
+  initialPickupNews?: Post[];
+  initialMarketNews?: Post[];
 }
 
 function NewsCard({ item }: { item: Post }) {
   const [imgError, setImgError] = useState(false);
-  const imageMatch = item.content.match(/<img[^>]+src=['"]([^'">]+)['"]/);
+  const safeTitle = item.title ?? 'タイトルなし';
+  const imageMatch = item.content?.match(/<img[^>]+src=['"]([^'">]+)['"]/);
   const imageUrl = item.image_path || item.image_url || (imageMatch ? imageMatch[1] : null);
+  const articleCode = item.code?.trim();
+  const articleHref = articleCode ? `/stocks/${articleCode}/news/${item.id}` : `/stocks/all/news/${item.id}`;
 
   return (
-    <Link href={`/stocks/${item.code}/news/${item.id}`} className="block h-full">
+    <Link href={articleHref} className="block h-full">
       <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
         <div className="relative w-full aspect-[2/1]">
           {imageUrl && !imgError ? (
             <Image
               src={imageUrl}
-              alt={item.title}
+              alt={safeTitle}
               fill
               className="object-cover object-top"
               unoptimized
@@ -36,12 +44,12 @@ function NewsCard({ item }: { item: Post }) {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-              <span className="text-red-400 text-sm font-medium text-center line-clamp-3">{item.title}</span>
+              <span className="text-red-400 text-sm font-medium text-center line-clamp-3">{safeTitle}</span>
             </div>
           )}
         </div>
         <div className="p-2 flex flex-col flex-grow">
-          <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{item.title}</h3>
+          <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{safeTitle}</h3>
           <div className="mt-2 flex items-center justify-end">
             {item.company_name && (
               <span className="text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
@@ -53,12 +61,20 @@ function NewsCard({ item }: { item: Post }) {
   );
 }
 
-export default function NewsSection() {
-  const [pickupNews, setPickupNews] = useState<Post[]>([]);
-  const [marketNews, setMarketNews] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function NewsSection({ initialPickupNews, initialMarketNews }: NewsSectionProps) {
+  const hasInitialData = initialPickupNews !== undefined && initialMarketNews !== undefined;
+  const [pickupNews, setPickupNews] = useState<Post[]>(initialPickupNews ?? []);
+  const [marketNews, setMarketNews] = useState<Post[]>(initialMarketNews ?? []);
+  const [loading, setLoading] = useState(!hasInitialData);
 
   useEffect(() => {
+    if (hasInitialData) {
+      setPickupNews(initialPickupNews ?? []);
+      setMarketNews(initialMarketNews ?? []);
+      setLoading(false);
+      return;
+    }
+
     const fetchNews = async (pickup: number) => {
       try {
         const response = await fetch('/api/news/search', {
@@ -90,7 +106,7 @@ export default function NewsSection() {
     };
 
     loadAllNews();
-  }, []);
+  }, [hasInitialData, initialPickupNews, initialMarketNews]);
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
     <div className="mb-8">
