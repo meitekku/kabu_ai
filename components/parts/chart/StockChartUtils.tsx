@@ -16,14 +16,20 @@ export const formatNumber = (value: number | undefined): string => {
  * 移動平均計算
  * -------------------------------------------------- */
 export const calculateMA = (data: PriceRecord[], days: number): number[] => {
-  const result: number[] = [];
+  const result = new Array<number>(data.length).fill(NaN);
+  if (days <= 0 || data.length === 0) {
+    return result;
+  }
+
+  let windowSum = 0;
   for (let i = 0; i < data.length; i++) {
-    if (i < days - 1) {
-      result.push(NaN);
-      continue;
+    windowSum += data[i].close;
+    if (i >= days) {
+      windowSum -= data[i - days].close;
     }
-    const sum = data.slice(i - days + 1, i + 1).reduce((acc, curr) => acc + curr.close, 0);
-    result.push(sum / days);
+    if (i >= days - 1) {
+      result[i] = windowSum / days;
+    }
   }
   return result;
 };
@@ -33,79 +39,92 @@ export const calculateMA = (data: PriceRecord[], days: number): number[] => {
  * -------------------------------------------------- */
 export const fetchChartAndNewsData = async (code: string, newsInstitution?: string, targetDate?: Date): Promise<ExtendedChartData[]> => {
   // 対象日付の設定（デフォルトは2ヶ月前）
-  const date = targetDate || new Date();
+  const date = targetDate ? new Date(targetDate) : new Date();
   date.setMonth(date.getMonth() - 2);
 
   // 日付をYYYY-MM-DD形式に変換
   const formattedDate = date.toISOString().split('T')[0];
 
-  // 株価データ取得
-  const chartResponse = await fetch(`/api/stocks/${code}/chart`, {
-    method: 'POST',
-    body: JSON.stringify({ 
-      code, 
-      num: 60,
-      target_date: formattedDate // 対象日付を追加
+  // 株価データと記事データを並列取得
+  const [chartResponse, newsResponse] = await Promise.all([
+    fetch(`/api/stocks/${code}/chart`, {
+      method: 'POST',
+      body: JSON.stringify({
+        code,
+        num: 60,
+        target_date: formattedDate // 対象日付を追加
+      }),
+      headers: { 'Content-Type': 'application/json' }
     }),
-    headers: { 'Content-Type': 'application/json' }
-  });
-  if (!chartResponse.ok) throw new Error('Chart data fetch failed');
-  const chartResult = (await chartResponse.json()) as ApiResponse<PriceRecord[]>;
-  if (!chartResult.success || !chartResult.data || chartResult.data.length === 0) {
-    return [];
-  }
-
-  // 記事データ取得
-  const newsResponse = await fetch(`/api/stocks/${code}/news`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      limit: 60, 
-      page: 1,
-      institution: newsInstitution,
-      target_date: formattedDate // 対象日付を追加
+    fetch(`/api/stocks/${code}/news`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        limit: 60,
+        page: 1,
+        institution: newsInstitution,
+        target_date: formattedDate // 対象日付を追加
+      })
     })
-  });
+  ]);
+  if (!chartResponse.ok) throw new Error('Chart data fetch failed');
   if (!newsResponse.ok) throw new Error('News data fetch failed');
-  const newsResult = await newsResponse.json();
+
+  const [chartResult, newsResult] = await Promise.all([
+    chartResponse.json() as Promise<ApiResponse<PriceRecord[]>>,
+    newsResponse.json() as Promise<{ success: boolean; data?: NewsArticle[] }>
+  ]);
+  if (!chartResult.success || !chartResult.data || chartResult.data.length === 0) return [];
   if (!newsResult.success) throw new Error('News API returned error');
   const articles: NewsArticle[] = newsResult.data || [];
 
   // 日付でソート
-  const sortedData = chartResult.data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sortedDataWithMeta = chartResult.data
+    .map((item) => {
+      const dateObj = item.date instanceof Date ? item.date : new Date(item.date);
+      return {
+        item,
+        dateObj,
+        chartDateStr: formatDate(dateObj),
+        dateLabel: `${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')}`
+      };
+    })
+    .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+  const sortedData = sortedDataWithMeta.map((entry) => entry.item);
   // 移動平均
   const ma5 = calculateMA(sortedData, 5);
   const ma25 = calculateMA(sortedData, 25);
   const ma75 = calculateMA(sortedData, 75);
+
   // 記事を日付でグループ化し、各日付で最新の1つだけを残す
-  const articlesByDate = new Map<string, NewsArticle>();
-  articles.forEach((article: NewsArticle) => {
+  const articlesByDate = new Map<string, { article: NewsArticle; createdAtMs: number }>();
+  articles.forEach((article) => {
     try {
-      const articleDateStr = formatDate(article.created_at);
+      const createdAt = new Date(article.created_at);
+      const createdAtMs = createdAt.getTime();
+      if (Number.isNaN(createdAtMs)) return;
+      const articleDateStr = formatDate(createdAt);
       const existingArticle = articlesByDate.get(articleDateStr);
-      
+
       // その日付の記事がまだない、または新しい記事の場合は更新
-      if (!existingArticle || new Date(article.created_at) > new Date(existingArticle.created_at)) {
-        articlesByDate.set(articleDateStr, article);
+      if (!existingArticle || createdAtMs > existingArticle.createdAtMs) {
+        articlesByDate.set(articleDateStr, { article, createdAtMs });
       }
     } catch {
       // エラーは無視
     }
   });
-  
+
   // 整形
-  return sortedData.map((item, index) => {
+  return sortedDataWithMeta.map(({ item, dateLabel, chartDateStr }, index) => {
     const isPositive = item.close >= item.open;
-    const date = new Date(item.date);
-    const dateStr = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
 
     // その日付の記事を取得（各日付で1つのみ）
-    const chartDateStr = formatDate(item.date);
     const dayArticle = articlesByDate.get(chartDateStr);
-    const articlesToShow = dayArticle ? [dayArticle] : [];
+    const articlesToShow = dayArticle ? [dayArticle.article] : [];
 
     return {
-      date: dateStr,
+      date: dateLabel,
       open: item.open,
       high: item.high,
       low: item.low,
