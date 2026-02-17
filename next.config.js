@@ -54,6 +54,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // 旧URL互換: /kabu_ai/* → /*
+      {
+        source: '/kabu_ai/:path*',
+        destination: '/:path*',
+        permanent: true,
+      },
       // 記事詳細: /:code/news/article/:id → /stocks/:code/news/:id
       {
         source: '/:code(\\d{4})/news/article/:id(\\d+)',
