@@ -10,6 +10,7 @@ import { useFingerprint } from '@/hooks/useFingerprint';
 import { useCloudflareTurnstile } from '@/hooks/useCloudflareTurnstile';
 import { CloudflareTurnstileModal } from '@/components/common/CloudflareTurnstileModal';
 import StockChart, { type StockChartRef } from '@/components/parts/chart/StockChart';
+import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
 import Link from 'next/link';
 
 interface DailyForecast {
@@ -533,43 +534,44 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   }, [shareModal]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="py-4 sm:py-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href={`/stocks/${code}/news`}>
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            戻る
-          </Button>
-        </Link>
-        {companyName && <span className="text-lg font-semibold">{companyName}</span>}
-        <h1 className="text-xl font-bold">AI株価予測</h1>
-        <span className="text-sm text-muted-foreground">({code})</span>
-        {state === 'complete' && report && (
-          <div className="ml-auto flex items-center gap-2">
-            <button
-              onClick={() => openSharePreview('twitter')}
-              className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
-              aria-label="Xでシェア"
-            >
-              <FaXTwitter className="w-4 h-4 text-white" />
-            </button>
-            <button
-              onClick={() => openSharePreview('line')}
-              className="w-8 h-8 rounded-full bg-[#06C755] hover:bg-[#05b34c] flex items-center justify-center transition-colors"
-              aria-label="LINEでシェア"
-            >
-              <FaLine className="w-4 h-4 text-white" />
-            </button>
-            <button
-              onClick={() => openSharePreview('facebook')}
-              className="w-8 h-8 rounded-full bg-[#1877F2] hover:bg-[#1565d8] flex items-center justify-center transition-colors"
-              aria-label="Facebookでシェア"
-            >
-              <FaFacebookF className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        )}
+      <div className="mb-6">
+        <CompanyBasicInfo code={code} />
+        <div className="mt-3 flex items-center justify-between gap-2 px-2">
+          <Link href={`/stocks/${code}/news`}>
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              戻る
+            </Button>
+          </Link>
+          {state === 'complete' && report && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => openSharePreview('twitter')}
+                className="w-8 h-8 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
+                aria-label="Xでシェア"
+              >
+                <FaXTwitter className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={() => openSharePreview('line')}
+                className="w-8 h-8 rounded-full bg-[#06C755] hover:bg-[#05b34c] flex items-center justify-center transition-colors"
+                aria-label="LINEでシェア"
+              >
+                <FaLine className="w-4 h-4 text-white" />
+              </button>
+              <button
+                onClick={() => openSharePreview('facebook')}
+                className="w-8 h-8 rounded-full bg-[#1877F2] hover:bg-[#1565d8] flex items-center justify-center transition-colors"
+                aria-label="Facebookでシェア"
+              >
+                <FaFacebookF className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          )}
+        </div>
+        <h1 className="px-2 pt-1 text-xl font-bold">AI株価予測</h1>
       </div>
 
       <CloudflareTurnstileModal

@@ -39,6 +39,24 @@ interface ExtendedRectangleProps extends RectangleProps {
   };
 }
 
+const formatDateToMonthDay = (rawDate: string): string => {
+  const value = rawDate.trim();
+  const monthDayMatch = value.match(/^(\d{1,2})\/(\d{1,2})$/);
+
+  if (monthDayMatch) {
+    const [, month, day] = monthDayMatch;
+    return `${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
+  }
+
+  const ymdMatch = value.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (ymdMatch) {
+    const [, , month, day] = ymdMatch;
+    return `${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
+  }
+
+  return value;
+};
+
 /* --------------------------------------------------
  * メインのチャートコンポーネント
  * -------------------------------------------------- */
@@ -109,6 +127,18 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     changePercent: number;
     currentPrice: number;
   } | null>(null);
+  const predictionXAxisTicks = useMemo(() => {
+    if (predictionStartIndex === null || !data[predictionStartIndex]) {
+      return undefined;
+    }
+
+    const firstDate = data[0]?.date;
+    const predictionStartDate = data[predictionStartIndex].date;
+    const lastDate = data[data.length - 1]?.date;
+    const ticks = [firstDate, predictionStartDate, lastDate].filter((date): date is string => Boolean(date));
+
+    return Array.from(new Set(ticks));
+  }, [data, predictionStartIndex]);
   
   // チャートがレンダリングされ、初期位置が計算されたかを追跡
   const [isInitialPositionCalculated, setIsInitialPositionCalculated] = useState(false);
@@ -235,7 +265,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
               const close = p.predictedClose;
               const isPositive = close >= open;
               return {
-                date: p.date,
+                date: formatDateToMonthDay(p.date),
                 open,
                 high: p.predictedHigh,
                 low: p.predictedLow,
@@ -843,7 +873,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
             }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={colors.gridColor} />
-            <XAxis dataKey="date" tick={{ fontSize: 12, fill: colors.text }} interval="preserveStartEnd" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12, fill: colors.text }}
+              interval={predictionXAxisTicks ? 0 : 'preserveStartEnd'}
+              ticks={predictionXAxisTicks}
+              tickFormatter={(value: string) => formatDateToMonthDay(String(value))}
+            />
             <YAxis
               tick={{ fontSize: 11, dx: -3, fill: colors.text }}
               tickFormatter={(value: number) => formatNumber(value / 10000)}
