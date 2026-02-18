@@ -7,7 +7,7 @@ test.describe("Top Page", () => {
 
   test("page loads successfully", async ({ page }) => {
     // The page should have the main heading for latest news
-    await expect(page.getByText("新着ニュース")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "新着ニュース" }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test("NewsSection shows pickup and market news headings", async ({

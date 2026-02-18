@@ -54,13 +54,19 @@ test.describe("Login Page", () => {
   });
 
   test("form submission shows loading state", async ({ page }) => {
+    // Intercept auth API to ensure loading state is visible long enough
+    await page.route("**/api/auth/**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+    });
+
     // Fill form and submit
     await page.getByLabel("メールアドレス").fill("test@example.com");
     await page.getByLabel("パスワード").fill("password123");
 
     await page.getByRole("button", { name: "ログイン", exact: true }).click();
 
-    // Should briefly show loading state
+    // Should show loading state while API is delayed
     await expect(page.getByText("処理中...")).toBeVisible({ timeout: 2000 });
   });
 
