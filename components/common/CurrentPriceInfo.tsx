@@ -85,19 +85,19 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
   }
 
   return (
-    <Link href={`/stocks/${code}/news`} className={`flex items-center space-x-4 p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
-      <div className="text-sm">{data.name}</div>
-      <div className="text-sm">
+    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all cursor-pointer ${isDark ? 'border-slate-700 hover:bg-slate-800 hover:border-slate-600' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm'}`}>
+      <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{data.name}</span>
+      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
         {data.current_price
           ? `${data.current_price.toLocaleString()}`
           : '---'}
-      </div>
+      </span>
       {data.diff_percent ? (
-        <div className={`${priceColor} text-sm`}>
+        <span className={`${priceColor} text-xs font-medium`}>
           {data.diff_percent > 0 ? '+' : ''}{data.diff_percent}%
-        </div>
+        </span>
       ) : (
-        <div className="text-sm text-gray-400">-</div>
+        <span className="text-xs text-gray-400">-</span>
       )}
     </Link>
   );
