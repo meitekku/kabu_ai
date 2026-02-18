@@ -5,7 +5,6 @@ import StockChart from '@/components/parts/chart/StockChart';
 import NewsList from '@/components/ui/NewsList';
 import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
 import { AiFeatureNav } from '@/components/stocks/AiFeatureNav';
-import USCommentList from '@/components/parts/us/USCommentList';
 
 interface NewsPageClientProps {
   code: string;
@@ -37,11 +36,7 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
         maxNewsTooltips={4}
       />
       {!isUSStock && <AiFeatureNav code={code} />}
-      {isUSStock ? (
-        <USCommentList code={code} />
-      ) : (
-        <NewsList title="最新ニュース" showMoreButton={true} />
-      )}
+      <NewsList title="最新ニュース" showMoreButton={true} />
     </div>
   );
 };
