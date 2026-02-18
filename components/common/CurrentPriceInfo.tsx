@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface CurrentPriceInfoProps {
   code: string;
@@ -84,7 +85,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
   }
 
   return (
-    <div className="flex items-center space-x-4 p-2">
+    <Link href={`/stocks/${code}/news`} className={`flex items-center space-x-4 p-2 rounded-lg transition-colors cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-gray-100'}`}>
       <div className="text-sm">{data.name}</div>
       <div className="text-sm">
         {data.current_price
@@ -98,6 +99,6 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
       ) : (
         <div className="text-sm text-gray-400">-</div>
       )}
-    </div>
+    </Link>
   );
 };
