@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       FROM ${tableName}
       LEFT JOIN company ON ${tableName}.code = company.code
       LEFT JOIN company_info ON ${tableName}.code = company_info.code
+      WHERE company.market IN (1, 2, 3)
       LIMIT ?
     `;
     
