@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { signIn, signUp, sendVerificationEmail } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
@@ -16,18 +15,6 @@ function SignUpForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [showLoginLink, setShowLoginLink] = useState(false);
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // ?test=1 パラメータがある場合、またはlocalhostの場合にログインリンクを表示
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-    const hasTestParam = searchParams.get("test") === "1";
-    const shouldShow = hasTestParam || isLocalhost;
-    console.log("[SignUp] hostname:", hostname, "isLocalhost:", isLocalhost, "hasTestParam:", hasTestParam, "shouldShow:", shouldShow);
-    setShowLoginLink(shouldShow);
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,16 +92,14 @@ function SignUpForm() {
           <p className="text-sm text-gray-500">
             メール内のリンクをクリックして、登録を完了してください。
           </p>
-          {showLoginLink && (
-            <div className="pt-4">
-              <Link
-                href="/login?test=1"
-                className="text-blue-600 hover:text-blue-500 text-sm"
-              >
-                ログインページへ戻る
-              </Link>
-            </div>
-          )}
+          <div className="pt-4">
+            <Link
+              href="/login"
+              className="text-blue-600 hover:text-blue-500 text-sm"
+            >
+              ログインページへ戻る
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -259,29 +244,19 @@ function SignUpForm() {
           </Button>
         </div>
 
-        {showLoginLink && (
-          <div className="text-center">
-            <Link
-              href="/login?test=1"
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              すでにアカウントをお持ちの方はこちら
-            </Link>
-          </div>
-        )}
+        <div className="text-center">
+          <Link
+            href="/login"
+            className="text-blue-600 hover:text-blue-500 text-sm"
+          >
+            すでにアカウントをお持ちの方はこちら
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function SignUpPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
-    }>
-      <SignUpForm />
-    </Suspense>
-  );
+  return <SignUpForm />;
 }

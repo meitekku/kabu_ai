@@ -280,22 +280,11 @@ describe("LoginPage", () => {
     });
   });
 
-  it("shows signup link on localhost", async () => {
+  it("shows signup link", () => {
     render(<LoginPage />);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("アカウントをお持ちでない方はこちら")
-      ).toBeInTheDocument();
-    });
-  });
-
-  it("signup link points to /signup?test=1", async () => {
-    render(<LoginPage />);
-
-    await waitFor(() => {
-      const link = screen.getByText("アカウントをお持ちでない方はこちら");
-      expect(link).toHaveAttribute("href", "/signup?test=1");
-    });
+    const link = screen.getByText("アカウントをお持ちでない方はこちら");
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "/signup");
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
@@ -14,19 +14,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showSignupLink, setShowSignupLink] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // ?test=1 パラメータがある場合、またはlocalhostの場合に新規登録リンクを表示
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
-    const hasTestParam = searchParams.get("test") === "1";
-    const shouldShow = hasTestParam || isLocalhost;
-    console.log("[Login] hostname:", hostname, "isLocalhost:", isLocalhost, "hasTestParam:", hasTestParam, "shouldShow:", shouldShow);
-    setShowSignupLink(shouldShow);
-  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,29 +176,19 @@ function LoginForm() {
           </Button>
         </div>
 
-        {showSignupLink && (
-          <div className="text-center">
-            <Link
-              href="/signup?test=1"
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              アカウントをお持ちでない方はこちら
-            </Link>
-          </div>
-        )}
+        <div className="text-center">
+          <Link
+            href="/signup"
+            className="text-blue-600 hover:text-blue-500 text-sm"
+          >
+            アカウントをお持ちでない方はこちら
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
-        <div className="text-gray-500">読み込み中...</div>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
-  );
+  return <LoginForm />;
 }
