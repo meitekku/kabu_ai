@@ -46,6 +46,13 @@ const RANKING_CONFIGS: ReadonlyArray<{ tableName: RankingTableName; limit: numbe
   { tableName: 'ranking_trading_value', limit: 5 },
 ]
 
+const ORDER_BY_MAP: Partial<Record<RankingTableName, string>> = {
+  ranking_up: 'company_info.diff_percent DESC',
+  ranking_low: 'company_info.diff_percent ASC',
+  ranking_stop_high: 'company_info.diff_percent DESC',
+  ranking_stop_low: 'company_info.diff_percent ASC',
+}
+
 export async function GET() {
   try {
     const ttl = Math.min(getCacheTTL('market'), getCacheTTL('ranking'))
@@ -82,6 +89,7 @@ export async function GET() {
 
     const rankingPairs = await Promise.all(
       RANKING_CONFIGS.map(async ({ tableName, limit }) => {
+        const orderBy = ORDER_BY_MAP[tableName] ?? `${tableName}.id ASC`
         const rows = await db.select<RankingData>(`
           SELECT DISTINCT
             ${tableName}.code,
@@ -92,6 +100,7 @@ export async function GET() {
           LEFT JOIN company ON ${tableName}.code = company.code
           LEFT JOIN company_info ON ${tableName}.code = company_info.code
           WHERE company.market IN (1, 2, 3)
+          ORDER BY ${orderBy}
           LIMIT ?
         `, [limit + 2])
 

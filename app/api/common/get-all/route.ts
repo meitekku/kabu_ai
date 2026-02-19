@@ -13,6 +13,13 @@ const ALLOWED_TABLES = [
   'ranking_trading_value',
 ] as const;
 
+const ORDER_BY_MAP: Partial<Record<AllowedTable, string>> = {
+  ranking_up: 'company_info.diff_percent DESC',
+  ranking_low: 'company_info.diff_percent ASC',
+  ranking_stop_high: 'company_info.diff_percent DESC',
+  ranking_stop_low: 'company_info.diff_percent ASC',
+};
+
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
 
@@ -69,6 +76,7 @@ export async function POST(request: NextRequest) {
 
     const db = Database.getInstance();
 
+    const orderBy = ORDER_BY_MAP[tableName] ?? `${tableName}.id ASC`;
     const query = `
       SELECT DISTINCT
         ${tableName}.code,
@@ -79,6 +87,7 @@ export async function POST(request: NextRequest) {
       LEFT JOIN company ON ${tableName}.code = company.code
       LEFT JOIN company_info ON ${tableName}.code = company_info.code
       WHERE company.market IN (1, 2, 3)
+      ORDER BY ${orderBy}
       LIMIT ?
     `;
     
