@@ -83,7 +83,7 @@ export async function GET() {
     const rankingPairs = await Promise.all(
       RANKING_CONFIGS.map(async ({ tableName, limit }) => {
         const rows = await db.select<RankingData>(`
-          SELECT
+          SELECT DISTINCT
             ${tableName}.code,
             company.name,
             company_info.diff_percent,

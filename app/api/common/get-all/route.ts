@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     const db = Database.getInstance();
 
     const query = `
-      SELECT 
+      SELECT DISTINCT
         ${tableName}.code,
         company.name,
         company_info.diff_percent,
