@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'ログイン',
-  description: '株AIにログイン。AI株式分析・株価予測・投資情報にアクセスしましょう。Google・X(Twitter)・Facebookアカウントでも簡単にログインできます。',
+  description: '株AIにログイン。AI株式分析・株価予測・投資情報にアクセスしましょう。Google・X(Twitter)アカウントでも簡単にログインできます。',
   robots: { index: false, follow: true },
 };
 

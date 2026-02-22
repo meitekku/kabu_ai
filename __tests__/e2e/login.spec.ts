@@ -33,9 +33,6 @@ test.describe("Login Page", () => {
     await expect(
       page.getByRole("button", { name: /Twitter/i })
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /Facebook/i })
-    ).toBeVisible();
   });
 
   test("separator text is displayed", async ({ page }) => {

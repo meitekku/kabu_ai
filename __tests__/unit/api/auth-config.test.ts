@@ -103,12 +103,12 @@ describe("Auth configuration", () => {
     expect(cookieCache.maxAge).toBe(60 * 5);
   });
 
-  it("configures social providers (google, twitter, facebook)", async () => {
+  it("configures social providers (google, twitter)", async () => {
     const config = await getAuthConfig();
     const socialProviders = config.socialProviders as Record<string, unknown>;
 
     expect(socialProviders).toHaveProperty("google");
     expect(socialProviders).toHaveProperty("twitter");
-    expect(socialProviders).toHaveProperty("facebook");
+    expect(socialProviders).not.toHaveProperty("facebook");
   });
 });

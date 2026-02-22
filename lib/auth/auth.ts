@@ -43,10 +43,6 @@ function createAuth() {
         clientId: process.env.TWITTER_CLIENT_ID || "",
         clientSecret: process.env.TWITTER_CLIENT_SECRET || "",
       },
-      facebook: {
-        clientId: process.env.FACEBOOK_CLIENT_ID || "",
-        clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
-      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 30, // 30日

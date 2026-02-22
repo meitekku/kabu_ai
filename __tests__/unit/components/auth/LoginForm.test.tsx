@@ -78,9 +78,6 @@ describe("LoginPage", () => {
     expect(
       screen.getByRole("button", { name: /Twitter/i })
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Facebook/i })
-    ).toBeInTheDocument();
   });
 
   it("renders separator text", () => {
@@ -259,22 +256,6 @@ describe("LoginPage", () => {
     await waitFor(() => {
       expect(mockSignInSocial).toHaveBeenCalledWith({
         provider: "twitter",
-        callbackURL: "/",
-      });
-    });
-  });
-
-  it("calls signIn.social with facebook provider", async () => {
-    const user = userEvent.setup();
-    mockSignInSocial.mockResolvedValue({});
-
-    render(<LoginPage />);
-
-    await user.click(screen.getByRole("button", { name: /Facebook/i }));
-
-    await waitFor(() => {
-      expect(mockSignInSocial).toHaveBeenCalledWith({
-        provider: "facebook",
         callbackURL: "/",
       });
     });
