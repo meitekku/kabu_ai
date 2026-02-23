@@ -1,9 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { Database } from '@/lib/database/Mysql';
 import { ORCHESTRATOR_SYSTEM_PROMPT } from './system-prompts';
 import { ORCHESTRATOR_CONFIG, type Tool, type MessageParam, type ToolUseBlock, type TextBlock, type ToolResultBlockParam, type StatusCallback } from './types';
 import { runDbAgent } from './db-agent';
 import { runWebAgent } from './web-agent';
+import { getAnthropicClient } from './claude-auth';
 
 const ORCHESTRATOR_TOOLS: Tool[] = [
   {
@@ -41,7 +41,7 @@ export async function runOrchestrator(
   db: Database,
   onStatus: StatusCallback,
 ): Promise<string> {
-  const anthropic = new Anthropic();
+  const anthropic = await getAnthropicClient();
 
   const messages: MessageParam[] = userMessages.map((m) => ({
     role: m.role,

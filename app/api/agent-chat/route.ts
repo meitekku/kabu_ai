@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { runOrchestrator } from '@/lib/agent/orchestrator';
+import { isAuthAvailable } from '@/lib/agent/claude-auth';
 
 export const maxDuration = 120;
 
@@ -61,9 +62,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!(await isAuthAvailable())) {
       return new Response(
-        JSON.stringify({ error: 'ANTHROPIC_API_KEY が未設定です' }),
+        JSON.stringify({ error: 'Claude認証が未設定です（ANTHROPIC_API_KEY または Claude Code認証が必要）' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }

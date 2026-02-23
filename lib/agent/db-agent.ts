@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { Database } from '@/lib/database/Mysql';
 import { DB_AGENT_SYSTEM_PROMPT } from './system-prompts';
 import { SUB_AGENT_CONFIG, type Tool, type MessageParam, type ToolUseBlock, type TextBlock, type ToolResultBlockParam } from './types';
+import { getAnthropicClient } from './claude-auth';
 
 const SQL_TIMEOUT_MS = 10000;
 
@@ -65,7 +65,7 @@ async function executeSql(db: Database, sql: string): Promise<string> {
 }
 
 export async function runDbAgent(instruction: string, db: Database): Promise<string> {
-  const anthropic = new Anthropic();
+  const anthropic = await getAnthropicClient();
   const messages: MessageParam[] = [{ role: 'user', content: instruction }];
   let iterations = 0;
 

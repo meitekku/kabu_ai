@@ -10,11 +10,12 @@ type SessionValue = {
 } | null;
 type GetSessionFn = () => Promise<SessionValue>;
 
-const { mockSelect, mockInsert, mockGetSession, mockHeaders } = vi.hoisted(() => ({
+const { mockSelect, mockInsert, mockGetSession, mockHeaders, mockIsAuthAvailable } = vi.hoisted(() => ({
   mockSelect: vi.fn<DbSelectFn>(),
   mockInsert: vi.fn<DbInsertFn>(),
   mockGetSession: vi.fn<GetSessionFn>(() => Promise.resolve(null)),
   mockHeaders: vi.fn(() => Promise.resolve(new Headers({ host: 'localhost:3000' }))),
+  mockIsAuthAvailable: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock('@/lib/database/Mysql', () => ({
@@ -46,12 +47,16 @@ vi.mock('uuid', () => ({
   v4: () => 'test-uuid-1234',
 }));
 
+vi.mock('@/lib/agent/claude-auth', () => ({
+  isAuthAvailable: mockIsAuthAvailable,
+}));
+
 import { POST } from '@/app/api/agent-chat/route';
 
 describe('POST /api/agent-chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    mockIsAuthAvailable.mockResolvedValue(true);
     mockGetSession.mockResolvedValue(null);
     mockSelect.mockResolvedValue([{ cnt: 0 }]);
     mockInsert.mockResolvedValue(1);
@@ -149,8 +154,8 @@ describe('POST /api/agent-chat', () => {
     expect(res.status).toBe(400);
   });
 
-  it('returns 500 when ANTHROPIC_API_KEY is not set', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
+  it('returns 500 when Claude auth is not available', async () => {
+    mockIsAuthAvailable.mockResolvedValue(false);
     mockGetSession.mockResolvedValue({
       user: { id: 'user-1', email: 'user@example.com' },
     });
@@ -167,6 +172,6 @@ describe('POST /api/agent-chat', () => {
     expect(res.status).toBe(500);
 
     const data = (await res.json()) as { error: string };
-    expect(data.error).toContain('ANTHROPIC_API_KEY');
+    expect(data.error).toContain('Claude認証');
   });
 });
