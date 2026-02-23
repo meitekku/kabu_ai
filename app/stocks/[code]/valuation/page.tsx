@@ -1,4 +1,7 @@
+import { generateMetadata } from './metadata';
 import ValuationPageClient from './ValuationPageClient';
+
+export { generateMetadata };
 
 type Props = {
   params: Promise<{

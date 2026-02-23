@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
+export const metadata = {
+    robots: { index: false },
+};
+
 export default function SuccessPage() {
     return (
         <DefaultTemplate>

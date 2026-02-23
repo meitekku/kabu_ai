@@ -9,4 +9,5 @@ const PAGE_METADATA = {
 export const metadata: Metadata = {
   title: PAGE_METADATA.title,
   description: PAGE_METADATA.description,
+  robots: { index: false },
 };

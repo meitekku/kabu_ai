@@ -1,15 +1,13 @@
-"use client";
+import AdminLayoutClient from "./AdminLayoutClient";
 
-import { AdminProtectedRoute } from "@/components/auth";
+export const metadata = {
+  robots: { index: false },
+};
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <AdminProtectedRoute>
-      <main className="dashboard-content">{children}</main>
-    </AdminProtectedRoute>
-  );
+  return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }
