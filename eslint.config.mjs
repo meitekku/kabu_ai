@@ -5,7 +5,7 @@ import reactHooksPlugin from "eslint-plugin-react-hooks";
 
 export default [
   {
-    ignores: [".next/**", "node_modules/**", "*.config.js", "*.config.mjs", "lib/Twitter/**"],
+    ignores: [".next/**", "node_modules/**", "*.config.js", "*.config.mjs", "lib/Twitter/**", "scripts/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

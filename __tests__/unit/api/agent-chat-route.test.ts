@@ -10,12 +10,11 @@ type SessionValue = {
 } | null;
 type GetSessionFn = () => Promise<SessionValue>;
 
-const { mockSelect, mockInsert, mockGetSession, mockHeaders, mockIsAuthAvailable } = vi.hoisted(() => ({
+const { mockSelect, mockInsert, mockGetSession, mockHeaders } = vi.hoisted(() => ({
   mockSelect: vi.fn<DbSelectFn>(),
   mockInsert: vi.fn<DbInsertFn>(),
   mockGetSession: vi.fn<GetSessionFn>(() => Promise.resolve(null)),
   mockHeaders: vi.fn(() => Promise.resolve(new Headers({ host: 'localhost:3000' }))),
-  mockIsAuthAvailable: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock('@/lib/database/Mysql', () => ({
@@ -39,16 +38,30 @@ vi.mock('next/headers', () => ({
   headers: mockHeaders,
 }));
 
-vi.mock('@/lib/agent/orchestrator', () => ({
-  runOrchestrator: vi.fn(() => Promise.resolve('テスト回答です')),
+// Claude Agent SDK mock — createAgentStream returns an async iterable
+vi.mock('@/lib/agent/claude-code', () => ({
+  createAgentStream: vi.fn(() => ({
+    async *[Symbol.asyncIterator]() {
+      yield {
+        type: 'assistant',
+        message: { content: [{ type: 'text', text: 'テスト回答です' }] },
+        session_id: 'test-session',
+      };
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: 'テスト回答です',
+        total_cost_usd: 0.001,
+        num_turns: 1,
+        duration_ms: 100,
+        session_id: 'test-session',
+      };
+    },
+  })),
 }));
 
 vi.mock('uuid', () => ({
   v4: () => 'test-uuid-1234',
-}));
-
-vi.mock('@/lib/agent/claude-auth', () => ({
-  isAuthAvailable: mockIsAuthAvailable,
 }));
 
 vi.mock('@/lib/auth/email', () => ({
@@ -60,7 +73,6 @@ import { POST } from '@/app/api/agent-chat/route';
 describe('POST /api/agent-chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsAuthAvailable.mockResolvedValue(true);
     mockGetSession.mockResolvedValue(null);
     mockSelect.mockResolvedValue([{ cnt: 0 }]);
     mockInsert.mockResolvedValue(1);
@@ -72,9 +84,7 @@ describe('POST /api/agent-chat', () => {
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'テスト' }],
-      }),
+      body: JSON.stringify({ message: 'テスト' }),
     });
 
     const res = await POST(req);
@@ -84,7 +94,7 @@ describe('POST /api/agent-chat', () => {
     expect(data.error).toBe('ログインが必要です');
   });
 
-  it('allows non-admin logged-in users', async () => {
+  it('allows logged-in users and returns SSE stream', async () => {
     mockGetSession.mockResolvedValue({
       user: { id: 'user-1', email: 'regular@example.com' },
     });
@@ -92,33 +102,12 @@ describe('POST /api/agent-chat', () => {
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'テスト質問' }],
-      }),
+      body: JSON.stringify({ message: 'テスト質問' }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(200);
-    expect(res.headers.get('X-Chat-Id')).toBeTruthy();
-  });
-
-  it('returns X-Remaining-Questions header', async () => {
-    mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'user@example.com' },
-    });
-    mockSelect.mockResolvedValue([{ cnt: 5 }]);
-
-    const req = new Request('http://localhost/api/agent-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'テスト' }],
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    expect(res.headers.get('X-Remaining-Questions')).toBe('14');
+    expect(res.headers.get('Content-Type')).toBe('text/event-stream');
   });
 
   it('returns 429 when question limit reached', async () => {
@@ -131,7 +120,7 @@ describe('POST /api/agent-chat', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: 'テスト' }],
+        message: 'テスト',
         chatId: 'existing-chat-id',
       }),
     });
@@ -143,7 +132,7 @@ describe('POST /api/agent-chat', () => {
     expect(data.remainingQuestions).toBe(0);
   });
 
-  it('returns 400 when messages are empty', async () => {
+  it('returns 400 when message is empty', async () => {
     mockGetSession.mockResolvedValue({
       user: { id: 'user-1', email: 'user@example.com' },
     });
@@ -151,31 +140,10 @@ describe('POST /api/agent-chat', () => {
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: [] }),
+      body: JSON.stringify({ message: '' }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(400);
-  });
-
-  it('returns 500 when Claude auth is not available', async () => {
-    mockIsAuthAvailable.mockResolvedValue(false);
-    mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'user@example.com' },
-    });
-
-    const req = new Request('http://localhost/api/agent-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: 'テスト' }],
-      }),
-    });
-
-    const res = await POST(req);
-    expect(res.status).toBe(500);
-
-    const data = (await res.json()) as { error: string };
-    expect(data.error).toContain('しばらく時間をおいてから');
   });
 });

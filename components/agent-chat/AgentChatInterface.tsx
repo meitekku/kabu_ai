@@ -21,6 +21,27 @@ interface AgentChatInterfaceProps {
   onOpenHistory?: () => void;
 }
 
+function parseSSEEvents(chunk: string): Array<{ event: string; data: string }> {
+  const events: Array<{ event: string; data: string }> = [];
+  const lines = chunk.split('\n');
+  let currentEvent = '';
+  let currentData = '';
+
+  for (const line of lines) {
+    if (line.startsWith('event: ')) {
+      currentEvent = line.slice(7);
+    } else if (line.startsWith('data: ')) {
+      currentData = line.slice(6);
+    } else if (line === '' && currentEvent && currentData) {
+      events.push({ event: currentEvent, data: currentData });
+      currentEvent = '';
+      currentData = '';
+    }
+  }
+
+  return events;
+}
+
 export function AgentChatInterface({
   chatId,
   initialMessages = [],
@@ -37,6 +58,7 @@ export function AgentChatInterface({
   );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState(chatId);
   const [remainingQuestions, setRemainingQuestions] = useState<number | null>(null);
@@ -60,7 +82,7 @@ export function AgentChatInterface({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, statusText]);
 
   useEffect(() => {
     setCurrentChatId(chatId);
@@ -83,16 +105,16 @@ export function AgentChatInterface({
     setInput('');
     setIsLoading(true);
     setError(null);
+    setStatusText(null);
+
+    const assistantId = `assistant-${Date.now()}`;
 
     try {
       const response = await fetch('/api/agent-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          message: userMessage.content,
           chatId: currentChatId,
         }),
       });
@@ -102,17 +124,6 @@ export function AgentChatInterface({
         throw new Error(data.error || 'エージェントチャットの送信に失敗しました');
       }
 
-      const newChatId = response.headers.get('X-Chat-Id');
-      if (newChatId && !currentChatId) {
-        setCurrentChatId(newChatId);
-        onChatCreated?.(newChatId);
-      }
-
-      const remaining = response.headers.get('X-Remaining-Questions');
-      if (remaining !== null) {
-        setRemainingQuestions(parseInt(remaining, 10));
-      }
-
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -120,30 +131,100 @@ export function AgentChatInterface({
         throw new Error('ストリームの読み取りに失敗しました');
       }
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: '',
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      let assistantText = '';
+      let assistantAdded = false;
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const text = decoder.decode(value);
-        assistantMessage.content += text;
+        buffer += decoder.decode(value, { stream: true });
 
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantMessage.id ? { ...m, content: assistantMessage.content } : m)),
-        );
+        const events = parseSSEEvents(buffer);
+        // Keep incomplete event data in buffer
+        const lastDoubleNewline = buffer.lastIndexOf('\n\n');
+        if (lastDoubleNewline !== -1) {
+          buffer = buffer.slice(lastDoubleNewline + 2);
+        }
+
+        for (const { event, data } of events) {
+          try {
+            const parsed = JSON.parse(data);
+
+            switch (event) {
+              case 'chat-id': {
+                if (parsed.chatId && !currentChatId) {
+                  setCurrentChatId(parsed.chatId);
+                  onChatCreated?.(parsed.chatId);
+                }
+                if (parsed.remainingQuestions !== undefined) {
+                  setRemainingQuestions(parsed.remainingQuestions);
+                }
+                break;
+              }
+
+              case 'text-delta': {
+                if (parsed.text) {
+                  assistantText += parsed.text;
+                  if (!assistantAdded) {
+                    assistantAdded = true;
+                    setMessages((prev) => [
+                      ...prev,
+                      { id: assistantId, role: 'assistant', content: assistantText },
+                    ]);
+                  } else {
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === assistantId ? { ...m, content: assistantText } : m,
+                      ),
+                    );
+                  }
+                }
+                break;
+              }
+
+              case 'tool-use': {
+                const toolName = parsed.name || '';
+                const statusMap: Record<string, string> = {
+                  Bash: 'コマンド実行中...',
+                  Read: 'ファイル読み取り中...',
+                  Grep: '検索中...',
+                  Glob: 'ファイル探索中...',
+                };
+                setStatusText(statusMap[toolName] || `${toolName}実行中...`);
+                break;
+              }
+
+              case 'message-end': {
+                setStatusText(null);
+                if (!assistantAdded && parsed.result) {
+                  assistantText = parsed.result;
+                  setMessages((prev) => [
+                    ...prev,
+                    { id: assistantId, role: 'assistant', content: assistantText },
+                  ]);
+                }
+                break;
+              }
+
+              case 'error': {
+                setStatusText(null);
+                throw new Error(parsed.error || 'エラーが発生しました');
+              }
+            }
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) continue;
+            throw parseErr;
+          }
+        }
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : '';
       setError(errMsg || '申し訳ございません。しばらく時間をおいてから再度お試しください。');
     } finally {
       setIsLoading(false);
+      setStatusText(null);
     }
   };
 
@@ -228,15 +309,24 @@ export function AgentChatInterface({
             </div>
           ))}
 
-          {isLoading && messages[messages.length - 1]?.role === 'user' && (
+          {isLoading && messages[messages.length - 1]?.role === 'user' && !messages.some((m) => m.id.startsWith('assistant-')) && (
             <div className="flex gap-3 p-4 rounded-lg bg-muted mr-12">
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
                 <Bot className="w-4 h-4 text-secondary-foreground" />
               </div>
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">エージェントが処理中...</span>
+                <span className="text-sm text-muted-foreground">
+                  {statusText || 'エージェントが処理中...'}
+                </span>
               </div>
+            </div>
+          )}
+
+          {isLoading && statusText && messages[messages.length - 1]?.role === 'assistant' && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {statusText}
             </div>
           )}
 

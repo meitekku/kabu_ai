@@ -2,43 +2,46 @@ import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import { runOrchestrator } from '@/lib/agent/orchestrator';
-import { isAuthAvailable } from '@/lib/agent/claude-auth';
+import { createAgentStream, type SDKMessage } from '@/lib/agent/claude-code';
 import { sendAgentChatErrorEmail } from '@/lib/auth/email';
 
 export const maxDuration = 120;
 
 const MAX_QUESTIONS = 20;
 
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
 interface AgentChatRequestBody {
-  messages?: unknown;
+  message?: unknown;
   chatId?: unknown;
 }
 
-function normalizeMessages(input: unknown): ChatMessage[] {
-  if (!Array.isArray(input)) return [];
-
-  const messages: ChatMessage[] = [];
-  for (const raw of input) {
-    if (!raw || typeof raw !== 'object') continue;
-    const candidate = raw as { role?: unknown; content?: unknown };
-    if (candidate.role !== 'user' && candidate.role !== 'assistant') continue;
-    const content = typeof candidate.content === 'string' ? candidate.content.trim() : '';
-    if (!content) continue;
-    messages.push({ role: candidate.role, content });
-  }
-  return messages;
+function sendSSE(
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+  event: string,
+  data: unknown,
+) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  controller.enqueue(encoder.encode(payload));
 }
 
-function normalizeChatId(input: unknown): string | null {
-  if (typeof input !== 'string') return null;
-  const trimmed = input.trim();
-  return trimmed.length > 0 ? trimmed : null;
+function extractTextFromMessage(msg: SDKMessage): {
+  text: string;
+  toolUses: Array<{ name: string; input: unknown }>;
+} {
+  if (msg.type !== 'assistant') return { text: '', toolUses: [] };
+
+  let text = '';
+  const toolUses: Array<{ name: string; input: unknown }> = [];
+
+  for (const block of msg.message.content) {
+    if (block.type === 'text') {
+      text += block.text;
+    } else if (block.type === 'tool_use') {
+      toolUses.push({ name: block.name, input: block.input });
+    }
+  }
+
+  return { text, toolUses };
 }
 
 export async function POST(req: Request) {
@@ -54,24 +57,12 @@ export async function POST(req: Request) {
     }
 
     const body = (await req.json()) as AgentChatRequestBody;
-    const messages = normalizeMessages(body.messages);
+    const message = typeof body.message === 'string' ? body.message.trim() : '';
 
-    if (messages.length === 0) {
+    if (!message) {
       return new Response(
         JSON.stringify({ error: 'メッセージが空です' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } },
-      );
-    }
-
-    if (!(await isAuthAvailable())) {
-      sendAgentChatErrorEmail({
-        errorMessage: 'Claude認証が未設定です（ANTHROPIC_API_KEY または Claude Code認証が必要）',
-        errorContext: 'Claude認証チェック',
-        userId: session.user.id,
-      });
-      return new Response(
-        JSON.stringify({ error: '申し訳ございません。現在サービスを一時的にご利用いただけません。しばらく時間をおいてから再度お試しください。' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
@@ -79,11 +70,10 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     // チャットセッション管理
-    let currentChatId = normalizeChatId(body.chatId);
+    let currentChatId = typeof body.chatId === 'string' ? body.chatId.trim() : '';
     if (!currentChatId) {
       currentChatId = uuidv4();
-      const firstMessage = messages[0]?.content || 'Agent Chat';
-      const title = firstMessage.substring(0, 100);
+      const title = message.substring(0, 100);
       await db.insert(
         'INSERT INTO agent_chat (id, userId, title, createdAt) VALUES (?, ?, ?, NOW())',
         [currentChatId, userId, title],
@@ -103,47 +93,89 @@ export async function POST(req: Request) {
       );
     }
 
-    const lastUserMessage = messages[messages.length - 1];
-    if (lastUserMessage?.role === 'user') {
-      await db.insert(
-        'INSERT INTO agent_chat_message (id, chatId, role, content, createdAt) VALUES (?, ?, ?, ?, NOW())',
-        [uuidv4(), currentChatId, 'user', lastUserMessage.content],
-      );
-    }
+    await db.insert(
+      'INSERT INTO agent_chat_message (id, chatId, role, content, createdAt) VALUES (?, ?, ?, ?, NOW())',
+      [uuidv4(), currentChatId, 'user', message],
+    );
 
     const newRemaining = MAX_QUESTIONS - (userMessageCount + 1);
-
     const encoder = new TextEncoder();
-    let assistantText = '';
 
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // ステータスコールバック
-          const onStatus = (status: string) => {
-            controller.enqueue(encoder.encode(`> ${status}\n`));
-          };
+          sendSSE(controller, encoder, 'chat-id', {
+            chatId: currentChatId,
+            remainingQuestions: newRemaining,
+          });
 
-          // オーケストレーター実行
-          const result = await runOrchestrator(messages, db, onStatus);
-          assistantText = result;
+          const q = createAgentStream(message);
+          let fullAssistantText = '';
 
-          // 区切り
-          controller.enqueue(encoder.encode('\n'));
+          for await (const msg of q) {
+            switch (msg.type) {
+              case 'assistant': {
+                const { text, toolUses } = extractTextFromMessage(msg);
+                if (text) {
+                  fullAssistantText = text;
+                }
+                for (const tu of toolUses) {
+                  sendSSE(controller, encoder, 'tool-use', {
+                    name: tu.name,
+                    input: tu.input,
+                  });
+                }
+                break;
+              }
 
-          // 結果をチャンクで送信
-          const chunkSize = 20;
-          for (let i = 0; i < result.length; i += chunkSize) {
-            controller.enqueue(encoder.encode(result.substring(i, i + chunkSize)));
-            await new Promise((resolve) => setTimeout(resolve, 15));
+              case 'stream_event': {
+                const event = msg.event;
+                if (
+                  event.type === 'content_block_delta' &&
+                  event.delta.type === 'text_delta'
+                ) {
+                  sendSSE(controller, encoder, 'text-delta', {
+                    text: event.delta.text,
+                  });
+                }
+                break;
+              }
+
+              case 'result': {
+                if (msg.subtype === 'success') {
+                  if (!fullAssistantText && msg.result) {
+                    fullAssistantText = msg.result;
+                  }
+                  sendSSE(controller, encoder, 'message-end', {
+                    result: msg.result,
+                    costUsd: msg.total_cost_usd,
+                    numTurns: msg.num_turns,
+                    durationMs: msg.duration_ms,
+                    sessionId: msg.session_id,
+                  });
+                } else {
+                  sendSSE(controller, encoder, 'error', {
+                    error: `Execution error: ${msg.subtype}`,
+                  });
+                }
+                break;
+              }
+
+              case 'system':
+                break;
+            }
           }
 
           // アシスタントメッセージを保存
-          if (assistantText.trim()) {
+          if (fullAssistantText.trim()) {
             try {
               await db.insert(
                 'INSERT INTO agent_chat_message (id, chatId, role, content, createdAt) VALUES (?, ?, ?, ?, NOW())',
-                [uuidv4(), currentChatId, 'assistant', assistantText],
+                [uuidv4(), currentChatId, 'assistant', fullAssistantText],
+              );
+              await db.insert(
+                'UPDATE agent_chat SET updatedAt = NOW() WHERE id = ?',
+                [currentChatId],
               );
             } catch (saveError) {
               console.error('Failed to save agent assistant message:', saveError);
@@ -152,32 +184,31 @@ export async function POST(req: Request) {
 
           controller.close();
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'エージェント処理中にエラーが発生しました';
+          const errMsg = error instanceof Error ? error.message : 'エージェント処理中にエラーが発生しました';
           console.error('Agent chat error:', error);
           sendAgentChatErrorEmail({
-            errorMessage: message,
+            errorMessage: errMsg,
             errorContext: 'ストリーム処理中',
             userId,
           });
-          controller.enqueue(
-            encoder.encode('\n申し訳ございません。処理中にエラーが発生しました。しばらく時間をおいてから再度お試しください。'),
-          );
+          sendSSE(controller, encoder, 'error', { error: errMsg });
           controller.close();
         }
       },
     });
 
-    const response = new Response(stream, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
-    response.headers.set('X-Chat-Id', currentChatId);
-    response.headers.set('X-Remaining-Questions', String(newRemaining));
-    return response;
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
+    const errMsg = error instanceof Error ? error.message : 'Unknown error';
     console.error('Agent chat API error:', error);
     sendAgentChatErrorEmail({
-      errorMessage: message,
+      errorMessage: errMsg,
       errorContext: 'API処理中',
       userId: undefined,
     });
