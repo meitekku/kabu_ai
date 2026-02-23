@@ -16,13 +16,15 @@
 | データベース | MySQL 8.0+ |
 | UI | Tailwind CSS + shadcn/ui + Radix UI |
 | メール | Resend |
-| AI | GLM-4 (智譜AI / Zhipu AI) |
+| AI (チャット) | GLM-4 (智譜AI / Zhipu AI) |
+| AI (エージェント) | Claude SDK (@anthropic-ai/sdk) |
 
 ---
 
 ## AI API ルール
 
-**AIのAPIを使用する場合は必ずGLM-4を使用すること。**
+**一般チャットのAPIは必ずGLM-4を使用すること。**
+**Agent Chat（/agent-chat）はClaude SDKを使用する。**
 
 - テキスト生成: `glm-4-plus`（予測API等で使用。旧glm-4.7-flashxは推論トークン消費で低速のため変更）
 - 画像入力対応（Vision）: `glm-4v-flash`
@@ -45,8 +47,10 @@ Google Gemini, OpenAI GPT等の他のAI APIは使用しないこと。
 │   │   ├── subscription/         # サブスクリプション管理
 │   │   ├── webhook/              # Stripe ウェブフック
 │   │   ├── post/                 # 投稿管理API
-│   │   └── admin/                # 管理者専用API
+│   │   ├── admin/                # 管理者専用API
+│   │   └── agent-chat/           # Agent Chat API (Claude SDK)
 │   ├── admin/                    # 管理画面（認証保護）
+│   ├── agent-chat/               # Agent Chat ページ（管理者専用）
 │   ├── premium/                  # プレミアム情報ページ
 │   ├── settings/billing/         # 請求管理ページ
 │   ├── login/                    # ログインページ
@@ -673,6 +677,70 @@ CREATE TABLE material (
 
 ---
 
+### agent_chat テーブル
+
+```sql
+CREATE TABLE agent_chat (
+  id VARCHAR(36) PRIMARY KEY,
+  userId VARCHAR(36) NOT NULL,
+  title TEXT NOT NULL,
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_userId (userId),
+  INDEX idx_createdAt (createdAt)
+);
+```
+
+### agent_chat_message テーブル
+
+```sql
+CREATE TABLE agent_chat_message (
+  id VARCHAR(36) PRIMARY KEY,
+  chatId VARCHAR(36) NOT NULL,
+  role VARCHAR(20) NOT NULL,     -- 'user' or 'assistant'
+  content MEDIUMTEXT NOT NULL,
+  metadata JSON NULL,            -- エージェント処理メタデータ
+  createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_chatId (chatId),
+  INDEX idx_createdAt (createdAt),
+  FOREIGN KEY (chatId) REFERENCES agent_chat(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## Agent Chat アーキテクチャ
+
+Claude SDKのTool Useを利用した3エージェント構成。管理者専用（将来公開予定）。
+
+```
+ユーザーの質問
+    │
+    ▼
+Orchestrator Agent (claude-sonnet)
+    ├── call_db_agent → DB Agent (claude-haiku)
+    │                    └── execute_sql → MariaDB
+    └── call_web_agent → Web Agent (claude-haiku)
+                          └── web_search → Brave/DuckDuckGo
+```
+
+### 主要ファイル
+
+| ファイル | 役割 |
+|---------|------|
+| `lib/agent/orchestrator.ts` | オーケストレーター（質問分析・エージェント呼び出し・回答統合） |
+| `lib/agent/db-agent.ts` | DBエージェント（SQL構築・実行、SELECT限定） |
+| `lib/agent/web-agent.ts` | Webエージェント（ウェブ検索・情報取得） |
+| `lib/agent/system-prompts.ts` | 各エージェントのシステムプロンプト（DBスキーマ含む） |
+| `lib/agent/types.ts` | 共通型定義・設定 |
+| `app/api/agent-chat/route.ts` | API エンドポイント（POST: メッセージ送信） |
+| `app/api/agent-chat/history/route.ts` | API エンドポイント（GET: 履歴取得, DELETE: 削除） |
+| `components/agent-chat/AgentChatInterface.tsx` | チャットUI |
+| `components/agent-chat/AgentChatSidebar.tsx` | サイドバー（履歴一覧） |
+| `app/agent-chat/page.tsx` | ページ（AdminProtectedRoute） |
+
+---
+
 ### ER図（主要テーブル関係）
 
 ```
@@ -681,6 +749,8 @@ user ─────────────┬───────────
   │               └──────────────── account
   │
   ├── chatbot_chat ────────────── chatbot_message
+  │
+  ├── agent_chat ────────────── agent_chat_message
   │
   └── (stripe_customer_id で Stripe と連携)
 
@@ -779,6 +849,15 @@ RESEND_API_KEY=
 FROM_EMAIL=noreply@kabu-ai.jp
 ```
 
+### Agent Chat
+
+```bash
+ANTHROPIC_API_KEY=           # Claude SDK APIキー
+AGENT_ORCHESTRATOR_MODEL=claude-sonnet-4-20250514  # オーケストレーターモデル（省略可）
+AGENT_SUB_MODEL=claude-haiku-4-5-20251001          # サブエージェントモデル（省略可）
+BRAVE_SEARCH_API_KEY=        # Brave Search APIキー（省略可、DuckDuckGoにフォールバック）
+```
+
 ### OAuth（オプション）
 
 ```bash
@@ -872,6 +951,7 @@ __tests__/
 | `/settings/billing` | 請求・プラン管理 |
 | `/[code]/news` | 株式ニュース |
 | `/admin/*` | 管理画面 |
+| `/agent-chat` | Agent Chat（管理者専用） |
 
 ---
 

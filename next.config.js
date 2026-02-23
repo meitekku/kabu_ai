@@ -2,7 +2,7 @@
 const nextConfig = {
   turbopack: {},
   output: 'standalone',
-  serverExternalPackages: ['mysql2', 'twitter-api-v2'],
+  serverExternalPackages: ['mysql2', 'twitter-api-v2', '@anthropic-ai/sdk'],
   images: {
     remotePatterns: [
       {

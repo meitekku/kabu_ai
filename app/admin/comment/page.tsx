@@ -51,7 +51,6 @@ export default function Home() {
   const [endDateTime, setEndDateTime] = useState<string>(
     format(now, "yyyy-MM-dd HH:mm:ss")
   );
-  const [isMobile, setIsMobile] = useState<boolean>(false);
   const [combinedCommentText, setCombinedCommentText] = useState<string>("");
 
   const limitOptions = Array.from({ length: 6 }, (_, i) => (i + 3) * 100);
@@ -75,15 +74,6 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem("isPostFormOpen", JSON.stringify(isPostFormOpen));
   }, [isPostFormOpen]);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const fetchCompanyInfo = async (code: string): Promise<CompanyInfo | null> => {
     try {
