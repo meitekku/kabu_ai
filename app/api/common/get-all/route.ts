@@ -11,13 +11,19 @@ const ALLOWED_TABLES = [
   'ranking_stop_high',
   'ranking_stop_low',
   'ranking_trading_value',
+  'ranking_pts_up',
+  'ranking_pts_down',
 ] as const;
+
+const PTS_TABLES: ReadonlyArray<string> = ['ranking_pts_up', 'ranking_pts_down'];
 
 const ORDER_BY_MAP: Partial<Record<AllowedTable, string>> = {
   ranking_up: 'company_info.diff_percent DESC',
   ranking_low: 'company_info.diff_percent ASC',
   ranking_stop_high: 'company_info.diff_percent DESC',
   ranking_stop_low: 'company_info.diff_percent ASC',
+  ranking_pts_up: 'ranking_pts_up.id ASC',
+  ranking_pts_down: 'ranking_pts_down.id ASC',
 };
 
 const DEFAULT_LIMIT = 10;
@@ -77,20 +83,40 @@ export async function POST(request: NextRequest) {
     const db = Database.getInstance();
 
     const orderBy = ORDER_BY_MAP[tableName] ?? `${tableName}.id ASC`;
-    const query = `
-      SELECT DISTINCT
-        ${tableName}.code,
-        company.name,
-        company_info.diff_percent,
-        company_info.current_price
-      FROM ${tableName}
-      LEFT JOIN company ON ${tableName}.code = company.code
-      LEFT JOIN company_info ON ${tableName}.code = company_info.code
-      WHERE company.market IN (1, 2, 3)
-      ORDER BY ${orderBy}
-      LIMIT ?
-    `;
-    
+
+    let query: string;
+    if (PTS_TABLES.includes(tableName)) {
+      query = `
+        SELECT DISTINCT
+          ${tableName}.code,
+          company.name,
+          ROUND((pts_price.price - company_info.current_price) / company_info.current_price * 100, 2) as diff_percent,
+          pts_price.price as current_price
+        FROM ${tableName}
+        LEFT JOIN company ON ${tableName}.code = company.code
+        LEFT JOIN company_info ON ${tableName}.code = company_info.code
+        LEFT JOIN pts_price ON ${tableName}.code = pts_price.code
+        WHERE company.market IN (1, 2, 3)
+          AND company_info.current_price > 0
+        ORDER BY ${orderBy}
+        LIMIT ?
+      `;
+    } else {
+      query = `
+        SELECT DISTINCT
+          ${tableName}.code,
+          company.name,
+          company_info.diff_percent,
+          company_info.current_price
+        FROM ${tableName}
+        LEFT JOIN company ON ${tableName}.code = company.code
+        LEFT JOIN company_info ON ${tableName}.code = company_info.code
+        WHERE company.market IN (1, 2, 3)
+        ORDER BY ${orderBy}
+        LIMIT ?
+      `;
+    }
+
     const data = await db.select<BaseRankingData>(query, [validatedLimit]);
 
     const responseData = { success: true, data: data } as ApiResponse<BaseRankingData>;

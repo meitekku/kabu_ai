@@ -17,7 +17,9 @@ export type RankingTableName =
   | 'ranking_low'
   | 'ranking_stop_high'
   | 'ranking_stop_low'
-  | 'ranking_trading_value';
+  | 'ranking_trading_value'
+  | 'ranking_pts_up'
+  | 'ranking_pts_down';
 
 type RankingTableClientProps = {
   title: string;

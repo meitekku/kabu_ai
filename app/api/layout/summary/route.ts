@@ -11,6 +11,8 @@ type RankingTableName =
   | 'ranking_stop_high'
   | 'ranking_stop_low'
   | 'ranking_trading_value'
+  | 'ranking_pts_up'
+  | 'ranking_pts_down'
 
 interface CompanyData {
   code: string
@@ -44,13 +46,19 @@ const RANKING_CONFIGS: ReadonlyArray<{ tableName: RankingTableName; limit: numbe
   { tableName: 'ranking_stop_high', limit: 5 },
   { tableName: 'ranking_stop_low', limit: 5 },
   { tableName: 'ranking_trading_value', limit: 5 },
+  { tableName: 'ranking_pts_up', limit: 5 },
+  { tableName: 'ranking_pts_down', limit: 5 },
 ]
+
+const PTS_TABLES: ReadonlyArray<string> = ['ranking_pts_up', 'ranking_pts_down']
 
 const ORDER_BY_MAP: Partial<Record<RankingTableName, string>> = {
   ranking_up: 'company_info.diff_percent DESC',
   ranking_low: 'company_info.diff_percent ASC',
   ranking_stop_high: 'company_info.diff_percent DESC',
   ranking_stop_low: 'company_info.diff_percent ASC',
+  ranking_pts_up: 'ranking_pts_up.id ASC',
+  ranking_pts_down: 'ranking_pts_down.id ASC',
 }
 
 export async function GET() {
@@ -90,19 +98,39 @@ export async function GET() {
     const rankingPairs = await Promise.all(
       RANKING_CONFIGS.map(async ({ tableName, limit }) => {
         const orderBy = ORDER_BY_MAP[tableName] ?? `${tableName}.id ASC`
-        const rows = await db.select<RankingData>(`
-          SELECT DISTINCT
-            ${tableName}.code,
-            company.name,
-            company_info.diff_percent,
-            company_info.current_price
-          FROM ${tableName}
-          LEFT JOIN company ON ${tableName}.code = company.code
-          LEFT JOIN company_info ON ${tableName}.code = company_info.code
-          WHERE company.market IN (1, 2, 3)
-          ORDER BY ${orderBy}
-          LIMIT ?
-        `, [limit + 2])
+
+        let rows: RankingData[]
+        if (PTS_TABLES.includes(tableName)) {
+          rows = await db.select<RankingData>(`
+            SELECT DISTINCT
+              ${tableName}.code,
+              company.name,
+              ROUND((pts_price.price - company_info.current_price) / company_info.current_price * 100, 2) as diff_percent,
+              pts_price.price as current_price
+            FROM ${tableName}
+            LEFT JOIN company ON ${tableName}.code = company.code
+            LEFT JOIN company_info ON ${tableName}.code = company_info.code
+            LEFT JOIN pts_price ON ${tableName}.code = pts_price.code
+            WHERE company.market IN (1, 2, 3)
+              AND company_info.current_price > 0
+            ORDER BY ${orderBy}
+            LIMIT ?
+          `, [limit + 2])
+        } else {
+          rows = await db.select<RankingData>(`
+            SELECT DISTINCT
+              ${tableName}.code,
+              company.name,
+              company_info.diff_percent,
+              company_info.current_price
+            FROM ${tableName}
+            LEFT JOIN company ON ${tableName}.code = company.code
+            LEFT JOIN company_info ON ${tableName}.code = company_info.code
+            WHERE company.market IN (1, 2, 3)
+            ORDER BY ${orderBy}
+            LIMIT ?
+          `, [limit + 2])
+        }
 
         const filteredRows = rows
           .filter((item) => item.name)

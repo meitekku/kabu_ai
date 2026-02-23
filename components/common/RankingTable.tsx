@@ -41,7 +41,9 @@ export default function RankingTable({ title, tableName, data }: RankingTablePro
       <div className="px-4 py-2 border-b border-gray-100">
         <div className="flex items-center">
           <div className="text-sm font-bold">{title}</div>
-          <div className="ml-2 text-xs text-gray-500">前日比</div>
+          <div className="ml-2 text-xs text-gray-500">
+            {tableName.startsWith('ranking_pts') ? '終値比' : '前日比'}
+          </div>
         </div>
       </div>
       <div>

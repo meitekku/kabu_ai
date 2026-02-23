@@ -17,6 +17,8 @@ const rankingSections: Array<{
   { title: 'ストップ高ランキング', tableName: 'ranking_stop_high', limit: 5 },
   { title: 'ストップ安ランキング', tableName: 'ranking_stop_low', limit: 5 },
   { title: '出来高ランキング', tableName: 'ranking_trading_value', limit: 5 },
+  { title: 'PTS上昇率ランキング', tableName: 'ranking_pts_up', limit: 5 },
+  { title: 'PTS下落率ランキング', tableName: 'ranking_pts_down', limit: 5 },
 ]
 
 export default function Sidebar({ rankingData, suspendFetch = false }: SidebarProps) {
