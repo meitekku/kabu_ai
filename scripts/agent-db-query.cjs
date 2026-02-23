@@ -28,24 +28,62 @@ function loadEnv() {
   return vars;
 }
 
-// SELECT/SHOW/DESCRIBE のみ許可
+// 株式関連テーブルのホワイトリスト
+const ALLOWED_TABLES = new Set([
+  'company', 'company_info', 'price',
+  'material', 'material_summary',
+  'post', 'post_code',
+  'kabutan_annual_results', 'kabutan_quarterly_results', 'kabutan_peak_performance',
+  'performance_annual', 'performance_quarterly',
+  'valuation_report',
+  'ranking_up', 'ranking_low', 'ranking_stop_high', 'ranking_stop_low',
+  'ranking_trading_value', 'ranking_yahoo_post', 'ranking_access',
+  'ranking_pts_up', 'ranking_pts_down',
+  'pts_price',
+  'relative_stock', 'ir', 'bbs_data',
+  'category', 'category_score',
+  'stock_split_log',
+]);
+
+// SELECT/DESCRIBE のみ許可 + テーブルホワイトリスト
 function validateSql(sql) {
-  const normalized = sql.trim().toLowerCase();
+  const normalized = sql.trim().toLowerCase().replace(/`/g, '');
   if (
     !normalized.startsWith('select') &&
-    !normalized.startsWith('show') &&
     !normalized.startsWith('describe')
   ) {
-    return false;
+    return { valid: false, reason: 'SELECT/DESCRIBE以外のクエリは実行できません' };
   }
   const forbidden = [
     'insert ', 'update ', 'delete ', 'drop ', 'alter ',
     'create ', 'truncate ', 'grant ', 'revoke ',
   ];
   for (const kw of forbidden) {
-    if (normalized.includes(kw)) return false;
+    if (normalized.includes(kw)) {
+      return { valid: false, reason: '変更系クエリは実行できません' };
+    }
   }
-  return true;
+
+  // DESCRIBE tablename のテーブル名チェック
+  if (normalized.startsWith('describe')) {
+    const tableName = normalized.split(/\s+/)[1];
+    if (tableName && !ALLOWED_TABLES.has(tableName)) {
+      return { valid: false, reason: `テーブル '${tableName}' へのアクセスは許可されていません（株式関連テーブルのみ参照可能）` };
+    }
+    return { valid: true };
+  }
+
+  // SELECT: FROM / JOIN 後のテーブル名を抽出してホワイトリストチェック
+  const tablePattern = /(?:from|join)\s+(\w+)/gi;
+  let match;
+  while ((match = tablePattern.exec(normalized)) !== null) {
+    const tableName = match[1];
+    if (!ALLOWED_TABLES.has(tableName)) {
+      return { valid: false, reason: `テーブル '${tableName}' へのアクセスは許可されていません（株式関連テーブルのみ参照可能）` };
+    }
+  }
+
+  return { valid: true };
 }
 
 async function main() {
@@ -55,8 +93,9 @@ async function main() {
     process.exit(1);
   }
 
-  if (!validateSql(sql)) {
-    console.error('ERROR: SELECT/SHOW/DESCRIBE以外のクエリは実行できません');
+  const validation = validateSql(sql);
+  if (!validation.valid) {
+    console.error(`ERROR: ${validation.reason}`);
     process.exit(1);
   }
 
