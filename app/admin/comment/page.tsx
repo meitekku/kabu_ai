@@ -156,33 +156,33 @@ export default function Home() {
     company: Company,
     info: CompanyInfo | null
   ) => {
-    if (!info) return;
-
     const todayString = format(new Date(), "yyyy-MM-dd");
-    const priceChangePercent = calculatePriceChangePercent(info);
-    const priceChangeNum = parseFloat(info.price_change || "0");
 
-    const signForChange = priceChangeNum > 0 ? "+" : "";
-    const displayChange = `${signForChange}${priceChangeNum.toFixed(2)}`;
+    let header: string;
+    if (info) {
+      const priceChangePercent = calculatePriceChangePercent(info);
+      const priceChangeNum = parseFloat(info.price_change || "0");
+      const signForChange = priceChangeNum > 0 ? "+" : "";
+      const displayChange = `${signForChange}${priceChangeNum.toFixed(2)}`;
+      const signForPercent = priceChangePercent > 0 ? "+" : "";
+      const displayPercent = `${signForPercent}${priceChangePercent.toFixed(2)}%`;
+      header = `${company.name}【${company.id}】の掲示板 ${todayString} 前日比${displayChange} (${displayPercent})\n`;
+    } else {
+      header = `${company.name}【${company.id}】の掲示板 ${todayString}\n`;
+    }
 
-    const signForPercent = priceChangePercent > 0 ? "+" : "";
-    const displayPercent = `${signForPercent}${priceChangePercent.toFixed(2)}%`;
-
-    const header = `${company.name}【${company.id}】の掲示板 ${todayString} 前日比${displayChange} (${displayPercent})\n`;
     const promptText = (localStorage.getItem("autoSaveText_news_prompt") ?? "") + "\n";
-
     const commentText = comments.map((comment) => `${comment.comment_date}\n${comment.comment}\n\n`).join("");
 
     const combinedText = header + promptText + commentText;
     setCombinedCommentText(combinedText);
 
-    if (!isMobile) {
-      try {
-        await navigator.clipboard.writeText(combinedText);
-        alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
-      } catch (err) {
-        console.error("コピーに失敗しました:", err);
-      }
+    try {
+      await navigator.clipboard.writeText(combinedText);
+      alert(`${company.name}\nのコメントを${comments.length}件コピーしました`);
+    } catch {
+      // clipboard APIが失敗した場合（ユーザージェスチャー期限切れ等）
+      // コピーボタンで手動コピーできるようにテキストは保持済み
     }
   };
 
@@ -301,7 +301,7 @@ export default function Home() {
         </div>
       )}
 
-      {comments.length > 0 && isMobile && (
+      {comments.length > 0 && (
         <div className="mb-4 flex justify-center">
           <Button
             onClick={handleCopyClick}
