@@ -36,18 +36,28 @@ export async function GET() {
 
     // 本日または直近の日付のデータがある会社コードと名前を取得（昇順）
     // 土日・祝日の場合は直前の営業日のデータを表示
-    // CONVERT_TZ で UTC から JST に変換して日付比較
+    // CROSS JOINで最新日のUTC範囲を1回だけ算出し、created_atのインデックスを活用
     const query = `
       SELECT DISTINCT pc.code, c.name
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
       INNER JOIN company c ON pc.code = c.code
-      WHERE DATE(CONVERT_TZ(p.created_at, '+00:00', '+09:00')) = (
-        SELECT MAX(DATE(CONVERT_TZ(p2.created_at, '+00:00', '+09:00')))
+      CROSS JOIN (
+        SELECT
+          CONVERT_TZ(
+            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')),
+            '+09:00', '+00:00'
+          ) as day_start,
+          CONVERT_TZ(
+            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
+            '+09:00', '+00:00'
+          ) as day_end
         FROM post p2
         INNER JOIN post_code pc2 ON p2.id = pc2.post_id
-        WHERE DATE(CONVERT_TZ(p2.created_at, '+00:00', '+09:00')) <= CURDATE()
-      )
+        WHERE p2.created_at <= NOW()
+      ) latest_day
+      WHERE p.created_at >= latest_day.day_start
+        AND p.created_at < latest_day.day_end
       ORDER BY pc.code ASC
     `;
     const results = await db.select<CompanyOption>(query);
@@ -102,16 +112,28 @@ export async function POST(request: NextRequest) {
     // contentは最初の500文字のみ取得してパフォーマンス改善
     // 最新の1件のみ取得
     // 土日・祝日の場合は直前の営業日のデータを表示
+    // CROSS JOINで最新日のUTC範囲を1回だけ算出し、created_atのインデックスを活用
     const articleQuery = `
       SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content, p.created_at, pc.code
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
-      WHERE pc.code = ? AND DATE(CONVERT_TZ(p.created_at, '+00:00', '+09:00')) = (
-        SELECT MAX(DATE(CONVERT_TZ(p2.created_at, '+00:00', '+09:00')))
+      CROSS JOIN (
+        SELECT
+          CONVERT_TZ(
+            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')),
+            '+09:00', '+00:00'
+          ) as day_start,
+          CONVERT_TZ(
+            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
+            '+09:00', '+00:00'
+          ) as day_end
         FROM post p2
         INNER JOIN post_code pc2 ON p2.id = pc2.post_id
-        WHERE DATE(CONVERT_TZ(p2.created_at, '+00:00', '+09:00')) <= CURDATE()
-      )
+        WHERE p2.created_at <= NOW()
+      ) latest_day
+      WHERE pc.code = ?
+        AND p.created_at >= latest_day.day_start
+        AND p.created_at < latest_day.day_end
       ORDER BY p.created_at DESC
       LIMIT 1
     `;
