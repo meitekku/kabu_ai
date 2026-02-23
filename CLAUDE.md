@@ -38,45 +38,42 @@ Google Gemini, OpenAI GPT等の他のAI APIは使用しないこと。
 
 ## ディレクトリ構造
 
+詳細なディレクトリ構造 → [docs/kabu_ai_directory.md](../docs/kabu_ai_directory.md)
+
 ```
 /
 ├── app/                          # Next.js App Router
-│   ├── api/                      # API エンドポイント
-│   │   ├── auth/                 # 認証API (better-auth)
-│   │   ├── checkout/             # Stripe チェックアウト
-│   │   ├── subscription/         # サブスクリプション管理
-│   │   ├── webhook/              # Stripe ウェブフック
-│   │   ├── post/                 # 投稿管理API
-│   │   ├── admin/                # 管理者専用API
-│   │   └── agent-chat/           # Agent Chat API (Claude SDK)
+│   ├── api/                      # API エンドポイント (55+)
 │   ├── admin/                    # 管理画面（認証保護）
-│   ├── agent-chat/               # Agent Chat ページ（管理者専用）
-│   ├── premium/                  # プレミアム情報ページ
-│   ├── settings/billing/         # 請求管理ページ
-│   ├── login/                    # ログインページ
-│   ├── signup/                   # サインアップページ
-│   └── [code]/news/              # 株式ニュース詳細
-├── components/                   # React コンポーネント
-│   ├── auth/                     # 認証関連
-│   │   ├── AuthProvider.tsx      # 認証コンテキスト（isLogin提供）
-│   │   ├── ProtectedRoute.tsx    # 保護ルート
-│   │   ├── UserButton.tsx        # ユーザーメニュー
-│   │   ├── LoginButton.tsx       # ログインボタン
-│   │   └── index.ts              # エクスポート
-│   ├── layout/                   # レイアウト (Header, Sidebar)
-│   ├── ui/                       # shadcn/ui コンポーネント
-│   └── navigation/               # ナビゲーション
-├── lib/                          # ユーティリティ
-│   ├── auth/                     # better-auth 設定
-│   │   ├── auth.ts               # サーバー側設定
-│   │   └── auth-client.ts        # クライアント側設定
-│   ├── database/                 # DB接続
-│   │   └── Mysql.ts              # MySQL接続（Singleton）
-│   └── stripe.ts                 # Stripe インスタンス
-├── hooks/                        # カスタムフック
-│   └── useSubscription.ts        # サブスクリプション状態（isPremium提供）
+│   ├── agent-chat/               # Agent Chat（管理者専用）
+│   ├── chat/                     # AIチャット
+│   ├── stocks/[code]/            # 銘柄別ページ（ニュース・予測・バリュエーション）
+│   ├── news/latest/              # 最新ニュース
+│   ├── premium/                  # プレミアム情報
+│   ├── settings/billing/         # 請求管理
+│   ├── login/ | signup/          # 認証ページ
+│   └── (法定ページ)              # terms, privacy-policy, disclaimer, contact, commercial-transactions
+├── components/                   # React コンポーネント (89ファイル)
+│   ├── auth/                     # 認証 (AuthProvider, ProtectedRoute, LoginButton等)
+│   ├── agent-chat/               # Agent Chat UI
+│   ├── chat/                     # チャットUI
+│   ├── layout/                   # レイアウト (Header, Sidebar, Footer)
+│   ├── news/                     # ニュース表示
+│   ├── parts/                    # パーツ (admin, chart, common, sns, us)
+│   ├── ui/                       # shadcn/ui (28コンポーネント)
+│   └── (common, post, prediction, stocks等)
+├── lib/                          # コアライブラリ
+│   ├── auth/                     # better-auth設定 (auth.ts, auth-client.ts)
+│   ├── agent/                    # Agent Chat バックエンド (orchestrator, db-agent, web-agent)
+│   ├── database/Mysql.ts         # MySQL接続 (Singleton)
+│   ├── stripe.ts                 # Stripe インスタンス
+│   └── cache.ts                  # キャッシュ管理
+├── hooks/                        # カスタムフック (useSubscription, useFingerprint)
+├── utils/                        # ヘルパー (format, validation, chartGenerator)
+├── emails/                       # メールテンプレート (Resend)
 ├── sql/                          # SQL マイグレーション
-└── utils/                        # ユーティリティ関数
+├── __tests__/                    # テスト (unit, integration, e2e)
+└── public/                       # 静的アセット (uploads, images)
 ```
 
 ---
@@ -157,7 +154,6 @@ useAuth() hook で各コンポーネントに提供
 - メール + パスワード（8文字以上）
 - Google OAuth
 - Twitter (X) OAuth
-- Facebook OAuth
 
 ### セッション設定
 
@@ -303,30 +299,63 @@ function MyComponent() {
 
 ## API エンドポイント
 
-### 認証系
+### 認証・課金
 
 | エンドポイント | メソッド | 説明 |
 |---------------|---------|------|
-| `/api/auth/[...all]` | ALL | better-auth ハンドラ |
-| `/api/auth` | GET | ログイン状態確認（legacy） |
-| `/api/auth` | POST | ログイン（legacy・管理画面） |
-
-### 課金系
-
-| エンドポイント | メソッド | 説明 |
-|---------------|---------|------|
+| `/api/auth/[...all]` | ALL | better-auth ハンドラ (Google, Twitter, Email) |
 | `/api/subscription` | GET | サブスクリプション情報取得 |
 | `/api/subscription/portal` | POST | Stripe 顧客ポータル |
 | `/api/checkout` | POST | チェックアウトセッション作成 |
 | `/api/webhook` | POST | Stripe ウェブフック処理 |
 
-### その他
+### 株式データ
+
+| エンドポイント | メソッド | 説明 |
+|---------------|---------|------|
+| `/api/stocks/[code]/news` | GET | 銘柄ニュース一覧 |
+| `/api/stocks/[code]/news/[id]` | GET | ニュース記事詳細 |
+| `/api/stocks/[code]/chart` | GET | チャートデータ |
+| `/api/stocks/[code]/company_info` | GET | 企業情報 |
+| `/api/stocks/[code]/predict` | GET | 株価予測 |
+| `/api/stocks/[code]/predict/cache` | GET | 予測キャッシュ |
+| `/api/stocks/[code]/predict/check-usage` | GET | 利用回数チェック |
+| `/api/stocks/[code]/related-stocks-news` | GET | 関連銘柄ニュース |
+| `/api/stocks/[code]/valuation-report` | GET | バリュエーションレポート |
+
+### チャット・AI
+
+| エンドポイント | メソッド | 説明 |
+|---------------|---------|------|
+| `/api/chat` | POST | チャットメッセージ送信 (GLM-4) |
+| `/api/chat/history` | GET/DELETE | チャット履歴取得・削除 |
+| `/api/agent-chat` | POST | Agent Chat (Claude SDK) |
+| `/api/agent-chat/history` | GET/DELETE | Agent Chat履歴 |
+
+### 投稿・管理
 
 | エンドポイント | メソッド | 説明 |
 |---------------|---------|------|
 | `/api/post` | POST | 投稿作成 |
 | `/api/post/get_list` | GET | 投稿リスト取得 |
+| `/api/post/get_post` | GET | 投稿取得 |
+| `/api/post/update_post` | POST | 投稿更新 |
 | `/api/admin/summarize_news` | POST | ニュース要約生成 |
+| `/api/admin/accept_ai` | GET | AI記事承認一覧 |
+| `/api/admin/accept_ai/approval` | POST | AI記事承認処理 |
+| `/api/admin/accept_ai_us` | GET | US市場AI記事 |
+| `/api/admin/prompt` | POST | プロンプト管理 |
+| `/api/admin/article-prompt` | POST | 記事生成プロンプト |
+
+### ユーティリティ
+
+| エンドポイント | メソッド | 説明 |
+|---------------|---------|------|
+| `/api/twitter/post*` | POST | Twitter投稿 (複数方式) |
+| `/api/upload` | POST | ファイルアップロード |
+| `/api/news/search` | GET | ニュース検索 |
+| `/api/common/all-company` | GET | 全企業リスト |
+| `/api/cloudflare/turnstile/verify` | GET | Bot保護検証 |
 
 ---
 
@@ -865,8 +894,6 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 TWITTER_CLIENT_ID=
 TWITTER_CLIENT_SECRET=
-FACEBOOK_CLIENT_ID=
-FACEBOOK_CLIENT_SECRET=
 ```
 
 ---
@@ -889,8 +916,9 @@ npx tsc --noEmit --skipLibCheck
 ### テスト
 
 ```bash
-npx vitest run                    # ユニットテスト（Vitest）
-npx playwright test               # E2Eテスト（Playwright）
+npm run test:unit                 # ユニットテスト (Vitest)
+npm run test:integration          # 結合テスト (Vitest)
+npm run test:e2e                  # E2Eテスト (Playwright)
 npm run test:all                  # 全テスト実行
 ```
 
@@ -916,21 +944,48 @@ npm run test:all                  # 全テスト実行
 
 ```
 __tests__/
-├── setup.ts                            # グローバルセットアップ（Next.jsモック）
+├── setup.ts                                          # グローバルセットアップ（Next.jsモック）
 ├── unit/
-│   └── components/
-│       ├── auth/LoginForm.test.tsx      # ログインフォーム（14テスト）
-│       └── news/
-│           ├── NewsSection.test.tsx     # トップページニュース（9テスト）
-│           └── NewsListS.test.tsx       # ニュースリスト（11テスト）
+│   ├── api/
+│   │   ├── auth-config.test.ts                       # 認証設定テスト
+│   │   ├── chat-route.test.ts                        # チャットAPIテスト
+│   │   ├── agent-chat-route.test.ts                  # Agent Chat APIテスト
+│   │   └── agent-chat-history.test.ts                # Agent Chat履歴テスト
+│   ├── components/
+│   │   ├── admin/accept_ai_us.test.tsx               # US AI記事承認テスト
+│   │   ├── agent-chat/AgentChatInterface.test.tsx    # Agent Chatインターフェーステスト
+│   │   ├── auth/LoginForm.test.tsx                   # ログインフォーム（14テスト）
+│   │   ├── common/ChatHistoryDrawer.test.tsx         # チャット履歴テスト
+│   │   ├── news/NewsSection.test.tsx                 # トップページニュース（9テスト）
+│   │   ├── news/NewsListS.test.tsx                   # ニュースリスト（11テスト）
+│   │   └── parts/chart/StockChartUtils.test.ts       # チャートユーティリティテスト
+│   └── pages/
+│       ├── legalPages.test.tsx                       # 法定ページレンダリングテスト
+│       └── pageCoverageInventory.test.ts             # ページカバレッジチェック
+├── integration/
+│   └── pages/
+│       ├── homeAndLatestPage.test.tsx                # ホーム・最新ニュースページ
+│       ├── clientPages.test.tsx                      # クライアントページ
+│       ├── dynamicRoutes.test.tsx                    # 動的ルート
+│       └── stocksNewsLoadingAlignment.test.tsx       # 銘柄ニュースレイアウト
 └── e2e/
-    ├── login.spec.ts                   # ログインE2E
-    └── top-page.spec.ts               # TOPページ画像表示E2E
+    ├── all-pages-smoke.spec.ts                       # 全ページスモークテスト
+    ├── login.spec.ts                                 # ログインE2E
+    ├── top-page.spec.ts                              # TOPページE2E
+    └── stocks-news-loading-alignment.spec.ts         # 銘柄ニュースE2E
+```
+
+**テスト実行:**
+```bash
+npm run test:unit                 # ユニットテスト (Vitest)
+npm run test:integration          # 結合テスト (Vitest)
+npm run test:e2e                  # E2Eテスト (Playwright)
+npm run test:all                  # 全テスト実行
 ```
 
 **設定ファイル:**
 - `vitest.config.ts` — Vitest設定（jsdom環境、`@`エイリアス）
-- `playwright.config.ts` — Playwright設定（chromium、localhost:3000）
+- `playwright.config.ts` — Playwright設定（chromium、localhost:3000、180秒タイムアウト）
 - `tsconfig.test.json` — テスト用TypeScript設定（vitest/globals型）
 
 **CI/CD:** `.github/workflows/main.yml`
@@ -941,35 +996,47 @@ __tests__/
 
 ## 主要ページ
 
+### 一般ユーザー向け
+
 | パス | 説明 |
 |------|------|
 | `/` | トップページ |
 | `/login` | ログイン |
 | `/signup` | サインアップ |
+| `/news/latest` | 最新ニュース一覧 |
+| `/stocks/[code]/news` | 銘柄ニュース |
+| `/stocks/[code]/news/[id]` | ニュース記事詳細 |
+| `/stocks/[code]/news/list` | ニュースリスト表示 |
+| `/stocks/[code]/predict` | 株価予測 |
+| `/stocks/[code]/valuation` | バリュエーションレポート |
+| `/chat` | AIチャット |
 | `/premium` | プレミアム紹介 |
 | `/premium/success` | 購入完了 |
 | `/settings/billing` | 請求・プラン管理 |
-| `/[code]/news` | 株式ニュース |
-| `/admin/*` | 管理画面 |
+
+### 法定ページ
+
+| パス | 説明 |
+|------|------|
+| `/terms` | 利用規約 |
+| `/privacy-policy` | プライバシーポリシー |
+| `/disclaimer` | 免責事項 |
+| `/contact` | お問い合わせ |
+| `/commercial-transactions` | 特定商取引法に基づく表記 |
+
+### 管理画面（認証保護）
+
+| パス | 説明 |
+|------|------|
+| `/admin/accept_ai` | AI記事承認 |
+| `/admin/accept_ai_us` | US市場AI記事承認 |
+| `/admin/all-article` | 全記事管理 |
+| `/admin/post/[post_id]` | 投稿編集 |
+| `/admin/prompt` | プロンプト管理 |
+| `/admin/prompt/article-prompt` | 記事生成プロンプト |
+| `/admin/news-summary` | ニュース要約生成 |
+| `/admin/comment` | コメント管理 |
 | `/agent-chat` | Agent Chat（管理者専用） |
-
----
-
-## 通知設定
-
-フック設定により以下の通知が有効:
-- 作業完了時に macOS 通知
-- 質問受信時に通知
-
-### 手動通知コマンド
-
-```bash
-# 作業開始
-osascript -e 'display notification "新しい質問を開始します" with title "Claude Code" subtitle "作業開始" sound name "Submarine"'
-
-# 作業完了
-osascript -e 'display notification "作業が完了しました" with title "Claude Code" subtitle "作業完了" sound name "Glass"'
-```
 
 ---
 
