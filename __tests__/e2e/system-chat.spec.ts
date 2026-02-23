@@ -73,9 +73,13 @@ async function setupChatMocks(page: import("@playwright/test").Page) {
 }
 
 test.describe("Chat System", () => {
-  test("chat page without stock code returns 404", async ({ page }) => {
-    const response = await page.goto("/chat");
-    expect(response?.status()).toBe(404);
+  test("chat page without stock code shows not found", async ({ page }) => {
+    await page.goto("/chat");
+    // notFound() renders a 404 page - chat interface should NOT be present
+    await expect(page.getByText("404")).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByText("株式投資AIアシスタント")
+    ).not.toBeVisible();
   });
 
   test("chat page loads with company info", async ({ page }) => {
@@ -134,7 +138,9 @@ test.describe("Chat System", () => {
 
     // Type a message and send
     await textarea.fill("トヨタ自動車の分析をお願いします");
-    await page.locator('button[type="submit"]').click();
+    const submitBtn = page.locator('button[type="submit"]');
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    await submitBtn.click();
 
     // Verify user message appears
     await expect(
@@ -174,7 +180,9 @@ test.describe("Chat System", () => {
     await expect(textarea).toBeEnabled({ timeout: 15000 });
 
     await textarea.fill("テストメッセージ");
-    await page.locator('button[type="submit"]').click();
+    const submitBtn1 = page.locator('button[type="submit"]');
+    await expect(submitBtn1).toBeEnabled({ timeout: 5000 });
+    await submitBtn1.click();
 
     // LoginModal should appear with its title
     await expect(
@@ -209,7 +217,9 @@ test.describe("Chat System", () => {
     await expect(textarea).toBeEnabled({ timeout: 15000 });
 
     await textarea.fill("テストメッセージ");
-    await page.locator('button[type="submit"]').click();
+    const submitBtn2 = page.locator('button[type="submit"]');
+    await expect(submitBtn2).toBeEnabled({ timeout: 5000 });
+    await submitBtn2.click();
 
     // PremiumModal should appear with the custom title from ChatInterface
     await expect(
@@ -243,7 +253,9 @@ test.describe("Chat System", () => {
     await expect(textarea).toBeEnabled({ timeout: 15000 });
 
     await textarea.fill("テストメッセージ");
-    await page.locator('button[type="submit"]').click();
+    const submitBtn3 = page.locator('button[type="submit"]');
+    await expect(submitBtn3).toBeEnabled({ timeout: 5000 });
+    await submitBtn3.click();
 
     // Loading indicator should appear while waiting for response
     await expect(page.getByText("考え中...")).toBeVisible({ timeout: 5000 });

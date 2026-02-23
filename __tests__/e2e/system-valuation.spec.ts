@@ -97,7 +97,7 @@ test.describe("Valuation report page", () => {
     await page.goto("/stocks/7203/valuation");
 
     // The spinner should be visible while loading
-    await expect(page.locator(".animate-spin")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(".animate-spin").first()).toBeVisible({ timeout: 5000 });
   });
 
   test("displays full valuation report with PER/PBR data", async ({
@@ -111,13 +111,13 @@ test.describe("Valuation report page", () => {
       page.getByRole("heading", { name: "AIバリュエーション診断" })
     ).toBeVisible({ timeout: 15000 });
 
-    // PER values in summary
-    await expect(page.getByText("現在のPER")).toBeVisible();
-    await expect(page.getByText("12.50")).toBeVisible();
+    // PER values (appear in both summary and card, so use .first())
+    await expect(page.getByText("現在のPER").first()).toBeVisible();
+    await expect(page.getByText("12.50").first()).toBeVisible();
 
-    // PBR values in summary
-    await expect(page.getByText("現在のPBR")).toBeVisible();
-    await expect(page.getByText("1.20")).toBeVisible();
+    // PBR values (appear in both summary and card, so use .first())
+    await expect(page.getByText("現在のPBR").first()).toBeVisible();
+    await expect(page.getByText("1.20").first()).toBeVisible();
 
     // Evaluation badges (low = 割安)
     const badges = page.getByText("割安");
@@ -195,7 +195,7 @@ test.describe("Valuation report page", () => {
     await setupCommonRoutes(page, mockReport);
     await page.goto("/stocks/7203/valuation");
 
-    await expect(page.getByText("トヨタ自動車")).toBeVisible({
+    await expect(page.getByText("トヨタ自動車").first()).toBeVisible({
       timeout: 15000,
     });
   });
