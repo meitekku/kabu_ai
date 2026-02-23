@@ -138,7 +138,7 @@ test.describe("Valuation report page", () => {
     await expect(
       page.getByText("トヨタ自動車のバリュエーションは割安水準にあります", {
         exact: false,
-      })
+      }).first()
     ).toBeVisible();
 
     // Disclaimer
@@ -195,7 +195,9 @@ test.describe("Valuation report page", () => {
     await setupCommonRoutes(page, mockReport);
     await page.goto("/stocks/7203/valuation");
 
-    await expect(page.getByText("トヨタ自動車").first()).toBeVisible({
+    await expect(
+      page.getByTestId("company-basic-info").getByText("トヨタ自動車")
+    ).toBeVisible({
       timeout: 15000,
     });
   });
