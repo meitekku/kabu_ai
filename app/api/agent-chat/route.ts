@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { runOrchestrator } from '@/lib/agent/orchestrator';
 import { isAuthAvailable } from '@/lib/agent/claude-auth';
+import { sendAgentChatErrorEmail } from '@/lib/auth/email';
 
 export const maxDuration = 120;
 
@@ -63,8 +64,13 @@ export async function POST(req: Request) {
     }
 
     if (!(await isAuthAvailable())) {
+      sendAgentChatErrorEmail({
+        errorMessage: 'Claude認証が未設定です（ANTHROPIC_API_KEY または Claude Code認証が必要）',
+        errorContext: 'Claude認証チェック',
+        userId: session.user.id,
+      });
       return new Response(
-        JSON.stringify({ error: 'Claude認証が未設定です（ANTHROPIC_API_KEY または Claude Code認証が必要）' }),
+        JSON.stringify({ error: '申し訳ございません。現在サービスを一時的にご利用いただけません。しばらく時間をおいてから再度お試しください。' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } },
       );
     }
@@ -148,7 +154,14 @@ export async function POST(req: Request) {
         } catch (error) {
           const message = error instanceof Error ? error.message : 'エージェント処理中にエラーが発生しました';
           console.error('Agent chat error:', error);
-          controller.enqueue(encoder.encode(`\nエラー: ${message}`));
+          sendAgentChatErrorEmail({
+            errorMessage: message,
+            errorContext: 'ストリーム処理中',
+            userId,
+          });
+          controller.enqueue(
+            encoder.encode('\n申し訳ございません。処理中にエラーが発生しました。しばらく時間をおいてから再度お試しください。'),
+          );
           controller.close();
         }
       },
@@ -161,9 +174,15 @@ export async function POST(req: Request) {
     response.headers.set('X-Remaining-Questions', String(newRemaining));
     return response;
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Agent chat API error:', error);
+    sendAgentChatErrorEmail({
+      errorMessage: message,
+      errorContext: 'API処理中',
+      userId: undefined,
+    });
     return new Response(
-      JSON.stringify({ error: 'エージェントチャットの処理中にエラーが発生しました' }),
+      JSON.stringify({ error: '申し訳ございません。現在サーバーが混み合っております。しばらく時間をおいてから再度お試しください。' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }

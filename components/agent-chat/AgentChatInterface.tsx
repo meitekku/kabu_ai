@@ -140,7 +140,8 @@ export function AgentChatInterface({
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
+      const errMsg = err instanceof Error ? err.message : '';
+      setError(errMsg || '申し訳ございません。しばらく時間をおいてから再度お試しください。');
     } finally {
       setIsLoading(false);
     }
@@ -239,7 +240,7 @@ export function AgentChatInterface({
             </div>
           )}
 
-          {error && <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">エラー: {error}</div>}
+          {error && <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">{error}</div>}
         </div>
       </ScrollArea>
 

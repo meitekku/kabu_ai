@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { VerificationEmail } from "@/emails/VerificationEmail";
 import { MagicLinkEmail } from "@/emails/MagicLinkEmail";
+import { ErrorNotificationEmail } from "@/emails/ErrorNotificationEmail";
 
 let _resend: Resend | null = null;
 
@@ -76,5 +77,33 @@ export async function sendPasswordResetEmail({
   } catch (error) {
     console.error("Failed to send password reset email:", error);
     throw error;
+  }
+}
+
+const ERROR_NOTIFICATION_EMAIL = "meiteko@outlook.com";
+
+export async function sendAgentChatErrorEmail({
+  errorMessage,
+  errorContext,
+  userId,
+}: {
+  errorMessage: string;
+  errorContext: string;
+  userId?: string;
+}) {
+  try {
+    await getResend().emails.send({
+      from: FROM_ADDRESS,
+      to: ERROR_NOTIFICATION_EMAIL,
+      subject: `[株AI] Agent Chatエラー: ${errorContext}`,
+      react: ErrorNotificationEmail({
+        errorMessage,
+        errorContext,
+        userId,
+        timestamp: new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }),
+      }),
+    });
+  } catch (error) {
+    console.error("[Email] Failed to send error notification:", error);
   }
 }

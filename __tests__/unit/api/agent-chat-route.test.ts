@@ -51,6 +51,10 @@ vi.mock('@/lib/agent/claude-auth', () => ({
   isAuthAvailable: mockIsAuthAvailable,
 }));
 
+vi.mock('@/lib/auth/email', () => ({
+  sendAgentChatErrorEmail: vi.fn(),
+}));
+
 import { POST } from '@/app/api/agent-chat/route';
 
 describe('POST /api/agent-chat', () => {
@@ -172,6 +176,6 @@ describe('POST /api/agent-chat', () => {
     expect(res.status).toBe(500);
 
     const data = (await res.json()) as { error: string };
-    expect(data.error).toContain('Claude認証');
+    expect(data.error).toContain('しばらく時間をおいてから');
   });
 });
