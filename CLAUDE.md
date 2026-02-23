@@ -853,8 +853,8 @@ FROM_EMAIL=noreply@kabu-ai.jp
 
 ```bash
 ANTHROPIC_API_KEY=           # Claude SDK APIキー
-AGENT_ORCHESTRATOR_MODEL=claude-sonnet-4-20250514  # オーケストレーターモデル（省略可）
-AGENT_SUB_MODEL=claude-haiku-4-5-20251001          # サブエージェントモデル（省略可）
+AGENT_ORCHESTRATOR_MODEL=claude-sonnet-4-6  # オーケストレーターモデル（省略可）
+AGENT_SUB_MODEL=claude-sonnet-4-6           # サブエージェントモデル（省略可）
 BRAVE_SEARCH_API_KEY=        # Brave Search APIキー（省略可、DuckDuckGoにフォールバック）
 ```
 

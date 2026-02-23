@@ -15,11 +15,11 @@ export interface AgentConfig {
 }
 
 export const ORCHESTRATOR_CONFIG: AgentConfig = {
-  model: process.env.AGENT_ORCHESTRATOR_MODEL || 'claude-sonnet-4-20250514',
+  model: process.env.AGENT_ORCHESTRATOR_MODEL || 'claude-sonnet-4-6',
   maxIterations: 5,
 };
 
 export const SUB_AGENT_CONFIG: AgentConfig = {
-  model: process.env.AGENT_SUB_MODEL || 'claude-haiku-4-5-20251001',
+  model: process.env.AGENT_SUB_MODEL || 'claude-sonnet-4-6',
   maxIterations: 3,
 };
