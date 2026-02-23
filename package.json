@@ -15,6 +15,10 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:system": "playwright test",
+    "test:system:login": "playwright test __tests__/e2e/login.spec.ts __tests__/e2e/system-login.spec.ts",
+    "test:system:chat": "playwright test __tests__/e2e/system-chat.spec.ts",
+    "test:system:valuation": "playwright test __tests__/e2e/system-valuation.spec.ts",
+    "test:system:smoke": "playwright test __tests__/e2e/all-pages-smoke.spec.ts __tests__/e2e/top-page.spec.ts __tests__/e2e/stocks-news-loading-alignment.spec.ts",
     "test:all": "npm run test && npm run test:system"
   },
   "dependencies": {

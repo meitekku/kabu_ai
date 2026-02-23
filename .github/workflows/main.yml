@@ -278,6 +278,7 @@ jobs:
         needs.detect-changes.outputs.news == 'true' ||
         needs.detect-changes.outputs.stocks == 'true' ||
         needs.detect-changes.outputs.auth == 'true' ||
+        needs.detect-changes.outputs.chat == 'true' ||
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
@@ -300,8 +301,46 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      - name: Run system tests (Playwright)
-        run: npm run test:system
+      - name: Run smoke tests (pages/layout)
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          needs.detect-changes.outputs.core == 'true' ||
+          needs.detect-changes.outputs.components == 'true' ||
+          needs.detect-changes.outputs.pages == 'true' ||
+          needs.detect-changes.outputs.news == 'true' ||
+          needs.detect-changes.outputs.stocks == 'true' ||
+          needs.detect-changes.outputs.test-infra == 'true'
+        run: npx playwright test __tests__/e2e/all-pages-smoke.spec.ts __tests__/e2e/top-page.spec.ts __tests__/e2e/stocks-news-loading-alignment.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run login system tests
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          needs.detect-changes.outputs.auth == 'true' ||
+          needs.detect-changes.outputs.core == 'true' ||
+          needs.detect-changes.outputs.test-infra == 'true'
+        run: npx playwright test __tests__/e2e/login.spec.ts __tests__/e2e/system-login.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run chat system tests
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          needs.detect-changes.outputs.chat == 'true' ||
+          needs.detect-changes.outputs.core == 'true' ||
+          needs.detect-changes.outputs.test-infra == 'true'
+        run: npx playwright test __tests__/e2e/system-chat.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run valuation system tests
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          needs.detect-changes.outputs.stocks == 'true' ||
+          needs.detect-changes.outputs.core == 'true' ||
+          needs.detect-changes.outputs.test-infra == 'true'
+        run: npx playwright test __tests__/e2e/system-valuation.spec.ts
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
