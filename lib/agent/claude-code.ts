@@ -1,7 +1,15 @@
 import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import path from 'path';
+import fs from 'fs';
 
 const PROJECT_ROOT = path.resolve(process.cwd());
+const WORKSPACE_DIR = path.join(PROJECT_ROOT, 'workspace');
+
+function ensureWorkspaceDir() {
+  if (!fs.existsSync(WORKSPACE_DIR)) {
+    fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+  }
+}
 
 const SYSTEM_PROMPT = `あなたは株式投資の専門家AIアシスタント「株AIエージェント」です。
 ユーザーの質問に対して、データベースやウェブ検索を活用して正確で詳細な回答を提供します。
@@ -122,20 +130,31 @@ curl -sL "https://finance.yahoo.co.jp/quote/7203.T" -H "User-Agent: Mozilla/5.0"
 - 日付ソートはDESC（新しい順）をデフォルトにする`;
 
 export function createAgentStream(userMessage: string, sessionId?: string) {
+  ensureWorkspaceDir();
+
+  // ANTHROPIC_API_KEYが環境にあると、OAuth認証の代わりにAPI Key認証を試みてしまうため除外
+  const cleanEnv = { ...process.env };
+  delete cleanEnv.ANTHROPIC_API_KEY;
+
   const q = query({
     prompt: userMessage,
     options: {
-      cwd: PROJECT_ROOT,
+      cwd: WORKSPACE_DIR,
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
-      tools: ['Bash', 'Read', 'Grep', 'Glob'],
+      tools: ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob'],
       includePartialMessages: true,
       maxTurns: 15,
+      settingSources: ['project'],
+      env: cleanEnv,
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
         append: SYSTEM_PROMPT,
       } as const,
+      stderr: (data: string) => {
+        console.error('[Agent SDK stderr]', data);
+      },
       ...(sessionId ? { resume: sessionId } : {}),
     },
   });

@@ -17,14 +17,14 @@
 | UI | Tailwind CSS + shadcn/ui + Radix UI |
 | メール | Resend |
 | AI (チャット) | GLM-4 (智譜AI / Zhipu AI) |
-| AI (エージェント) | Claude SDK (@anthropic-ai/sdk) |
+| AI (エージェント) | Claude Agent SDK (@anthropic-ai/claude-agent-sdk) |
 
 ---
 
 ## AI API ルール
 
 **一般チャットのAPIは必ずGLM-4を使用すること。**
-**Agent Chat（/agent-chat）はClaude SDKを使用する。**
+**Agent Chat（/agent-chat）はClaude Agent SDKを使用する。**
 
 - テキスト生成: `glm-4-plus`（予測API等で使用。旧glm-4.7-flashxは推論トークン消費で低速のため変更）
 - 画像入力対応（Vision）: `glm-4v-flash`
@@ -33,6 +33,13 @@
 - OpenAI互換フォーマット（messages形式）
 
 Google Gemini, OpenAI GPT等の他のAI APIは使用しないこと。
+
+### Agent Chat — Claude Agent SDK ルール（重要）
+
+- **ANTHROPIC_API_KEY は絶対に使用しない。** Agent Chat は `@anthropic-ai/claude-agent-sdk` の `query()` を使い、Claude Code CLI の認証（`claude.ai` OAuth）を利用する。API Keyは不要であり、環境変数に設定してはならない。
+- 参考実装: `claude-code-chat/src/lib/claude.ts`
+- 本番サーバーでは `claude auth status` でログイン状態を確認すること
+- `ANTHROPIC_API_KEY` が環境変数にあると OAuth 認証を上書きしてエラーになるため、`.env.local` や pm2 env に絶対に設定しない
 
 ---
 
@@ -880,12 +887,10 @@ FROM_EMAIL=noreply@kabu-ai.jp
 
 ### Agent Chat
 
-```bash
-ANTHROPIC_API_KEY=           # Claude SDK APIキー
-AGENT_ORCHESTRATOR_MODEL=claude-sonnet-4-6  # オーケストレーターモデル（省略可）
-AGENT_SUB_MODEL=claude-sonnet-4-6           # サブエージェントモデル（省略可）
-BRAVE_SEARCH_API_KEY=        # Brave Search APIキー（省略可、DuckDuckGoにフォールバック）
-```
+**注意: ANTHROPIC_API_KEYは使用しない。Claude Code CLIのOAuth認証を利用する。**
+
+Agent Chat はサーバーにインストールされた Claude Code CLI（`claude.ai` ログイン済み）を
+`@anthropic-ai/claude-agent-sdk` 経由で呼び出す。API Keyは不要。
 
 ### OAuth（オプション）
 
