@@ -80,7 +80,7 @@ test.describe("Login Page", () => {
   test("signup link is shown on localhost", async ({ page }) => {
     // On localhost, the signup link should be shown
     await expect(
-      page.getByText("アカウントをお持ちでない方はこちら")
+      page.getByRole("link", { name: "アカウントをお持ちでない方はこちら" }).first()
     ).toBeVisible({ timeout: 3000 });
   });
 });
