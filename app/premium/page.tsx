@@ -12,6 +12,8 @@ import {
     LineChart,
     Shield,
     Clock,
+    Newspaper,
+    Heart,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -48,8 +50,10 @@ export default function PremiumPage() {
                             </h1>
 
                             <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-                                銘柄の深層を読み解く<span className="text-white font-medium">「AIチャット」</span>と、
-                                独自の予測アルゴリズムによる<span className="text-white font-medium">「株価予測」</span>。
+                                銘柄の深層を読み解く<span className="text-white font-medium">「AIチャット」</span>、
+                                独自の予測アルゴリズムによる<span className="text-white font-medium">「株価予測」</span>、
+                                <br className="hidden md:block" />
+                                そしてあなた専用の<span className="text-white font-medium">「お気に入りニュース」</span>。
                                 <br className="hidden md:block" />
                                 高度なAI機能が、あなたの株式投資を強力にサポートします。
                             </p>
@@ -59,7 +63,7 @@ export default function PremiumPage() {
                                     size="lg"
                                     className="h-14 px-10 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full shadow-[0_0_30px_rgba(245,158,11,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    月額 3,000円（税込）で始める
+                                    月額 5,000円（税込）で始める
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
                             </Link>
@@ -268,6 +272,79 @@ export default function PremiumPage() {
                         </div>
                     </section>
 
+                    {/* Favorites News */}
+                    <section className="py-12 md:py-16 bg-gradient-to-b from-transparent via-slate-900/10 to-transparent">
+                        <div className="max-w-6xl mx-auto px-4">
+                            <div className="group relative rounded-3xl border border-slate-800 bg-slate-900/40 backdrop-blur-xl overflow-hidden transition-all hover:border-orange-500/40 hover:shadow-[0_0_40px_rgba(249,115,22,0.1)]">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-50" />
+
+                                <div className="p-8 md:p-10">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="p-3 rounded-2xl bg-orange-500/10 border border-orange-500/20">
+                                            <Newspaper className="w-6 h-6 text-orange-400" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-white">お気に入りニュース</h2>
+                                            <p className="text-xs text-orange-400 font-semibold tracking-wider">PERSONALIZED NEWS</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-400 mb-8 leading-relaxed max-w-3xl">
+                                        お気に入り銘柄を登録するだけで、AIがあなた専用のニュースレポートを毎日自動生成。
+                                        昼と引け後の2回、重要な情報をピックアップしてお届けします。LINE連携で通知・銘柄管理も可能。
+                                    </p>
+
+                                    {/* Demo cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="rounded-2xl bg-[#0d1117] border border-slate-800 p-5">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Heart className="w-4 h-4 text-red-400" />
+                                                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">Registration</span>
+                                            </div>
+                                            <p className="text-sm text-slate-300">
+                                                最大50銘柄を登録。重要度を星で設定し、優先的に分析。
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl bg-[#0d1117] border border-slate-800 p-5">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Newspaper className="w-4 h-4 text-orange-400" />
+                                                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">AI Report</span>
+                                            </div>
+                                            <p className="text-sm text-slate-300">
+                                                毎日11:30/15:30にAIが市況・ニュース・材料を分析してレポート。
+                                            </p>
+                                        </div>
+                                        <div className="rounded-2xl bg-[#0d1117] border border-slate-800 p-5">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <MessageSquare className="w-4 h-4 text-green-400" />
+                                                <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">LINE Bot</span>
+                                            </div>
+                                            <p className="text-sm text-slate-300">
+                                                LINEでレポート自動通知＆銘柄の追加・削除・情報取得が可能。
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Features */}
+                                    <div className="mt-8 space-y-3">
+                                        {[
+                                            "お気に入り銘柄の株価・ニュースを毎日AIが自動分析",
+                                            "重要度設定で優先銘柄を重点的にカバー",
+                                            "LINEで通知受信＆お気に入り銘柄の管理",
+                                        ].map((text, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-3 text-sm text-slate-300"
+                                            >
+                                                <CheckCircle2 className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                                                {text}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
                     {/* Why Premium */}
                     <section className="py-20 md:py-32">
                         <div className="max-w-5xl mx-auto px-4">
@@ -280,7 +357,7 @@ export default function PremiumPage() {
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {[
                                     {
                                         icon: MessageSquare,
@@ -300,12 +377,19 @@ export default function PremiumPage() {
                                         title: "優先サポート・先行体験",
                                         desc: "新機能の優先案内や、テクニカルサポートを提供。ユーザーの要望も優先的に開発へ反映。",
                                     },
+                                    {
+                                        icon: Newspaper,
+                                        color: "orange",
+                                        title: "お気に入りニュース",
+                                        desc: "お気に入り銘柄のAIニュースレポートを毎日自動配信。LINE通知にも対応。",
+                                    },
                                 ].map((item, i) => {
                                     const colorMap: Record<string, string> = {
                                         blue: "text-blue-400 bg-blue-500/10 border-blue-500/20",
                                         emerald:
                                             "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
                                         amber: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                                        orange: "text-orange-400 bg-orange-500/10 border-orange-500/20",
                                     };
                                     const c = colorMap[item.color];
 
@@ -345,7 +429,7 @@ export default function PremiumPage() {
                                     <Crown className="w-16 h-16 text-amber-400 mx-auto mb-8 animate-pulse" />
 
                                     <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tight">
-                                        月額 3,000円でAIを味方に。
+                                        月額 5,000円でAIを味方に。
                                     </h2>
                                     <p className="text-lg text-slate-400 mb-12 max-w-lg mx-auto leading-relaxed">
                                         制限なしのAI対話と、高精度な株価予測。

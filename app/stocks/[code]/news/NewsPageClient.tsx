@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import StockChart from '@/components/parts/chart/StockChart';
 import NewsList from '@/components/ui/NewsList';
 import CompanyBasicInfo from '@/components/common/CompanyBasicInfo';
+import { FavoriteButton } from '@/components/stocks/FavoriteButton';
 import { AiFeatureNav } from '@/components/stocks/AiFeatureNav';
 
 interface NewsPageClientProps {
@@ -27,6 +28,9 @@ const NewsPageClient = ({ code }: NewsPageClientProps) => {
   return (
     <div>
       <CompanyBasicInfo code={code} />
+      <div className="flex justify-end px-2 -mt-2 mb-2">
+        <FavoriteButton code={code} />
+      </div>
       <StockChart
         code={code}
         pcHeight={{ upper: 200, lower: 100 }}

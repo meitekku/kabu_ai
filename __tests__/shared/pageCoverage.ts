@@ -19,6 +19,7 @@ export const PAGE_COVERAGE = [
   },
   { template: "/contact", systemPath: "/contact" },
   { template: "/disclaimer", systemPath: "/disclaimer" },
+  { template: "/favorites", systemPath: "/favorites" },
   { template: "/login", systemPath: "/login" },
   { template: "/news/latest", systemPath: "/news/latest" },
   { template: "/premium", systemPath: "/premium" },

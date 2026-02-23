@@ -206,7 +206,7 @@ export default function BillingPage() {
                                                 <p className="text-sm text-emerald-700">全機能が利用可能です</p>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-2xl font-bold text-emerald-600">¥3,000<span className="text-sm font-normal">/月</span></div>
+                                                <div className="text-2xl font-bold text-emerald-600">¥5,000<span className="text-sm font-normal">/月</span></div>
                                             </div>
                                         </div>
                                         {subscription.currentPeriodEnd && (
@@ -264,7 +264,7 @@ export default function BillingPage() {
                                             <p className="text-sm text-slate-500">AI分析と株価予測の全機能が使い放題</p>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-2xl font-bold text-emerald-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                            <div className="text-2xl font-bold text-emerald-600">¥5,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
                                         </div>
                                     </div>
 

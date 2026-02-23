@@ -10,9 +10,112 @@ on:
   workflow_dispatch:
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      api: ${{ steps.filter.outputs.api }}
+      auth: ${{ steps.filter.outputs.auth }}
+      chat: ${{ steps.filter.outputs.chat }}
+      news: ${{ steps.filter.outputs.news }}
+      stocks: ${{ steps.filter.outputs.stocks }}
+      admin: ${{ steps.filter.outputs.admin }}
+      legal: ${{ steps.filter.outputs.legal }}
+      pages: ${{ steps.filter.outputs.pages }}
+      components: ${{ steps.filter.outputs.components }}
+      ui: ${{ steps.filter.outputs.ui }}
+      test-infra: ${{ steps.filter.outputs.test-infra }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'lib/**'
+              - 'hooks/**'
+              - 'utils/**'
+              - 'next.config.js'
+              - 'package.json'
+              - 'tsconfig.json'
+              - 'tailwind.config.js'
+              - 'middleware.ts'
+            api:
+              - 'app/api/**'
+            auth:
+              - 'lib/auth/**'
+              - 'components/auth/**'
+              - 'app/login/**'
+              - 'app/signup/**'
+              - 'app/api/auth/**'
+            chat:
+              - 'lib/agent/**'
+              - 'components/agent-chat/**'
+              - 'components/chat/**'
+              - 'components/common/ChatHistoryDrawer.tsx'
+              - 'app/api/chat/**'
+              - 'app/api/agent-chat/**'
+              - 'app/chat/**'
+              - 'app/agent-chat/**'
+            news:
+              - 'components/news/**'
+              - 'components/parts/chart/**'
+              - 'app/news/**'
+              - 'app/page.tsx'
+              - 'types/**'
+            stocks:
+              - 'app/stocks/**'
+              - 'app/api/stocks/**'
+              - 'components/prediction/**'
+              - 'components/stocks/**'
+            admin:
+              - 'app/admin/**'
+              - 'app/api/admin/**'
+              - 'components/admin/**'
+              - 'components/comment/**'
+            legal:
+              - 'app/terms/**'
+              - 'app/privacy-policy/**'
+              - 'app/contact/**'
+              - 'app/disclaimer/**'
+              - 'app/commercial-transactions/**'
+              - 'app/premium/**'
+            pages:
+              - 'app/**/page.tsx'
+              - 'app/**/layout.tsx'
+              - 'app/**/loading.tsx'
+              - 'app/globals.css'
+            components:
+              - 'components/**'
+            ui:
+              - 'components/ui/**'
+            test-infra:
+              - '__tests__/setup.ts'
+              - '__tests__/shared/**'
+              - 'vitest.config.ts'
+              - 'playwright.config.ts'
+              - 'tsconfig.test.json'
+
   lint-and-typecheck:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    needs: detect-changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      needs.detect-changes.outputs.core == 'true' ||
+      needs.detect-changes.outputs.api == 'true' ||
+      needs.detect-changes.outputs.auth == 'true' ||
+      needs.detect-changes.outputs.chat == 'true' ||
+      needs.detect-changes.outputs.news == 'true' ||
+      needs.detect-changes.outputs.stocks == 'true' ||
+      needs.detect-changes.outputs.admin == 'true' ||
+      needs.detect-changes.outputs.legal == 'true' ||
+      needs.detect-changes.outputs.pages == 'true' ||
+      needs.detect-changes.outputs.components == 'true' ||
+      needs.detect-changes.outputs.ui == 'true' ||
+      needs.detect-changes.outputs.test-infra == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -31,10 +134,23 @@ jobs:
       - name: ESLint check
         run: npm run lint
 
-  test:
+  test-unit-api:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: lint-and-typecheck
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.api == 'true' ||
+        needs.detect-changes.outputs.auth == 'true' ||
+        needs.detect-changes.outputs.chat == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
     steps:
       - uses: actions/checkout@v4
 
@@ -47,33 +163,163 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Run unit tests
-        run: npm run test:unit
+      - name: Run unit API tests
+        run: npx vitest run __tests__/unit/api
+
+  test-unit-components:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.ui == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit component tests
+        run: npx vitest run __tests__/unit/components
+
+  test-unit-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.legal == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit page tests
+        run: npx vitest run __tests__/unit/pages
+
+  test-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.news == 'true' ||
+        needs.detect-changes.outputs.stocks == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: npx vitest run __tests__/integration
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.news == 'true' ||
+        needs.detect-changes.outputs.stocks == 'true' ||
+        needs.detect-changes.outputs.auth == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
 
       - name: Build application
-        if: success()
         run: npm run build
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
       - name: Install Playwright browser
-        if: success()
         run: npx playwright install --with-deps chromium
 
       - name: Run system tests (Playwright)
-        if: success()
         run: npm run test:system
         env:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: >-
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: test
+    needs:
+      - lint-and-typecheck
+      - test-unit-api
+      - test-unit-components
+      - test-unit-pages
+      - test-integration
+      - test-e2e
     steps:
       - uses: actions/checkout@v4
 

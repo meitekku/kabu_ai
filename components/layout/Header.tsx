@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from 'next/image';
 import { useState, useRef, useEffect, Suspense } from 'react';
-import { Crown, Settings, LogOut, LogIn, ChevronDown } from 'lucide-react';
+import { Crown, Settings, LogOut, LogIn, ChevronDown, Heart } from 'lucide-react';
 import { useSession, signOut } from '@/lib/auth/auth-client';
 
 const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {
@@ -70,6 +70,14 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             >
               <Crown className="w-4 h-4 text-amber-500" />
               プレミアム
+            </Link>
+            <Link
+              href="/favorites"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setIsOpen(false)}
+            >
+              <Heart className="w-4 h-4 text-red-400" />
+              お気に入り
             </Link>
             <Link
               href="/settings/billing"
