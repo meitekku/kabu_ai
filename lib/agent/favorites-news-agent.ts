@@ -1,7 +1,15 @@
 import { query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import path from 'path';
+import fs from 'fs';
 
 const PROJECT_ROOT = path.resolve(process.cwd());
+const WORKSPACE_DIR = path.join(PROJECT_ROOT, 'workspace');
+
+function ensureWorkspaceDir() {
+  if (!fs.existsSync(WORKSPACE_DIR)) {
+    fs.mkdirSync(WORKSPACE_DIR, { recursive: true });
+  }
+}
 
 const SYSTEM_PROMPT = `あなたは株式投資の専門家AIアシスタントです。
 ユーザーのお気に入り銘柄について、最新のデータに基づいたパーソナルニュースレポートを生成します。
@@ -36,21 +44,35 @@ Bashツールで curl を使って最新ニュースを検索できます。`;
 export async function generateFavoritesReport(
   prompt: string
 ): Promise<string> {
+  ensureWorkspaceDir();
+
+  // ANTHROPIC_API_KEYが環境にあると、OAuth認証の代わりにAPI Key認証を試みてしまうため除外
+  const cleanEnv = { ...process.env };
+  delete cleanEnv.ANTHROPIC_API_KEY;
+
   const messages: SDKMessage[] = [];
+  const tools = ['Bash', 'Read', 'Grep', 'Glob'];
 
   const q = query({
     prompt,
     options: {
-      cwd: PROJECT_ROOT,
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-      tools: ['Bash', 'Read', 'Grep', 'Glob'],
+      cwd: WORKSPACE_DIR,
+      // bypassPermissions は root ユーザーで拒否されるため、
+      // allowedTools で全ツールを自動許可する方式を使う
+      permissionMode: 'default',
+      tools,
+      allowedTools: tools,
       maxTurns: 10,
+      settingSources: ['project'],
+      env: cleanEnv,
       systemPrompt: {
         type: 'preset',
         preset: 'claude_code',
         append: SYSTEM_PROMPT,
       } as const,
+      stderr: (data: string) => {
+        console.error('[Favorites Agent stderr]', data);
+      },
     },
   });
 
