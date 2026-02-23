@@ -136,13 +136,17 @@ export function createAgentStream(userMessage: string, sessionId?: string) {
   const cleanEnv = { ...process.env };
   delete cleanEnv.ANTHROPIC_API_KEY;
 
+  const tools = ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob'];
+
   const q = query({
     prompt: userMessage,
     options: {
       cwd: WORKSPACE_DIR,
-      permissionMode: 'bypassPermissions',
-      allowDangerouslySkipPermissions: true,
-      tools: ['Bash', 'Read', 'Write', 'Edit', 'Grep', 'Glob'],
+      // bypassPermissions は root ユーザーで拒否されるため、
+      // allowedTools で全ツールを自動許可する方式を使う
+      permissionMode: 'default',
+      tools,
+      allowedTools: tools,
       includePartialMessages: true,
       maxTurns: 15,
       settingSources: ['project'],

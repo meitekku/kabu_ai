@@ -109,6 +109,12 @@ export function AgentChatInterface({
 
     const assistantId = `assistant-${Date.now()}`;
 
+    // Immediately add an empty assistant message so the UI shows a placeholder
+    setMessages((prev) => [
+      ...prev,
+      { id: assistantId, role: 'assistant', content: '' },
+    ]);
+
     try {
       const response = await fetch('/api/agent-chat', {
         method: 'POST',
@@ -132,7 +138,6 @@ export function AgentChatInterface({
       }
 
       let assistantText = '';
-      let assistantAdded = false;
       let buffer = '';
 
       while (true) {
@@ -167,19 +172,11 @@ export function AgentChatInterface({
               case 'text-delta': {
                 if (parsed.text) {
                   assistantText += parsed.text;
-                  if (!assistantAdded) {
-                    assistantAdded = true;
-                    setMessages((prev) => [
-                      ...prev,
-                      { id: assistantId, role: 'assistant', content: assistantText },
-                    ]);
-                  } else {
-                    setMessages((prev) =>
-                      prev.map((m) =>
-                        m.id === assistantId ? { ...m, content: assistantText } : m,
-                      ),
-                    );
-                  }
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantId ? { ...m, content: assistantText } : m,
+                    ),
+                  );
                 }
                 break;
               }
@@ -198,13 +195,14 @@ export function AgentChatInterface({
 
               case 'message-end': {
                 setStatusText(null);
-                if (!assistantAdded && parsed.result) {
+                if (parsed.result && !assistantText) {
                   assistantText = parsed.result;
-                  setMessages((prev) => [
-                    ...prev,
-                    { id: assistantId, role: 'assistant', content: assistantText },
-                  ]);
                 }
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId ? { ...m, content: assistantText } : m,
+                  ),
+                );
                 break;
               }
 
@@ -222,6 +220,8 @@ export function AgentChatInterface({
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : '';
       setError(errMsg || '申し訳ございません。しばらく時間をおいてから再度お試しください。');
+      // Remove the empty assistant placeholder on error
+      setMessages((prev) => prev.filter((m) => m.id !== assistantId || m.content !== ''));
     } finally {
       setIsLoading(false);
       setStatusText(null);
@@ -304,29 +304,24 @@ export function AgentChatInterface({
               </div>
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-medium mb-1">{message.role === 'user' ? 'あなた' : 'AI エージェント'}</p>
-                <div className="text-sm whitespace-pre-wrap break-words">{message.content}</div>
+                {message.role === 'assistant' && !message.content && isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">
+                      {statusText || '思考中...'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-sm whitespace-pre-wrap break-words">{message.content}</div>
+                )}
               </div>
             </div>
           ))}
 
-          {isLoading && messages[messages.length - 1]?.role === 'user' && !messages.some((m) => m.id.startsWith('assistant-')) && (
-            <div className="flex gap-3 p-4 rounded-lg bg-muted mr-12">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
-                <Bot className="w-4 h-4 text-secondary-foreground" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">
-                  {statusText || 'エージェントが処理中...'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {isLoading && statusText && messages[messages.length - 1]?.role === 'assistant' && (
+          {isLoading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
               <Loader2 className="w-3 h-3 animate-spin" />
-              {statusText}
+              {statusText || 'エージェントが処理中...'}
             </div>
           )}
 
