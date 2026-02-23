@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function UserButton() {
   const { user, isLogin, isLoading } = useAuth();
@@ -38,6 +38,9 @@ export function UserButton() {
     );
   }
 
+  // Twitter _normal (48x48) → _bigger (73x73) for better avatar quality
+  const avatarImage = user.image?.replace(/_normal\./, "_bigger.");
+
   const initials = user.name
     ? user.name
         .split(" ")
@@ -51,6 +54,7 @@ export function UserButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
+            {avatarImage && <AvatarImage src={avatarImage} alt={user.name || ""} />}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
         </Button>
