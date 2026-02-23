@@ -51,10 +51,14 @@ function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      await signIn.social({
+      const result = await signIn.social({
         provider,
         callbackURL: "/",
       });
+      if (result?.error) {
+        setError(result.error.message || "ソーシャルログインに失敗しました");
+        setLoading(false);
+      }
     } catch {
       setError("ソーシャルログインに失敗しました");
       setLoading(false);
