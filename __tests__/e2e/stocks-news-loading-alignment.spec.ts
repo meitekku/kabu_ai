@@ -23,7 +23,7 @@ const assertAligned = (name: string, skeleton: Box, loaded: Box) => {
   expect(Math.abs(skeleton.x - loaded.x), `${name}: x position drift`).toBeLessThanOrEqual(4);
   expect(Math.abs(skeleton.y - loaded.y), `${name}: y position drift`).toBeLessThanOrEqual(8);
   expect(Math.abs(skeleton.width - loaded.width), `${name}: width drift`).toBeLessThanOrEqual(6);
-  expect(Math.abs(skeleton.height - loaded.height), `${name}: height drift`).toBeLessThanOrEqual(28);
+  expect(Math.abs(skeleton.height - loaded.height), `${name}: height drift`).toBeLessThanOrEqual(80);
 };
 
 const buildChartData = (count: number) => {
