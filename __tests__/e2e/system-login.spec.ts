@@ -148,9 +148,9 @@ test.describe("Login System Tests", () => {
       await page.getByLabel("パスワード").fill("wrongpass123");
       await page.getByRole("button", { name: "ログイン", exact: true }).click();
 
-      // Should display error message (from better-auth or LoginForm fallback)
+      // Should display error message in the login form area
       await expect(
-        page.locator(".text-red-500")
+        page.locator(".text-red-500.text-sm.text-center")
       ).toBeVisible({ timeout: 5000 });
 
       // Should stay on login page
@@ -274,7 +274,7 @@ test.describe("Login System Tests", () => {
     test("clicking signup link navigates to /signup", async ({ page }) => {
       await page.goto("/login");
 
-      await page.getByText("アカウントをお持ちでない方はこちら").click();
+      await page.getByRole("link", { name: "アカウントをお持ちでない方はこちら" }).first().click();
 
       await page.waitForURL("**/signup", { timeout: 10000 });
       expect(page.url()).toContain("/signup");

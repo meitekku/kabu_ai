@@ -90,7 +90,7 @@ test.describe("Chat System", () => {
       page.getByText("対象銘柄:").first()
     ).toBeVisible({ timeout: 15000 });
     await expect(
-      page.getByText("トヨタ自動車（7203）")
+      page.getByText("トヨタ自動車（7203）", { exact: true }).first()
     ).toBeVisible({ timeout: 10000 });
   });
 
@@ -190,7 +190,7 @@ test.describe("Chat System", () => {
     ).toBeVisible({ timeout: 10000 });
     // LoginModal action button
     await expect(
-      page.getByText("ログインする", { exact: false })
+      page.getByRole("button", { name: "ログインする" })
     ).toBeVisible();
   });
 
@@ -227,7 +227,7 @@ test.describe("Chat System", () => {
     ).toBeVisible({ timeout: 10000 });
     // PremiumModal action button
     await expect(
-      page.getByText("プレミアム会員になる", { exact: false })
+      page.getByRole("button", { name: "プレミアム会員になる" })
     ).toBeVisible();
   });
 
