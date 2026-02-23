@@ -36,31 +36,37 @@ export async function GET() {
 
     // 本日または直近の日付のデータがある会社コードと名前を取得（昇順）
     // 土日・祝日の場合は直前の営業日のデータを表示
-    // CROSS JOINで最新日のUTC範囲を1回だけ算出し、created_atのインデックスを活用
+    // 2ステップに分割: 最新日の範囲を取得→その範囲でcreated_atインデックスを活用
+    const rangeQuery = `
+      SELECT
+        CONVERT_TZ(
+          DATE(CONVERT_TZ(MAX(p.created_at), '+00:00', '+09:00')),
+          '+09:00', '+00:00'
+        ) as day_start,
+        CONVERT_TZ(
+          DATE(CONVERT_TZ(MAX(p.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
+          '+09:00', '+00:00'
+        ) as day_end
+      FROM post p
+      INNER JOIN post_code pc ON p.id = pc.post_id
+      WHERE p.created_at <= NOW()
+    `;
+    const rangeResults = await db.select<RowDataPacket & { day_start: string; day_end: string }>(rangeQuery);
+
+    if (rangeResults.length === 0 || !rangeResults[0].day_start) {
+      return Response.json({ success: true, data: [] } as DatabaseResponse<CompanyOption[]>);
+    }
+
+    const { day_start, day_end } = rangeResults[0];
     const query = `
       SELECT DISTINCT pc.code, c.name
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
       INNER JOIN company c ON pc.code = c.code
-      CROSS JOIN (
-        SELECT
-          CONVERT_TZ(
-            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')),
-            '+09:00', '+00:00'
-          ) as day_start,
-          CONVERT_TZ(
-            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
-            '+09:00', '+00:00'
-          ) as day_end
-        FROM post p2
-        INNER JOIN post_code pc2 ON p2.id = pc2.post_id
-        WHERE p2.created_at <= NOW()
-      ) latest_day
-      WHERE p.created_at >= latest_day.day_start
-        AND p.created_at < latest_day.day_end
+      WHERE p.created_at >= ? AND p.created_at < ?
       ORDER BY pc.code ASC
     `;
-    const results = await db.select<CompanyOption>(query);
+    const results = await db.select<CompanyOption>(query, [day_start, day_end]);
 
     return Response.json({
       success: true,
@@ -112,32 +118,36 @@ export async function POST(request: NextRequest) {
     // contentは最初の500文字のみ取得してパフォーマンス改善
     // 最新の1件のみ取得
     // 土日・祝日の場合は直前の営業日のデータを表示
-    // CROSS JOINで最新日のUTC範囲を1回だけ算出し、created_atのインデックスを活用
-    const articleQuery = `
-      SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content, p.created_at, pc.code
+    // 2ステップに分割: 最新日の範囲を取得→その範囲でcreated_atインデックスを活用
+    const articleRangeQuery = `
+      SELECT
+        CONVERT_TZ(
+          DATE(CONVERT_TZ(MAX(p.created_at), '+00:00', '+09:00')),
+          '+09:00', '+00:00'
+        ) as day_start,
+        CONVERT_TZ(
+          DATE(CONVERT_TZ(MAX(p.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
+          '+09:00', '+00:00'
+        ) as day_end
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
-      CROSS JOIN (
-        SELECT
-          CONVERT_TZ(
-            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')),
-            '+09:00', '+00:00'
-          ) as day_start,
-          CONVERT_TZ(
-            DATE(CONVERT_TZ(MAX(p2.created_at), '+00:00', '+09:00')) + INTERVAL 1 DAY,
-            '+09:00', '+00:00'
-          ) as day_end
-        FROM post p2
-        INNER JOIN post_code pc2 ON p2.id = pc2.post_id
-        WHERE p2.created_at <= NOW()
-      ) latest_day
-      WHERE pc.code = ?
-        AND p.created_at >= latest_day.day_start
-        AND p.created_at < latest_day.day_end
-      ORDER BY p.created_at DESC
-      LIMIT 1
+      WHERE p.created_at <= NOW()
     `;
-    const articleResults = await db.select<PostArticle>(articleQuery, [code]);
+    const articleRange = await db.select<RowDataPacket & { day_start: string; day_end: string }>(articleRangeQuery);
+
+    let articleResults: PostArticle[] = [];
+    if (articleRange.length > 0 && articleRange[0].day_start) {
+      const articleQuery = `
+        SELECT p.id, p.title, SUBSTRING(p.content, 1, 500) as content, p.created_at, pc.code
+        FROM post p
+        INNER JOIN post_code pc ON p.id = pc.post_id
+        WHERE pc.code = ?
+          AND p.created_at >= ? AND p.created_at < ?
+        ORDER BY p.created_at DESC
+        LIMIT 1
+      `;
+      articleResults = await db.select<PostArticle>(articleQuery, [code, articleRange[0].day_start, articleRange[0].day_end]);
+    }
 
     return Response.json({
       success: true,
