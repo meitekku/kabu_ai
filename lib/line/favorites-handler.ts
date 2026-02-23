@@ -208,9 +208,10 @@ async function handleList(userId: string): Promise<string> {
 
   const lines = favorites.map((f) => {
     const stars = f.importance ? '★'.repeat(f.importance) : '';
-    const price = f.current_price != null ? `¥${f.current_price.toLocaleString()}` : '';
-    const diff = f.diff_percent != null
-      ? `(${f.diff_percent > 0 ? '+' : ''}${f.diff_percent.toFixed(2)}%)`
+    const price = f.current_price != null ? `¥${Number(f.current_price).toLocaleString()}` : '';
+    const diffNum = f.diff_percent != null ? Number(f.diff_percent) : null;
+    const diff = diffNum != null
+      ? `(${diffNum > 0 ? '+' : ''}${diffNum.toFixed(2)}%)`
       : '';
     return `${stars ? stars + ' ' : ''}${f.name || f.code}(${f.code}) ${price} ${diff}`.trim();
   });
@@ -252,10 +253,11 @@ async function handleInfo(intent: ParsedIntent): Promise<string> {
     const c = companies[0];
     let info = `${c.name}(${c.code})`;
     if (c.current_price != null) {
-      info += `\n株価: ¥${c.current_price.toLocaleString()}`;
+      info += `\n株価: ¥${Number(c.current_price).toLocaleString()}`;
     }
     if (c.diff_percent != null) {
-      info += ` (${c.diff_percent > 0 ? '+' : ''}${c.diff_percent.toFixed(2)}%)`;
+      const dp = Number(c.diff_percent);
+      info += ` (${dp > 0 ? '+' : ''}${dp.toFixed(2)}%)`;
     }
 
     // 最新ニュース
