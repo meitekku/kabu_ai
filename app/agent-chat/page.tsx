@@ -1,78 +1,58 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AdminProtectedRoute } from '@/components/auth/AdminProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgentChatInterface } from '@/components/agent-chat/AgentChatInterface';
-import { AgentChatSidebar } from '@/components/agent-chat/AgentChatSidebar';
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface MessageRow {
-  role: string;
-  content: string;
-}
+import { ChatHistoryDrawer } from '@/components/common/ChatHistoryDrawer';
 
 export default function AgentChatPage() {
-  const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
-  const [initialMessages, setInitialMessages] = useState<ChatMessage[]>([]);
+  const [chatId, setChatId] = useState<string | undefined>();
   const [chatKey, setChatKey] = useState(0);
-  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+  const [initialMessages, setInitialMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const handleSelectChat = useCallback(async (chatId: string | null) => {
-    if (!chatId) {
-      setSelectedChatId(undefined);
-      setInitialMessages([]);
-      setChatKey((k) => k + 1);
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/agent-chat/history?chatId=${chatId}`);
-      if (!response.ok) return;
-      const data = (await response.json()) as { messages?: MessageRow[] };
-      const messages: ChatMessage[] = (data.messages || [])
-        .filter((m: MessageRow) => m.role === 'user' || m.role === 'assistant')
-        .map((m: MessageRow) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-
-      setSelectedChatId(chatId);
-      setInitialMessages(messages);
-      setChatKey((k) => k + 1);
-    } catch (error) {
-      console.error('Failed to load chat:', error);
-    }
+  const handleChatCreated = useCallback((newChatId: string) => {
+    setChatId(newChatId);
   }, []);
 
   const handleNewChat = useCallback(() => {
-    setSelectedChatId(undefined);
+    setChatId(undefined);
     setInitialMessages([]);
     setChatKey((k) => k + 1);
+    setHistoryOpen(false);
   }, []);
 
-  const handleChatCreated = useCallback(() => {
-    setSidebarRefreshKey((k) => k + 1);
-  }, []);
+  const handleSelectChat = useCallback(
+    (selectedChatId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>) => {
+      setChatId(selectedChatId);
+      setInitialMessages(messages);
+      setChatKey((k) => k + 1);
+      setHistoryOpen(false);
+    },
+    [],
+  );
 
   return (
-    <AdminProtectedRoute>
-      <div className="flex h-[calc(100vh-64px)]">
-        <AgentChatSidebar
-          selectedChatId={selectedChatId}
+    <ProtectedRoute>
+      <div className="h-[calc(100vh-64px)]">
+        <AgentChatInterface
+          key={chatKey}
+          chatId={chatId}
+          initialMessages={initialMessages}
+          onChatCreated={handleChatCreated}
+          onNewChat={handleNewChat}
+          onOpenHistory={() => setHistoryOpen(true)}
+        />
+        <ChatHistoryDrawer
+          apiBasePath="/api/agent-chat"
+          selectedChatId={chatId}
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
-          refreshKey={sidebarRefreshKey}
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          refreshKey={chatKey}
         />
-        <div className="flex-1">
-          <AgentChatInterface
-            key={chatKey}
-            chatId={selectedChatId}
-            initialMessages={initialMessages}
-            onChatCreated={handleChatCreated}
-          />
-        </div>
       </div>
-    </AdminProtectedRoute>
+    </ProtectedRoute>
   );
 }

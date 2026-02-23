@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, Plus, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -17,20 +17,29 @@ interface AgentChatInterfaceProps {
   chatId?: string;
   initialMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   onChatCreated?: (chatId: string) => void;
+  onNewChat?: () => void;
+  onOpenHistory?: () => void;
 }
 
-export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated }: AgentChatInterfaceProps) {
+export function AgentChatInterface({
+  chatId,
+  initialMessages = [],
+  onChatCreated,
+  onNewChat,
+  onOpenHistory,
+}: AgentChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>(
     initialMessages.map((msg, i) => ({
       id: `initial-${i}`,
       role: msg.role,
       content: msg.content,
-    }))
+    })),
   );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentChatId, setCurrentChatId] = useState(chatId);
+  const [remainingQuestions, setRemainingQuestions] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -53,7 +62,6 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
     }
   }, [messages]);
 
-  // chatId が外から変わったら(新しいチャット選択時)リセット
   useEffect(() => {
     setCurrentChatId(chatId);
     if (!chatId) {
@@ -63,7 +71,7 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || remainingQuestions === 0) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -100,6 +108,11 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
         onChatCreated?.(newChatId);
       }
 
+      const remaining = response.headers.get('X-Remaining-Questions');
+      if (remaining !== null) {
+        setRemainingQuestions(parseInt(remaining, 10));
+      }
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
@@ -123,11 +136,7 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
         assistantMessage.content += text;
 
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMessage.id
-              ? { ...m, content: assistantMessage.content }
-              : m
-          )
+          prev.map((m) => (m.id === assistantMessage.id ? { ...m, content: assistantMessage.content } : m)),
         );
       }
     } catch (err) {
@@ -146,7 +155,21 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
 
   return (
     <div className="flex flex-col h-full bg-background pb-[140px]">
-      {/* メッセージエリア */}
+      <div className="flex items-center justify-end gap-2 p-2 border-b">
+        {onOpenHistory && (
+          <Button variant="outline" size="sm" onClick={onOpenHistory}>
+            <History className="w-4 h-4 mr-1" />
+            履歴
+          </Button>
+        )}
+        {onNewChat && (
+          <Button variant="outline" size="sm" onClick={onNewChat}>
+            <Plus className="w-4 h-4 mr-1" />
+            新しいチャット
+          </Button>
+        )}
+      </div>
+
       <ScrollArea ref={scrollRef} className="flex-1 p-4">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 && (
@@ -183,17 +206,12 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
           {messages.map((message) => (
             <div
               key={message.id}
-              className={cn(
-                'flex gap-3 p-4 rounded-lg',
-                message.role === 'user'
-                  ? 'bg-primary/10 ml-12'
-                  : 'bg-muted mr-12'
-              )}
+              className={cn('flex gap-3 p-4 rounded-lg', message.role === 'user' ? 'bg-primary/10 ml-12' : 'bg-muted mr-12')}
             >
               <div
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0',
-                  message.role === 'user' ? 'bg-primary' : 'bg-secondary'
+                  message.role === 'user' ? 'bg-primary' : 'bg-secondary',
                 )}
               >
                 {message.role === 'user' ? (
@@ -203,12 +221,8 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
                 )}
               </div>
               <div className="flex-1 overflow-hidden">
-                <p className="text-sm font-medium mb-1">
-                  {message.role === 'user' ? 'あなた' : 'AI エージェント'}
-                </p>
-                <div className="text-sm whitespace-pre-wrap break-words">
-                  {message.content}
-                </div>
+                <p className="text-sm font-medium mb-1">{message.role === 'user' ? 'あなた' : 'AI エージェント'}</p>
+                <div className="text-sm whitespace-pre-wrap break-words">{message.content}</div>
               </div>
             </div>
           ))}
@@ -225,17 +239,20 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
             </div>
           )}
 
-          {error && (
-            <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">
-              エラー: {error}
-            </div>
-          )}
+          {error && <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm">エラー: {error}</div>}
         </div>
       </ScrollArea>
 
-      {/* 入力エリア */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 z-50">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
+          {remainingQuestions !== null && remainingQuestions <= 3 && remainingQuestions > 0 && (
+            <p className="text-xs text-muted-foreground/50 text-center mb-1">残り{remainingQuestions}回です</p>
+          )}
+          {remainingQuestions === 0 && (
+            <p className="text-xs text-destructive/60 text-center mb-1">
+              質問回数の上限に達しました。新しいチャットを開始してください。
+            </p>
+          )}
           <div className="flex gap-2 items-end">
             <Textarea
               ref={textareaRef}
@@ -245,19 +262,15 @@ export function AgentChatInterface({ chatId, initialMessages = [], onChatCreated
               placeholder="メッセージを入力... (Shift+Enterで改行)"
               className="min-h-[60px] max-h-[200px] resize-none overflow-y-auto"
               style={{ height: '60px' }}
-              disabled={isLoading}
+              disabled={isLoading || remainingQuestions === 0}
             />
             <Button
               type="submit"
               size="icon"
               className="h-[60px] w-[60px] flex-shrink-0"
-              disabled={isLoading || !input.trim()}
+              disabled={isLoading || !input.trim() || remainingQuestions === 0}
             >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">

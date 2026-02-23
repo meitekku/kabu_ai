@@ -3,8 +3,6 @@ import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
 
-const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
-
 interface ChatRow {
   id: string;
   title: string;
@@ -24,8 +22,8 @@ export async function GET(req: Request) {
     const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
 
-    if (!session?.user?.id || session.user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
@@ -59,8 +57,8 @@ export async function DELETE(req: Request) {
     const headersList = await headers();
     const session = await auth.api.getSession({ headers: headersList });
 
-    if (!session?.user?.id || session.user.email !== ADMIN_EMAIL) {
-      return NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);

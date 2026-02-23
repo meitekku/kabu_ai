@@ -6,7 +6,7 @@ import { runOrchestrator } from '@/lib/agent/orchestrator';
 
 export const maxDuration = 120;
 
-const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
+const MAX_QUESTIONS = 20;
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -43,12 +43,11 @@ export async function POST(req: Request) {
   try {
     const headersList = await headers();
 
-    // Admin認証チェック
     const session = await auth.api.getSession({ headers: headersList });
-    if (!session?.user?.id || session.user.email !== ADMIN_EMAIL) {
+    if (!session?.user?.id) {
       return new Response(
-        JSON.stringify({ error: '管理者権限が必要です' }),
-        { status: 403, headers: { 'Content-Type': 'application/json' } },
+        JSON.stringify({ error: 'ログインが必要です' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } },
       );
     }
 
@@ -84,7 +83,19 @@ export async function POST(req: Request) {
       );
     }
 
-    // ユーザーメッセージを保存
+    const [countResult] = await db.select<{ cnt: number }>(
+      'SELECT COUNT(*) as cnt FROM agent_chat_message WHERE chatId = ? AND role = ?',
+      [currentChatId, 'user'],
+    );
+    const userMessageCount = countResult?.cnt ?? 0;
+
+    if (userMessageCount >= MAX_QUESTIONS) {
+      return new Response(
+        JSON.stringify({ error: '質問回数の上限（20回）に達しました', remainingQuestions: 0 }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     const lastUserMessage = messages[messages.length - 1];
     if (lastUserMessage?.role === 'user') {
       await db.insert(
@@ -93,7 +104,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // ストリーミングレスポンス
+    const newRemaining = MAX_QUESTIONS - (userMessageCount + 1);
+
     const encoder = new TextEncoder();
     let assistantText = '';
 
@@ -145,6 +157,7 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
     response.headers.set('X-Chat-Id', currentChatId);
+    response.headers.set('X-Remaining-Questions', String(newRemaining));
     return response;
   } catch (error) {
     console.error('Agent chat API error:', error);
