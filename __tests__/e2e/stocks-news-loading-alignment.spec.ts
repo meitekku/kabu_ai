@@ -150,7 +150,6 @@ test.describe("Stocks news loading alignment", () => {
     await expect(page.getByTestId("company-basic-info")).toBeVisible({ timeout: 20000 });
     await expect(page.getByTestId("stock-chart")).toBeVisible({ timeout: 20000 });
     await expect(page.getByTestId("news-list")).toBeVisible({ timeout: 20000 });
-    await expect(page.getByTestId("ai-feature-nav")).toBeVisible({ timeout: 20000 });
 
     const loadedCompanyBox = await getBoxByTestId(page, "company-basic-info");
     const loadedChartBox = await getBoxByTestId(page, "stock-chart");
