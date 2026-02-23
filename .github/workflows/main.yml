@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: TypeScript check
         run: npx tsc --noEmit --skipLibCheck
@@ -45,7 +45,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Run unit tests
         run: npm run test:unit
@@ -155,7 +155,7 @@ jobs:
 
             echo "Installing Node.js dependencies..."
             rm -rf node_modules
-            npm ci
+            npm ci --legacy-peer-deps
 
             echo "Building application..."
             npm run build
