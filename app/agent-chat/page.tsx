@@ -34,7 +34,7 @@ export default function AgentChatPage() {
 
   return (
     <ProtectedRoute>
-      <div className="h-[calc(100vh-64px)]">
+      <div className="h-full">
         <AgentChatInterface
           key={chatKey}
           chatId={chatId}

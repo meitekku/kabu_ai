@@ -31,7 +31,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)]">
+    <div className="h-full">
       <ChatInterface key={stockCode} stockCode={stockCode} />
     </div>
   );

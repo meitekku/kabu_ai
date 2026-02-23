@@ -27,13 +27,15 @@ export default function LayoutClient({
   const isPremiumPage = pathname?.startsWith('/premium')
   const isSettingsPage = pathname?.startsWith('/settings')
   const isChatPage = pathname?.startsWith('/chat')
-  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage
+  const isAgentChatPage = pathname?.startsWith('/agent-chat')
+  const isAnyChatPage = isChatPage || isAgentChatPage
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage
   const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[670px]'
   const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
   const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)
 
   useEffect(() => {
-    if (isAdminPage) {
+    if (isAdminPage || isAnyChatPage) {
       setIsLayoutSummaryLoading(false)
       return
     }
@@ -72,7 +74,7 @@ export default function LayoutClient({
       isMounted = false
       controller.abort()
     }
-  }, [isAdminPage])
+  }, [isAdminPage, isAnyChatPage])
 
   const marketDataByCode = useMemo(() => {
     if (!layoutSummary?.market) return undefined
@@ -82,13 +84,12 @@ export default function LayoutClient({
     }, {})
   }, [layoutSummary])
 
-  // チャットページは専用レイアウト
-  if (isChatPage) {
+  // チャットページは専用レイアウト（ヘッダー・サイドバーなし）
+  if (isAnyChatPage) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="h-screen flex flex-col">
         <GlobalNavigation />
-        <Header marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
-        <main className="flex-grow">
+        <main className="flex-1 min-h-0">
           {children}
         </main>
       </div>
