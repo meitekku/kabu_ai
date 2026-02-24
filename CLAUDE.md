@@ -293,17 +293,21 @@ function MyComponent() {
 | `invoice.payment_failed` | 支払い失敗 → status を 'past_due' に |
 | `invoice.paid` | 支払い成功 → status を 'active' に |
 
-### プレミアムプラン
+### プレミアムプラン（2段階）
 
-**価格:** ¥3,000/月
-
-**機能:**
-- AIに無制限で質問可能
-- 高精度な株価予測機能
+**スタンダードプラン:** ¥3,000/月
+- AIチャット無制限
+- 株価予測無制限
+- お気に入りニュース
 - リアルタイム市場分析
-- 決算説明会の要約
-- 競合他社との比較分析
-- ニュースのポジネガ判定
+
+**エージェントプラン:** ¥5,000/月
+- スタンダードの全機能
+- AI Agent利用（高度な投資分析）
+
+**DB:** `subscription_plan` ENUM('none', 'standard', 'agent')
+**環境変数:** `STRIPE_PRICE_ID_STANDARD`, `STRIPE_PRICE_ID_AGENT`
+**プラン定数:** `lib/plans.ts`
 
 ---
 
