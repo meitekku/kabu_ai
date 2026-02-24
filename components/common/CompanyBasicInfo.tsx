@@ -1,6 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { CompanyBasicInfoSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
+
+const isJPMarketHours = (): boolean => {
+  const now = new Date();
+  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+  const day = jst.getDay();
+  if (day === 0 || day === 6) return false;
+  const minutes = jst.getHours() * 60 + jst.getMinutes();
+  return (minutes >= 540 && minutes <= 690) || (minutes >= 750 && minutes <= 930);
+};
+
+const getRelativeTime = (dateStr: string | null): string | null => {
+  if (!dateStr) return null;
+  const updated = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - updated.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return '更新済み';
+  if (diffMin < 60) return `${diffMin}分前に更新`;
+  return `${Math.floor(diffMin / 60)}時間前に更新`;
+};
 
 interface CompanyInfo {
   code: string;
@@ -14,33 +34,45 @@ interface CompanyInfo {
   current_price: string;
   price_change: string;
   dividend_yield: string;
+  price_updated_at: string | null;
 }
 
 const CompanyBasicInfo = ({ code }: { code: string }) => {
   const [info, setInfo] = useState<CompanyInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchCompanyInfo = async () => {
-      try {
-        const response = await fetch(`/api/stocks/${code}/company_info`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
-        });
-        const data = await response.json();
-        if (data.success && data.data?.[0]) {
-          setInfo(data.data[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching company info:', error);
-      } finally {
-        setLoading(false);
+  const fetchCompanyInfo = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/stocks/${code}/company_info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await response.json();
+      if (data.success && data.data?.[0]) {
+        setInfo(data.data[0]);
       }
-    };
-
-    fetchCompanyInfo();
+    } catch (error) {
+      console.error('Error fetching company info:', error);
+    } finally {
+      setLoading(false);
+    }
   }, [code]);
+
+  useEffect(() => {
+    fetchCompanyInfo();
+  }, [fetchCompanyInfo]);
+
+  useEffect(() => {
+    if (!isJPMarketHours()) return;
+
+    const interval = setInterval(() => {
+      if (!isJPMarketHours()) return;
+      fetchCompanyInfo();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [fetchCompanyInfo]);
 
   if (loading) {
     return <CompanyBasicInfoSkeleton />;
@@ -175,6 +207,15 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           </Link>
         )}
       </div>
+
+      {isJPMarketHours() && (
+        <div className="text-xs text-gray-400 mt-1">
+          約5分ディレイ
+          {info.price_updated_at && (
+            <span> · {getRelativeTime(info.price_updated_at)}</span>
+          )}
+        </div>
+      )}
 
       {/* 各種指標を4列で表示 */}
       <div className="grid grid-cols-4 text-sm mt-2">

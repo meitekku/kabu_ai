@@ -32,6 +32,7 @@ interface CompanyFullInfo extends CompanyRecord {
   current_price: number | null;
   price_change: string | null;
   price_change_percent: number | null;
+  price_updated_at: string | null;
 }
 
 export async function POST(request: NextRequest) {
