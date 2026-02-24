@@ -14,7 +14,6 @@ import {
     Clock,
     Newspaper,
     Heart,
-    Bot,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -108,14 +107,14 @@ export default function PremiumPage() {
                                         <span className="text-slate-400 ml-1">/月（税込）</span>
                                     </div>
                                     <ul className="space-y-3 mb-8">
-                                        {["AIチャット無制限", "株価予測無制限", "お気に入りニュース", "リアルタイム市場分析"].map((f, i) => (
+                                        {['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'].map((f, i) => (
                                             <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
                                                 <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
                                                 {f}
                                             </li>
                                         ))}
                                     </ul>
-                                    <Link href="/settings/billing?plan=standard">
+                                    <Link href="/settings/billing">
                                         <Button className="w-full h-12 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
                                             スタンダードを始める
                                         </Button>
@@ -128,10 +127,7 @@ export default function PremiumPage() {
                                         RECOMMENDED
                                     </div>
                                     <div className="mb-6">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="text-xl font-bold text-white mb-1">エージェント</h3>
-                                            <Bot className="w-5 h-5 text-amber-400" />
-                                        </div>
+                                        <h3 className="text-xl font-bold text-white mb-1">エージェント</h3>
                                         <p className="text-sm text-amber-300/70">全機能 + AI Agent</p>
                                     </div>
                                     <div className="mb-8">
@@ -139,7 +135,7 @@ export default function PremiumPage() {
                                         <span className="text-slate-400 ml-1">/月（税込）</span>
                                     </div>
                                     <ul className="space-y-3 mb-8">
-                                        {["スタンダードの全機能", "AI Agent（高度な投資分析）"].map((f, i) => (
+                                        {['スタンダードの全機能', 'AI Agent（高度な投資分析）'].map((f, i) => (
                                             <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
                                                 <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
                                                 {f}
@@ -493,10 +489,10 @@ export default function PremiumPage() {
                             <div className="relative group">
                                 {/* Decorative Glow */}
                                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
-                                
+
                                 <div className="relative rounded-[2rem] overflow-hidden border border-amber-500/20 bg-[#0a0a0f] p-10 md:p-20 text-center">
                                     <div className="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent pointer-events-none" />
-                                    
+
                                     <Crown className="w-16 h-16 text-amber-400 mx-auto mb-8 animate-pulse" />
 
                                     <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tight">

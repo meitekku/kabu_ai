@@ -3,7 +3,7 @@
 import DefaultTemplate from "@/components/template/DefaultTemplate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, CreditCard, AlertCircle, Loader2, Bot } from "lucide-react";
+import { CheckCircle2, CreditCard, AlertCircle, Loader2, Crown } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth/auth-client";
@@ -17,23 +17,8 @@ interface SubscriptionInfo {
     hasStripeCustomer: boolean;
 }
 
-const PLAN_DETAILS = {
-    standard: {
-        name: 'スタンダードプラン',
-        description: 'AI株価予測 & AIチャット',
-        price: 3000,
-        features: ['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'],
-    },
-    agent: {
-        name: 'エージェントプラン',
-        description: '全機能 + AI Agent',
-        price: 5000,
-        features: ['スタンダードの全機能', 'AI Agent（高度な投資分析）'],
-    },
-} as const;
-
 export default function BillingPage() {
-    const [loading, setLoading] = useState<string | null>(null);
+    const [loading, setLoading] = useState<'standard' | 'agent' | null>(null);
     const [portalLoading, setPortalLoading] = useState(false);
     const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +39,8 @@ export default function BillingPage() {
                 const data = await response.json();
                 setError(data.error || 'エラーが発生しました');
             }
-        } catch {
+        } catch (error) {
+            console.error('Failed to fetch subscription:', error);
             setError('サブスクリプション情報の取得に失敗しました');
         } finally {
             setIsLoading(false);
@@ -71,12 +57,14 @@ export default function BillingPage() {
         }
     }, [session, sessionLoading, router, fetchSubscription]);
 
-    const handleCheckout = async (planType: 'standard' | 'agent') => {
+    const handleCheckout = async (planType: 'standard' | 'agent' = 'standard') => {
         setLoading(planType);
         try {
             const response = await fetch('/api/checkout', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({ planType }),
             });
 
@@ -85,9 +73,11 @@ export default function BillingPage() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
+                console.error('Checkout error:', data.error);
                 alert(data.error || '決済の開始に失敗しました。');
             }
-        } catch {
+        } catch (error) {
+            console.error('Checkout error:', error);
             alert('エラーが発生しました。');
         } finally {
             setLoading(null);
@@ -106,9 +96,11 @@ export default function BillingPage() {
             if (data.url) {
                 window.location.href = data.url;
             } else {
+                console.error('Portal error:', data.error);
                 alert(data.error || 'ポータルを開けませんでした。');
             }
-        } catch {
+        } catch (error) {
+            console.error('Portal error:', error);
             alert('エラーが発生しました。');
         } finally {
             setPortalLoading(false);
@@ -123,6 +115,27 @@ export default function BillingPage() {
             month: 'long',
             day: 'numeric',
         });
+    };
+
+    const getPlanDisplayName = () => {
+        if (!subscription) return '';
+        switch (subscription.plan) {
+            case 'agent': return 'エージェントプラン';
+            case 'standard': return 'スタンダードプラン';
+            default: return 'プレミアムプラン';
+        }
+    };
+
+    const getPlanPrice = () => {
+        if (!subscription) return '¥3,000';
+        return subscription.plan === 'agent' ? '¥5,000' : '¥3,000';
+    };
+
+    const getPlanDescription = () => {
+        if (!subscription) return '';
+        return subscription.plan === 'agent'
+            ? '全機能 + AI Agentが利用可能です'
+            : 'AIチャット・株価予測が無制限で利用可能です';
     };
 
     const getStatusBadge = () => {
@@ -158,9 +171,6 @@ export default function BillingPage() {
         }
     };
 
-    // URLパラメータからハイライトするプランを取得
-    const highlightedPlan = searchParams.get('plan') as 'standard' | 'agent' | null;
-
     if (isLoading || sessionLoading) {
         return (
             <DefaultTemplate>
@@ -195,15 +205,12 @@ export default function BillingPage() {
         );
     }
 
-    const currentPlan = subscription?.plan || 'none';
-    const currentPlanDetails = currentPlan !== 'none' ? PLAN_DETAILS[currentPlan] : null;
-
     return (
         <DefaultTemplate>
             <div className="container mx-auto py-10 px-4">
                 <h1 className="text-3xl font-bold mb-8 text-slate-900">請求・プラン管理</h1>
 
-                <div className="max-w-4xl space-y-6">
+                <div className="max-w-3xl space-y-6">
                     {/* 現在のプラン状態 */}
                     {subscription && (
                         <Card className="bg-white border-slate-200 text-slate-900 shadow-sm">
@@ -214,21 +221,45 @@ export default function BillingPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {subscription.isPremium && currentPlanDetails ? (
+                                {subscription.isPremium ? (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                                             <div>
-                                                <h3 className="font-bold text-lg text-emerald-900">{currentPlanDetails.name}</h3>
-                                                <p className="text-sm text-emerald-700">{currentPlanDetails.description}</p>
+                                                <h3 className="font-bold text-lg text-emerald-900">{getPlanDisplayName()}</h3>
+                                                <p className="text-sm text-emerald-700">{getPlanDescription()}</p>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-2xl font-bold text-emerald-600">¥{currentPlanDetails.price.toLocaleString()}<span className="text-sm font-normal">/月</span></div>
+                                                <div className="text-2xl font-bold text-emerald-600">{getPlanPrice()}<span className="text-sm font-normal">/月</span></div>
                                             </div>
                                         </div>
                                         {subscription.currentPeriodEnd && (
                                             <p className="text-sm text-slate-600">
                                                 次回更新日: {formatDate(subscription.currentPeriodEnd)}
                                             </p>
+                                        )}
+                                        {subscription.plan === 'standard' && (
+                                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Crown className="w-4 h-4 text-amber-600" />
+                                                    <span className="font-bold text-sm text-amber-900">エージェントプランにアップグレード</span>
+                                                </div>
+                                                <p className="text-xs text-amber-700 mb-3">AI Agentによる高度な投資分析が利用可能になります。</p>
+                                                <Button
+                                                    onClick={handleManageSubscription}
+                                                    disabled={portalLoading}
+                                                    size="sm"
+                                                    className="bg-amber-600 hover:bg-amber-700 text-white"
+                                                >
+                                                    {portalLoading ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                            処理中...
+                                                        </>
+                                                    ) : (
+                                                        'プランを変更する'
+                                                    )}
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
                                 ) : (
@@ -269,104 +300,101 @@ export default function BillingPage() {
                                     プレミアムプランに登録
                                 </CardTitle>
                                 <CardDescription className="text-slate-500">
-                                    あなたの投資スタイルに合ったプランをお選びください
+                                    AI分析・株価予測の全機能をお使いいただけます
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Standard Plan */}
-                                    <div className={`p-5 rounded-lg border-2 transition-all ${highlightedPlan === 'standard' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-slate-50'}`}>
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <h3 className="font-bold text-lg text-slate-900">スタンダード</h3>
-                                                <p className="text-sm text-slate-500">AI株価予測 & AIチャット</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
-                                            </div>
+                                {/* Standard Plan */}
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-slate-900">スタンダードプラン</h3>
+                                            <p className="text-sm text-slate-500">AIチャット・株価予測が無制限</p>
                                         </div>
-                                        <ul className="space-y-2 text-sm text-slate-600 mb-4">
-                                            {PLAN_DETAILS.standard.features.map((f, i) => (
-                                                <li key={i} className="flex items-center">
-                                                    <CheckCircle2 className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
-                                                    {f}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <Button
-                                            onClick={() => handleCheckout('standard')}
-                                            disabled={loading !== null}
-                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                                        >
-                                            {loading === 'standard' ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    処理中...
-                                                </>
-                                            ) : (
-                                                'スタンダードを申し込む'
-                                            )}
-                                        </Button>
+                                        <div className="text-right">
+                                            <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                        </div>
                                     </div>
+                                    <ul className="space-y-2 text-sm text-slate-600 mb-4">
+                                        {['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'].map((f, i) => (
+                                            <li key={i} className="flex items-center">
+                                                <CheckCircle2 className="w-4 h-4 text-blue-600 mr-2" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button
+                                        onClick={() => handleCheckout('standard')}
+                                        disabled={loading !== null}
+                                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                    >
+                                        {loading === 'standard' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                処理中...
+                                            </>
+                                        ) : (
+                                            'スタンダードを申し込む'
+                                        )}
+                                    </Button>
+                                </div>
 
-                                    {/* Agent Plan */}
-                                    <div className={`p-5 rounded-lg border-2 transition-all relative ${highlightedPlan === 'agent' ? 'border-amber-500 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
-                                        <div className="absolute -top-3 left-4 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-[10px] font-bold text-white tracking-wider">
-                                            RECOMMENDED
-                                        </div>
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="font-bold text-lg text-slate-900">エージェント</h3>
-                                                    <Bot className="w-4 h-4 text-amber-500" />
-                                                </div>
-                                                <p className="text-sm text-slate-500">全機能 + AI Agent</p>
+                                {/* Agent Plan */}
+                                <div className={`p-4 rounded-lg border ${searchParams.get('plan') === 'agent' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' : 'bg-amber-50/50 border-amber-200'}`}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-bold text-lg text-slate-900">エージェントプラン</h3>
+                                                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-[10px] font-bold text-white tracking-wider">RECOMMENDED</span>
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-2xl font-bold text-amber-600">¥5,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
-                                            </div>
+                                            <p className="text-sm text-slate-500">全機能 + AI Agent</p>
                                         </div>
-                                        <ul className="space-y-2 text-sm text-slate-600 mb-4">
-                                            {PLAN_DETAILS.agent.features.map((f, i) => (
-                                                <li key={i} className="flex items-center">
-                                                    <CheckCircle2 className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />
-                                                    {f}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <Button
-                                            onClick={() => handleCheckout('agent')}
-                                            disabled={loading !== null}
-                                            className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold"
-                                        >
-                                            {loading === 'agent' ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                    処理中...
-                                                </>
-                                            ) : (
-                                                'エージェントを申し込む'
-                                            )}
-                                        </Button>
+                                        <div className="text-right">
+                                            <div className="text-2xl font-bold text-amber-600">¥5,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                        </div>
                                     </div>
+                                    <ul className="space-y-2 text-sm text-slate-600 mb-4">
+                                        {['スタンダードの全機能', 'AI Agent（高度な投資分析）'].map((f, i) => (
+                                            <li key={i} className="flex items-center">
+                                                <CheckCircle2 className="w-4 h-4 text-amber-600 mr-2" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button
+                                        onClick={() => handleCheckout('agent')}
+                                        disabled={loading !== null}
+                                        className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                                    >
+                                        {loading === 'agent' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                処理中...
+                                            </>
+                                        ) : (
+                                            'エージェントを申し込む'
+                                        )}
+                                    </Button>
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <p className="text-xs text-slate-500">
-                                    申込みにより
-                                    <Link href="/terms" className="mx-1 text-emerald-700 underline">
-                                        利用規約
-                                    </Link>
-                                    ・
-                                    <Link href="/privacy-policy" className="mx-1 text-emerald-700 underline">
-                                        プライバシーポリシー
-                                    </Link>
-                                    ・
-                                    <Link href="/commercial-transactions" className="mx-1 text-emerald-700 underline">
-                                        特定商取引法に基づく表記
-                                    </Link>
-                                    をご確認ください。
-                                </p>
+                                <div className="w-full">
+                                    <p className="text-xs text-slate-500">
+                                        申込みにより
+                                        <Link href="/terms" className="mx-1 text-emerald-700 underline">
+                                            利用規約
+                                        </Link>
+                                        ・
+                                        <Link href="/privacy-policy" className="mx-1 text-emerald-700 underline">
+                                            プライバシーポリシー
+                                        </Link>
+                                        ・
+                                        <Link href="/commercial-transactions" className="mx-1 text-emerald-700 underline">
+                                            特定商取引法に基づく表記
+                                        </Link>
+                                        をご確認ください。
+                                    </p>
+                                </div>
                             </CardFooter>
                         </Card>
                     )}
