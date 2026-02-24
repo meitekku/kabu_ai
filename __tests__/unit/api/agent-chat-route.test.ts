@@ -70,6 +70,33 @@ vi.mock('@/lib/auth/email', () => ({
 
 import { POST } from '@/app/api/agent-chat/route';
 
+// Helper: mockSelect responds to plan check first, then other queries
+function setupAgentPlanUser(email = 'user@example.com') {
+  mockGetSession.mockResolvedValue({
+    user: { id: 'user-1', email },
+  });
+  // First select: plan check, second select: message count
+  mockSelect
+    .mockResolvedValueOnce([{ subscription_plan: 'agent', email }])
+    .mockResolvedValueOnce([{ cnt: 0 }]);
+}
+
+function setupAdminUser() {
+  mockGetSession.mockResolvedValue({
+    user: { id: 'admin-1', email: 'smartaiinvest@gmail.com' },
+  });
+  // Admin bypasses plan check but still has plan query + message count query
+  mockSelect
+    .mockResolvedValueOnce([{ cnt: 0 }]);
+}
+
+function setupNonAgentUser(email = 'free@example.com') {
+  mockGetSession.mockResolvedValue({
+    user: { id: 'user-2', email },
+  });
+  mockSelect.mockResolvedValueOnce([{ subscription_plan: 'standard', email }]);
+}
+
 describe('POST /api/agent-chat', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -94,10 +121,38 @@ describe('POST /api/agent-chat', () => {
     expect(data.error).toBe('ログインが必要です');
   });
 
-  it('allows logged-in users and returns SSE stream', async () => {
-    mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'regular@example.com' },
+  it('returns 403 when user has no agent plan', async () => {
+    setupNonAgentUser();
+
+    const req = new Request('http://localhost/api/agent-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'テスト' }),
     });
+
+    const res = await POST(req);
+    expect(res.status).toBe(403);
+
+    const data = (await res.json()) as { error: string; requireAgentPlan: boolean };
+    expect(data.requireAgentPlan).toBe(true);
+  });
+
+  it('allows agent plan users and returns SSE stream', async () => {
+    setupAgentPlanUser();
+
+    const req = new Request('http://localhost/api/agent-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'テスト質問' }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('text/event-stream');
+  });
+
+  it('allows admin users and returns SSE stream', async () => {
+    setupAdminUser();
 
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',
@@ -112,8 +167,9 @@ describe('POST /api/agent-chat', () => {
 
   it('returns 429 when question limit reached', async () => {
     mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'user@example.com' },
+      user: { id: 'user-1', email: 'smartaiinvest@gmail.com' },
     });
+    // Admin: skips plan check, message count returns 20
     mockSelect.mockResolvedValue([{ cnt: 20 }]);
 
     const req = new Request('http://localhost/api/agent-chat', {
@@ -133,9 +189,7 @@ describe('POST /api/agent-chat', () => {
   });
 
   it('returns 400 when message is empty', async () => {
-    mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'user@example.com' },
-    });
+    setupAdminUser();
 
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',

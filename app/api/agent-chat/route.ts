@@ -4,10 +4,12 @@ import { headers } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { createAgentStream, type SDKMessage } from '@/lib/agent/claude-code';
 import { sendAgentChatErrorEmail } from '@/lib/auth/email';
+import { RowDataPacket } from 'mysql2';
 
 export const maxDuration = 120;
 
 const MAX_QUESTIONS = 20;
+const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
 
 interface AgentChatRequestBody {
   message?: unknown;
@@ -56,6 +58,29 @@ export async function POST(req: Request) {
       );
     }
 
+    const db = Database.getInstance();
+    const userId = session.user.id;
+
+    // エージェントプランまたは管理者のみ利用可能
+    interface UserPlanRow extends RowDataPacket {
+      subscription_plan: string;
+      email: string;
+    }
+    const [userRow] = await db.select<UserPlanRow>(
+      'SELECT subscription_plan, email FROM user WHERE id = ?',
+      [userId],
+    );
+
+    const isAdmin = session.user.email === ADMIN_EMAIL;
+    const hasAgentPlan = userRow?.subscription_plan === 'agent';
+
+    if (!isAdmin && !hasAgentPlan) {
+      return new Response(
+        JSON.stringify({ error: 'エージェントプランへの加入が必要です', requireAgentPlan: true }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
     const body = (await req.json()) as AgentChatRequestBody;
     const message = typeof body.message === 'string' ? body.message.trim() : '';
 
@@ -65,9 +90,6 @@ export async function POST(req: Request) {
         { status: 400, headers: { 'Content-Type': 'application/json' } },
       );
     }
-
-    const db = Database.getInstance();
-    const userId = session.user.id;
 
     // チャットセッション管理
     let currentChatId = typeof body.chatId === 'string' ? body.chatId.trim() : '';

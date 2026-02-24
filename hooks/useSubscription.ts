@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 interface SubscriptionInfo {
     isPremium: boolean;
+    plan: 'none' | 'standard' | 'agent';
     status: 'none' | 'active' | 'canceled' | 'past_due';
     currentPeriodEnd: string | null;
     hasStripeCustomer: boolean;
@@ -24,6 +25,7 @@ export function useSubscription() {
                 // 未ログイン
                 setSubscription({
                     isPremium: false,
+                    plan: 'none',
                     status: 'none',
                     currentPeriodEnd: null,
                     hasStripeCustomer: false,
@@ -41,6 +43,7 @@ export function useSubscription() {
             setError(err instanceof Error ? err.message : 'エラーが発生しました');
             setSubscription({
                 isPremium: false,
+                plan: 'none',
                 status: 'none',
                 currentPeriodEnd: null,
                 hasStripeCustomer: false,
@@ -57,6 +60,7 @@ export function useSubscription() {
     return {
         subscription,
         isPremium: subscription?.isPremium ?? false,
+        plan: subscription?.plan ?? 'none' as const,
         isLoading,
         error,
         refetch: fetchSubscription,

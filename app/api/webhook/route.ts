@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
                 const customerId = session.customer as string;
                 const subscriptionId = session.subscription as string;
                 const userId = session.metadata?.userId;
+                const planType = session.metadata?.planType || 'standard';
 
                 if (userId && customerId) {
                     // ユーザーにStripe顧客IDとサブスクリプションを紐付け
@@ -40,9 +41,10 @@ export async function POST(req: NextRequest) {
                         `UPDATE user
                          SET stripe_customer_id = ?,
                              subscription_id = ?,
-                             subscription_status = 'active'
+                             subscription_status = 'active',
+                             subscription_plan = ?
                          WHERE id = ?`,
-                        [customerId, subscriptionId, userId]
+                        [customerId, subscriptionId, planType, userId]
                     );
                 }
                 break;
@@ -90,7 +92,8 @@ export async function POST(req: NextRequest) {
                 await db.update(
                     `UPDATE user
                      SET subscription_status = 'canceled',
-                         subscription_id = NULL
+                         subscription_id = NULL,
+                         subscription_plan = 'none'
                      WHERE stripe_customer_id = ?`,
                     [customerId]
                 );

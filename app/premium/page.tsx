@@ -14,6 +14,7 @@ import {
     Clock,
     Newspaper,
     Heart,
+    Bot,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -58,15 +59,15 @@ export default function PremiumPage() {
                                 高度なAI機能が、あなたの株式投資を強力にサポートします。
                             </p>
 
-                            <Link href="/settings/billing">
+                            <a href="#plans">
                                 <Button
                                     size="lg"
                                     className="h-14 px-10 text-base font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full shadow-[0_0_30px_rgba(245,158,11,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
-                                    月額 5,000円（税込）で始める
+                                    月額 3,000円から始める
                                     <ArrowRight className="ml-2 w-5 h-5" />
                                 </Button>
-                            </Link>
+                            </a>
                             <p className="mt-4 text-xs text-slate-500">
                                 申込み前に
                                 <Link href="/terms" className="mx-1 underline hover:text-slate-300">
@@ -82,6 +83,76 @@ export default function PremiumPage() {
                                 </Link>
                                 をご確認ください。
                             </p>
+                        </div>
+                    </section>
+
+                    {/* Pricing Plans */}
+                    <section id="plans" className="py-16 md:py-24">
+                        <div className="max-w-5xl mx-auto px-4">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-tight">
+                                    プランを選ぶ
+                                </h2>
+                                <p className="text-slate-400 text-lg">あなたの投資スタイルに合ったプランを。</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                                {/* Standard Plan */}
+                                <div className="relative rounded-3xl border border-slate-700 bg-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-blue-500/40">
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold text-white mb-1">スタンダード</h3>
+                                        <p className="text-sm text-slate-400">AI株価予測 & AIチャット</p>
+                                    </div>
+                                    <div className="mb-8">
+                                        <span className="text-4xl font-black text-white">¥3,000</span>
+                                        <span className="text-slate-400 ml-1">/月（税込）</span>
+                                    </div>
+                                    <ul className="space-y-3 mb-8">
+                                        {["AIチャット無制限", "株価予測無制限", "お気に入りニュース", "リアルタイム市場分析"].map((f, i) => (
+                                            <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
+                                                <CheckCircle2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Link href="/settings/billing?plan=standard">
+                                        <Button className="w-full h-12 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                                            スタンダードを始める
+                                        </Button>
+                                    </Link>
+                                </div>
+
+                                {/* Agent Plan */}
+                                <div className="relative rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/5 to-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-amber-500/50">
+                                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-xs font-bold text-white tracking-wider">
+                                        RECOMMENDED
+                                    </div>
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-xl font-bold text-white mb-1">エージェント</h3>
+                                            <Bot className="w-5 h-5 text-amber-400" />
+                                        </div>
+                                        <p className="text-sm text-amber-300/70">全機能 + AI Agent</p>
+                                    </div>
+                                    <div className="mb-8">
+                                        <span className="text-4xl font-black text-white">¥5,000</span>
+                                        <span className="text-slate-400 ml-1">/月（税込）</span>
+                                    </div>
+                                    <ul className="space-y-3 mb-8">
+                                        {["スタンダードの全機能", "AI Agent（高度な投資分析）"].map((f, i) => (
+                                            <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
+                                                <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Link href="/settings/billing?plan=agent">
+                                        <Button className="w-full h-12 font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+                                            エージェントを始める
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
                         </div>
                     </section>
 
@@ -429,21 +500,21 @@ export default function PremiumPage() {
                                     <Crown className="w-16 h-16 text-amber-400 mx-auto mb-8 animate-pulse" />
 
                                     <h2 className="text-3xl md:text-5xl font-black text-white mb-6 tracking-tight">
-                                        月額 5,000円でAIを味方に。
+                                        月額 3,000円からAIを味方に。
                                     </h2>
                                     <p className="text-lg text-slate-400 mb-12 max-w-lg mx-auto leading-relaxed">
                                         制限なしのAI対話と、高精度な株価予測。
                                         投資の精度を、今日から変えてみませんか。
                                     </p>
 
-                                    <Link href="/settings/billing">
+                                    <a href="#plans">
                                         <Button
                                             size="lg"
                                             className="h-16 px-12 text-lg font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-full shadow-[0_20px_40px_rgba(245,158,11,0.2)] transition-all hover:scale-[1.05] active:scale-[0.95]"
                                         >
-                                            プレミアムプランに登録する
+                                            プランを選ぶ
                                         </Button>
-                                    </Link>
+                                    </a>
                                     <p className="mt-4 text-xs text-slate-500">
                                         申込みにより
                                         <Link href="/terms" className="mx-1 underline hover:text-slate-300">

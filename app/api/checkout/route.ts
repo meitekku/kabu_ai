@@ -4,6 +4,7 @@ import { Database } from '@/lib/database/Mysql';
 import { RowDataPacket } from 'mysql2';
 import { auth } from '@/lib/auth/auth';
 import { headers } from 'next/headers';
+import { PLANS } from '@/lib/plans';
 
 interface UserRow extends RowDataPacket {
     id: string;
@@ -25,13 +26,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { priceId } = await req.json();
-        const price = priceId || process.env.STRIPE_PRICE_ID;
+        const { planType, priceId } = await req.json();
+        // planTypeが指定されていればプラン定数から取得、なければ旧priceIdフォールバック
+        const plan = planType === 'agent' ? PLANS.agent : PLANS.standard;
+        const price = plan.stripePriceId || priceId || process.env.STRIPE_PRICE_ID;
 
         if (!price) {
             return NextResponse.json(
-                { error: 'Price ID is required' },
-                { status: 400 }
+                { error: 'Price ID is not configured' },
+                { status: 500 }
             );
         }
 
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
             cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/premium`,
             metadata: {
                 userId: user.id,
+                planType: plan.id,
             },
         });
 

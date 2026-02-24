@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 
 interface SubscriptionRow extends RowDataPacket {
     subscription_status: 'none' | 'active' | 'canceled' | 'past_due' | null;
+    subscription_plan: 'none' | 'standard' | 'agent';
     subscription_id: string | null;
     subscription_current_period_end: Date | null;
     stripe_customer_id: string | null;
@@ -27,7 +28,7 @@ export async function GET() {
 
         const db = Database.getInstance();
         const users = await db.select<SubscriptionRow>(
-            `SELECT subscription_status, subscription_id, subscription_current_period_end, stripe_customer_id
+            `SELECT subscription_status, subscription_plan, subscription_id, subscription_current_period_end, stripe_customer_id
              FROM user WHERE id = ?`,
             [session.user.id]
         );
@@ -44,6 +45,7 @@ export async function GET() {
 
         return NextResponse.json({
             isPremium,
+            plan: user.subscription_plan || 'none',
             status: user.subscription_status || 'none',
             currentPeriodEnd: user.subscription_current_period_end,
             hasStripeCustomer: !!user.stripe_customer_id,

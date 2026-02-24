@@ -35,7 +35,7 @@ export function PremiumModal({
   open,
   onOpenChange,
   title = 'プレミアム会員限定',
-  description = '無料の利用回数を使い切りました。プレミアム会員になると無制限でご利用いただけます。',
+  description = '無料の利用回数を使い切りました。プレミアム会員（月額3,000円〜）になると無制限でご利用いただけます。',
   features = DEFAULT_FEATURES,
 }: PremiumModalProps) {
   return (
