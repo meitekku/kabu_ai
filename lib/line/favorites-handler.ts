@@ -1,9 +1,9 @@
 import { Database } from '@/lib/database/Mysql';
 
-const GLM_API_URL = process.env.GLM_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const GLM_MODEL = process.env.GLM_CHAT_MODEL || 'glm-4-plus';
+const LOCAL_LLM_URL = process.env.LOCAL_LLM_URL || 'https://ollama.kabu-ai.jp/v1/chat/completions';
+const LOCAL_LLM_MODEL = 'JunHowie/Qwen3-14B-GPTQ-Int4';
 
-interface ParsedIntent {
+export interface ParsedIntent {
   action: 'add' | 'remove' | 'list' | 'info' | 'help' | 'unknown';
   stockCodes?: string[];
   stockNames?: string[];
@@ -11,14 +11,49 @@ interface ParsedIntent {
 }
 
 /**
- * GLM APIでユーザーメッセージの意図を解析
+ * ルールベースのフォールバック意図解析
  */
-async function parseUserIntent(message: string): Promise<ParsedIntent> {
-  const apiKey = process.env.GLM_API_KEY;
-  if (!apiKey) {
-    return { action: 'unknown', rawQuery: message };
+export function ruleBasedParse(message: string): ParsedIntent {
+  const stockCodes = message.match(/\b(\d{4})\b/g) || [];
+
+  // アクション判定
+  let action: ParsedIntent['action'] = 'unknown';
+  if (message.includes('追加') || message.includes('登録')) {
+    action = 'add';
+  } else if (message.includes('削除') || message.includes('解除')) {
+    action = 'remove';
+  } else if (/^(一覧|リスト|お気に入り|確認)$/.test(message)) {
+    action = 'list';
+  } else if (/^(ヘルプ|使い方|何ができる)/.test(message)) {
+    action = 'help';
+  } else if (message.includes('情報') || message.includes('について') || /は[？?]$/.test(message)) {
+    action = 'info';
   }
 
+  // add/remove/info の場合、銘柄名を抽出
+  const stockNames: string[] = [];
+  if (['add', 'remove', 'info'].includes(action)) {
+    const cleaned = message
+      .replace(/\b\d{4}\b/g, '')
+      .replace(/(追加|登録|削除|解除|情報|について|を|の|に|は[？?]?$)/g, '')
+      .trim();
+    if (cleaned) {
+      stockNames.push(cleaned);
+    }
+  }
+
+  return {
+    action,
+    ...(stockCodes.length > 0 ? { stockCodes } : {}),
+    ...(stockNames.length > 0 ? { stockNames } : {}),
+    rawQuery: message,
+  };
+}
+
+/**
+ * Local LLMでユーザーメッセージの意図を解析（失敗時はルールベースにフォールバック）
+ */
+async function parseUserIntent(message: string): Promise<ParsedIntent> {
   const systemPrompt = `あなたはLINEボットの意図解析エンジンです。ユーザーのメッセージから以下の操作意図を判別してください。
 
 ## 操作一覧
@@ -38,26 +73,32 @@ async function parseUserIntent(message: string): Promise<ParsedIntent> {
 - JSONのみ返すこと。説明文は不要`;
 
   try {
-    const res = await fetch(GLM_API_URL, {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(LOCAL_LLM_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: GLM_MODEL,
+        model: LOCAL_LLM_MODEL,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message },
         ],
         temperature: 0.1,
         max_tokens: 200,
+        chat_template_kwargs: { enable_thinking: false },
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeout);
+
     if (!res.ok) {
-      console.error('GLM intent parse error:', res.status, await res.text());
-      return { action: 'unknown', rawQuery: message };
+      console.error('LLM intent parse error:', res.status, await res.text());
+      return ruleBasedParse(message);
     }
 
     const data = await res.json();
@@ -66,18 +107,18 @@ async function parseUserIntent(message: string): Promise<ParsedIntent> {
     // JSONを抽出（マークダウンのコードブロック対応）
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { action: 'unknown', rawQuery: message };
+      return ruleBasedParse(message);
     }
 
     const parsed = JSON.parse(jsonMatch[0]) as ParsedIntent;
     if (!['add', 'remove', 'list', 'info', 'help', 'unknown'].includes(parsed.action)) {
-      return { action: 'unknown', rawQuery: message };
+      return ruleBasedParse(message);
     }
 
     return { ...parsed, rawQuery: message };
   } catch (error) {
-    console.error('GLM intent parse exception:', error);
-    return { action: 'unknown', rawQuery: message };
+    console.error('LLM intent parse exception:', error);
+    return ruleBasedParse(message);
   }
 }
 
@@ -343,7 +384,7 @@ export async function handleLineMessage(
     return 'お気に入り機能はプレミアム会員限定です。\nhttps://kabu-ai.jp/premium からプレミアムプランをご確認ください。';
   }
 
-  // GLM APIで意図解析
+  // Local LLMで意図解析
   const intent = await parseUserIntent(message);
 
   switch (intent.action) {

@@ -18,6 +18,7 @@
 | メール | Resend |
 | AI (チャット) | GLM-4 (智譜AI / Zhipu AI) |
 | AI (エージェント) | Claude Agent SDK (@anthropic-ai/claude-agent-sdk) |
+| LINE連携 | LINE Login OAuth + Messaging API |
 
 ---
 
@@ -72,6 +73,8 @@ Google Gemini, OpenAI GPT等の他のAI APIは使用しないこと。
 ├── lib/                          # コアライブラリ
 │   ├── auth/                     # better-auth設定 (auth.ts, auth-client.ts)
 │   ├── agent/                    # Agent Chat バックエンド (orchestrator, db-agent, web-agent)
+│   ├── line/                     # LINE連携 (login, messaging, favorites-handler)
+│   ├── favorites/                # お気に入り・AI日報 (generate-news)
 │   ├── database/Mysql.ts         # MySQL接続 (Singleton)
 │   ├── stripe.ts                 # Stripe インスタンス
 │   └── cache.ts                  # キャッシュ管理
@@ -354,6 +357,15 @@ function MyComponent() {
 | `/api/admin/prompt` | POST | プロンプト管理 |
 | `/api/admin/article-prompt` | POST | 記事生成プロンプト |
 
+### LINE連携
+
+| エンドポイント | メソッド | 説明 |
+|---------------|---------|------|
+| `/api/line/link` | POST | LINE連携URL生成（OAuth開始） |
+| `/api/line/link` | GET | OAuthコールバック処理 / 連携状態取得 |
+| `/api/line/unlink` | POST | LINE連携解除 |
+| `/api/line/webhook` | POST | LINEボットWebhook（署名検証付き） |
+
 ### ユーティリティ
 
 | エンドポイント | メソッド | 説明 |
@@ -438,6 +450,13 @@ const users = await db.select<User>('SELECT * FROM user WHERE id = ?', [userId])
 | `chatbot_chat` | チャットセッション |
 | `chatbot_message` | チャットメッセージ |
 | `chat_usage_log` | チャット利用ログ（IP制限管理用） |
+
+#### LINE連携系
+| テーブル名 | 説明 |
+|-----------|------|
+| `user_line_link` | ユーザーとLINEアカウントの紐付け |
+| `user_favorite` | お気に入り銘柄 |
+| `favorite_news` | お気に入り銘柄AI日報 |
 
 #### システム系
 | テーブル名 | 説明 |
@@ -777,6 +796,88 @@ Orchestrator Agent (claude-sonnet)
 
 ---
 
+## LINE連携（お気に入り・通知）
+
+### 概要
+
+LINEアカウント連携によるお気に入り銘柄管理・AI日報通知機能。ユーザーはLINEボットを通じて銘柄の追加・削除・情報取得が可能。
+
+### アーキテクチャ
+
+```
+ユーザーがLINE連携ボタンをクリック
+    ↓
+LineLinkSettings → POST /api/line/link → LINE OAuth画面
+    ↓
+ユーザー承認 → GET /api/line/link?code=...&state=...
+    ↓
+exchangeCodeForProfile() → user_line_link テーブルに保存
+    ↓
+LINEボットにメッセージ送信
+    ↓
+POST /api/line/webhook（HMAC-SHA256署名検証）
+    ↓
+handleLineMessage() → Local LLM (Qwen3-14B) でインテント解析
+    ↓
+意図別ハンドラ（追加/削除/一覧/情報/ヘルプ）
+    ↓
+sendLineReply() → ユーザーに返信
+```
+
+### LINEボットコマンド
+
+| コマンド例 | 意図 | 動作 |
+|-----------|------|------|
+| `トヨタを追加` / `7203を登録` | add | お気に入りに追加（上限50銘柄） |
+| `トヨタを削除` / `7203を解除` | remove | お気に入りから削除 |
+| `一覧` / `お気に入り` / `リスト` | list | お気に入り一覧表示 |
+| `トヨタの情報` / `7203について` | info | 株価＋直近3日間ニュース |
+| `ヘルプ` | help | コマンド一覧表示 |
+
+### AI日報（自動配信）
+
+- 平日 11:30（前場終了）と 15:30（後場終了）に自動生成・配信
+- `generateFavoritesNews()` → Claude SDKでレポート生成 → `sendLinePush()` で配信
+- LINE文字数制限: 4000文字で切り詰め
+
+### 主要ファイル
+
+| ファイル | 役割 |
+|---------|------|
+| `lib/line/login.ts` | LINE Login OAuth（認証URL生成・トークン交換・プロフィール取得） |
+| `lib/line/messaging.ts` | Messaging API（push通知・reply送信、5000文字制限） |
+| `lib/line/favorites-handler.ts` | メッセージ処理（**Local LLM Qwen3-14B**でインテント解析・お気に入りCRUD、LLM障害時はルールベースフォールバック） |
+| `lib/favorites/generate-news.ts` | AI日報生成・LINE配信 |
+| `app/api/line/link/route.ts` | OAuth連携・解除・状態取得API |
+| `app/api/line/unlink/route.ts` | LINE連携解除API |
+| `app/api/line/webhook/route.ts` | Webhook受信（署名検証・イベント処理） |
+| `components/favorites/LineLinkSettings.tsx` | LINE連携設定UI |
+| `sql/favorites_news.sql` | DBスキーマ（user_line_link, user_favorite, favorite_news） |
+
+### user_line_link テーブル
+
+```sql
+CREATE TABLE user_line_link (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(36) NOT NULL,
+  line_user_id VARCHAR(64) NOT NULL,
+  display_name VARCHAR(255) NULL,
+  linked_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_user_id (user_id),
+  UNIQUE KEY uk_line_user_id (line_user_id),
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+```
+
+### セキュリティ
+
+- **OAuth CSRF保護:** ランダムstate + ユーザーID埋め込み
+- **Webhook署名検証:** `LINE_MESSAGING_CHANNEL_SECRET` によるHMAC-SHA256
+- **アクセス制御:** プレミアム/トライアル期間チェック
+- **一意制約:** 1ユーザー1LINEアカウント
+
+---
+
 ### ER図（主要テーブル関係）
 
 ```
@@ -787,6 +888,10 @@ user ─────────────┬───────────
   ├── chatbot_chat ────────────── chatbot_message
   │
   ├── agent_chat ────────────── agent_chat_message
+  │
+  ├── user_line_link ──────────── (LINE連携)
+  │
+  ├── user_favorite ───────────── favorite_news
   │
   └── (stripe_customer_id で Stripe と連携)
 
@@ -891,6 +996,18 @@ FROM_EMAIL=noreply@kabu-ai.jp
 
 Agent Chat はサーバーにインストールされた Claude Code CLI（`claude.ai` ログイン済み）を
 `@anthropic-ai/claude-agent-sdk` 経由で呼び出す。API Keyは不要。
+
+### LINE連携
+
+```bash
+LINE_CHANNEL_ID=              # LINE Login OAuth チャネルID
+LINE_CHANNEL_SECRET=          # LINE Login OAuth チャネルシークレット
+LINE_MESSAGING_API_TOKEN=     # Messaging API チャネルアクセストークン
+LINE_MESSAGING_CHANNEL_SECRET= # Webhook署名検証用シークレット
+LOCAL_LLM_URL=                # インテント解析用Local LLM URL（デフォルト: https://ollama.kabu-ai.jp/v1/chat/completions）
+```
+
+**注意:** インテント解析にはLocal LLM (Qwen3-14B) を使用。GLM_API_KEYは不要（コスト0）。LLM障害時はルールベースフォールバックで動作継続。
 
 ### OAuth（オプション）
 
@@ -1018,6 +1135,7 @@ npm run test:all                  # 全テスト実行
 | `/premium` | プレミアム紹介 |
 | `/premium/success` | 購入完了 |
 | `/settings/billing` | 請求・プラン管理 |
+| `/favorites` | お気に入り銘柄・LINE連携設定 |
 
 ### 法定ページ
 
