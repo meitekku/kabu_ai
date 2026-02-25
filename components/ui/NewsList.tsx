@@ -163,7 +163,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   }
 
   return (
-    <div data-testid="news-list">
+    <div data-testid="news-list" className="animate-in fade-in duration-200">
       {h3Title && (
         <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
       )}
