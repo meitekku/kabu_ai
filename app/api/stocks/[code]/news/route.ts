@@ -71,17 +71,27 @@ export async function POST(
     let countParams: (string | number)[];
 
     if (isUSStock && code !== 'all') {
-      // US銘柄: us_materialテーブルから取得
-      countQuery = `SELECT COUNT(*) as total FROM us_material WHERE code = ?`;
-      countParams = [code];
+      // US銘柄: 承認済み記事のみ (post テーブル, accept=1, site=80)
+      countQuery = `SELECT COUNT(DISTINCT p.id) as total
+                   FROM post p
+                   JOIN post_code pc ON p.id = pc.post_id
+                   WHERE pc.code = ?
+                   AND p.accept = 1
+                   AND p.site = 80
+                   ${excludeId ? 'AND p.id != ?' : ''}`;
+      countParams = excludeId ? [code, excludeId] : [code];
 
-      query = `SELECT id, code, title, content,
-                 COALESCE(article_time, created_at) as created_at
-               FROM us_material
-               WHERE code = ?
-               ORDER BY COALESCE(article_time, created_at) DESC
+      query = `SELECT DISTINCT p.id, pc.code, p.title, p.created_at, ps.status
+               FROM post p
+               JOIN post_code pc ON p.id = pc.post_id
+               LEFT JOIN post_status ps ON p.id = ps.post_id
+               WHERE pc.code = ?
+               AND p.accept = 1
+               AND p.site = 80
+               ${excludeId ? 'AND p.id != ?' : ''}
+               ORDER BY p.created_at DESC
                LIMIT ? OFFSET ?`;
-      queryParams = [code, limit, offset];
+      queryParams = excludeId ? [code, excludeId, limit, offset] : [code, limit, offset];
     } else if (code === 'all') {
       countQuery = `SELECT COUNT(DISTINCT p.id) as total
                    FROM post p
