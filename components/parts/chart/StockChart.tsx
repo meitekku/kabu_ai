@@ -423,7 +423,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   return (
     <div
       data-testid="stock-chart"
-      className="mt-2"
+      className="mt-2 animate-in fade-in duration-200"
       style={{ width, backgroundColor: colors.background }}
       ref={chartContainerRef}
     >

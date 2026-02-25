@@ -175,7 +175,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   const isUS = info.market === 100;
 
   return (
-    <div data-testid="company-basic-info" className="w-full bg-white px-2">
+    <div data-testid="company-basic-info" className="w-full bg-white px-2 animate-in fade-in duration-200">
       {/* 企業コード + 企業名 + 市場名 */}
       <div className="flex items-center justify-between">
         <h1 className="flex items-center space-x-2">
