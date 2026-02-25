@@ -20,6 +20,19 @@ interface ValuationReport {
   created_at: string;
 }
 
+interface LiveCompanyInfo {
+  trailing_pe: number | null;
+  forward_pe: number | null;
+  current_price: number | null;
+}
+
+function evaluatePerLive(value: number, avg: number | null | undefined): string {
+  if (!avg || avg === 0) return 'neutral';
+  if (value > avg * 1.3) return 'high';
+  if (value < avg * 0.7) return 'low';
+  return 'neutral';
+}
+
 function EvaluationBadge({ evaluation }: { evaluation: string }) {
   const config: Record<string, { label: string; className: string }> = {
     high: { label: '割高', className: 'bg-red-100 text-red-700' },
@@ -214,6 +227,7 @@ function ValuationCard({
 const ValuationPageClient = ({ code }: { code: string }) => {
   const [report, setReport] = useState<ValuationReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [livePer, setLivePer] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -231,6 +245,37 @@ const ValuationPageClient = ({ code }: { code: string }) => {
     };
     fetchReport();
   }, [code]);
+
+  useEffect(() => {
+    const fetchLivePer = async () => {
+      try {
+        const res = await fetch(`/api/stocks/${code}/company_info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data) && data.data[0]) {
+          const info = data.data[0] as LiveCompanyInfo;
+          const per = info.trailing_pe != null ? info.trailing_pe : info.forward_pe;
+          if (per != null) {
+            setLivePer(Number(per));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching live PER:', error);
+      }
+    };
+    fetchLivePer();
+    const interval = setInterval(fetchLivePer, 60000);
+    return () => clearInterval(interval);
+  }, [code]);
+
+  const effectivePer = livePer ?? (report?.per ? Number(report.per) : null);
+  const effectivePerEvaluation =
+    livePer != null && report?.industry_avg_per != null
+      ? evaluatePerLive(livePer, Number(report.industry_avg_per))
+      : report?.per_evaluation ?? 'neutral';
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -262,19 +307,19 @@ const ValuationPageClient = ({ code }: { code: string }) => {
             </div>
 
             <ValuationSummary
-              per={report.per ? Number(report.per) : null}
+              per={effectivePer}
               pbr={report.pbr ? Number(report.pbr) : null}
-              perEvaluation={report.per_evaluation}
+              perEvaluation={effectivePerEvaluation}
               pbrEvaluation={report.pbr_evaluation}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ValuationCard 
+              <ValuationCard
                 title="PER"
-                current={report.per ? Number(report.per) : null}
+                current={effectivePer}
                 expected={report.expected_per ? Number(report.expected_per) : null}
                 avg={report.industry_avg_per ? Number(report.industry_avg_per) : null}
-                evaluation={report.per_evaluation}
+                evaluation={effectivePerEvaluation}
                 description="現在利益に対する株価の妥当性を評価します。"
               />
               <ValuationCard 
