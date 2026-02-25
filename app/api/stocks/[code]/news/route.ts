@@ -45,12 +45,13 @@ export async function POST(
     }
 
     const db = Database.getInstance();
-    
+    const isUSStock = /^[A-Z]+$/.test(code);
+
     const today = new Date();
     let startDate: Date;
     let startDateStr: string;
     const todayStr = today.toISOString().split('T')[0];
-    
+
     // target_dateが指定されている場合はそれを使用、そうでない場合は従来のdays計算を使用
     if (targetDate) {
       startDateStr = targetDate;
@@ -61,7 +62,7 @@ export async function POST(
       startDateStr = startDate.toISOString().split('T')[0];
       console.log(`記事API: days指定 - ${days}日前（${startDateStr}）以降の記事を取得`);
     }
-    
+
     let query: string;
     let queryParams: (string | number)[];
 
@@ -69,23 +70,35 @@ export async function POST(
     let countQuery: string;
     let countParams: (string | number)[];
 
-    if (code === 'all') {
+    if (isUSStock && code !== 'all') {
+      // US銘柄: us_materialテーブルから取得
+      countQuery = `SELECT COUNT(*) as total FROM us_material WHERE code = ?`;
+      countParams = [code];
+
+      query = `SELECT id, code, title, content,
+                 COALESCE(article_time, created_at) as created_at
+               FROM us_material
+               WHERE code = ?
+               ORDER BY COALESCE(article_time, created_at) DESC
+               LIMIT ? OFFSET ?`;
+      queryParams = [code, limit, offset];
+    } else if (code === 'all') {
       countQuery = `SELECT COUNT(DISTINCT p.id) as total
                    FROM post p
                    LEFT JOIN post_code pc ON p.id = pc.post_id
-                   WHERE 
+                   WHERE
                     p.accept > 0
                     AND p.site >= 0
                     AND DATE(p.created_at) >= ?
                     AND DATE(p.created_at) <= ?
                     ${excludeId ? 'AND p.id != ?' : ''}`;
       countParams = excludeId ? [startDateStr, todayStr, excludeId] : [startDateStr, todayStr];
-      
+
       query = `SELECT DISTINCT p.id, pc.code, p.title, p.content, p.created_at, ps.status
                FROM post p
                LEFT JOIN post_code pc ON p.id = pc.post_id
                LEFT JOIN post_status ps ON p.id = ps.post_id
-               WHERE 
+               WHERE
                 p.accept > 0
                 AND p.site >= 0
                 AND DATE(p.created_at) >= ?
@@ -102,7 +115,7 @@ export async function POST(
                    AND p.accept = 1
                    ${excludeId ? 'AND p.id != ?' : ''}`;
       countParams = excludeId ? [code, excludeId] : [code];
-      
+
       query = `SELECT DISTINCT p.id, pc.code, p.title, p.created_at, ps.status
                FROM post p
                JOIN post_code pc ON p.id = pc.post_id

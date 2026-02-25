@@ -22,24 +22,43 @@ export async function POST(
     const db = Database.getInstance();
     const { code, id } = await params;
     const isAllCode = code.toLowerCase() === 'all';
+    const isUSStock = /^[A-Z]+$/.test(code);
 
-    const query = `
-      SELECT 
-        n.id,
-        pc.code,
-        n.title,
-        REPLACE(n.content, '\n', '\\n') as content,
-        n.created_at,
-        c.name as company_name
-      FROM post n
-      LEFT JOIN post_code pc ON n.id = pc.post_id
-      LEFT JOIN company c ON pc.code = c.code
-      WHERE n.id = ?
-      ${isAllCode ? '' : 'AND pc.code = ?'}
-    `;
+    let articles: ArticleRow[];
 
-    const queryParams: string[] = isAllCode ? [id] : [id, code];
-    const articles = await db.select<ArticleRow>(query, queryParams);
+    if (isUSStock && !isAllCode) {
+      // US銘柄: us_materialテーブルから取得
+      const usQuery = `
+        SELECT
+          id,
+          code,
+          title,
+          REPLACE(content, '\n', '\\n') as content,
+          COALESCE(article_time, created_at) as created_at,
+          '' as company_name
+        FROM us_material
+        WHERE id = ? AND code = ?
+      `;
+      articles = await db.select<ArticleRow>(usQuery, [id, code]);
+    } else {
+      const query = `
+        SELECT
+          n.id,
+          pc.code,
+          n.title,
+          REPLACE(n.content, '\n', '\\n') as content,
+          n.created_at,
+          c.name as company_name
+        FROM post n
+        LEFT JOIN post_code pc ON n.id = pc.post_id
+        LEFT JOIN company c ON pc.code = c.code
+        WHERE n.id = ?
+        ${isAllCode ? '' : 'AND pc.code = ?'}
+      `;
+
+      const queryParams: string[] = isAllCode ? [id] : [id, code];
+      articles = await db.select<ArticleRow>(query, queryParams);
+    }
 
     if (articles.length === 0) {
       return NextResponse.json(
