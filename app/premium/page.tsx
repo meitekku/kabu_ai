@@ -483,7 +483,7 @@ export default function PremiumPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto rounded-xl border border-slate-200 overflow-hidden bg-white">
                             {/* Free Plan */}
-                            <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200">
+                            <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
                                 <div className="mb-6">
                                     <h3 className="text-lg font-bold text-slate-900 mb-1">
                                         無料
@@ -497,7 +497,7 @@ export default function PremiumPage() {
                                         ¥0
                                     </span>
                                 </div>
-                                <ul className="space-y-3 mb-8 text-sm">
+                                <ul className="space-y-3 mb-8 text-sm flex-1">
                                     <li className="flex items-center gap-2.5 text-slate-600">
                                         <Check className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                         AIチャット（1日3回）
@@ -528,7 +528,7 @@ export default function PremiumPage() {
                             </div>
 
                             {/* Standard Plan */}
-                            <div className="relative p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 bg-blue-50/30">
+                            <div className="relative p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 bg-blue-50/30 flex flex-col">
                                 <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
                                 <div className="mb-6">
                                     <div className="flex items-center gap-2 mb-1">
@@ -551,7 +551,7 @@ export default function PremiumPage() {
                                         /月（税込）
                                     </span>
                                 </div>
-                                <ul className="space-y-3 mb-8 text-sm">
+                                <ul className="space-y-3 mb-8 text-sm flex-1">
                                     <li className="flex items-center gap-2.5 text-slate-700">
                                         <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                         AIチャット無制限
@@ -581,7 +581,7 @@ export default function PremiumPage() {
                             </div>
 
                             {/* Agent Plan */}
-                            <div className="relative p-6 md:p-8">
+                            <div className="relative p-6 md:p-8 flex flex-col">
                                 <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
                                 <div className="mb-6">
                                     <h3 className="text-lg font-bold text-slate-900 mb-1">
@@ -599,7 +599,7 @@ export default function PremiumPage() {
                                         /月（税込）
                                     </span>
                                 </div>
-                                <ul className="space-y-3 mb-8 text-sm">
+                                <ul className="space-y-3 mb-8 text-sm flex-1">
                                     <li className="flex items-center gap-2.5 text-slate-700">
                                         <Check className="w-4 h-4 text-amber-500 flex-shrink-0" />
                                         AIチャット無制限
