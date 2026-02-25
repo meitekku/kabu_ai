@@ -116,15 +116,15 @@ export const StockChartSkeleton = ({
       />
 
       <div
-        className="mt-2 h-full rounded bg-gray-200 sm:hidden"
+        className="-mt-1 h-full rounded bg-gray-200 sm:hidden"
         style={{ height: `${mobileHeight.lower}px` }}
       />
       <div
-        className="mt-2 hidden h-full rounded bg-gray-200 sm:block lg:hidden"
+        className="-mt-1 hidden h-full rounded bg-gray-200 sm:block lg:hidden"
         style={{ height: `${resolvedTabletHeight.lower}px` }}
       />
       <div
-        className="mt-2 hidden h-full rounded bg-gray-200 lg:block"
+        className="-mt-1 hidden h-full rounded bg-gray-200 lg:block"
         style={{ height: `${pcHeight.lower}px` }}
       />
     </div>
@@ -211,6 +211,7 @@ export const NewsPageSkeleton = ({
   return (
     <div className="animate-pulse">
       <CompanyBasicInfoSkeleton />
+      <div className="flex justify-end px-2 -mt-2 mb-2" />
       <StockChartSkeleton
         width={chartWidth}
         pcHeight={chartPcHeight}
