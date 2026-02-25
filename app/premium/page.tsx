@@ -97,7 +97,7 @@ export default function PremiumPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                                 {/* Standard Plan */}
-                                <div className="relative rounded-3xl border border-slate-700 bg-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-blue-500/40">
+                                <div className="relative flex flex-col rounded-3xl border border-slate-700 bg-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-blue-500/40">
                                     <div className="mb-6">
                                         <h3 className="text-xl font-bold text-white mb-1">スタンダード</h3>
                                         <p className="text-sm text-slate-400">AI株価予測 & AIチャット</p>
@@ -114,7 +114,7 @@ export default function PremiumPage() {
                                             </li>
                                         ))}
                                     </ul>
-                                    <Link href="/settings/billing">
+                                    <Link href="/settings/billing" className="mt-auto">
                                         <Button className="w-full h-12 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
                                             スタンダードを始める
                                         </Button>
@@ -122,7 +122,7 @@ export default function PremiumPage() {
                                 </div>
 
                                 {/* Agent Plan */}
-                                <div className="relative rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/5 to-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-amber-500/50">
+                                <div className="relative flex flex-col rounded-3xl border border-amber-500/30 bg-gradient-to-b from-amber-500/5 to-slate-900/60 backdrop-blur-xl p-8 md:p-10 transition-all hover:border-amber-500/50">
                                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 text-xs font-bold text-white tracking-wider">
                                         RECOMMENDED
                                     </div>
@@ -142,7 +142,7 @@ export default function PremiumPage() {
                                             </li>
                                         ))}
                                     </ul>
-                                    <Link href="/settings/billing?plan=agent">
+                                    <Link href="/settings/billing?plan=agent" className="mt-auto">
                                         <Button className="w-full h-12 font-bold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
                                             エージェントを始める
                                         </Button>
