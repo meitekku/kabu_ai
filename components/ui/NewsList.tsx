@@ -187,7 +187,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>
-                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title}</div>
+                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title.replace(/【[^】]*】/g, '')}</div>
                 </div>
               </CardContent>
             </Card>

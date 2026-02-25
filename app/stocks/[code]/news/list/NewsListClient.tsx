@@ -231,7 +231,7 @@ export default function NewsListClient() {
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>
-                  <div className="font-bold text-base text-gray-900 mt-1">{item.title}</div>
+                  <div className="font-bold text-base text-gray-900 mt-1">{item.title.replace(/【[^】]*】/g, '')}</div>
                 </div>
               </CardContent>
             </Card>
