@@ -33,6 +33,7 @@ interface CompanyInfo {
   market_cap: number;
   current_price: string;
   price_change: string;
+  diff_percent: string | null;
   dividend_yield: string;
   price_updated_at: string | null;
 }
@@ -147,8 +148,13 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
 
   /**
    * 値上がり幅のパーセンテージを計算
+   * diff_percentがDBにあればそれを優先、なければprice_changeから計算
    */
   const calculatePriceChangePercent = () => {
+    if (info.diff_percent != null && info.diff_percent !== '') {
+      const dp = parseFloat(info.diff_percent);
+      if (!isNaN(dp)) return dp;
+    }
     const currentPrice = parseFloat(info.current_price);
     const priceChange = parseFloat(info.price_change);
     if (isNaN(currentPrice) || isNaN(priceChange)) return 0;
