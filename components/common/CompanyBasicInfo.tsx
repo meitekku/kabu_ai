@@ -140,6 +140,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       case 2: return '東証S';
       case 3: return '東証G';
       case 11: return 'ETF';
+      case 12: return '指数';
       case 100: return 'US';
       default:
         return '市場不明';
@@ -178,7 +179,8 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
     return `$${value.toLocaleString()}`;
   };
 
-  const isUS = info.market === 100;
+  // market=100(US株) or market=12かつUSD建て指数(NYダウ=1, S&P500=2)
+  const isUS = info.market === 100 || (info.market === 12 && ['1', '2'].includes(info.code));
 
   return (
     <div data-testid="company-basic-info" className="w-full bg-white px-2 animate-in fade-in duration-200">
