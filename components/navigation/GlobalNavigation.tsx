@@ -16,7 +16,6 @@ const NAVIGATION_LINKS = [
   { href: '/admin/comment', label: 'コメントコピー' },
   { href: '/admin/post/new', label: '投稿ページ' },
   { href: '/admin/news-summary', label: 'ニュース要約' },
-  { href: '/all/news', label: '全ページ' },
 ] as const;
 
 const GlobalNavigation = () => {
