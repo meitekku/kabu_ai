@@ -22,10 +22,17 @@ const rankingSections: Array<{
 ]
 
 export default function Sidebar({ rankingData, suspendFetch = false }: SidebarProps) {
+  const jstHour = (new Date().getUTCHours() + 9) % 24
+  const showPts = jstHour >= 17
+
+  const visibleSections = showPts
+    ? rankingSections
+    : rankingSections.filter((s) => !s.tableName.startsWith('ranking_pts'))
+
   return (
     <div className="space-y-6">
       <RandomAd />
-      {rankingSections.map((section) => (
+      {visibleSections.map((section) => (
         <RankingTableClient
           key={section.tableName}
           title={section.title}
