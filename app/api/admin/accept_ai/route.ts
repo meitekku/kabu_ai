@@ -213,9 +213,9 @@ export async function POST(request: NextRequest) {
           
           // データを50件に限定
           if (operation.table === 'post' && operation.data.includes('code')) {
-            query += ' ORDER BY p.created_at DESC LIMIT 50';
+            query += ' ORDER BY p.created_at ASC LIMIT 50';
           } else {
-            query += ' ORDER BY created_at DESC LIMIT 50';
+            query += ' ORDER BY created_at ASC LIMIT 50';
           }
 
           const results = await db.select<NewsItem>(query, params);
