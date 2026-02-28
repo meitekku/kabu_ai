@@ -141,7 +141,7 @@ function TrendingCard({
       <article
         className={`bg-white rounded-xl border border-gray-100 shadow hover:shadow-md transition-all duration-200 overflow-hidden h-full flex flex-col border-l-4 ${styles.borderColor}`}
       >
-        <div className="p-3.5 flex flex-col flex-grow gap-2">
+        <div className="p-2.5 flex flex-col flex-grow gap-1.5">
           {/* Company row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -166,30 +166,20 @@ function TrendingCard({
             />
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-gray-50" />
-
           {/* Title */}
           <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug flex-grow">
             {item.title || "タイトルなし"}
           </h3>
 
-          {/* Excerpt */}
-          {item.excerpt && (
-            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-              {item.excerpt}
-            </p>
-          )}
-
           {/* Footer */}
-          <div className="flex items-center justify-between pt-1 mt-auto">
+          <div className="flex items-center justify-between mt-auto">
             <span className="text-xs text-gray-400">
               {formatTimeAgo(item.created_at)}
             </span>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-300">AI分析</span>
               {item.code && (
-                <SparklineChart code={item.code} width={72} height={22} data={sparklines[item.code] ?? null} />
+                <SparklineChart code={item.code} width={72} height={20} data={sparklines[item.code] ?? null} />
               )}
             </div>
           </div>
@@ -210,7 +200,7 @@ function SectionSkeleton() {
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-gray-100 shadow p-3.5 h-[120px] border-l-4 border-l-gray-200"
+            className="bg-white rounded-xl border border-gray-100 shadow p-2.5 h-[100px] border-l-4 border-l-gray-200"
           >
             <div className="flex justify-between mb-2">
               <div className="h-3 bg-gray-100 rounded w-24 animate-pulse" />

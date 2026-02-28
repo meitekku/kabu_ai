@@ -16,17 +16,14 @@ interface SparklineChartProps {
 
 export default function SparklineChart({ code, width = 80, height = 36, data: propData }: SparklineChartProps) {
   const [prices, setPrices] = useState<number[]>([]);
-  const [change, setChange] = useState<number | null>(null);
 
   useEffect(() => {
     if (propData !== undefined) {
       // Use provided data — no fetch needed
       if (propData && propData.prices.length > 1) {
         setPrices(propData.prices);
-        setChange(propData.change);
       } else {
         setPrices([]);
-        setChange(null);
       }
       return;
     }
@@ -37,7 +34,6 @@ export default function SparklineChart({ code, width = 80, height = 36, data: pr
       .then((d) => {
         if (d?.prices?.length > 1) {
           setPrices(d.prices);
-          setChange(d.change);
         }
       })
       .catch(() => {});
@@ -59,8 +55,9 @@ export default function SparklineChart({ code, width = 80, height = 36, data: pr
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
 
-  const isPositive = change === null ? null : change >= 0;
-  const lineColor = isPositive === null ? '#9ca3af' : isPositive ? '#ef4444' : '#3b82f6';
+  // 前日比（最後の2点）で色を判定
+  const dayChange = prices[prices.length - 1] - prices[prices.length - 2];
+  const lineColor = dayChange >= 0 ? '#ef4444' : '#3b82f6';
 
   return (
     <svg
