@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
               }
               return `p.${field}`;
             }).join(', ');
-            query = `SELECT ${fields} FROM ${operation.table} p LEFT JOIN post_code pc ON p.id = pc.post_id`;
+            query = `SELECT ${fields} FROM ${operation.table} p LEFT JOIN post_code pc ON p.id = pc.post_id LEFT JOIN ranking_yahoo_post ryp ON pc.code = ryp.code`;
           } else {
             const fields = operation.data.join(', ');
             query = `SELECT ${fields} FROM ${operation.table}`;
@@ -211,9 +211,9 @@ export async function POST(request: NextRequest) {
           // WHERE 節を付与
           query += ' WHERE ' + conditionParts.join(' AND ');
           
-          // データを50件に限定
+          // データを50件に限定（ranking_yahoo_post順→created_at順）
           if (operation.table === 'post' && operation.data.includes('code')) {
-            query += ' ORDER BY p.created_at ASC LIMIT 50';
+            query += ' ORDER BY COALESCE(ryp.id, 99999) ASC, p.created_at ASC LIMIT 50';
           } else {
             query += ' ORDER BY created_at ASC LIMIT 50';
           }
