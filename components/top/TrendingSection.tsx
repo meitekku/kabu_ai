@@ -154,8 +154,8 @@ function TrendingCard({
         <div className="p-3.5 flex flex-col flex-grow gap-2">
           {/* Company row */}
           <div className="flex items-center justify-between gap-2">
-            <CompanyLogo item={item} />
             <div className="flex items-center gap-1.5 min-w-0">
+              <CompanyLogo item={item} />
               {item.company_name ? (
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {item.company_name}

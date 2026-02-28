@@ -21,7 +21,6 @@ export interface TrendingItem {
   post_id: number
   code: string | null
   company_name: string
-  logo_url: string | null
   title: string
   excerpt: string
   content_type: ContentType
