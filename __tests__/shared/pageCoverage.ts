@@ -2,6 +2,7 @@ export const PAGE_COVERAGE = [
   { template: "/", systemPath: "/" },
   { template: "/admin/accept_ai", systemPath: "/admin/accept_ai" },
   { template: "/admin/accept_ai_us", systemPath: "/admin/accept_ai_us" },
+  { template: "/admin/accept_spike", systemPath: "/admin/accept_spike" },
   { template: "/admin/all-article", systemPath: "/admin/all-article" },
   { template: "/admin/comment", systemPath: "/admin/comment" },
   { template: "/admin/news-summary", systemPath: "/admin/news-summary" },
