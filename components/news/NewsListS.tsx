@@ -62,18 +62,18 @@ function CompanyVisual({
 
   return (
     <div className="flex-shrink-0 flex flex-col items-center gap-1" style={{ width: 80 }}>
-      {/* ロゴ */}
-      <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-        {logoUrl && !logoError ? (
-          // eslint-disable-next-line @next/next/no-img-element
+      {/* ロゴ（ある場合のみ表示） */}
+      {logoUrl && !logoError && (
+        <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoUrl}
             alt={companyName || code}
             className="w-full h-full object-contain"
             onError={() => setLogoError(true)}
           />
-        ) : null}
-      </div>
+        </div>
+      )}
       {/* スパークライン */}
       <SparklineChart code={code} width={80} height={36} data={sparklineData} />
     </div>

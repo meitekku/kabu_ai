@@ -198,8 +198,8 @@ describe("NewsListS", () => {
     render(<NewsListS />);
 
     await waitFor(() => {
-      // item with code renders company initial, not img thumbnail
-      expect(screen.getByText("ト")).toBeInTheDocument();
+      // item with code renders no thumbnail (CompanyVisual with sparkline only)
+      expect(screen.getByText("コード有り記事")).toBeInTheDocument();
       // item without code but with img in content renders thumbnail
       const img = screen.getByRole("img");
       expect(img).toHaveAttribute("src", "https://example.com/img.jpg");
@@ -358,7 +358,9 @@ describe("NewsListS", () => {
       expect(screen.getByText("ソニーの新製品")).toBeInTheDocument();
     });
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    // ニュース検索エンドポイントは呼ばれない（initialData使用）
+    // スパークラインのfetchは許容
+    expect(global.fetch).not.toHaveBeenCalledWith("/api/news/search", expect.anything());
   });
 
   it("sends correct request body with site as array", async () => {
