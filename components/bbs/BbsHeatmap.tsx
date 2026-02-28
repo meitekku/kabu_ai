@@ -400,6 +400,35 @@ function Cell({
             )}
           </p>
         )}
+        {h >= 110 && w >= 130 && item.top_comments.length > 0 && (
+          <div
+            style={{
+              marginTop: 5,
+              borderTop: `1px solid ${item.velocity >= 2 ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.1)"}`,
+              paddingTop: 4,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            {item.top_comments.slice(0, h >= 150 ? 2 : 1).map((c, i) => (
+              <p
+                key={i}
+                style={{
+                  fontSize: 8,
+                  lineHeight: 1.35,
+                  opacity: 0.78,
+                  fontStyle: "italic",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

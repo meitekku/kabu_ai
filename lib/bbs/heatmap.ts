@@ -38,6 +38,7 @@ export interface HeatItem {
   velocity: number
   close: number | null
   change_pct: number | null
+  top_comments: string[]
 }
 
 export interface HeatmapData {
@@ -86,14 +87,16 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
     { $limit: 60 },
   ]).toArray()
 
-  // Fetch company names + latest prices from MySQL in parallel
+  // Fetch company names + latest prices from MySQL, and top comments from MongoDB in parallel
   const codes = aggResult.map((r) => r._id as string).filter(Boolean)
+  const topCommentCodes = codes.slice(0, 15)
   let nameMap: Record<string, string> = {}
   const priceMap: Record<string, { close: number | null; change_pct: number | null }> = {}
+  const commentMap: Record<string, string[]> = {}
   if (codes.length > 0) {
     const placeholders = codes.map(() => '?').join(',')
     const mysqlDb = Database.getInstance()
-    const [companies, priceRows] = await Promise.all([
+    const [companies, priceRows, commentRows] = await Promise.all([
       mysqlDb.select<{ code: string; name: string }>(
         `SELECT code, name FROM company WHERE code IN (${placeholders})`,
         codes
@@ -106,8 +109,28 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
          ) t WHERE rn <= 2`,
         codes
       ),
+      topCommentCodes.length > 0
+        ? db.collection('yahoo_comment').aggregate([
+            {
+              $match: {
+                code: { $in: topCommentCodes },
+                comment_date: { $gte: ago24h },
+                comment: { $exists: true, $ne: '' },
+              },
+            },
+            { $sort: { is_useful: -1, comment_date: -1 } },
+            { $group: { _id: '$code', comments: { $push: '$comment' } } },
+            { $project: { comments: { $slice: ['$comments', 3] } } },
+          ]).toArray()
+        : Promise.resolve([]),
     ])
     nameMap = Object.fromEntries(companies.map((c) => [c.code, c.name]))
+    for (const r of commentRows) {
+      const cs = (r.comments as string[]).filter(
+        (c) => typeof c === 'string' && c.trim().length > 5
+      )
+      if (cs.length > 0) commentMap[r._id as string] = cs
+    }
     const byCode: Record<string, Array<{ close: number; rn: number }>> = {}
     for (const r of priceRows) {
       if (!byCode[r.code]) byCode[r.code] = []
@@ -135,6 +158,7 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
       velocity: r.velocity as number,
       close: priceMap[r._id as string]?.close ?? null,
       change_pct: priceMap[r._id as string]?.change_pct ?? null,
+      top_comments: commentMap[r._id as string] ?? [],
     }))
     .filter((item) => item.company_name !== '') // Japanese stocks only
 
