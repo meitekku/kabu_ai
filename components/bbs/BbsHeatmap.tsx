@@ -289,7 +289,7 @@ function ChangeBadge({ value, darkBg }: { value: number; darkBg: boolean }) {
   return (
     <span
       style={{
-        fontSize: 9,
+        fontSize: 11,
         fontWeight: 700,
         padding: "1px 5px",
         borderRadius: 4,
@@ -305,41 +305,76 @@ function ChangeBadge({ value, darkBg }: { value: number; darkBg: boolean }) {
   );
 }
 
-// ─── RotatingComment ─────────────────────────────────────────────────────────
+// ─── CommentList ─────────────────────────────────────────────────────────────
+// Shows multiple comments stacked, with the first one cycling through all
 
-function RotatingComment({ comments }: { comments: string[] }) {
-  const [idx, setIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
+function CommentList({
+  comments,
+  maxLines,
+  darkBg,
+}: {
+  comments: string[];
+  maxLines: number;
+  darkBg: boolean;
+}) {
+  const [cycleIdx, setCycleIdx] = useState(0);
+  const [cycleVisible, setCycleVisible] = useState(true);
 
+  // Cycle the first slot through remaining comments if there are more than maxLines
   useEffect(() => {
-    if (comments.length <= 1) return;
+    if (comments.length <= maxLines) return;
     const interval = setInterval(() => {
-      setVisible(false);
+      setCycleVisible(false);
       setTimeout(() => {
-        setIdx((i) => (i + 1) % comments.length);
-        setVisible(true);
+        setCycleIdx((i) => (i + 1) % comments.length);
+        setCycleVisible(true);
       }, 300);
     }, 4000);
     return () => clearInterval(interval);
-  }, [comments.length]);
+  }, [comments.length, maxLines]);
 
   if (comments.length === 0) return null;
 
+  // Show up to maxLines comments; first slot cycles if more comments exist
+  const staticComments = comments.slice(1, maxLines);
+  const firstComment = comments[cycleIdx];
+  const dividerColor = darkBg ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)";
+
   return (
-    <p
-      style={{
-        fontSize: 9,
-        lineHeight: 1.35,
-        opacity: visible ? 0.78 : 0,
-        transition: "opacity 0.3s ease",
-        fontStyle: "italic",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {comments[idx]}
-    </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <p
+        style={{
+          fontSize: 10,
+          lineHeight: 1.4,
+          opacity: cycleVisible ? 0.82 : 0,
+          transition: "opacity 0.3s ease",
+          fontStyle: "italic",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {firstComment}
+      </p>
+      {staticComments.map((c, i) => (
+        <p
+          key={i}
+          style={{
+            fontSize: 10,
+            lineHeight: 1.4,
+            opacity: 0.68,
+            fontStyle: "italic",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            borderTop: `1px solid ${dividerColor}`,
+            paddingTop: 3,
+          }}
+        >
+          {c}
+        </p>
+      ))}
+    </div>
   );
 }
 
@@ -364,10 +399,10 @@ function Cell({
   const { item, x, y, w, h } = cell;
   const { bg, text } = velocityColor(item.velocity);
   const minDim = Math.min(w, h);
-  const pad = minDim < 50 ? 2 : minDim < 80 ? 4 : 7;
-  const nameSize = minDim > 120 ? 14 : minDim > 80 ? 12 : minDim > 50 ? 10 : 9;
-  const codeSize = minDim > 80 ? 10 : 9;
-  const countSize = minDim > 100 ? 12 : 11;
+  const pad = minDim < 50 ? 2 : minDim < 80 ? 5 : 8;
+  const nameSize = minDim > 120 ? 18 : minDim > 80 ? 15 : minDim > 50 ? 12 : 10;
+  const codeSize = minDim > 80 ? 12 : 10;
+  const countSize = minDim > 100 ? 14 : 12;
 
   return (
     <div
@@ -444,7 +479,7 @@ function Cell({
         )}
         {h >= 65 && w >= 50 && item.close !== null && (
           <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 9, opacity: 0.88, fontWeight: 600 }}>
+            <span style={{ fontSize: 11, opacity: 0.88, fontWeight: 600 }}>
               {fmtPrice(item.close)}
             </span>
             {item.change_pct !== null && (
@@ -460,7 +495,11 @@ function Cell({
               paddingTop: 4,
             }}
           >
-            <RotatingComment comments={item.top_comments} />
+            <CommentList
+              comments={item.top_comments}
+              maxLines={h >= 180 ? 3 : h >= 140 ? 2 : 1}
+              darkBg={item.velocity >= 2}
+            />
           </div>
         )}
       </div>

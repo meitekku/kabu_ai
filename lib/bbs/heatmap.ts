@@ -120,7 +120,7 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
             },
             { $sort: { is_useful: -1, comment_date: -1 } },
             { $group: { _id: '$code', comments: { $push: '$comment' } } },
-            { $project: { comments: { $slice: ['$comments', 3] } } },
+            { $project: { comments: { $slice: ['$comments', 5] } } },
           ]).toArray()
         : Promise.resolve([]),
     ])
