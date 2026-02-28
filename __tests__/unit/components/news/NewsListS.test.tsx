@@ -409,7 +409,7 @@ describe("NewsListS", () => {
     const items = [
       {
         id: 20,
-        code: "5555",
+        code: null,
         title: "最適化画像テスト",
         content:
           '<img src="/_next/image?url=%2Fimages%2Ftest.jpg&w=640&q=75" />',
