@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import SparklineChart from "@/components/news/SparklineChart";
 import type {
   TrendingContent,
   TrendingItem,
@@ -107,6 +109,35 @@ function ChangeRateBadge({
   );
 }
 
+function CompanyLogo({
+  item,
+}: {
+  item: TrendingItem;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  if (item.logo_url && !imgError) {
+    return (
+      <Image
+        src={item.logo_url}
+        alt=""
+        width={32}
+        height={32}
+        className="w-8 h-8 rounded bg-gray-100 object-contain flex-shrink-0"
+        unoptimized
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  const initial = item.company_name?.charAt(0) || item.code?.slice(0, 2) || "";
+  return (
+    <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+      <span className="text-xs font-bold text-gray-400">{initial}</span>
+    </div>
+  );
+}
+
 function TrendingCard({
   item,
   type,
@@ -123,6 +154,7 @@ function TrendingCard({
         <div className="p-3.5 flex flex-col flex-grow gap-2">
           {/* Company row */}
           <div className="flex items-center justify-between gap-2">
+            <CompanyLogo item={item} />
             <div className="flex items-center gap-1.5 min-w-0">
               {item.company_name ? (
                 <span className="text-xs font-semibold text-gray-700 truncate">
@@ -162,7 +194,12 @@ function TrendingCard({
             <span className="text-xs text-gray-400">
               {formatTimeAgo(item.created_at)}
             </span>
-            <span className="text-xs text-gray-300">AI分析</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-300">AI分析</span>
+              {item.code && (
+                <SparklineChart code={item.code} width={72} height={22} />
+              )}
+            </div>
           </div>
         </div>
       </article>

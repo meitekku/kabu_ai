@@ -21,6 +21,7 @@ export interface TrendingItem {
   post_id: number
   code: string | null
   company_name: string
+  logo_url: string | null
   title: string
   excerpt: string
   content_type: ContentType
@@ -100,6 +101,7 @@ function makeExcerpt(content: string | null, maxLen = 75): string {
 interface RankingRow {
   code: string
   company_name: string
+  logo_url: string | null
   post_id: number
   title: string
   content: string
@@ -111,6 +113,7 @@ interface RankingRow {
 interface PtsRow {
   code: string
   company_name: string
+  logo_url: string | null
   post_id: number
   title: string
   content: string
@@ -127,6 +130,7 @@ interface LatestAiRow {
   site: number
   company_name: string
   code: string | null
+  logo_url: string | null
   diff_percent: number | null
 }
 
@@ -141,7 +145,7 @@ async function fetchRanking(db: Database, table: string, type: ContentType): Pro
   const rows = await db.select<RankingRow>(`
     SELECT r.code, c.name AS company_name,
            lp.id AS post_id, lp.title, lp.content, lp.created_at, lp.site,
-           ci.diff_percent
+           ci.diff_percent, ci.logo_url
     FROM \`${table}\` r
     JOIN company c ON r.code = c.code
     INNER JOIN (
@@ -159,6 +163,7 @@ async function fetchRanking(db: Database, table: string, type: ContentType): Pro
     post_id: r.post_id,
     code: r.code,
     company_name: r.company_name,
+    logo_url: r.logo_url ?? null,
     title: r.title ?? '',
     excerpt: makeExcerpt(r.content),
     content_type: type,
@@ -172,10 +177,11 @@ async function fetchPts(db: Database): Promise<TrendingItem[]> {
   const rows = await db.select<PtsRow>(`
     SELECT pal.code, c.name AS company_name,
            p.id AS post_id, p.title, p.content, p.created_at, p.site,
-           pal.pts_pct
+           pal.pts_pct, ci.logo_url
     FROM pts_article_log pal
     JOIN company c ON pal.code = c.code
     JOIN post p ON pal.post_id = p.id AND p.accept = 1
+    LEFT JOIN company_info ci ON pal.code = ci.code
     WHERE pal.article_date >= DATE_SUB(CURDATE(), INTERVAL 3 DAY)
     ORDER BY pal.article_date DESC, ABS(pal.pts_pct) DESC
     LIMIT 4
@@ -184,6 +190,7 @@ async function fetchPts(db: Database): Promise<TrendingItem[]> {
     post_id: r.post_id,
     code: r.code,
     company_name: r.company_name,
+    logo_url: r.logo_url ?? null,
     title: r.title ?? '',
     excerpt: makeExcerpt(r.content),
     content_type: 'pts' as ContentType,
@@ -198,7 +205,7 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
     SELECT p.id AS post_id, p.title, p.content, p.created_at, p.site,
            COALESCE(c.name, '') AS company_name,
            pc.code,
-           ci.diff_percent
+           ci.diff_percent, ci.logo_url
     FROM post p
     LEFT JOIN (
       SELECT post_id, MIN(code) AS code
@@ -215,6 +222,7 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
     post_id: r.post_id,
     code: r.code ?? null,
     company_name: r.company_name ?? '',
+    logo_url: r.logo_url ?? null,
     title: r.title ?? '',
     excerpt: makeExcerpt(r.content),
     content_type: 'latest_ai' as ContentType,
