@@ -424,7 +424,7 @@ function Cell({
   const commentLineH = commentSize * 1.4 + 3;
   const availForComments = h - pad * 2 - nameH - codeH - countH - priceH - commentOverhead;
   const maxLines = Math.min(5, Math.max(0, Math.floor(availForComments / commentLineH)));
-  const showComments = areaRatio >= 0.10 && maxLines >= 1 && w >= 100 && item.top_comments.length > 0;
+  const showComments = areaRatio >= 0.06 && maxLines >= 1 && w >= 100 && item.top_comments.length > 0;
 
   return (
     <div
