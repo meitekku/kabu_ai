@@ -109,28 +109,23 @@ function ChangeRateBadge({
   );
 }
 
-function CompanyLogo({
-  item,
-}: {
-  item: TrendingItem;
-}) {
+function LogoIcon({ code, name }: { code: string; name: string }) {
   const [imgError, setImgError] = useState(false);
 
-  if (item.logo_url && !imgError) {
+  if (!imgError) {
     return (
       <Image
-        src={item.logo_url}
+        src={`/images/logos/${code}.png`}
         alt=""
         width={32}
         height={32}
         className="w-8 h-8 rounded bg-gray-100 object-contain flex-shrink-0"
-        unoptimized
         onError={() => setImgError(true)}
       />
     );
   }
 
-  const initial = item.company_name?.charAt(0) || item.code?.slice(0, 2) || "";
+  const initial = name?.charAt(0) || code?.slice(0, 2) || "";
   return (
     <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
       <span className="text-xs font-bold text-gray-400">{initial}</span>
@@ -155,7 +150,9 @@ function TrendingCard({
           {/* Company row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <CompanyLogo item={item} />
+              {item.code && (
+                <LogoIcon code={item.code} name={item.company_name} />
+              )}
               {item.company_name ? (
                 <span className="text-xs font-semibold text-gray-700 truncate">
                   {item.company_name}
