@@ -211,7 +211,9 @@ export const NewsPageSkeleton = ({
   return (
     <div className="animate-pulse">
       <CompanyBasicInfoSkeleton />
-      <div className="flex justify-end px-2 -mt-2 mb-2" />
+      <div className="flex justify-end px-2 -mt-2 mb-2">
+        <div className="h-7 w-7 rounded-lg bg-gray-200" />
+      </div>
       <StockChartSkeleton
         width={chartWidth}
         pcHeight={chartPcHeight}
