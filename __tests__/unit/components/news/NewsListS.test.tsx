@@ -159,31 +159,57 @@ describe("NewsListS", () => {
     });
   });
 
-  it("extracts image from HTML content and renders thumbnail", async () => {
+  it("renders company visual for items with stock code, thumbnail for items without code", async () => {
     vi.useRealTimers();
+    const items = [
+      {
+        id: 1,
+        code: "7203",
+        title: "コード有り記事",
+        content: "<p>コード有り</p>",
+        created_at: "2026-01-15 10:00",
+        company_name: "トヨタ自動車",
+        site: 1,
+        pickup: 0,
+        image_path: null,
+      },
+      {
+        id: 2,
+        code: null,
+        title: "コードなし画像付き記事",
+        content: '<img src="https://example.com/img.jpg" />',
+        created_at: "2026-01-14 09:00",
+        company_name: "",
+        site: 1,
+        pickup: 0,
+        image_path: null,
+      },
+    ];
+
     global.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true,
-        json: () =>
-          Promise.resolve({ data: mockNewsItems, total: 4 }),
+        json: () => Promise.resolve({ data: items, total: 2 }),
       })
     ) as unknown as typeof fetch;
 
     render(<NewsListS />);
 
     await waitFor(() => {
-      const images = screen.getAllByRole("img");
-      // item 1 has img in content, item 2 has image_path
-      expect(images.length).toBe(2);
+      // item with code renders company initial, not img thumbnail
+      expect(screen.getByText("ト")).toBeInTheDocument();
+      // item without code but with img in content renders thumbnail
+      const img = screen.getByRole("img");
+      expect(img).toHaveAttribute("src", "https://example.com/img.jpg");
     });
   });
 
-  it("uses image_path over content-extracted image", async () => {
+  it("uses image_path over content-extracted image when no stock code", async () => {
     vi.useRealTimers();
     const items = [
       {
         id: 10,
-        code: "1234",
+        code: null,
         title: "テスト記事",
         content: '<img src="https://content-img.com/photo.jpg" />',
         created_at: "2026-01-15",
