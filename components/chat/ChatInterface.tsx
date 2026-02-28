@@ -154,7 +154,7 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(Math.max(textarea.scrollHeight, 60), 200);
+      const newHeight = Math.min(Math.max(textarea.scrollHeight, 44), 200);
       textarea.style.height = `${newHeight}px`;
     }
   }, []);
@@ -389,7 +389,7 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
   );
 
   return (
-    <div className="flex flex-col h-full bg-background pb-[140px]">
+    <div className="flex flex-col h-full bg-background pb-[120px] sm:pb-[140px]">
       <LoginModal
         open={showLoginDialog}
         onOpenChange={setShowLoginDialog}
@@ -459,14 +459,14 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
               {!hasUsedStarterQuestions && starterQuestions.length > 0 && (
                 <div className="mt-6">
                   <p className="text-xs text-muted-foreground mb-2">最初の質問テンプレート（1回のみ表示）</p>
-                  <div className="flex flex-wrap justify-center gap-2">
+                  <div className="flex flex-col sm:flex-wrap sm:flex-row justify-center gap-2 px-2 sm:px-0">
                     {starterQuestions.map((question) => (
                       <Button
                         key={question}
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-auto py-2 px-3 text-xs whitespace-normal text-left"
+                        className="h-auto py-2.5 px-3 text-xs whitespace-normal text-left"
                         onClick={() => handleStarterQuestionClick(question)}
                       >
                         {question}
@@ -482,10 +482,10 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
             <div
               key={message.id}
               className={cn(
-                'flex gap-3 p-4 rounded-lg',
+                'flex gap-3 p-3 sm:p-4 rounded-lg',
                 message.role === 'user'
-                  ? 'bg-primary/10 ml-12'
-                  : 'bg-muted mr-12'
+                  ? 'bg-primary/10 ml-4 sm:ml-12'
+                  : 'bg-muted mr-4 sm:mr-12'
               )}
             >
               <div
@@ -512,7 +512,7 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
           ))}
 
           {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className="flex gap-3 p-4 rounded-lg bg-muted mr-12">
+            <div className="flex gap-3 p-3 sm:p-4 rounded-lg bg-muted mr-4 sm:mr-12">
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-secondary">
                 <Bot className="w-4 h-4 text-secondary-foreground" />
               </div>
@@ -532,7 +532,7 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
       </ScrollArea>
 
       {/* 入力エリア - 画面下部に固定 */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 z-50">
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-3 sm:p-4 z-50">
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
           <div className="flex gap-2 items-end">
             <Textarea
@@ -549,14 +549,14 @@ export function ChatInterface({ chatId, initialMessages = [], stockCode }: ChatI
                     ? 'メッセージを入力... (Shift+Enterで改行)'
                     : 'チャットを準備中...'
               }
-              className="min-h-[60px] max-h-[200px] resize-none overflow-y-auto"
-              style={{ height: '60px' }}
+              className="min-h-[44px] sm:min-h-[60px] max-h-[200px] resize-none overflow-y-auto text-base"
+              style={{ height: '44px' }}
               disabled={isLoading || !fingerprint || isInputLockedByTurnstile}
             />
             <Button
               type="submit"
               size="icon"
-              className="h-[60px] w-[60px] flex-shrink-0"
+              className="h-[44px] w-[44px] sm:h-[60px] sm:w-[60px] flex-shrink-0"
               disabled={isLoading || !input.trim() || !fingerprint || isInputLockedByTurnstile}
             >
               {isLoading ? (

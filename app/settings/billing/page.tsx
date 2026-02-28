@@ -207,8 +207,8 @@ export default function BillingPage() {
 
     return (
         <DefaultTemplate>
-            <div className="container mx-auto py-10 px-4">
-                <h1 className="text-3xl font-bold mb-8 text-slate-900">請求・プラン管理</h1>
+            <div className="container mx-auto py-6 sm:py-10 px-4">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-slate-900">請求・プラン管理</h1>
 
                 <div className="max-w-3xl space-y-6">
                     {/* 現在のプラン状態 */}
@@ -223,12 +223,12 @@ export default function BillingPage() {
                             <CardContent>
                                 {subscription.isPremium ? (
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                                             <div>
                                                 <h3 className="font-bold text-lg text-emerald-900">{getPlanDisplayName()}</h3>
                                                 <p className="text-sm text-emerald-700">{getPlanDescription()}</p>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="sm:text-right">
                                                 <div className="text-2xl font-bold text-emerald-600">{getPlanPrice()}<span className="text-sm font-normal">/月</span></div>
                                             </div>
                                         </div>
@@ -306,12 +306,12 @@ export default function BillingPage() {
                             <CardContent className="space-y-4">
                                 {/* Standard Plan */}
                                 <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                                    <div className="flex justify-between items-center mb-4">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                                         <div>
                                             <h3 className="font-bold text-lg text-slate-900">スタンダードプラン</h3>
                                             <p className="text-sm text-slate-500">AIチャット・株価予測が無制限</p>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="sm:text-right">
                                             <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
                                         </div>
                                     </div>
@@ -341,7 +341,7 @@ export default function BillingPage() {
 
                                 {/* Agent Plan */}
                                 <div className={`p-4 rounded-lg border ${searchParams.get('plan') === 'agent' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' : 'bg-amber-50/50 border-amber-200'}`}>
-                                    <div className="flex justify-between items-center mb-4">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="font-bold text-lg text-slate-900">エージェントプラン</h3>
@@ -349,7 +349,7 @@ export default function BillingPage() {
                                             </div>
                                             <p className="text-sm text-slate-500">全機能 + AI Agent</p>
                                         </div>
-                                        <div className="text-right">
+                                        <div className="sm:text-right">
                                             <div className="text-2xl font-bold text-amber-600">¥5,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
                                         </div>
                                     </div>

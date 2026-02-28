@@ -194,13 +194,13 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       </div>
 
       {/* 現在株価と値幅の表示 */}
-      <div className="flex items-baseline justify-between mt-1">
-        <div className="flex items-baseline space-x-4">
-          <div className="text-2xl font-bold">
+      <div className="flex flex-wrap items-baseline justify-between mt-1 gap-x-2 gap-y-1">
+        <div className="flex items-baseline space-x-2 sm:space-x-4">
+          <div className="text-xl sm:text-2xl font-bold">
             {isUS ? `$${formatPrice(info.current_price)}` : `${formatPrice(info.current_price)}円`}
           </div>
           <div
-            className={`text-lg ${
+            className={`text-base sm:text-lg ${
               parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'
             }`}
           >
@@ -210,7 +210,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           </div>
         </div>
         {!isUS && (info.trailing_pe || info.price_to_book) && (
-          <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700">
+          <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 whitespace-nowrap">
             バリュエーション分析 →
           </Link>
         )}
@@ -226,7 +226,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       )}
 
       {/* 各種指標を4列で表示 */}
-      <div className="grid grid-cols-4 text-sm mt-2">
+      <div className="grid grid-cols-4 text-xs sm:text-sm mt-2 gap-1">
         <div>
           <div className="text-gray-600">PER</div>
           <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>

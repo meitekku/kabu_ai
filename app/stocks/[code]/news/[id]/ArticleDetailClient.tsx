@@ -272,20 +272,18 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
       : `/stocks/${code}/news`;
 
   return (
-    <div className="mx-auto">
+    <div className="mx-auto px-1 sm:px-0">
       <div className="mb-4">
-        <Link 
+        <Link
           href={companyNewsHref}
-          className="text-blue-600 hover:text-blue-800"
+          className="text-blue-600 hover:text-blue-800 text-sm sm:text-base"
         >
           ← ニュース一覧に戻る
         </Link>
       </div>
       <div className="mb-8">
         <div className="pb-4 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{article.title}</h1>
-          </div>
+          <h1 className="text-xl sm:text-2xl font-bold">{article.title}</h1>
           <div className="flex justify-between items-center mt-2">
             <div className="text-sm text-gray-600">
               <Link href={companyNewsHref} className="text-blue-600 hover:text-blue-700 transition-colors">
@@ -293,14 +291,14 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
               </Link> <br/>
               {ServerToDate(article.created_at)}
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-2 sm:space-x-3 flex-shrink-0">
               <TwitterShareButton url={currentUrl} text={article.title} />
               <LineShareButton url={currentUrl} />
               <FacebookShareButton url={currentUrl} />
             </div>
           </div>
         </div>
-        <div className="prose prose-sm sm:prose lg:prose-lg max-w-none mt-6">
+        <div className="prose prose-sm sm:prose lg:prose-lg max-w-none mt-4 sm:mt-6">
           {formatContent(article.content)}
         </div>
       </div>

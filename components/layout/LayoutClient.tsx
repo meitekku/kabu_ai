@@ -6,8 +6,10 @@ import GlobalNavigation from '@/components/navigation/GlobalNavigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { BarChart3 } from 'lucide-react'
 import type { CompanyData } from '@/components/common/CurrentPriceInfo'
 import type { BaseRankingData, RankingTableName } from '@/components/common/RankingTableClient'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
 interface LayoutSummaryResponse {
   success: boolean
@@ -98,19 +100,42 @@ export default function LayoutClient({
     )
   }
 
+  const showSidebar = !isFullWidthPage
+
   return (
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
       <Header isDark={isPremiumPage} marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
-      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1000px] px-4 my-6 sm:px-6'} overflow-x-auto`}>
-        <div className="flex flex-col md:flex-row gap-10 min-w-0">
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1000px] px-3 my-4 sm:px-4 sm:my-6 md:px-6'} overflow-x-auto`}>
+        <div className="flex flex-col md:flex-row gap-6 md:gap-10 min-w-0">
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>
-          {!isFullWidthPage && (
-            <aside className="w-full md:w-[300px] flex-shrink-0">
-              <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
-            </aside>
+          {showSidebar && (
+            <>
+              {/* Desktop sidebar */}
+              <aside className="hidden md:block w-[300px] flex-shrink-0">
+                <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
+              </aside>
+              {/* Mobile sidebar drawer */}
+              <div className="md:hidden fixed bottom-4 right-4 z-40">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button className="w-12 h-12 rounded-full bg-emerald-600 text-white shadow-lg flex items-center justify-center hover:bg-emerald-700 transition-colors">
+                      <BarChart3 className="w-5 h-5" />
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[300px] sm:w-[350px] overflow-y-auto p-4">
+                    <SheetHeader>
+                      <SheetTitle>ランキング</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4">
+                      <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </>
           )}
         </div>
       </div>

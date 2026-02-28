@@ -12,12 +12,12 @@ const Footer = ({ isDark }: { isDark?: boolean }) => {
     return (
         <footer className={`${isDark ? 'bg-[#0a0a0f] border-t border-slate-800' : 'bg-gray-800'} text-white p-4`}>
             <div className="max-w-7xl mx-auto text-center text-sm">
-                <nav className="mb-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
+                <nav className="mb-3 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-x-4 gap-y-1 sm:gap-y-2">
                     {FOOTER_LINKS.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={`transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-300 hover:text-white'}`}
+                            className={`min-h-[44px] flex items-center px-2 transition-colors ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-300 hover:text-white'}`}
                         >
                             {link.label}
                         </Link>

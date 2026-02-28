@@ -481,7 +481,7 @@ export default function PremiumPage() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto rounded-xl border border-slate-200 overflow-hidden bg-white">
+                        <div className="grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto rounded-xl border border-slate-200 overflow-hidden bg-white text-left">
                             {/* Free Plan */}
                             <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
                                 <div className="mb-6">
@@ -654,7 +654,7 @@ export default function PremiumPage() {
                                 よくある質問
                             </h2>
                         </div>
-                        <div className="bg-white rounded-xl border border-slate-200 px-6 md:px-8">
+                        <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 md:px-8">
                             <FAQItem
                                 question="プレミアムプランはいつでも解約できますか？"
                                 answer="はい、いつでも解約可能です。設定画面のお支払い管理から、Stripe顧客ポータルにアクセスして即座に解約できます。解約後も残りの課金期間中はすべての機能をご利用いただけます。"

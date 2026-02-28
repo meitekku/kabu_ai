@@ -61,7 +61,7 @@ export function FavoritesNewsReport({ date }: FavoritesNewsReportProps) {
   return (
     <div className="space-y-4">
       {reports.map((report) => (
-        <div key={report.id} className="rounded-xl border border-gray-200 bg-white p-6">
+        <div key={report.id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-3">
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${
               report.report_type === 'midday'

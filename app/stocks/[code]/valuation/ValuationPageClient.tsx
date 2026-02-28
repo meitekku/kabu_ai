@@ -64,19 +64,19 @@ function ValuationSummary({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-6">
+      <div className="grid grid-cols-2 gap-4 sm:gap-6">
         <div className="text-center">
-          <h3 className="text-sm text-gray-500 font-medium mb-1">現在のPER</h3>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-4xl font-black text-gray-800">{per.toFixed(2)}<span className="text-lg ml-1 font-bold">倍</span></span>
+          <h3 className="text-xs sm:text-sm text-gray-500 font-medium mb-1">現在のPER</h3>
+          <div className="flex items-center justify-center gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-4xl font-black text-gray-800">{per.toFixed(2)}<span className="text-sm sm:text-lg ml-0.5 sm:ml-1 font-bold">倍</span></span>
             <EvaluationBadge evaluation={perEvaluation} />
           </div>
         </div>
-        <div className="text-center border-t border-gray-100 pt-6 sm:border-t-0 sm:pt-0 sm:border-l sm:border-gray-100">
-          <h3 className="text-sm text-gray-500 font-medium mb-1">現在のPBR</h3>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-4xl font-black text-gray-800">{pbr.toFixed(2)}<span className="text-lg ml-1 font-bold">倍</span></span>
+        <div className="text-center border-l border-gray-100">
+          <h3 className="text-xs sm:text-sm text-gray-500 font-medium mb-1">現在のPBR</h3>
+          <div className="flex items-center justify-center gap-1 sm:gap-2">
+            <span className="text-2xl sm:text-4xl font-black text-gray-800">{pbr.toFixed(2)}<span className="text-sm sm:text-lg ml-0.5 sm:ml-1 font-bold">倍</span></span>
             <EvaluationBadge evaluation={pbrEvaluation} />
           </div>
         </div>
@@ -117,14 +117,14 @@ function ComparisonScale({ current, expected, avg, label: _label }: { current: n
   const max = Math.max(...values) * 1.2;
   const range = max - min;
 
-  const getPos = (val: number) => ((val - min) / range) * 100;
+  const getPos = (val: number) => Math.max(5, Math.min(95, ((val - min) / range) * 100));
 
   return (
     <div className="space-y-4 py-2">
       <div className="relative h-2 bg-gray-100 rounded-full mt-8">
         {/* 業種平均マーカー */}
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center"
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
           style={{ left: `${getPos(avg)}%` }}
         >
           <div className="h-4 w-0.5 bg-gray-400" />
@@ -133,8 +133,8 @@ function ComparisonScale({ current, expected, avg, label: _label }: { current: n
         </div>
 
         {/* AI想定マーカー */}
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center"
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
           style={{ left: `${getPos(expected)}%` }}
         >
           <div className="h-5 w-1 bg-amber-500 rounded-full shadow-sm" />
@@ -143,8 +143,8 @@ function ComparisonScale({ current, expected, avg, label: _label }: { current: n
         </div>
 
         {/* 現在値マーカー */}
-        <div 
-          className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center"
+        <div
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex flex-col items-center"
           style={{ left: `${getPos(current)}%` }}
         >
           <div className="h-7 w-1.5 bg-blue-600 rounded-full shadow-md z-10" />
@@ -153,7 +153,7 @@ function ComparisonScale({ current, expected, avg, label: _label }: { current: n
         </div>
       </div>
       <div className="pt-8">
-        <div className="text-[11px] sm:text-xs text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
+        <div className="text-[11px] sm:text-xs text-gray-600 leading-relaxed bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-100">
           現在値はAI想定値に対し
           <GapIndicator current={current} expected={expected} />
           の乖離があります。
@@ -190,29 +190,29 @@ function ValuationCard({
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-      <div className="px-4 py-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-        <div className="flex flex-col gap-1">
-          <h3 className="font-bold text-gray-800 flex items-center gap-2">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/30 gap-2">
+        <div className="flex flex-col gap-1 min-w-0">
+          <h3 className="font-bold text-sm sm:text-base text-gray-800 flex items-center gap-2">
             {title} 分析
             <EvaluationBadge evaluation={evaluation} />
           </h3>
           <p className="text-[10px] text-gray-400 font-medium hidden sm:block">{description}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex-shrink-0">
           <div className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">現在の{title}</div>
-          <div className="text-2xl font-black text-gray-900 leading-none">{current.toFixed(2)}<span className="text-sm ml-0.5 font-bold">倍</span></div>
+          <div className="text-xl sm:text-2xl font-black text-gray-900 leading-none">{current.toFixed(2)}<span className="text-xs sm:text-sm ml-0.5 font-bold">倍</span></div>
         </div>
       </div>
-      
-      <div className="p-4 space-y-5">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="bg-amber-50/40 rounded-xl p-3 border border-amber-100/50">
+
+      <div className="p-3 sm:p-4 space-y-4 sm:space-y-5">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <div className="bg-amber-50/40 rounded-xl p-2.5 sm:p-3 border border-amber-100/50">
             <div className="text-[10px] text-amber-600 font-bold mb-1">AI想定値</div>
-            <div className="text-lg sm:text-xl font-black text-amber-700">{expected.toFixed(2)}<span className="text-xs ml-0.5">倍</span></div>
+            <div className="text-base sm:text-xl font-black text-amber-700">{expected.toFixed(2)}<span className="text-xs ml-0.5">倍</span></div>
           </div>
-          <div className="bg-blue-50/40 rounded-xl p-3 border border-blue-100/50">
+          <div className="bg-blue-50/40 rounded-xl p-2.5 sm:p-3 border border-blue-100/50">
             <div className="text-[10px] text-blue-600 font-bold mb-1">想定との乖離</div>
-            <div className={`text-lg sm:text-xl font-black ${isOver ? 'text-red-600' : isUnder ? 'text-green-600' : 'text-gray-600'}`}>
+            <div className={`text-base sm:text-xl font-black ${isOver ? 'text-red-600' : isUnder ? 'text-green-600' : 'text-gray-600'}`}>
               {diffPct > 0 ? '+' : ''}{diffPct.toFixed(1)}%
             </div>
           </div>
@@ -281,7 +281,7 @@ const ValuationPageClient = ({ code }: { code: string }) => {
     <div className="bg-gray-50 min-h-screen">
       <CompanyBasicInfo code={code} />
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-blue-600" />
@@ -295,9 +295,9 @@ const ValuationPageClient = ({ code }: { code: string }) => {
             <p className="text-xs text-gray-400 mt-2">決算発表や重要な市場ニュースの後に生成されます</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-gray-900 tracking-tight">AIバリュエーション診断</h2>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">AIバリュエーション診断</h2>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 font-bold uppercase bg-white px-2 py-1 rounded border border-gray-100">
                   {new Date(report.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -313,7 +313,7 @@ const ValuationPageClient = ({ code }: { code: string }) => {
               pbrEvaluation={report.pbr_evaluation}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <ValuationCard
                 title="PER"
                 current={effectivePer}
@@ -334,14 +334,14 @@ const ValuationPageClient = ({ code }: { code: string }) => {
 
             {/* AI Analysis Summary */}
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="px-5 py-4 border-b border-gray-50 bg-gray-50/50">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-blue-500" />
+              <div className="px-3 sm:px-5 py-3 sm:py-4 border-b border-gray-50 bg-gray-50/50">
+                <h3 className="font-bold text-sm sm:text-base text-gray-800 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-blue-500 flex-shrink-0" />
                   AI 分析サマリー
                 </h3>
               </div>
-              <div className="p-6">
-                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4">
+              <div className="p-3 sm:p-6">
+                <div className="text-xs sm:text-sm text-gray-700 whitespace-pre-wrap leading-relaxed space-y-4">
                   {report.report_content}
                 </div>
               </div>

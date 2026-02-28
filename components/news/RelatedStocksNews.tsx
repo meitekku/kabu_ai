@@ -127,11 +127,11 @@ const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProp
 
   return (
     <div>
-      <h3 className="text-lg font-bold text-gray-900 mb-4">関連銘柄の最新記事</h3>
-      
+      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">関連銘柄の最新記事</h3>
+
       <div className="divide-y divide-gray-100">
         {news.map((item) => (
-          <Link 
+          <Link
             href={`/stocks/${item.code}/news/${item.id}`}
             key={item.id}
             className="block"
@@ -139,16 +139,16 @@ const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProp
             <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
               <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-sm text-blue-600">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
+                    <span className="font-bold text-xs sm:text-sm text-blue-600">
                       {item.company_name}
                     </span>
-                    <span className="font-bold text-sm text-gray-500">
+                    <span className="font-bold text-xs sm:text-sm text-gray-500">
                       {item.created_at}
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>
-                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title}</div>
+                  <div className="font-bold text-sm sm:text-base text-gray-900 mt-0.5">{item.title}</div>
                 </div>
               </CardContent>
             </Card>

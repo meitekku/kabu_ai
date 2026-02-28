@@ -11,7 +11,7 @@ export default function SuccessPage() {
     return (
         <DefaultTemplate>
             <div className="min-h-screen bg-[#020617] text-slate-50 flex items-center justify-center p-4">
-                <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl">
+                <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 text-center shadow-2xl">
                     <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                     </div>

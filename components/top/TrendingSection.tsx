@@ -162,17 +162,17 @@ function TrendingCard({
       <article className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-150 overflow-hidden h-full flex flex-col">
         {/* Company header — left accent border */}
         <div
-          className={`flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 ${styles.headerBorder}`}
+          className={`flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-200 ${styles.headerBorder}`}
         >
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
             {item.code && <LogoIcon code={item.code} />}
             {item.company_name && (
-              <span className="text-xs font-bold text-gray-700 truncate">
+              <span className="text-[11px] sm:text-xs font-bold text-gray-700 truncate">
                 {item.company_name}
               </span>
             )}
             {item.code && (
-              <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
+              <span className="text-[11px] sm:text-xs text-gray-400 flex-shrink-0 font-mono">
                 {item.code}
               </span>
             )}
@@ -185,29 +185,29 @@ function TrendingCard({
         </div>
 
         {/* Content */}
-        <div className="px-3 py-2.5 flex flex-col flex-grow gap-1">
-          <h3 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug">
+        <div className="px-2 sm:px-3 py-2 sm:py-2.5 flex flex-col flex-grow gap-1">
+          <h3 className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug">
             {title}
           </h3>
           {item.excerpt && (
-            <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-gray-500 line-clamp-1 leading-relaxed">
               {item.excerpt}
             </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50">
-          <span className="text-xs text-gray-400">
+        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-t border-gray-100 bg-gray-50">
+          <span className="text-[11px] sm:text-xs text-gray-400">
             {formatTimeAgo(item.created_at)}
           </span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-400">AI分析</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-[11px] sm:text-xs font-medium text-gray-400 hidden sm:inline">AI分析</span>
             {item.code && (
               <SparklineChart
                 code={item.code}
-                width={72}
-                height={20}
+                width={60}
+                height={18}
                 data={sparklines[item.code] ?? null}
               />
             )}
@@ -220,14 +220,14 @@ function TrendingCard({
 
 function SectionSkeleton() {
   return (
-    <div className="mb-6">
+    <div className="mb-4 sm:mb-6">
       {/* section header — matches SectionBlock header exactly */}
-      <div className="flex items-center justify-between mb-3 pb-2.5 border-b-2 border-gray-200 pl-3 border-l-4 border-l-gray-200">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-gray-100 rounded animate-pulse" />
-          <div className="h-4 bg-gray-100 rounded w-32 animate-pulse" />
+      <div className="flex items-center justify-between mb-2 sm:mb-3 pb-2 sm:pb-2.5 border-b-2 border-gray-200 pl-2 sm:pl-3 border-l-4 border-l-gray-200">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gray-100 rounded animate-pulse" />
+          <div className="h-3 sm:h-4 bg-gray-100 rounded w-24 sm:w-32 animate-pulse" />
         </div>
-        <div className="h-5 bg-gray-100 rounded w-14 animate-pulse" />
+        <div className="h-4 sm:h-5 bg-gray-100 rounded w-12 sm:w-14 animate-pulse" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[...Array(4)].map((_, i) => (
@@ -236,24 +236,24 @@ function SectionSkeleton() {
             className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col"
           >
             {/* company header row */}
-            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 border-l-4 border-l-gray-200">
-              <div className="flex items-center gap-1.5">
-                <div className="w-7 h-7 bg-gray-200 rounded animate-pulse flex-shrink-0" />
-                <div className="h-3 bg-gray-100 rounded w-20 animate-pulse" />
-                <div className="h-3 bg-gray-100 rounded w-8 animate-pulse" />
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-200 border-l-4 border-l-gray-200">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+                <div className="h-3 bg-gray-100 rounded w-16 sm:w-20 animate-pulse" />
+                <div className="h-3 bg-gray-100 rounded w-7 sm:w-8 animate-pulse" />
               </div>
-              <div className="h-5 bg-gray-100 rounded w-12 animate-pulse flex-shrink-0" />
+              <div className="h-4 sm:h-5 bg-gray-100 rounded w-10 sm:w-12 animate-pulse flex-shrink-0" />
             </div>
             {/* content */}
-            <div className="px-3 py-2.5 flex flex-col gap-1 flex-grow">
-              <div className="h-3.5 bg-gray-100 rounded w-full animate-pulse" />
-              <div className="h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
+            <div className="px-2 sm:px-3 py-2 sm:py-2.5 flex flex-col gap-1 flex-grow">
+              <div className="h-3 sm:h-3.5 bg-gray-100 rounded w-full animate-pulse" />
+              <div className="h-3 sm:h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
               <div className="h-2.5 bg-gray-100 rounded w-3/5 animate-pulse mt-0.5" />
             </div>
             {/* footer */}
-            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50">
-              <div className="h-2.5 bg-gray-100 rounded w-10 animate-pulse" />
-              <div className="h-5 bg-gray-100 rounded w-20 animate-pulse" />
+            <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-t border-gray-100 bg-gray-50">
+              <div className="h-2.5 bg-gray-100 rounded w-8 sm:w-10 animate-pulse" />
+              <div className="h-4 sm:h-5 bg-gray-100 rounded w-16 sm:w-20 animate-pulse" />
             </div>
           </div>
         ))}
@@ -271,19 +271,19 @@ function SectionBlock({
 }) {
   const styles = TYPE_STYLES[section.type];
   return (
-    <div className="mb-6">
+    <div className="mb-4 sm:mb-6">
       {/* Section header */}
       <div
-        className={`flex items-center justify-between mb-3 pb-2.5 border-b-2 border-gray-200 pl-3 ${styles.sectionBorder}`}
+        className={`flex items-center justify-between mb-2 sm:mb-3 pb-2 sm:pb-2.5 border-b-2 border-gray-200 pl-2 sm:pl-3 ${styles.sectionBorder}`}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-base leading-none">{styles.icon}</span>
-          <h2 className="text-sm font-bold text-gray-800 tracking-wide">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-sm sm:text-base leading-none">{styles.icon}</span>
+          <h2 className="text-xs sm:text-sm font-bold text-gray-800 tracking-wide">
             {section.label}
           </h2>
         </div>
         <span
-          className={`text-xs font-semibold px-2.5 py-0.5 rounded ${styles.badgeBg} ${styles.badgeText}`}
+          className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2.5 py-0.5 rounded ${styles.badgeBg} ${styles.badgeText}`}
         >
           {section.time_label}
         </span>

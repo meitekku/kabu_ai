@@ -20,7 +20,7 @@ export default function ContactPage() {
       <LegalSection title="お問い合わせ窓口">
         <p>
           メールアドレス:{" "}
-          <a className="text-emerald-700 underline" href={`mailto:${CONTACT_EMAIL}`}>
+          <a className="inline-block py-1 text-emerald-700 underline" href={`mailto:${CONTACT_EMAIL}`}>
             {CONTACT_EMAIL}
           </a>
         </p>
@@ -30,7 +30,7 @@ export default function ContactPage() {
       </LegalSection>
 
       <LegalSection title="お問い合わせ時のお願い">
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>ご利用中のメールアドレスまたはアカウント情報</li>
           <li>発生している事象の内容、日時、対象ページ</li>
           <li>課金関連の場合は決済日時やプラン種別</li>

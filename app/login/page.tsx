@@ -66,8 +66,8 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             ログイン
@@ -128,7 +128,7 @@ function LoginForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full flex items-center justify-center gap-3"
+            className="w-full flex items-center justify-center gap-3 min-h-[44px]"
             onClick={() => handleSocialLogin("google")}
             disabled={loading}
           >
@@ -156,7 +156,7 @@ function LoginForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full flex items-center justify-center gap-3"
+            className="w-full flex items-center justify-center gap-3 min-h-[44px]"
             onClick={() => handleSocialLogin("twitter")}
             disabled={loading}
           >

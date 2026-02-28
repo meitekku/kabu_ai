@@ -33,13 +33,13 @@ function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
   if (error) return null;
   return (
-    <div className="flex-shrink-0 w-20 h-20 relative">
+    <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative">
       <Image
         src={src}
         alt={alt}
         fill
         className="object-cover rounded"
-        sizes="80px"
+        sizes="(max-width: 640px) 64px, 80px"
         unoptimized
         onError={() => setError(true)}
       />
@@ -61,10 +61,10 @@ function CompanyVisual({
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="flex-shrink-0 flex flex-col items-center gap-1" style={{ width: 80 }}>
+    <div className="flex-shrink-0 flex flex-col items-center gap-1 w-16 sm:w-20">
       {/* ロゴ（ある場合のみ表示） */}
       {logoUrl && !logoError && (
-        <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoUrl}
@@ -75,7 +75,7 @@ function CompanyVisual({
         </div>
       )}
       {/* スパークライン */}
-      <SparklineChart code={code} width={80} height={36} data={sparklineData} />
+      <SparklineChart code={code} width={64} height={28} data={sparklineData} />
     </div>
   );
 }
@@ -227,16 +227,16 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             : `/stocks/all/news/${item.id}`;
           
           return (
-            <div key={item.id} className="border-b border-gray-100 pb-4">
-              <div className="text-sm text-gray-500 mb-1">
+            <div key={item.id} className="border-b border-gray-100 pb-3 sm:pb-4">
+              <div className="text-xs sm:text-sm text-gray-500 mb-1">
                 {item.created_at}
               </div>
 
-              <div className="flex gap-3">
-                <div className="flex-1">
+              <div className="flex gap-2 sm:gap-3">
+                <div className="flex-1 min-w-0">
                   <Link
                     href={articleHref}
-                    className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
+                    className="block text-sm sm:text-base font-bold text-gray-900 hover:text-blue-600 mb-1 sm:mb-2 overflow-hidden"
                     style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -247,7 +247,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                   >
                     {item.title}
                   </Link>
-                  <p className="text-sm text-gray-600 line-clamp-2">
+                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
                     {item.content?.replace(/<[^>]*>/g, '')}
                   </p>
                 </div>
@@ -277,26 +277,26 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           </Link>
         </div>
       ) : totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2 mt-4">
+        <div className="flex justify-center items-center gap-1 sm:space-x-2 mt-4">
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-2 py-1 rounded disabled:opacity-50"
+            className="px-2 py-2 sm:py-1 rounded disabled:opacity-50 min-w-[36px] sm:min-w-0"
           >
             &lt;
           </button>
-          
+
           {currentPage > 2 && (
             <button
               onClick={() => setCurrentPage(1)}
-              className="px-3 py-1 rounded"
+              className="px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0"
             >
               1
             </button>
           )}
-          
-          {currentPage > 3 && <span className="px-1">...</span>}
-          
+
+          {currentPage > 3 && <span className="px-0.5 sm:px-1">...</span>}
+
           {Array.from(
             { length: Math.min(3, totalPages) },
             (_, i) => {
@@ -305,7 +305,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 rounded ${
+                  className={`px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0 ${
                     currentPage === page
                       ? 'bg-red-600 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -316,22 +316,22 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
               );
             }
           )}
-          
-          {currentPage < totalPages - 2 && <span className="px-1">...</span>}
-          
+
+          {currentPage < totalPages - 2 && <span className="px-0.5 sm:px-1">...</span>}
+
           {currentPage < totalPages - 1 && (
             <button
               onClick={() => setCurrentPage(totalPages)}
-              className="px-3 py-1 rounded"
+              className="px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0"
             >
               {totalPages}
             </button>
           )}
-          
+
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-2 py-1 rounded disabled:opacity-50"
+            className="px-2 py-2 sm:py-1 rounded disabled:opacity-50 min-w-[36px] sm:min-w-0"
           >
             &gt;
           </button>

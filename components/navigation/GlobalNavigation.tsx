@@ -39,16 +39,16 @@ const GlobalNavigation = () => {
     <>
       {isAdmin && (
         <nav className="fixed top-0 left-0 right-0 bg-gray-800 text-white z-50 py-1 px-2">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center h-full">
-              <div className="flex items-center space-x-4 text-sm">
+          <div className="max-w-7xl mx-auto overflow-x-auto">
+            <div className="flex items-center h-full min-w-max">
+              <div className="flex items-center gap-1 sm:gap-4 text-xs sm:text-sm">
                 {NAVIGATION_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className="hover:text-gray-300">
+                  <Link key={link.href} href={link.href} className="hover:text-gray-300 whitespace-nowrap py-1 px-1 sm:px-0 min-h-[32px] flex items-center">
                     {link.label}
                   </Link>
                 ))}
                 {additionalLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="hover:text-gray-300 text-blue-300">
+                  <Link key={link.href} href={link.href} className="hover:text-gray-300 text-blue-300 whitespace-nowrap py-1 px-1 sm:px-0 min-h-[32px] flex items-center">
                     {link.label}
                   </Link>
                 ))}

@@ -16,8 +16,8 @@ export default async function LatestNewsPage() {
     : undefined;
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-6">ニュース一覧</h1>
+    <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-8">
+      <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">ニュース一覧</h1>
       <NewsListS limit={10} more={false} initialData={initialData} />
     </div>
   );

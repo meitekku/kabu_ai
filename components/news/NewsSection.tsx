@@ -39,20 +39,21 @@ function NewsCard({ item }: { item: Post }) {
               alt={safeTitle}
               fill
               className="object-cover object-top"
+              sizes="(max-width: 768px) 100vw, 50vw"
               unoptimized
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-              <span className="text-red-400 text-sm font-medium text-center line-clamp-3">{safeTitle}</span>
+            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-3 sm:p-4">
+              <span className="text-red-400 text-xs sm:text-sm font-medium text-center line-clamp-3">{safeTitle}</span>
             </div>
           )}
         </div>
         <div className="p-2 flex flex-col flex-grow">
-          <h3 className="font-medium text-gray-900 line-clamp-2 flex-grow">{safeTitle}</h3>
-          <div className="mt-2 flex items-center justify-end">
+          <h3 className="text-sm sm:text-base font-medium text-gray-900 line-clamp-2 flex-grow">{safeTitle}</h3>
+          <div className="mt-1 sm:mt-2 flex items-center justify-end">
             {item.company_name && (
-              <span className="text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
+              <span className="text-xs sm:text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
             )}
           </div>
         </div>
@@ -109,9 +110,9 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   }, [hasInitialData, initialPickupNews, initialMarketNews]);
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
-    <div className="mb-8">
-      <h2 className="text-xl font-bold mb-2">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="mb-5 sm:mb-8">
+      <h2 className="text-lg sm:text-xl font-bold mb-2">{title}</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
         {news.map((item) => (
           <NewsCard key={item.id} item={item} />
         ))}
@@ -122,9 +123,9 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-5 sm:mb-8">
+          <div className="h-5 sm:h-6 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-3 sm:mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             {[...Array(2)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
                 <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>
@@ -136,9 +137,9 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
             ))}
           </div>
         </div>
-        <div className="mb-8">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-5 sm:mb-8">
+          <div className="h-5 sm:h-6 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-3 sm:mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
             {[...Array(2)].map((_, index) => (
               <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
                 <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>

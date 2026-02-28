@@ -60,14 +60,16 @@ export default function CommercialTransactionsPage() {
       updatedAt={UPDATED_AT}
     >
       <LegalSection title="事業者情報">
-        <dl className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
-          {rows.map((row) => (
-            <div key={row.label} className="grid gap-2 px-4 py-4 sm:grid-cols-[180px_1fr]">
-              <dt className="text-sm font-semibold text-slate-900">{row.label}</dt>
-              <dd className="text-sm leading-7 text-slate-700">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="overflow-x-auto">
+          <dl className="divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white">
+            {rows.map((row) => (
+              <div key={row.label} className="grid gap-1 px-3 py-3 sm:gap-2 sm:px-4 sm:py-4 sm:grid-cols-[180px_1fr]">
+                <dt className="text-sm font-semibold text-slate-900">{row.label}</dt>
+                <dd className="text-sm leading-7 text-slate-700">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </LegalSection>
 
       <LegalSection title="補足">

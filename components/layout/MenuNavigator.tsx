@@ -15,26 +15,33 @@ const Navigation: React.FC<NavigationProps> = ({ urls }) => {
   }
 
   return (
-    <nav className="w-full bg-white mb-2">
+    <nav className="w-full bg-white mb-2 overflow-x-auto">
       <div className="container mx-auto">
-        <ul className="flex justify-evenly">
+        <ul className="flex justify-evenly min-w-max sm:min-w-0">
           {urls.map((url, index) => (
-            <li 
-              key={index} 
+            <li
+              key={index}
               className="
-                text-center 
+                text-center
                 max-w-[200px]
-                border-r 
+                border-r
                 border-gray-200
                 last:border-r-0
+                flex-shrink-0
+                sm:flex-shrink
               "
             >
-              <a 
+              <a
                 href={url.href}
                 className="
-                  inline-block
+                  inline-flex
+                  items-center
+                  justify-center
                   px-3
                   py-2
+                  min-h-[44px]
+                  text-sm
+                  sm:text-base
                   text-gray-700
                   font-medium
                   bg-gray-50
@@ -44,6 +51,7 @@ const Navigation: React.FC<NavigationProps> = ({ urls }) => {
                   transition-all
                   duration-200
                   w-full
+                  whitespace-nowrap
                 "
               >
                 {url.label}

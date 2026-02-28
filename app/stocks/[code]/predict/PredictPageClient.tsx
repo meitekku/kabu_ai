@@ -78,16 +78,16 @@ function AnalyzingAnimation({ activeStep }: { activeStep: number }) {
   };
 
   return (
-    <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-      <div className="relative z-10 w-full max-w-md space-y-8">
+    <div className="min-h-[60vh] flex flex-col items-center justify-center px-3 sm:px-4">
+      <div className="relative z-10 w-full max-w-md space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="p-4 rounded-full bg-emerald-500/10 animate-pulse">
-              <TrendingUp className="w-10 h-10 text-emerald-500" />
+            <div className="p-3 sm:p-4 rounded-full bg-emerald-500/10 animate-pulse">
+              <TrendingUp className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-500" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold">AIが分析中...</h2>
+          <h2 className="text-xl sm:text-2xl font-bold">AIが分析中...</h2>
           <p className="text-sm text-muted-foreground">経過時間: {formatTime(elapsed)}</p>
         </div>
 
@@ -179,10 +179,10 @@ function ScoreBadge({ score }: { score?: number }) {
 
 function PredictionReport({ report, code, chartRef }: { report: PredictionReport; code: string; chartRef: React.RefObject<StockChartRef | null> }) {
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+    <div className="space-y-4 sm:space-y-6 animate-in fade-in duration-700">
       {/* 1. Chart with prediction overlay (no news tooltips) */}
-      <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">株価チャート</h3>
+      <div className="border rounded-lg p-2 sm:p-4">
+        <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3">株価チャート</h3>
         <StockChart
           ref={chartRef}
           code={code}
@@ -203,17 +203,17 @@ function PredictionReport({ report, code, chartRef }: { report: PredictionReport
 
       {/* 3. Summary */}
       <div>
-        <h2 className="text-xl font-bold mb-2">予測概要</h2>
-        <p className="text-muted-foreground leading-relaxed">{report.summary}</p>
+        <h2 className="text-lg sm:text-xl font-bold mb-2">予測概要</h2>
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">{report.summary}</p>
       </div>
 
       {/* 3.5 Themes & Risks */}
       {((report.themes && report.themes.length > 0) || (report.risks && report.risks.length > 0)) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
           {report.themes && report.themes.length > 0 && (
-            <div className="border rounded-lg p-4 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+            <div className="border rounded-lg p-3 sm:p-4 border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
               <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                <Tag className="w-4 h-4 text-blue-500" />
+                <Tag className="w-4 h-4 text-blue-500 flex-shrink-0" />
                 関連テーマ
               </h3>
               <div className="flex flex-wrap gap-1.5">
@@ -226,9 +226,9 @@ function PredictionReport({ report, code, chartRef }: { report: PredictionReport
             </div>
           )}
           {report.risks && report.risks.length > 0 && (
-            <div className="border rounded-lg p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+            <div className="border rounded-lg p-3 sm:p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
               <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                <Shield className="w-4 h-4 text-amber-500" />
+                <Shield className="w-4 h-4 text-amber-500 flex-shrink-0" />
                 主要リスク
               </h3>
               <ul className="space-y-1">
@@ -246,68 +246,68 @@ function PredictionReport({ report, code, chartRef }: { report: PredictionReport
 
       {/* 4. Content Sections */}
       {report.technicalAnalysis && (
-        <div className="border rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-blue-500" />
-            テクニカル分析
+        <div className="border rounded-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 flex-shrink-0" />
+            <span className="min-w-0">テクニカル分析</span>
             <ScoreBadge score={report.scores?.technical} />
           </h3>
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.technicalAnalysis}</p>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.technicalAnalysis}</p>
         </div>
       )}
 
       {report.fundamentalAnalysis && (
-        <div className="border rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-500" />
-            ファンダメンタルズ分析
+        <div className="border rounded-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 flex-shrink-0" />
+            <span className="min-w-0">ファンダメンタルズ分析</span>
             <ScoreBadge score={report.scores?.fundamental} />
           </h3>
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.fundamentalAnalysis}</p>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.fundamentalAnalysis}</p>
         </div>
       )}
 
       {report.catalystAnalysis && (
-        <div className="border rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <Newspaper className="w-5 h-5 text-orange-500" />
-            カタリスト・材料分析
+        <div className="border rounded-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
+            <Newspaper className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500 flex-shrink-0" />
+            <span className="min-w-0">カタリスト・材料分析</span>
             <ScoreBadge score={report.scores?.catalyst} />
           </h3>
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.catalystAnalysis}</p>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.catalystAnalysis}</p>
         </div>
       )}
 
       {report.investmentStrategy && (
-        <div className="border rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <BrainCircuit className="w-5 h-5 text-purple-500" />
-            投資戦略
+        <div className="border rounded-lg p-3 sm:p-4">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
+            <BrainCircuit className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500 flex-shrink-0" />
+            <span className="min-w-0">投資戦略</span>
             <ScoreBadge score={report.scores?.strategy} />
           </h3>
-          <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.investmentStrategy}</p>
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.investmentStrategy}</p>
         </div>
       )}
 
       {/* 5. Overall Analysis */}
-      <div className="border rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+      <div className="border rounded-lg p-3 sm:p-4">
+        <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
           総合分析
           <ScoreBadge score={report.scores?.overall} />
         </h3>
-        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.overallAnalysis}</p>
+        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">{report.overallAnalysis}</p>
       </div>
 
       {/* 6. Risk Factors */}
       {report.riskFactors.length > 0 && (
-        <div className="border rounded-lg p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
-          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-amber-500" />
+        <div className="border rounded-lg p-3 sm:p-4 border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20">
+          <h3 className="text-base sm:text-lg font-semibold mb-2 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 flex-shrink-0" />
             リスク要因
           </h3>
           <ul className="space-y-2">
             {report.riskFactors.map((risk, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+              <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground">
                 <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                 {risk}
               </li>
@@ -648,11 +648,11 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
 
       {/* シェアプレビューポップアップ */}
       {shareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !shareModal.posting && setShareModal(null)}>
-          <div className="bg-background border rounded-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={() => !shareModal.posting && setShareModal(null)}>
+          <div className="bg-background border rounded-t-xl sm:rounded-xl w-full max-w-lg sm:mx-4 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* ヘッダー: タイトル左・投稿ボタン右・☓ボタン右上 */}
-            <div className="flex items-center justify-between p-4 pb-0">
-              <h3 className="text-lg font-semibold">
+            <div className="flex items-center justify-between p-3 sm:p-4 pb-0">
+              <h3 className="text-base sm:text-lg font-semibold">
                 {shareModal.platform === 'twitter' ? 'X (Twitter)' : shareModal.platform === 'line' ? 'LINE' : 'Facebook'}でシェア
               </h3>
               <div className="flex items-center gap-2">

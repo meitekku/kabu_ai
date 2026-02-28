@@ -153,7 +153,7 @@ export default function NewsListClient() {
         <Link
           key="prev"
           href={`/stocks/${code}/news/list?page=${currentPage - 1}`}
-          className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
+          className="px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
         >
           前へ
         </Link>
@@ -166,7 +166,7 @@ export default function NewsListClient() {
         <Link
           key={i}
           href={`/stocks/${code}/news/list?page=${i}`}
-          className={`px-3 py-2 text-sm border border-gray-300 rounded-md ${
+          className={`px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm border border-gray-300 rounded-md ${
             i === currentPage
               ? 'bg-blue-500 text-white border-blue-500'
               : 'bg-white hover:bg-gray-50'
@@ -183,7 +183,7 @@ export default function NewsListClient() {
         <Link
           key="next"
           href={`/stocks/${code}/news/list?page=${currentPage + 1}`}
-          className="px-3 py-2 text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
+          className="px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm border border-gray-300 bg-white hover:bg-gray-50 rounded-md"
         >
           次へ
         </Link>
@@ -211,7 +211,7 @@ export default function NewsListClient() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">
         ニュース一覧 (全{pagination.totalItems}件)
       </h1>
 
@@ -241,8 +241,8 @@ export default function NewsListClient() {
 
       {/* ページネーション */}
       {pagination.totalPages > 1 && (
-        <div className="mt-8 flex justify-center">
-          <div className="flex gap-2">
+        <div className="mt-6 sm:mt-8 flex justify-center">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center">
             {generatePaginationLinks()}
           </div>
         </div>

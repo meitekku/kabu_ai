@@ -29,7 +29,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection title="第3条（禁止事項）">
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>法令または公序良俗に違反する行為</li>
           <li>不正アクセス、脆弱性探索、サービス妨害行為</li>
           <li>虚偽情報の登録、なりすまし、第三者への迷惑行為</li>

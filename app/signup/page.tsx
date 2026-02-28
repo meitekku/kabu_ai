@@ -80,8 +80,8 @@ function SignUpForm() {
   // メール確認待ち画面
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
-        <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md text-center">
+      <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
+        <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
             <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -110,8 +110,8 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gray-50 pt-12">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
             新規登録
@@ -196,7 +196,7 @@ function SignUpForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full flex items-center justify-center gap-3"
+            className="w-full flex items-center justify-center gap-3 min-h-[44px]"
             onClick={() => handleSocialLogin("google")}
             disabled={loading}
           >
@@ -224,7 +224,7 @@ function SignUpForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full flex items-center justify-center gap-3"
+            className="w-full flex items-center justify-center gap-3 min-h-[44px]"
             onClick={() => handleSocialLogin("twitter")}
             disabled={loading}
           >

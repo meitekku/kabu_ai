@@ -18,7 +18,7 @@ export default function PrivacyPolicyPage() {
       updatedAt={UPDATED_AT}
     >
       <LegalSection title="1. 取得する情報">
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>アカウント登録時に入力されたメールアドレス等の認証情報</li>
           <li>お問い合わせ時に提供される氏名、メールアドレス、問い合わせ内容</li>
           <li>アクセスログ、端末情報、ブラウザ情報、Cookie等の利用情報</li>
@@ -27,7 +27,7 @@ export default function PrivacyPolicyPage() {
       </LegalSection>
 
       <LegalSection title="2. 利用目的">
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>当サイトの提供、運営、保守、改善のため</li>
           <li>本人確認、ログイン認証、セキュリティ確保のため</li>
           <li>有料プランの申込み、課金、契約管理、サポート対応のため</li>
@@ -44,7 +44,7 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection title="4. 外部サービスの利用">
         <p>当サイトでは、サービス運営上、以下の外部サービスを利用します。</p>
-        <ul className="list-disc space-y-1 pl-5">
+        <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>Google Analytics（アクセス解析）</li>
           <li>Stripe（決済処理）</li>
           <li>認証基盤・メール配信基盤等の運営上必要なサービス</li>

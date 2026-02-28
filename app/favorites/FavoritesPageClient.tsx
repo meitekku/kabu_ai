@@ -160,10 +160,10 @@ export default function FavoritesPageClient() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-0">
       <div className="flex items-center gap-3 mb-6">
-        <Heart className="w-6 h-6 text-red-500" />
-        <h1 className="text-2xl font-bold text-gray-900">お気に入り銘柄</h1>
+        <Heart className="w-6 h-6 text-red-500 flex-shrink-0" />
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">お気に入り銘柄</h1>
         <span className="text-sm text-gray-500">({favorites.length}/50)</span>
       </div>
 
@@ -226,12 +226,12 @@ export default function FavoritesPageClient() {
           {favorites.map((fav) => (
             <div
               key={fav.code}
-              className="flex items-center justify-between px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+              className="flex items-center justify-between px-3 sm:px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300 transition-colors"
             >
               <div className="flex-1 min-w-0">
-                <Link href={`/stocks/${fav.code}/news`} className="hover:underline">
+                <Link href={`/stocks/${fav.code}/news`} className="hover:underline block truncate">
                   <span className="text-sm font-semibold text-gray-900">{fav.code}</span>
-                  <span className="ml-1.5 text-sm text-gray-600 truncate">{fav.name}</span>
+                  <span className="ml-1.5 text-sm text-gray-600">{fav.name}</span>
                 </Link>
                 <div className="flex items-center gap-3 mt-1">
                   {fav.current_price != null && (
