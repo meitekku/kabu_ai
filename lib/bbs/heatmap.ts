@@ -19,11 +19,22 @@ function getJSTString(offsetHours: number = 0): string {
   return new Date(jstMs).toISOString().slice(0, 19).replace('T', ' ')
 }
 
+/** Returns today's JST midnight as "YYYY-MM-DD 00:00:00" */
+function getJSTMidnight(): string {
+  const jstMs = Date.now() + 9 * 3600 * 1000
+  const d = new Date(jstMs)
+  const y = d.getUTCFullYear()
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${day} 00:00:00`
+}
+
 export interface HeatItem {
   code: string
   company_name: string
   count_1h: number
   count_24h: number
+  count_today: number
   velocity: number
 }
 
@@ -33,13 +44,14 @@ export interface HeatmapData {
 }
 
 export async function getBbsHeatmap(): Promise<HeatmapData> {
-  const bucket = Math.floor(Date.now() / 300_000) // 5-min bucket
+  const bucket = Math.floor(Date.now() / 30_000) // 30-sec bucket
   const cacheKey = makeCacheKey('bbs-heatmap', { bucket })
-  const cached = cacheGet(cacheKey, 300)
+  const cached = cacheGet(cacheKey, 30)
   if (cached) return cached as HeatmapData
 
   const ago24h = getJSTString(-24)
   const ago1h = getJSTString(-1)
+  const todayMidnight = getJSTMidnight()
 
   const client = await getMongoClient()
   const db = client.db('kabu_ai')
@@ -52,6 +64,9 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
         count_24h: { $sum: 1 },
         count_1h: {
           $sum: { $cond: [{ $gte: ['$comment_date', ago1h] }, 1, 0] },
+        },
+        count_today: {
+          $sum: { $cond: [{ $gte: ['$comment_date', todayMidnight] }, 1, 0] },
         },
       },
     },
@@ -88,6 +103,7 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
       company_name: nameMap[r._id as string] ?? '',
       count_1h: r.count_1h as number,
       count_24h: r.count_24h as number,
+      count_today: r.count_today as number,
       velocity: r.velocity as number,
     }))
     .filter((item) => item.company_name !== '') // Japanese stocks only

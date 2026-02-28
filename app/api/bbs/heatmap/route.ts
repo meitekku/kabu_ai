@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const data = await getBbsHeatmap()
     return NextResponse.json(data, {
-      headers: { 'Cache-Control': 'public, max-age=300, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=10' },
     })
   } catch (error) {
     console.error('BBS heatmap error:', error)

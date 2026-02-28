@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { HeatItem, HeatmapData } from "@/lib/bbs/heatmap";
-import CommentDrawer from "./CommentDrawer";
 
 interface BbsHeatmapProps {
   initialData?: HeatmapData;
@@ -78,13 +77,13 @@ function computeTreemap(
 ): TreeCell[] {
   if (items.length === 0 || containerW <= 0 || containerH <= 0) return [];
 
-  const sorted = [...items].sort((a, b) => b.count_24h - a.count_24h);
-  const totalCount = sorted.reduce((s, i) => s + Math.max(i.count_24h, 1), 0);
+  const sorted = [...items].sort((a, b) => b.count_today - a.count_today);
+  const totalCount = sorted.reduce((s, i) => s + Math.max(i.count_today, 1), 0);
   const totalArea = containerW * containerH;
 
   const entries = sorted.map((item) => ({
     item,
-    val: (Math.max(item.count_24h, 1) / totalCount) * totalArea,
+    val: (Math.max(item.count_today, 1) / totalCount) * totalArea,
   }));
 
   const result: TreeCell[] = [];
@@ -236,7 +235,7 @@ function Tooltip({ tooltip }: { tooltip: TooltipState }) {
           {item.velocity.toFixed(1)}x
         </span>
         <span style={{ fontSize: 12, color: "#4B5563" }}>
-          {item.count_1h}件/時間
+          {item.count_today}件/今日
         </span>
       </div>
       <p style={{ fontSize: 10, color: "#9CA3AF", marginTop: 4 }}>
@@ -336,7 +335,7 @@ function Cell({
               lineHeight: 1,
             }}
           >
-            {item.count_1h}件/h
+            {item.count_today}件/今日
           </p>
         )}
       </div>
@@ -382,7 +381,6 @@ function ColorLegend() {
 export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   const [data, setData] = useState<HeatmapData | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
-  const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(
     initialData ? new Date() : null
@@ -407,7 +405,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
 
   useEffect(() => {
     if (!initialData) fetchData();
-    const interval = setInterval(fetchData, 60_000);
+    const interval = setInterval(fetchData, 30_000);
     return () => clearInterval(interval);
   }, [initialData, fetchData]);
 
@@ -421,8 +419,6 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
     observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
-
-  const selectedItem = data?.items.find((i) => i.code === selectedCode) ?? null;
 
   const cells =
     containerW > 0 && data
@@ -474,7 +470,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
           <Cell
             key={`${cell.item.code}-${i}`}
             cell={cell}
-            onClick={() => setSelectedCode(cell.item.code)}
+            onClick={() => {}}
             onHover={(item, x, y) => setTooltip({ item, clientX: x, clientY: y })}
             onLeave={() => setTooltip(null)}
           />
@@ -482,14 +478,6 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
       </div>
 
       {tooltip && <Tooltip tooltip={tooltip} />}
-
-      {selectedCode && (
-        <CommentDrawer
-          code={selectedCode}
-          companyName={selectedItem?.company_name ?? selectedCode}
-          onClose={() => setSelectedCode(null)}
-        />
-      )}
     </>
   );
 }
