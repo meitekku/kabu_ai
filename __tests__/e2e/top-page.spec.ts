@@ -6,39 +6,50 @@ test.describe("Top Page", () => {
   });
 
   test("page loads successfully", async ({ page }) => {
-    // The page should have the main heading for latest news
-    await expect(page.getByRole("heading", { name: "新着ニュース" }).first()).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("heading", { name: "新着ニュース" }).first()
+    ).toBeVisible({ timeout: 10000 });
   });
 
-  test("NewsSection shows pickup and market news headings", async ({
-    page,
-  }) => {
-    await expect(page.getByText("ピックアップニュース")).toBeVisible({
-      timeout: 10000,
-    });
-    await expect(page.getByText("市場ニュース")).toBeVisible({
-      timeout: 10000,
-    });
+  test("TrendingSection shows dynamic content headings", async ({ page }) => {
+    // One of the time-based section labels must be visible
+    const possibleLabels = [
+      "値上がり注目銘柄",
+      "売買代金上位銘柄",
+      "ストップ高銘柄",
+      "PTS変動注目銘柄",
+      "掲示板盛り上がり銘柄",
+      "最新AI分析記事",
+    ];
+    // Wait for loading skeletons to disappear or content to appear
+    await page.waitForFunction(
+      (labels) =>
+        labels.some((label) => document.body.innerText.includes(label)) ||
+        document.querySelectorAll(".animate-pulse").length === 0,
+      possibleLabels,
+      { timeout: 10000 }
+    );
+    // At least one label should appear (or skeleton was shown and data is empty)
+    const bodyText = await page.evaluate(() => document.body.innerText);
+    const hasLabel = possibleLabels.some((label) => bodyText.includes(label));
+    const hasEmptyState = bodyText.includes("現在データがありません");
+    expect(hasLabel || hasEmptyState).toBe(true);
   });
 
-  test("NewsSection displays news cards or loading skeletons", async ({
+  test("TrendingSection displays cards or loading skeletons", async ({
     page,
   }) => {
-    // Either we see loading skeletons or actual news cards
-    const hasCards = await page.locator(".rounded-lg.shadow").count();
+    const hasCards = await page.locator(".rounded-xl.shadow").count();
     const hasSkeletons = await page.locator(".animate-pulse").count();
-
     expect(hasCards + hasSkeletons).toBeGreaterThan(0);
   });
 
   test("NewsListS section loads and shows content", async ({ page }) => {
-    // Wait for NewsListS to finish loading (spinner disappears)
     await page.waitForSelector(".animate-spin", {
       state: "hidden",
       timeout: 15000,
     });
 
-    // Should show either news items, empty state, or error state
     const newsItems = await page.locator(".border-b.border-gray-100").count();
     const emptyState = await page.getByText("現在、ニュースはありません。").count();
     const errorState = await page.locator(".text-red-600").count();
@@ -55,30 +66,27 @@ test.describe("Top Page", () => {
     const newsLinks = page.locator('a[href*="/stocks/"]');
     const count = await newsLinks.count();
 
-    // Should have at least some news links (from either NewsSection or NewsListS)
     if (count > 0) {
-      const firstLink = newsLinks.first();
-      const href = await firstLink.getAttribute("href");
+      const href = await newsLinks.first().getAttribute("href");
       expect(href).toMatch(/\/stocks\//);
     }
   });
 
   test("'もっと見る' link is present", async ({ page }) => {
-    // The top page renders NewsListS with more={true}
     await page.waitForSelector(".animate-spin", {
       state: "hidden",
       timeout: 15000,
     });
 
-    // Only check if actual news article links loaded (not ranking table items)
-    const newsArticleLinks = await page.locator('a[href*="/stocks/"][href*="/news/"]').count();
+    const newsArticleLinks = await page
+      .locator('a[href*="/stocks/"][href*="/news/"]')
+      .count();
     if (newsArticleLinks > 0) {
       await expect(page.getByText("もっと見る ›")).toBeVisible();
     }
   });
 
   test("page has proper title or meta", async ({ page }) => {
-    // Wait for the page to fully load
     const title = await page.title();
     expect(title.length).toBeGreaterThan(0);
   });
