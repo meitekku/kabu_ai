@@ -18,6 +18,11 @@ interface TreeCell {
   h: number;
 }
 
+interface DisplayCell extends TreeCell {
+  entering: boolean;
+  exiting: boolean;
+}
+
 /**
  * Worst aspect ratio in a candidate row.
  * shortSide: the shorter dimension of the current remaining rectangle
@@ -275,13 +280,18 @@ function Tooltip({ tooltip }: { tooltip: TooltipState }) {
 
 // ─── Single treemap cell ─────────────────────────────────────────────────────
 
+const CELL_TRANSITION =
+  "left 0.6s cubic-bezier(0.4,0,0.2,1), top 0.6s cubic-bezier(0.4,0,0.2,1), width 0.6s cubic-bezier(0.4,0,0.2,1), height 0.6s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease";
+
 function Cell({
   cell,
+  opacity,
   onClick,
   onHover,
   onLeave,
 }: {
-  cell: TreeCell;
+  cell: DisplayCell;
+  opacity: number;
   onClick: () => void;
   onHover: (item: HeatItem, x: number, y: number) => void;
   onLeave: () => void;
@@ -309,7 +319,8 @@ function Cell({
         boxSizing: "border-box",
         cursor: "pointer",
         overflow: "hidden",
-        transition: "filter 0.15s ease, transform 0.15s ease",
+        opacity,
+        transition: CELL_TRANSITION,
       }}
       onClick={onClick}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
@@ -441,6 +452,11 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(0);
 
+  // Animation state: Map<code, DisplayCell>
+  const [displayCells, setDisplayCells] = useState<Map<string, DisplayCell>>(new Map());
+  const exitTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastFetchRef = useRef<number>(0);
+
   const containerH = containerW > 0 ? (containerW < 480 ? 340 : 500) : 500;
 
   const fetchData = useCallback(async () => {
@@ -450,6 +466,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
       setData(json);
       setLastUpdated(new Date());
       setCountdown(30);
+      lastFetchRef.current = Date.now();
     } catch {
       // keep existing data on error
     } finally {
@@ -457,10 +474,29 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
     }
   }, []);
 
+  // Polling with tab visibility
   useEffect(() => {
     if (!initialData) fetchData();
-    const interval = setInterval(fetchData, 30_000);
-    return () => clearInterval(interval);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchData();
+      }
+    }, 30_000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (Date.now() - lastFetchRef.current >= 30_000) {
+          fetchData();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [initialData, fetchData]);
 
   useEffect(() => {
@@ -481,10 +517,115 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
     return () => observer.disconnect();
   }, []);
 
-  const cells =
+  // Compute treemap and reconcile with displayCells for animation
+  const newCells =
     containerW > 0 && data
       ? computeTreemap(data.items, containerW, containerH)
       : [];
+
+  useEffect(() => {
+    const newCellMap = new Map<string, TreeCell>();
+    for (const cell of newCells) {
+      newCellMap.set(cell.item.code, cell);
+    }
+
+    setDisplayCells((prev) => {
+      const next = new Map<string, DisplayCell>();
+
+      // Cells present in new data: update position, clear entering/exiting
+      for (const [code, cell] of newCellMap) {
+        const existing = prev.get(code);
+        // Cancel any pending exit timer for this code
+        const exitTimer = exitTimersRef.current.get(code);
+        if (exitTimer) {
+          clearTimeout(exitTimer);
+          exitTimersRef.current.delete(code);
+        }
+
+        if (existing && !existing.entering) {
+          // Existing cell: update position/size
+          next.set(code, { ...cell, entering: false, exiting: false });
+        } else {
+          // New cell: start with entering=true for fade-in
+          next.set(code, { ...cell, entering: true, exiting: false });
+        }
+      }
+
+      // Cells no longer in new data: mark as exiting
+      for (const [code, cell] of prev) {
+        if (!newCellMap.has(code) && !cell.exiting) {
+          next.set(code, { ...cell, exiting: true });
+        } else if (!newCellMap.has(code) && cell.exiting) {
+          // Already exiting, keep it
+          next.set(code, cell);
+        }
+      }
+
+      return next;
+    });
+
+    // Trigger entering -> false on next frame (fade-in)
+    const enteringCodes: string[] = [];
+    for (const cell of newCells) {
+      enteringCodes.push(cell.item.code);
+    }
+
+    const rafId = requestAnimationFrame(() => {
+      setDisplayCells((prev) => {
+        let changed = false;
+        for (const code of enteringCodes) {
+          const cell = prev.get(code);
+          if (cell?.entering) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) return prev;
+
+        const next = new Map(prev);
+        for (const code of enteringCodes) {
+          const cell = next.get(code);
+          if (cell?.entering) {
+            next.set(code, { ...cell, entering: false });
+          }
+        }
+        return next;
+      });
+    });
+
+    // Schedule removal of exiting cells after transition
+    setDisplayCells((prev) => {
+      for (const [code, cell] of prev) {
+        if (cell.exiting && !exitTimersRef.current.has(code)) {
+          const timer = setTimeout(() => {
+            setDisplayCells((current) => {
+              const updated = new Map(current);
+              updated.delete(code);
+              return updated;
+            });
+            exitTimersRef.current.delete(code);
+          }, 600);
+          exitTimersRef.current.set(code, timer);
+        }
+      }
+      return prev;
+    });
+
+    return () => cancelAnimationFrame(rafId);
+    // We use a JSON key derived from item codes + positions to detect actual changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newCells.map((c) => `${c.item.code}:${c.x.toFixed(1)},${c.y.toFixed(1)},${c.w.toFixed(1)},${c.h.toFixed(1)}`).join("|")]);
+
+  // Cleanup exit timers on unmount
+  useEffect(() => {
+    const timers = exitTimersRef.current;
+    return () => {
+      for (const timer of timers.values()) {
+        clearTimeout(timer);
+      }
+      timers.clear();
+    };
+  }, []);
 
   if (loading) return <Skeleton height={containerH} />;
 
@@ -495,6 +636,8 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
       </div>
     );
   }
+
+  const cellsToRender = Array.from(displayCells.values());
 
   return (
     <>
@@ -532,10 +675,11 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
           backgroundColor: "#F9FAFB",
         }}
       >
-        {cells.map((cell, i) => (
+        {cellsToRender.map((cell) => (
           <Cell
-            key={`${cell.item.code}-${i}`}
+            key={cell.item.code}
             cell={cell}
+            opacity={cell.entering || cell.exiting ? 0 : 1}
             onClick={() => setSelectedItem({ code: cell.item.code, companyName: cell.item.company_name || cell.item.code })}
             onHover={(item, x, y) => setTooltip({ item, clientX: x, clientY: y })}
             onLeave={() => setTooltip(null)}
