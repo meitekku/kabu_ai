@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { HeatItem, HeatmapData } from "@/lib/bbs/heatmap";
 import CommentDrawer from "./CommentDrawer";
 
@@ -8,128 +8,389 @@ interface BbsHeatmapProps {
   initialData?: HeatmapData;
 }
 
-type HeatLevel = "cold" | "warm" | "hot" | "fire" | "explosion";
+// ─── Squarify treemap algorithm ────────────────────────────────────────────
 
-function getHeatLevel(velocity: number): HeatLevel {
-  if (velocity >= 8) return "explosion";
-  if (velocity >= 4) return "fire";
-  if (velocity >= 2) return "hot";
-  if (velocity >= 1) return "warm";
-  return "cold";
+interface TreeCell {
+  item: HeatItem;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
-const HEAT_STYLES: Record<
-  HeatLevel,
-  { card: string; bar: string; badge: string; label: string }
-> = {
-  cold: {
-    card: "bg-gray-50 border-gray-200 hover:border-gray-300",
-    bar: "bg-gray-300",
-    badge: "bg-gray-400 text-white",
-    label: "普通",
-  },
-  warm: {
-    card: "bg-yellow-50 border-yellow-300 hover:border-yellow-400",
-    bar: "bg-yellow-400",
-    badge: "bg-yellow-400 text-yellow-900",
-    label: "やや活発",
-  },
-  hot: {
-    card: "bg-orange-50 border-orange-300 hover:border-orange-500",
-    bar: "bg-orange-400",
-    badge: "bg-orange-500 text-white",
-    label: "活発",
-  },
-  fire: {
-    card: "bg-red-50 border-red-300 hover:border-red-500",
-    bar: "bg-red-500",
-    badge: "bg-red-500 text-white",
-    label: "盛り上がり",
-  },
-  explosion: {
-    card: "bg-rose-100 border-rose-400 hover:border-rose-600",
-    bar: "bg-rose-600",
-    badge: "bg-rose-600 text-white",
-    label: "大盛り上がり",
-  },
-};
-
-function HeatCard({
-  item,
-  onClick,
-}: {
-  item: HeatItem;
-  onClick: () => void;
-}) {
-  const level = getHeatLevel(item.velocity);
-  const styles = HEAT_STYLES[level];
-  const barWidth = Math.min((item.velocity / 10) * 100, 100);
-
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left rounded-xl border-2 p-3 transition-all duration-200 hover:shadow-md hover:scale-[1.02] cursor-pointer ${styles.card}`}
-    >
-      <div className="flex items-start justify-between gap-1 mb-1.5">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold text-gray-800 truncate leading-tight">
-            {item.company_name || item.code}
-          </p>
-          <p className="text-[10px] text-gray-400 font-mono">{item.code}</p>
-        </div>
-        <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap ${styles.badge}`}
-        >
-          {styles.label}
-        </span>
-      </div>
-
-      {/* Velocity bar */}
-      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden mb-1.5">
-        <div
-          className={`h-full rounded-full transition-all ${styles.bar}`}
-          style={{ width: `${barWidth}%` }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-600">
-          <span className="font-semibold text-gray-800">{item.count_1h}</span>
-          件/時間
-        </span>
-        <span className="text-[10px] text-gray-400">
-          {item.velocity.toFixed(1)}x
-        </span>
-      </div>
-    </button>
+/**
+ * Worst aspect ratio in a candidate row.
+ * shortSide: the shorter dimension of the current remaining rectangle
+ */
+function worstAspect(rowVals: number[], shortSide: number): number {
+  const s = rowVals.reduce((a, b) => a + b, 0);
+  if (s === 0 || shortSide === 0) return Infinity;
+  const rMax = Math.max(...rowVals);
+  const rMin = Math.min(...rowVals);
+  return Math.max(
+    (shortSide * shortSide * rMax) / (s * s),
+    (s * s) / (shortSide * shortSide * rMin)
   );
 }
 
-function HeatmapSkeleton() {
+/**
+ * Place a committed row in the current rectangle.
+ * Wide rect → vertical strip (items stacked top→bottom, each with same width).
+ * Tall rect → horizontal strip (items left→right, each with same height).
+ */
+function commitRow(
+  row: { item: HeatItem; val: number }[],
+  result: TreeCell[],
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): { nx: number; ny: number; nw: number; nh: number } {
+  const rowSum = row.reduce((s, r) => s + r.val, 0);
+
+  if (w >= h) {
+    // wide → vertical strip
+    const stripW = rowSum / h;
+    let py = y;
+    for (const { item, val } of row) {
+      const cellH = val / stripW;
+      result.push({ item, x, y: py, w: stripW, h: cellH });
+      py += cellH;
+    }
+    return { nx: x + stripW, ny: y, nw: w - stripW, nh: h };
+  } else {
+    // tall → horizontal strip
+    const stripH = rowSum / w;
+    let px = x;
+    for (const { item, val } of row) {
+      const cellW = val / stripH;
+      result.push({ item, x: px, y, w: cellW, h: stripH });
+      px += cellW;
+    }
+    return { nx: x, ny: y + stripH, nw: w, nh: h - stripH };
+  }
+}
+
+function computeTreemap(
+  items: HeatItem[],
+  containerW: number,
+  containerH: number
+): TreeCell[] {
+  if (items.length === 0 || containerW <= 0 || containerH <= 0) return [];
+
+  const sorted = [...items].sort((a, b) => b.count_24h - a.count_24h);
+  const totalCount = sorted.reduce((s, i) => s + Math.max(i.count_24h, 1), 0);
+  const totalArea = containerW * containerH;
+
+  const entries = sorted.map((item) => ({
+    item,
+    val: (Math.max(item.count_24h, 1) / totalCount) * totalArea,
+  }));
+
+  const result: TreeCell[] = [];
+  const remaining = [...entries];
+  let cx = 0,
+    cy = 0,
+    cw = containerW,
+    ch = containerH;
+  let row: typeof entries = [];
+
+  while (remaining.length > 0) {
+    if (cw <= 0.5 || ch <= 0.5) break;
+
+    const next = remaining[0];
+    const shortSide = Math.min(cw, ch);
+    const newRow = [...row, next];
+    const newWorst = worstAspect(
+      newRow.map((r) => r.val),
+      shortSide
+    );
+    const curWorst =
+      row.length > 0
+        ? worstAspect(
+            row.map((r) => r.val),
+            shortSide
+          )
+        : Infinity;
+
+    if (row.length === 0 || newWorst <= curWorst) {
+      row.push(next);
+      remaining.shift();
+    } else {
+      const { nx, ny, nw, nh } = commitRow(row, result, cx, cy, cw, ch);
+      cx = nx;
+      cy = ny;
+      cw = nw;
+      ch = nh;
+      row = [];
+    }
+  }
+
+  if (row.length > 0 && cw > 0.5 && ch > 0.5) {
+    commitRow(row, result, cx, cy, cw, ch);
+  }
+
+  return result;
+}
+
+// ─── Color scale ────────────────────────────────────────────────────────────
+// velocity 0 = gray (no buzz), 8+ = deep red (massive spike)
+
+function velocityColor(velocity: number): { bg: string; text: string } {
+  const v = Math.min(velocity, 8);
+
+  if (v < 0.5) return { bg: "#F3F4F6", text: "#9CA3AF" }; // gray
+
+  if (v < 1) {
+    const t = (v - 0.5) / 0.5;
+    return {
+      bg: `hsl(42, ${Math.round(50 * t)}%, ${Math.round(92 - 10 * t)}%)`,
+      text: "#374151",
+    };
+  }
+
+  if (v < 2) {
+    const t = v - 1;
+    return {
+      bg: `hsl(${Math.round(38 - 18 * t)}, ${Math.round(80 + 10 * t)}%, ${Math.round(78 - 23 * t)}%)`,
+      text: "#1F2937",
+    };
+  }
+
+  if (v < 4) {
+    const t = (v - 2) / 2;
+    return {
+      bg: `hsl(${Math.round(20 - 20 * t)}, 92%, ${Math.round(55 - 10 * t)}%)`,
+      text: "white",
+    };
+  }
+
+  {
+    const t = Math.min((v - 4) / 4, 1);
+    return {
+      bg: `hsl(0, 92%, ${Math.round(45 - 10 * t)}%)`,
+      text: "white",
+    };
+  }
+}
+
+// ─── Tooltip ────────────────────────────────────────────────────────────────
+
+interface TooltipState {
+  item: HeatItem;
+  clientX: number;
+  clientY: number;
+}
+
+function Tooltip({ tooltip }: { tooltip: TooltipState }) {
+  const { item, clientX, clientY } = tooltip;
+  const { bg, text } = velocityColor(item.velocity);
+
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-      {[...Array(20)].map((_, i) => (
-        <div
-          key={i}
-          className="rounded-xl border-2 border-gray-100 p-3 h-[88px] animate-pulse bg-gray-50"
+    <div
+      style={{
+        position: "fixed",
+        left: clientX + 14,
+        top: clientY - 8,
+        zIndex: 200,
+        pointerEvents: "none",
+        backgroundColor: "white",
+        border: "1px solid #E5E7EB",
+        borderRadius: 10,
+        padding: "10px 14px",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.13)",
+        minWidth: 160,
+      }}
+    >
+      <p
+        style={{
+          fontWeight: 700,
+          fontSize: 13,
+          color: "#111827",
+          marginBottom: 2,
+        }}
+      >
+        {item.company_name}
+      </p>
+      <p
+        style={{
+          fontSize: 10,
+          color: "#9CA3AF",
+          fontFamily: "monospace",
+          marginBottom: 6,
+        }}
+      >
+        {item.code}
+      </p>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span
+          style={{
+            background: bg,
+            color: text,
+            padding: "2px 7px",
+            borderRadius: 5,
+            fontWeight: 700,
+            fontSize: 12,
+          }}
         >
-          <div className="h-3 bg-gray-200 rounded w-3/4 mb-1" />
-          <div className="h-2 bg-gray-100 rounded w-1/2 mb-2" />
-          <div className="h-1.5 bg-gray-200 rounded mb-2" />
-          <div className="h-2 bg-gray-100 rounded w-1/2" />
-        </div>
-      ))}
+          {item.velocity.toFixed(1)}x
+        </span>
+        <span style={{ fontSize: 12, color: "#4B5563" }}>
+          {item.count_1h}件/時間
+        </span>
+      </div>
+      <p style={{ fontSize: 10, color: "#9CA3AF", marginTop: 4 }}>
+        24h合計: {item.count_24h}件
+      </p>
     </div>
   );
 }
+
+// ─── Single treemap cell ─────────────────────────────────────────────────────
+
+function Cell({
+  cell,
+  onClick,
+  onHover,
+  onLeave,
+}: {
+  cell: TreeCell;
+  onClick: () => void;
+  onHover: (item: HeatItem, x: number, y: number) => void;
+  onLeave: () => void;
+}) {
+  const { item, x, y, w, h } = cell;
+  const { bg, text } = velocityColor(item.velocity);
+  const minDim = Math.min(w, h);
+  const pad = minDim < 50 ? 2 : minDim < 80 ? 4 : 7;
+  const nameSize = minDim > 100 ? 13 : minDim > 60 ? 11 : 9;
+  const codeSize = 9;
+  const countSize = minDim > 80 ? 12 : 10;
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        width: w,
+        height: h,
+        backgroundColor: bg,
+        border: "1.5px solid rgba(255,255,255,0.55)",
+        boxSizing: "border-box",
+        cursor: "pointer",
+        overflow: "hidden",
+        transition: "filter 0.12s",
+      }}
+      onClick={onClick}
+      onKeyDown={(e) => e.key === "Enter" && onClick()}
+      onMouseEnter={(e) => onHover(item, e.clientX, e.clientY)}
+      onMouseLeave={onLeave}
+      className="hover:brightness-90 active:brightness-75"
+    >
+      <div
+        style={{
+          padding: pad,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          color: text,
+        }}
+      >
+        {h >= 28 && w >= 40 && (
+          <p
+            style={{
+              fontSize: nameSize,
+              fontWeight: 700,
+              lineHeight: 1.2,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              marginBottom: 1,
+            }}
+          >
+            {item.company_name || item.code}
+          </p>
+        )}
+        {h >= 42 && w >= 42 && (
+          <p
+            style={{
+              fontSize: codeSize,
+              fontFamily: "monospace",
+              opacity: 0.7,
+              lineHeight: 1,
+              marginBottom: 2,
+            }}
+          >
+            {item.code}
+          </p>
+        )}
+        {h >= 55 && w >= 38 && (
+          <p
+            style={{
+              fontSize: countSize,
+              fontWeight: 600,
+              lineHeight: 1,
+            }}
+          >
+            {item.count_1h}件/h
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+
+function Skeleton({ height }: { height: number }) {
+  return (
+    <div
+      style={{ height }}
+      className="w-full bg-gray-100 rounded-xl animate-pulse flex items-center justify-center"
+    >
+      <p className="text-gray-400 text-sm">データ読み込み中...</p>
+    </div>
+  );
+}
+
+// ─── Legend ──────────────────────────────────────────────────────────────────
+
+const LEGEND_POINTS = [0.2, 0.8, 1.5, 2.5, 4, 6] as const;
+
+function ColorLegend() {
+  return (
+    <div className="flex items-center gap-0.5">
+      <span className="text-[10px] text-gray-400 mr-1">普通</span>
+      {LEGEND_POINTS.map((v) => (
+        <span
+          key={v}
+          style={{ backgroundColor: velocityColor(v).bg }}
+          className="w-5 h-3 rounded-sm inline-block"
+        />
+      ))}
+      <span className="text-[10px] text-gray-400 ml-1">大盛り上がり</span>
+    </div>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   const [data, setData] = useState<HeatmapData | null>(initialData ?? null);
   const [loading, setLoading] = useState(!initialData);
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(
     initialData ? new Date() : null
   );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerW, setContainerW] = useState(0);
+
+  const containerH = containerW > 0 ? (containerW < 480 ? 340 : 500) : 500;
 
   const fetchData = useCallback(async () => {
     try {
@@ -145,16 +406,30 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   }, []);
 
   useEffect(() => {
-    if (!initialData) {
-      fetchData();
-    }
+    if (!initialData) fetchData();
     const interval = setInterval(fetchData, 60_000);
     return () => clearInterval(interval);
   }, [initialData, fetchData]);
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerW(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   const selectedItem = data?.items.find((i) => i.code === selectedCode) ?? null;
 
-  if (loading) return <HeatmapSkeleton />;
+  const cells =
+    containerW > 0 && data
+      ? computeTreemap(data.items, containerW, containerH)
+      : [];
+
+  if (loading) return <Skeleton height={containerH} />;
 
   if (!data || data.items.length === 0) {
     return (
@@ -166,12 +441,12 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
 
   return (
     <>
-      {/* Legend & meta */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-gray-400">
-          {data.items.length}銘柄
+      {/* Meta bar */}
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span>{data.items.length}銘柄</span>
           {lastUpdated && (
-            <span className="ml-2 text-xs text-gray-300">
+            <span className="text-xs text-gray-400">
               更新:{" "}
               {lastUpdated.toLocaleTimeString("ja-JP", {
                 hour: "2-digit",
@@ -179,31 +454,35 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
               })}
             </span>
           )}
-        </span>
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
-          <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />
-          普通
-          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block ml-1" />
-          活発
-          <span className="w-2 h-2 rounded-full bg-orange-400 inline-block ml-1" />
-          盛り上がり
-          <span className="w-2 h-2 rounded-full bg-red-500 inline-block ml-1" />
-          大盛り上がり
         </div>
+        <ColorLegend />
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-        {data.items.map((item) => (
-          <HeatCard
-            key={item.code}
-            item={item}
-            onClick={() => setSelectedCode(item.code)}
+      {/* Treemap */}
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: containerH,
+          borderRadius: 12,
+          overflow: "hidden",
+          backgroundColor: "#F9FAFB",
+        }}
+      >
+        {cells.map((cell, i) => (
+          <Cell
+            key={`${cell.item.code}-${i}`}
+            cell={cell}
+            onClick={() => setSelectedCode(cell.item.code)}
+            onHover={(item, x, y) => setTooltip({ item, clientX: x, clientY: y })}
+            onLeave={() => setTooltip(null)}
           />
         ))}
       </div>
 
-      {/* Comment drawer */}
+      {tooltip && <Tooltip tooltip={tooltip} />}
+
       {selectedCode && (
         <CommentDrawer
           code={selectedCode}

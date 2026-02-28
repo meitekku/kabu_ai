@@ -16,10 +16,12 @@ export default async function BbsPage() {
     <DefaultTemplate>
       <div className="mb-4">
         <h1 className="text-xl font-bold text-gray-900 mb-1">
-          掲示板 盛り上がりランキング
+          掲示板 盛り上がりヒートマップ
         </h1>
         <p className="text-sm text-gray-500">
-          Yahoo掲示板のコメント速度を計測。クリックするとコメントを表示します。60秒ごとに自動更新。
+          <span className="font-medium text-gray-700">セルが大きい</span> = 24時間の書き込みが多い銘柄 ／{" "}
+          <span className="font-medium text-gray-700">色が赤い</span> = 直近1時間に急増中（普通の何倍）。
+          クリックでコメントを表示。60秒ごと自動更新。
         </p>
       </div>
       <BbsHeatmap initialData={initialData} />
