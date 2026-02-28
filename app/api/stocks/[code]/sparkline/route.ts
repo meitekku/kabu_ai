@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> }
 ) {
   const { code } = await params
-  if (!code || !/^\d{4}$/.test(code)) {
+  if (!code || !/^[0-9A-Z]{4}$/.test(code)) {
     return NextResponse.json({ error: 'Invalid code' }, { status: 400 })
   }
 

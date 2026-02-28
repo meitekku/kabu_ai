@@ -13,7 +13,7 @@ export default function SparklineChart({ code, width = 80, height = 36 }: Sparkl
   const [change, setChange] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!code || !/^\d{4}$/.test(code)) return;
+    if (!code || !/^[0-9A-Z]{4}$/.test(code)) return;
     fetch(`/api/stocks/${code}/sparkline`)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
