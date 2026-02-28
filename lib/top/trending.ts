@@ -127,6 +127,7 @@ interface LatestAiRow {
   site: number
   company_name: string
   code: string | null
+  diff_percent: number | null
 }
 
 const RANKING_TABLE_MAP: Partial<Record<ContentType, string>> = {
@@ -148,7 +149,7 @@ async function fetchRanking(db: Database, table: string, type: ContentType): Pro
              ROW_NUMBER() OVER (PARTITION BY pc.code ORDER BY p.created_at DESC) AS rn
       FROM post p
       JOIN post_code pc ON p.id = pc.post_id
-      WHERE p.accept = 1 AND p.site IN (70, 71)
+      WHERE p.accept = 1 AND p.site = 70
         AND p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     ) lp ON r.code = lp.code AND lp.rn = 1
     LEFT JOIN company_info ci ON r.code = ci.code
@@ -196,7 +197,8 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
   const rows = await db.select<LatestAiRow>(`
     SELECT p.id AS post_id, p.title, p.content, p.created_at, p.site,
            COALESCE(c.name, '') AS company_name,
-           pc.code
+           pc.code,
+           ci.diff_percent
     FROM post p
     LEFT JOIN (
       SELECT post_id, MIN(code) AS code
@@ -204,7 +206,8 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
       GROUP BY post_id
     ) pc ON p.id = pc.post_id
     LEFT JOIN company c ON pc.code = c.code
-    WHERE p.accept = 1 AND p.site IN (70, 71)
+    LEFT JOIN company_info ci ON pc.code = ci.code
+    WHERE p.accept = 1 AND p.site = 70
     ORDER BY p.created_at DESC
     LIMIT 4
   `)
@@ -215,7 +218,7 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
     title: r.title ?? '',
     excerpt: makeExcerpt(r.content),
     content_type: 'latest_ai' as ContentType,
-    change_rate: null,
+    change_rate: r.diff_percent ?? null,
     created_at: String(r.created_at),
     post_url: r.code
       ? `/stocks/${r.code}/news/${r.post_id}`

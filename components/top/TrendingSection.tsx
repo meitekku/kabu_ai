@@ -65,7 +65,7 @@ const TYPE_STYLES: Record<
     borderColor: "border-l-slate-400",
     badgeBg: "bg-slate-100",
     badgeText: "text-slate-600",
-    icon: "✨",
+    icon: "📰",
     upColor: "text-green-600 bg-green-50",
     downColor: "text-red-600 bg-red-50",
   },
