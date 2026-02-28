@@ -16,8 +16,10 @@ const TYPE_STYLES: Record<
   ContentType,
   {
     borderColor: string;
+    headerBorder: string;
     badgeBg: string;
     badgeText: string;
+    sectionBorder: string;
     icon: string;
     upColor: string;
     downColor: string;
@@ -25,51 +27,63 @@ const TYPE_STYLES: Record<
 > = {
   market_up: {
     borderColor: "border-l-green-500",
-    badgeBg: "bg-green-100",
+    headerBorder: "border-l-4 border-l-green-500",
+    badgeBg: "bg-green-50 border border-green-200",
     badgeText: "text-green-700",
+    sectionBorder: "border-l-4 border-green-500",
     icon: "📈",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   trading_value: {
     borderColor: "border-l-blue-500",
-    badgeBg: "bg-blue-100",
+    headerBorder: "border-l-4 border-l-blue-500",
+    badgeBg: "bg-blue-50 border border-blue-200",
     badgeText: "text-blue-700",
+    sectionBorder: "border-l-4 border-blue-500",
     icon: "💹",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   stop_high: {
     borderColor: "border-l-rose-500",
-    badgeBg: "bg-rose-100",
+    headerBorder: "border-l-4 border-l-rose-500",
+    badgeBg: "bg-rose-50 border border-rose-200",
     badgeText: "text-rose-700",
+    sectionBorder: "border-l-4 border-rose-500",
     icon: "🔺",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   pts: {
     borderColor: "border-l-violet-500",
-    badgeBg: "bg-violet-100",
+    headerBorder: "border-l-4 border-l-violet-500",
+    badgeBg: "bg-violet-50 border border-violet-200",
     badgeText: "text-violet-700",
+    sectionBorder: "border-l-4 border-violet-500",
     icon: "🌙",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   yahoo_buzz: {
     borderColor: "border-l-amber-500",
-    badgeBg: "bg-amber-100",
+    headerBorder: "border-l-4 border-l-amber-500",
+    badgeBg: "bg-amber-50 border border-amber-200",
     badgeText: "text-amber-700",
+    sectionBorder: "border-l-4 border-amber-500",
     icon: "💬",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   latest_ai: {
     borderColor: "border-l-slate-400",
-    badgeBg: "bg-slate-100",
+    headerBorder: "border-l-4 border-l-slate-400",
+    badgeBg: "bg-slate-50 border border-slate-200",
     badgeText: "text-slate-600",
+    sectionBorder: "border-l-4 border-slate-400",
     icon: "📰",
-    upColor: "text-green-600 bg-green-50",
-    downColor: "text-red-600 bg-red-50",
+    upColor: "text-green-700 bg-green-50 border border-green-200",
+    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
 };
 
@@ -87,6 +101,11 @@ function formatTimeAgo(dateStr: string): string {
   }
 }
 
+// タイトル先頭の【...】を除去
+function stripLeadingBrackets(title: string): string {
+  return title.replace(/^【[^】]*】\s*/, "").trim();
+}
+
 function ChangeRateBadge({
   rate,
   upColor,
@@ -100,11 +119,11 @@ function ChangeRateBadge({
   const pos = rate >= 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 ${
+      className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
         pos ? upColor : downColor
       }`}
     >
-      {pos ? "↑" : "↓"} {Math.abs(rate).toFixed(1)}%
+      {pos ? "▲" : "▼"} {Math.abs(rate).toFixed(1)}%
     </span>
   );
 }
@@ -118,9 +137,9 @@ function LogoIcon({ code }: { code: string }) {
     <Image
       src={`/images/logos/${code}.png`}
       alt=""
-      width={32}
-      height={32}
-      className="w-8 h-8 rounded bg-gray-100 object-contain flex-shrink-0"
+      width={28}
+      height={28}
+      className="w-7 h-7 rounded bg-white object-contain flex-shrink-0"
       onError={() => setImgError(true)}
     />
   );
@@ -136,52 +155,62 @@ function TrendingCard({
   sparklines: Record<string, { prices: number[]; change: number | null }>;
 }) {
   const styles = TYPE_STYLES[type];
+  const title = stripLeadingBrackets(item.title || "タイトルなし");
+
   return (
     <Link href={item.post_url} className="block group h-full">
-      <article
-        className={`bg-white rounded-xl border border-gray-100 shadow hover:shadow-md transition-all duration-200 overflow-hidden h-full flex flex-col border-l-4 ${styles.borderColor}`}
-      >
-        <div className="p-2.5 flex flex-col flex-grow gap-1.5">
-          {/* Company row */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              {item.code && (
-                <LogoIcon code={item.code} />
-              )}
-              {item.company_name ? (
-                <span className="text-xs font-semibold text-gray-700 truncate">
-                  {item.company_name}
-                </span>
-              ) : null}
-              {item.code ? (
-                <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
-                  {item.code}
-                </span>
-              ) : null}
-            </div>
-            <ChangeRateBadge
-              rate={item.change_rate}
-              upColor={styles.upColor}
-              downColor={styles.downColor}
-            />
+      <article className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-150 overflow-hidden h-full flex flex-col">
+        {/* Company header — left accent border */}
+        <div
+          className={`flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 ${styles.headerBorder}`}
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            {item.code && <LogoIcon code={item.code} />}
+            {item.company_name && (
+              <span className="text-xs font-bold text-gray-700 truncate">
+                {item.company_name}
+              </span>
+            )}
+            {item.code && (
+              <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
+                {item.code}
+              </span>
+            )}
           </div>
+          <ChangeRateBadge
+            rate={item.change_rate}
+            upColor={styles.upColor}
+            downColor={styles.downColor}
+          />
+        </div>
 
-          {/* Title */}
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug flex-grow">
-            {item.title || "タイトルなし"}
+        {/* Content */}
+        <div className="px-3 py-2.5 flex flex-col flex-grow gap-1">
+          <h3 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug">
+            {title}
           </h3>
+          {item.excerpt && (
+            <p className="text-xs text-gray-500 line-clamp-1 leading-relaxed">
+              {item.excerpt}
+            </p>
+          )}
+        </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between mt-auto">
-            <span className="text-xs text-gray-400">
-              {formatTimeAgo(item.created_at)}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-300">AI分析</span>
-              {item.code && (
-                <SparklineChart code={item.code} width={72} height={20} data={sparklines[item.code] ?? null} />
-              )}
-            </div>
+        {/* Footer */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50">
+          <span className="text-xs text-gray-400">
+            {formatTimeAgo(item.created_at)}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-400">AI分析</span>
+            {item.code && (
+              <SparklineChart
+                code={item.code}
+                width={72}
+                height={20}
+                data={sparklines[item.code] ?? null}
+              />
+            )}
           </div>
         </div>
       </article>
@@ -192,23 +221,40 @@ function TrendingCard({
 function SectionSkeleton() {
   return (
     <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="h-5 bg-gray-100 rounded-md w-40 animate-pulse" />
-        <div className="h-5 bg-gray-100 rounded-full w-12 animate-pulse" />
+      {/* section header — matches SectionBlock header exactly */}
+      <div className="flex items-center justify-between mb-3 pb-2.5 border-b-2 border-gray-200 pl-3 border-l-4 border-l-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 bg-gray-100 rounded animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-32 animate-pulse" />
+        </div>
+        <div className="h-5 bg-gray-100 rounded w-14 animate-pulse" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-gray-100 shadow p-2.5 h-[100px] border-l-4 border-l-gray-200"
+            className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col"
           >
-            <div className="flex justify-between mb-2">
-              <div className="h-3 bg-gray-100 rounded w-24 animate-pulse" />
-              <div className="h-3 bg-gray-100 rounded w-12 animate-pulse" />
+            {/* company header row */}
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50 border-b border-gray-200 border-l-4 border-l-gray-200">
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+                <div className="h-3 bg-gray-100 rounded w-20 animate-pulse" />
+                <div className="h-3 bg-gray-100 rounded w-8 animate-pulse" />
+              </div>
+              <div className="h-5 bg-gray-100 rounded w-12 animate-pulse flex-shrink-0" />
             </div>
-            <div className="border-t border-gray-50 mb-2" />
-            <div className="h-3.5 bg-gray-100 rounded w-full mb-1.5 animate-pulse" />
-            <div className="h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
+            {/* content */}
+            <div className="px-3 py-2.5 flex flex-col gap-1 flex-grow">
+              <div className="h-3.5 bg-gray-100 rounded w-full animate-pulse" />
+              <div className="h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
+              <div className="h-2.5 bg-gray-100 rounded w-3/5 animate-pulse mt-0.5" />
+            </div>
+            {/* footer */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-100 bg-gray-50">
+              <div className="h-2.5 bg-gray-100 rounded w-10 animate-pulse" />
+              <div className="h-5 bg-gray-100 rounded w-20 animate-pulse" />
+            </div>
           </div>
         ))}
       </div>
@@ -216,18 +262,28 @@ function SectionSkeleton() {
   );
 }
 
-function SectionBlock({ section, sparklines }: { section: TrendingSectionData; sparklines: Record<string, { prices: number[]; change: number | null }> }) {
+function SectionBlock({
+  section,
+  sparklines,
+}: {
+  section: TrendingSectionData;
+  sparklines: Record<string, { prices: number[]; change: number | null }>;
+}) {
   const styles = TYPE_STYLES[section.type];
   return (
     <div className="mb-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
+      {/* Section header */}
+      <div
+        className={`flex items-center justify-between mb-3 pb-2.5 border-b-2 border-gray-200 pl-3 ${styles.sectionBorder}`}
+      >
+        <div className="flex items-center gap-2">
           <span className="text-base leading-none">{styles.icon}</span>
-          <h2 className="text-base font-bold text-gray-800">{section.label}</h2>
+          <h2 className="text-sm font-bold text-gray-800 tracking-wide">
+            {section.label}
+          </h2>
         </div>
         <span
-          className={`text-xs font-medium px-2.5 py-1 rounded-full ${styles.badgeBg} ${styles.badgeText}`}
+          className={`text-xs font-semibold px-2.5 py-0.5 rounded ${styles.badgeBg} ${styles.badgeText}`}
         >
           {section.time_label}
         </span>
@@ -237,11 +293,16 @@ function SectionBlock({ section, sparklines }: { section: TrendingSectionData; s
       {section.items.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {section.items.map((item) => (
-            <TrendingCard key={item.post_id} item={item} type={section.type} sparklines={sparklines} />
+            <TrendingCard
+              key={item.post_id}
+              item={item}
+              type={section.type}
+              sparklines={sparklines}
+            />
           ))}
         </div>
       ) : (
-        <div className="text-sm text-gray-400 py-6 text-center bg-gray-50 rounded-xl">
+        <div className="text-sm text-gray-400 py-6 text-center bg-gray-50 rounded-lg border border-gray-200">
           現在データがありません
         </div>
       )}
@@ -260,7 +321,9 @@ export default function TrendingSection({
     initialData ?? null
   );
   const [loading, setLoading] = useState(!initialData);
-  const [sparklines, setSparklines] = useState<Record<string, { prices: number[]; change: number | null }>>({});
+  const [sparklines, setSparklines] = useState<
+    Record<string, { prices: number[]; change: number | null }>
+  >({});
 
   useEffect(() => {
     if (initialData) {
@@ -284,7 +347,7 @@ export default function TrendingSection({
       if (item.code && /^[0-9A-Z]{4}$/.test(item.code)) codes.add(item.code);
     });
     if (codes.size === 0) return;
-    fetch(`/api/stocks/sparklines?codes=${[...codes].join(',')}`)
+    fetch(`/api/stocks/sparklines?codes=${[...codes].join(",")}`)
       .then((r) => (r.ok ? r.json() : {}))
       .then(setSparklines)
       .catch(() => {});
