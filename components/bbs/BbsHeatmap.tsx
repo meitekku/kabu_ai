@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { HeatItem, HeatmapData } from "@/lib/bbs/heatmap";
+import CommentDrawer from "./CommentDrawer";
 
 interface BbsHeatmapProps {
   initialData?: HeatmapData;
@@ -435,6 +436,8 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(
     initialData ? new Date() : null
   );
+  const [selectedItem, setSelectedItem] = useState<{ code: string; companyName: string } | null>(null);
+  const [countdown, setCountdown] = useState(30);
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerW, setContainerW] = useState(0);
 
@@ -446,6 +449,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
       const json: HeatmapData = await r.json();
       setData(json);
       setLastUpdated(new Date());
+      setCountdown(30);
     } catch {
       // keep existing data on error
     } finally {
@@ -458,6 +462,13 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
     const interval = setInterval(fetchData, 30_000);
     return () => clearInterval(interval);
   }, [initialData, fetchData]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -497,9 +508,14 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
               {lastUpdated.toLocaleTimeString("ja-JP", {
                 hour: "2-digit",
                 minute: "2-digit",
+                second: "2-digit",
               })}
             </span>
           )}
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            {countdown}秒後に更新
+          </span>
         </div>
         <ColorLegend />
       </div>
@@ -520,7 +536,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
           <Cell
             key={`${cell.item.code}-${i}`}
             cell={cell}
-            onClick={() => {}}
+            onClick={() => setSelectedItem({ code: cell.item.code, companyName: cell.item.company_name || cell.item.code })}
             onHover={(item, x, y) => setTooltip({ item, clientX: x, clientY: y })}
             onLeave={() => setTooltip(null)}
           />
@@ -528,6 +544,14 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
       </div>
 
       {tooltip && <Tooltip tooltip={tooltip} />}
+
+      {selectedItem && (
+        <CommentDrawer
+          code={selectedItem.code}
+          companyName={selectedItem.companyName}
+          onClose={() => setSelectedItem(null)}
+        />
+      )}
     </>
   );
 }
