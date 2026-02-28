@@ -51,6 +51,8 @@ const mockNewsItems = [
 
 import NewsListS from "@/components/news/NewsListS";
 
+vi.mock("@/components/news/SparklineChart", () => ({ default: () => null }));
+
 describe("NewsListS", () => {
   beforeEach(() => {
     vi.clearAllMocks();
