@@ -14,6 +14,7 @@ interface PostRow extends RowDataPacket {
   updated_at: Date
   company_name: string | null
   image_path: string | null
+  logo_url: string | null
 }
 
 interface CountResult extends RowDataPacket {
@@ -42,6 +43,7 @@ export interface NewsSearchItem {
   updated_at: string
   company_name: string | null
   image_path: string | null
+  logo_url: string | null
 }
 
 export interface NewsSearchResponse {
@@ -180,10 +182,12 @@ export async function searchNews(params: NewsSearchParams): Promise<NewsSearchRe
       SELECT p.id, pc.code, p.title, SUBSTRING(p.content, 1, 500) as content,
         p.site, p.pickup, p.created_at, p.updated_at,
         c.name as company_name,
-        ${imageExtract} as image_path
+        ${imageExtract} as image_path,
+        ci.logo_url
       FROM post p
       INNER JOIN post_code pc ON p.id = pc.post_id
       LEFT JOIN company c ON pc.code = c.code
+      LEFT JOIN company_info ci ON pc.code = ci.code
       WHERE p.accept = 1${whereClause}
       ORDER BY p.created_at DESC
     `
@@ -198,7 +202,8 @@ export async function searchNews(params: NewsSearchParams): Promise<NewsSearchRe
         p.site, p.pickup, p.created_at, p.updated_at,
         (SELECT pc.code FROM post_code pc WHERE pc.post_id = p.id LIMIT 1) as code,
         (SELECT c.name FROM post_code pc2 JOIN company c ON pc2.code = c.code WHERE pc2.post_id = p.id LIMIT 1) as company_name,
-        ${imageExtract} as image_path
+        ${imageExtract} as image_path,
+        (SELECT ci.logo_url FROM post_code pc3 JOIN company_info ci ON pc3.code = ci.code WHERE pc3.post_id = p.id LIMIT 1) as logo_url
       FROM post p
       WHERE p.accept = 1${whereClause}
       ORDER BY p.created_at DESC

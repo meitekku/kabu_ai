@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import SparklineChart from './SparklineChart';
 
 interface NewsItem {
   id: number;
@@ -14,6 +15,7 @@ interface NewsItem {
   site: number | null;
   pickup: number;
   image_path?: string | null;
+  logo_url?: string | null;
 }
 
 interface NewsListSProps {
@@ -41,6 +43,41 @@ function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
         unoptimized
         onError={() => setError(true)}
       />
+    </div>
+  );
+}
+
+function CompanyVisual({
+  code,
+  logoUrl,
+  companyName,
+}: {
+  code: string;
+  logoUrl: string | null | undefined;
+  companyName: string | null | undefined;
+}) {
+  const [logoError, setLogoError] = useState(false);
+
+  return (
+    <div className="flex-shrink-0 flex flex-col items-center gap-1" style={{ width: 80 }}>
+      {/* ロゴ */}
+      <div className="w-10 h-10 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+        {logoUrl && !logoError ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={companyName || code}
+            className="w-full h-full object-contain"
+            onError={() => setLogoError(true)}
+          />
+        ) : (
+          <span className="text-xs font-bold text-gray-400 select-none">
+            {companyName ? companyName.charAt(0) : code.slice(0, 2)}
+          </span>
+        )}
+      </div>
+      {/* スパークライン */}
+      <SparklineChart code={code} width={80} height={36} />
     </div>
   );
 }
@@ -183,10 +220,10 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
               <div className="text-sm text-gray-500 mb-1">
                 {item.created_at}
               </div>
-              
+
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <Link 
+                  <Link
                     href={articleHref}
                     className="block font-bold text-gray-900 hover:text-blue-600 mb-2 overflow-hidden"
                     style={{
@@ -203,10 +240,16 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                     {item.content?.replace(/<[^>]*>/g, '')}
                   </p>
                 </div>
-                
-                {imageUrl && (
+
+                {articleCode ? (
+                  <CompanyVisual
+                    code={articleCode}
+                    logoUrl={item.logo_url}
+                    companyName={item.company_name}
+                  />
+                ) : imageUrl ? (
                   <NewsThumbnail src={imageUrl} alt={item.title || ''} />
-                )}
+                ) : null}
               </div>
             </div>
           );
