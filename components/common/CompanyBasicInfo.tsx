@@ -168,7 +168,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   const formatPrice = (value: string) => {
     const num = parseFloat(value);
     if (isNaN(num)) return '-';
-    return num.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const formatMarketCapUS = (value: number | null | undefined): string => {
