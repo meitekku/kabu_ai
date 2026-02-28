@@ -403,15 +403,28 @@ function Cell({
   const { item, x, y, w, h } = cell;
   const { bg, text } = velocityColor(item.velocity);
   const minDim = Math.min(w, h);
+  const avgDim = (w + h) / 2; // use average to prevent wide-short cells from getting tiny text
   const pad = minDim < 50 ? 2 : minDim < 80 ? 5 : 8;
-  // Proportional font sizes that scale continuously with cell size
-  const nameSize = Math.round(Math.min(Math.max(minDim / 8, 10), 32));
-  const codeSize = Math.round(Math.min(Math.max(minDim / 12, 9), 18));
-  const countSize = Math.round(Math.min(Math.max(minDim / 10, 10), 24));
-  const priceSize = Math.round(Math.min(Math.max(minDim / 11, 10), 18));
-  const commentSize = Math.round(Math.min(Math.max(minDim / 16, 9), 13));
+  // Font sizes based on avgDim so wide-short cells get readable text.
+  // Caps are tuned to leave room for comments in comment-eligible cells.
+  const nameSize = Math.round(Math.min(Math.max(avgDim / 7, 10), 28));
+  const codeSize = Math.round(Math.min(Math.max(avgDim / 11, 9), 15));
+  const countSize = Math.round(Math.min(Math.max(avgDim / 9, 10), 20));
+  const priceSize = Math.round(Math.min(Math.max(avgDim / 10, 10), 15));
+  const commentSize = Math.round(Math.min(Math.max(avgDim / 16, 9), 12));
   // Show comments if cell occupies >= 10% of total area
   const areaRatio = totalArea > 0 ? (w * h) / totalArea : 0;
+
+  // Dynamically compute how many comment lines fit in remaining vertical space
+  const nameH = h >= 28 && w >= 40 ? nameSize * 1.2 + 1 : 0;
+  const codeH = h >= 42 && w >= 42 ? codeSize + 2 : 0;
+  const countH = h >= 55 && w >= 38 ? countSize : 0;
+  const priceH = h >= 65 && w >= 50 && item.close !== null ? priceSize * 1.7 + 2 : 0;
+  const commentOverhead = 10; // marginTop:5 + borderTop:1 + paddingTop:4
+  const commentLineH = commentSize * 1.4 + 3;
+  const availForComments = h - pad * 2 - nameH - codeH - countH - priceH - commentOverhead;
+  const maxLines = Math.min(5, Math.max(0, Math.floor(availForComments / commentLineH)));
+  const showComments = areaRatio >= 0.10 && maxLines >= 1 && w >= 100 && item.top_comments.length > 0;
 
   return (
     <div
@@ -496,7 +509,7 @@ function Cell({
             )}
           </div>
         )}
-        {areaRatio >= 0.10 && h >= 90 && w >= 100 && item.top_comments.length > 0 && (
+        {showComments && (
           <div
             style={{
               marginTop: 5,
@@ -506,7 +519,7 @@ function Cell({
           >
             <CommentList
               comments={item.top_comments}
-              maxLines={h >= 180 ? 3 : h >= 140 ? 2 : 1}
+              maxLines={maxLines}
               darkBg={item.velocity >= 2}
               fontSize={commentSize}
             />
