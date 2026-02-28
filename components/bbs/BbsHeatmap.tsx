@@ -278,6 +278,71 @@ function Tooltip({ tooltip }: { tooltip: TooltipState }) {
   );
 }
 
+// ─── ChangeBadge ─────────────────────────────────────────────────────────────
+
+function ChangeBadge({ value, darkBg }: { value: number; darkBg: boolean }) {
+  const pos = value >= 0;
+  const sign = pos ? "+" : "";
+  const arrow = pos ? "↑" : "↓";
+  const textColor = pos ? "#dc2626" : "#2563eb";
+  const bg = darkBg ? "rgba(255,255,255,0.9)" : pos ? "#fef2f2" : "#eff6ff";
+  return (
+    <span
+      style={{
+        fontSize: 9,
+        fontWeight: 700,
+        padding: "1px 5px",
+        borderRadius: 4,
+        backgroundColor: bg,
+        color: textColor,
+        lineHeight: 1.4,
+        flexShrink: 0,
+      }}
+    >
+      {arrow} {sign}
+      {value.toFixed(2)}%
+    </span>
+  );
+}
+
+// ─── RotatingComment ─────────────────────────────────────────────────────────
+
+function RotatingComment({ comments }: { comments: string[] }) {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    if (comments.length <= 1) return;
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % comments.length);
+        setVisible(true);
+      }, 300);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [comments.length]);
+
+  if (comments.length === 0) return null;
+
+  return (
+    <p
+      style={{
+        fontSize: 9,
+        lineHeight: 1.35,
+        opacity: visible ? 0.78 : 0,
+        transition: "opacity 0.3s ease",
+        fontStyle: "italic",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {comments[idx]}
+    </p>
+  );
+}
+
 // ─── Single treemap cell ─────────────────────────────────────────────────────
 
 const CELL_TRANSITION =
@@ -300,9 +365,9 @@ function Cell({
   const { bg, text } = velocityColor(item.velocity);
   const minDim = Math.min(w, h);
   const pad = minDim < 50 ? 2 : minDim < 80 ? 4 : 7;
-  const nameSize = minDim > 100 ? 13 : minDim > 60 ? 11 : 9;
-  const codeSize = 9;
-  const countSize = minDim > 80 ? 12 : 10;
+  const nameSize = minDim > 120 ? 14 : minDim > 80 ? 12 : minDim > 50 ? 10 : 9;
+  const codeSize = minDim > 80 ? 10 : 9;
+  const countSize = minDim > 100 ? 12 : 11;
 
   return (
     <div
@@ -377,28 +442,15 @@ function Cell({
             {item.count_today}件/今日
           </p>
         )}
-        {h >= 70 && w >= 50 && item.close !== null && (
-          <p
-            style={{
-              fontSize: 9,
-              lineHeight: 1.3,
-              marginTop: 2,
-              opacity: 0.85,
-            }}
-          >
-            {fmtPrice(item.close)}
+        {h >= 65 && w >= 50 && item.close !== null && (
+          <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 9, opacity: 0.88, fontWeight: 600 }}>
+              {fmtPrice(item.close)}
+            </span>
             {item.change_pct !== null && (
-              <span
-                style={{
-                  marginLeft: 3,
-                  color: item.change_pct >= 0 ? "#fca5a5" : "#93c5fd",
-                }}
-              >
-                {item.change_pct >= 0 ? "+" : ""}
-                {item.change_pct.toFixed(2)}%
-              </span>
+              <ChangeBadge value={item.change_pct} darkBg={item.velocity >= 2} />
             )}
-          </p>
+          </div>
         )}
         {h >= 110 && w >= 130 && item.top_comments.length > 0 && (
           <div
@@ -406,27 +458,9 @@ function Cell({
               marginTop: 5,
               borderTop: `1px solid ${item.velocity >= 2 ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.1)"}`,
               paddingTop: 4,
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
             }}
           >
-            {item.top_comments.slice(0, h >= 150 ? 2 : 1).map((c, i) => (
-              <p
-                key={i}
-                style={{
-                  fontSize: 8,
-                  lineHeight: 1.35,
-                  opacity: 0.78,
-                  fontStyle: "italic",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {c}
-              </p>
-            ))}
+            <RotatingComment comments={item.top_comments} />
           </div>
         )}
       </div>
