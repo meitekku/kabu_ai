@@ -2,28 +2,46 @@
 
 import { useState, useEffect } from 'react';
 
+interface SparklineData {
+  prices: number[];
+  change: number | null;
+}
+
 interface SparklineChartProps {
   code: string;
   width?: number;
   height?: number;
+  data?: SparklineData | null;
 }
 
-export default function SparklineChart({ code, width = 80, height = 36 }: SparklineChartProps) {
+export default function SparklineChart({ code, width = 80, height = 36, data: propData }: SparklineChartProps) {
   const [prices, setPrices] = useState<number[]>([]);
   const [change, setChange] = useState<number | null>(null);
 
   useEffect(() => {
+    if (propData !== undefined) {
+      // Use provided data — no fetch needed
+      if (propData && propData.prices.length > 1) {
+        setPrices(propData.prices);
+        setChange(propData.change);
+      } else {
+        setPrices([]);
+        setChange(null);
+      }
+      return;
+    }
+    // Self-fetch
     if (!code || !/^[0-9A-Z]{4}$/.test(code)) return;
     fetch(`/api/stocks/${code}/sparkline`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.prices?.length > 1) {
-          setPrices(data.prices);
-          setChange(data.change);
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.prices?.length > 1) {
+          setPrices(d.prices);
+          setChange(d.change);
         }
       })
       .catch(() => {});
-  }, [code]);
+  }, [code, propData]);
 
   if (prices.length < 2) return null;
 

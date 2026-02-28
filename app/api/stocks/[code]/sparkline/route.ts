@@ -17,7 +17,7 @@ export async function GET(
   }
 
   const cacheKey = makeCacheKey('sparkline', { code })
-  const ttl = getCacheTTL('market')
+  const ttl = getCacheTTL('sparkline')
   const cached = cacheGet(cacheKey, ttl)
   if (cached) {
     return NextResponse.json(cached, {

@@ -8,7 +8,7 @@ interface CacheEntry {
 const store = new Map<string, CacheEntry>();
 
 // TTLプロファイル（秒）
-type TTLProfile = 'news' | 'market' | 'ranking' | 'static';
+type TTLProfile = 'news' | 'market' | 'ranking' | 'static' | 'sparkline';
 
 function getJSTMinutes(): number {
   const now = new Date();
@@ -35,6 +35,12 @@ const TTL_CONFIGS: Record<TTLProfile, () => number> = {
   ranking: () => 600,
   // マスタデータ: 常に30分
   static: () => 1800,
+  // スパークライン: JP市場時間(9:00-15:30)は3分、それ以外は4時間
+  sparkline: () => {
+    const m = getJSTMinutes();
+    if (m >= 540 && m <= 930) return 180;
+    return 14400;
+  },
 };
 
 export function getCacheTTL(profile: TTLProfile): number {

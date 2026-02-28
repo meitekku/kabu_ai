@@ -109,36 +109,31 @@ function ChangeRateBadge({
   );
 }
 
-function LogoIcon({ code, name }: { code: string; name: string }) {
+function LogoIcon({ code }: { code: string }) {
   const [imgError, setImgError] = useState(false);
 
-  if (!imgError) {
-    return (
-      <Image
-        src={`/images/logos/${code}.png`}
-        alt=""
-        width={32}
-        height={32}
-        className="w-8 h-8 rounded bg-gray-100 object-contain flex-shrink-0"
-        onError={() => setImgError(true)}
-      />
-    );
-  }
+  if (imgError) return null;
 
-  const initial = name?.charAt(0) || code?.slice(0, 2) || "";
   return (
-    <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-      <span className="text-xs font-bold text-gray-400">{initial}</span>
-    </div>
+    <Image
+      src={`/images/logos/${code}.png`}
+      alt=""
+      width={32}
+      height={32}
+      className="w-8 h-8 rounded bg-gray-100 object-contain flex-shrink-0"
+      onError={() => setImgError(true)}
+    />
   );
 }
 
 function TrendingCard({
   item,
   type,
+  sparklines,
 }: {
   item: TrendingItem;
   type: ContentType;
+  sparklines: Record<string, { prices: number[]; change: number | null }>;
 }) {
   const styles = TYPE_STYLES[type];
   return (
@@ -151,7 +146,7 @@ function TrendingCard({
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               {item.code && (
-                <LogoIcon code={item.code} name={item.company_name} />
+                <LogoIcon code={item.code} />
               )}
               {item.company_name ? (
                 <span className="text-xs font-semibold text-gray-700 truncate">
@@ -194,7 +189,7 @@ function TrendingCard({
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-300">AI分析</span>
               {item.code && (
-                <SparklineChart code={item.code} width={72} height={22} />
+                <SparklineChart code={item.code} width={72} height={22} data={sparklines[item.code] ?? null} />
               )}
             </div>
           </div>
@@ -231,7 +226,7 @@ function SectionSkeleton() {
   );
 }
 
-function SectionBlock({ section }: { section: TrendingSectionData }) {
+function SectionBlock({ section, sparklines }: { section: TrendingSectionData; sparklines: Record<string, { prices: number[]; change: number | null }> }) {
   const styles = TYPE_STYLES[section.type];
   return (
     <div className="mb-6">
@@ -252,7 +247,7 @@ function SectionBlock({ section }: { section: TrendingSectionData }) {
       {section.items.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {section.items.map((item) => (
-            <TrendingCard key={item.post_id} item={item} type={section.type} />
+            <TrendingCard key={item.post_id} item={item} type={section.type} sparklines={sparklines} />
           ))}
         </div>
       ) : (
@@ -275,6 +270,7 @@ export default function TrendingSection({
     initialData ?? null
   );
   const [loading, setLoading] = useState(!initialData);
+  const [sparklines, setSparklines] = useState<Record<string, { prices: number[]; change: number | null }>>({});
 
   useEffect(() => {
     if (initialData) {
@@ -291,6 +287,19 @@ export default function TrendingSection({
       .catch(() => setLoading(false));
   }, [initialData]);
 
+  useEffect(() => {
+    if (!data) return;
+    const codes = new Set<string>();
+    [...data.section1.items, ...data.section2.items].forEach((item) => {
+      if (item.code && /^[0-9A-Z]{4}$/.test(item.code)) codes.add(item.code);
+    });
+    if (codes.size === 0) return;
+    fetch(`/api/stocks/sparklines?codes=${[...codes].join(',')}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setSparklines)
+      .catch(() => {});
+  }, [data]);
+
   if (loading) {
     return (
       <>
@@ -304,8 +313,8 @@ export default function TrendingSection({
 
   return (
     <>
-      <SectionBlock section={data.section1} />
-      <SectionBlock section={data.section2} />
+      <SectionBlock section={data.section1} sparklines={sparklines} />
+      <SectionBlock section={data.section2} sparklines={sparklines} />
     </>
   );
 }

@@ -51,10 +51,12 @@ function CompanyVisual({
   code,
   logoUrl,
   companyName,
+  sparklineData,
 }: {
   code: string;
   logoUrl: string | null | undefined;
   companyName: string | null | undefined;
+  sparklineData?: { prices: number[]; change: number | null } | null;
 }) {
   const [logoError, setLogoError] = useState(false);
 
@@ -70,14 +72,10 @@ function CompanyVisual({
             className="w-full h-full object-contain"
             onError={() => setLogoError(true)}
           />
-        ) : (
-          <span className="text-xs font-bold text-gray-400 select-none">
-            {companyName ? companyName.charAt(0) : code.slice(0, 2)}
-          </span>
-        )}
+        ) : null}
       </div>
       {/* スパークライン */}
-      <SparklineChart code={code} width={80} height={36} />
+      <SparklineChart code={code} width={80} height={36} data={sparklineData} />
     </div>
   );
 }
@@ -96,6 +94,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
   const [totalPages, setTotalPages] = useState(
     hasInitialData ? Math.max(1, Math.ceil(initialData.total / limit)) : 1
   );
+  const [sparklines, setSparklines] = useState<Record<string, { prices: number[]; change: number | null }>>({});
 
   useEffect(() => {
     if (skipInitialFetchRef.current) {
@@ -140,6 +139,18 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
 
     fetchNews();
   }, [limit, site, currentPage]);
+
+  useEffect(() => {
+    const codes = news
+      .map((n) => n.code?.trim())
+      .filter((c): c is string => !!c && /^[0-9A-Z]{4}$/.test(c));
+    const unique = [...new Set(codes)];
+    if (unique.length === 0) return;
+    fetch(`/api/stocks/sparklines?codes=${unique.join(',')}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then(setSparklines)
+      .catch(() => {});
+  }, [news]);
 
   if (loading) {
     return (
@@ -246,6 +257,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                     code={articleCode}
                     logoUrl={item.logo_url}
                     companyName={item.company_name}
+                    sparklineData={sparklines[articleCode] ?? null}
                   />
                 ) : imageUrl ? (
                   <NewsThumbnail src={imageUrl} alt={item.title || ''} />
