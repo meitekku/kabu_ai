@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { X } from "lucide-react";
 import type { HeatItem, HeatmapData } from "@/lib/bbs/heatmap";
 import CommentDrawer from "./CommentDrawer";
 
@@ -424,7 +425,7 @@ function Cell({
   const commentLineH = commentSize * 1.4 + 3;
   const availForComments = h - pad * 2 - nameH - codeH - countH - priceH - commentOverhead;
   const maxLines = Math.min(5, Math.max(0, Math.floor(availForComments / commentLineH)));
-  const showComments = areaRatio >= 0.06 && maxLines >= 1 && w >= 100 && item.top_comments.length > 0;
+  const showComments = areaRatio >= 0.05 && maxLines >= 1 && w >= 100 && item.top_comments.length > 0;
 
   return (
     <div
@@ -786,7 +787,36 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
             {countdown}秒後に更新
           </span>
         </div>
-        <ColorLegend />
+        <div className="flex items-center gap-3">
+          <ColorLegend />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-gray-400">シェア</span>
+            {/* X (Twitter) */}
+            <button
+              onClick={() => {
+                const top3 = data.items.slice(0, 3).map((it) => `${it.company_name}(${it.code})`).join("、");
+                const text = `掲示板が盛り上がっている銘柄🔥 ${top3} #株AI`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://kabu-ai.jp/bbs")}`, "_blank");
+              }}
+              className="w-7 h-7 rounded-full bg-black hover:bg-gray-800 flex items-center justify-center transition-colors"
+              aria-label="Xでシェア"
+            >
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+            {/* LINE */}
+            <button
+              onClick={() => {
+                window.open(`https://social-plugins.line.me/lineit/share?url=${encodeURIComponent("https://kabu-ai.jp/bbs")}`, "_blank");
+              }}
+              className="w-7 h-7 rounded-full bg-[#06C755] hover:bg-green-600 flex items-center justify-center transition-colors"
+              aria-label="LINEでシェア"
+            >
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white">
+                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.066-.023.132-.033.2-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.28-.63.63-.63.349 0 .63.285.63.63v4.771h-.006zM9.973 8.108c0-.345-.282-.63-.631-.63-.345 0-.627.285-.627.63v4.771c0 .346.282.629.63.629.346 0 .628-.283.628-.629V8.108zm-4.418 5.4h-.59l.004-.002.004-.002h.582c.346 0 .629-.285.629-.63 0-.345-.285-.63-.631-.63H3.624a.669.669 0 0 0-.199.031c-.256.086-.43.325-.43.595v4.772c0 .346.282.629.63.629.348 0 .63-.283.63-.629V16.1h1.297c.348 0 .629-.283.629-.63 0-.345-.282-.63-.63-.63H4.255v-1.332h1.3zm14.916-11.113c-5.031-5.031-13.199-5.031-18.232 0-5.031 5.031-5.031 13.199 0 18.232 5.031 5.031 13.199 5.031 18.232 0 5.031-5.033 5.031-13.201 0-18.232z" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Treemap */}
