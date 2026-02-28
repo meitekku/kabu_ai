@@ -83,7 +83,7 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
         },
       },
     },
-    { $sort: { velocity: -1 } },
+    { $sort: { count_today: -1, velocity: -1 } },
     { $limit: 60 },
   ]).toArray()
 

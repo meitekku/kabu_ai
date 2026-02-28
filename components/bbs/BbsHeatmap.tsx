@@ -683,9 +683,9 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
           exitTimersRef.current.delete(code);
         }
 
-        if (existing && !existing.entering) {
-          // Existing cell: update position/size
-          next.set(code, { ...cell, entering: false, exiting: false });
+        if (existing) {
+          // Existing cell: update position/size, preserve in-progress entering animation
+          next.set(code, { ...cell, entering: existing.entering, exiting: false });
         } else {
           // New cell: start with entering=true for fade-in
           next.set(code, { ...cell, entering: true, exiting: false });
