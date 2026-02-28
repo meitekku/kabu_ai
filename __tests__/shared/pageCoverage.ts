@@ -13,6 +13,7 @@ export const PAGE_COVERAGE = [
     systemPath: "/admin/prompt/article-prompt",
   },
   { template: "/agent-chat", systemPath: "/agent-chat" },
+  { template: "/bbs", systemPath: "/bbs" },
   { template: "/chat", systemPath: "/chat?code=7203" },
   {
     template: "/commercial-transactions",
