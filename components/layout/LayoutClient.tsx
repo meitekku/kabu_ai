@@ -29,8 +29,9 @@ export default function LayoutClient({
   const isChatPage = pathname?.startsWith('/chat')
   const isAgentChatPage = pathname?.startsWith('/agent-chat')
   const isFavoritesPage = pathname?.startsWith('/favorites')
+  const isBbsPage = pathname?.startsWith('/bbs')
   const isAnyChatPage = isChatPage || isAgentChatPage
-  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage
   const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[670px]'
   const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
   const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)

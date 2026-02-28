@@ -181,9 +181,24 @@ interface TooltipState {
   clientY: number;
 }
 
+function fmtPrice(v: number | null): string {
+  if (v === null) return "-";
+  return "¥" + v.toLocaleString("ja-JP");
+}
+
+function fmtChange(v: number | null): { text: string; color: string } {
+  if (v === null) return { text: "", color: "#9CA3AF" };
+  const sign = v >= 0 ? "+" : "";
+  return {
+    text: sign + v.toFixed(2) + "%",
+    color: v >= 0 ? "#ef4444" : "#3b82f6",
+  };
+}
+
 function Tooltip({ tooltip }: { tooltip: TooltipState }) {
   const { item, clientX, clientY } = tooltip;
   const { bg, text } = velocityColor(item.velocity);
+  const change = fmtChange(item.change_pct);
 
   return (
     <div
@@ -221,6 +236,18 @@ function Tooltip({ tooltip }: { tooltip: TooltipState }) {
       >
         {item.code}
       </p>
+      {item.close !== null && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#111827" }}>
+            {fmtPrice(item.close)}
+          </span>
+          {change.text && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: change.color }}>
+              {change.text}
+            </span>
+          )}
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span
           style={{
@@ -336,6 +363,29 @@ function Cell({
             }}
           >
             {item.count_today}件/今日
+          </p>
+        )}
+        {h >= 70 && w >= 50 && item.close !== null && (
+          <p
+            style={{
+              fontSize: 9,
+              lineHeight: 1.3,
+              marginTop: 2,
+              opacity: 0.85,
+            }}
+          >
+            {fmtPrice(item.close)}
+            {item.change_pct !== null && (
+              <span
+                style={{
+                  marginLeft: 3,
+                  color: item.change_pct >= 0 ? "#fca5a5" : "#93c5fd",
+                }}
+              >
+                {item.change_pct >= 0 ? "+" : ""}
+                {item.change_pct.toFixed(2)}%
+              </span>
+            )}
           </p>
         )}
       </div>

@@ -36,6 +36,8 @@ export interface HeatItem {
   count_24h: number
   count_today: number
   velocity: number
+  close: number | null
+  change_pct: number | null
 }
 
 export interface HeatmapData {
@@ -84,17 +86,43 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
     { $limit: 60 },
   ]).toArray()
 
-  // Fetch company names from MySQL
+  // Fetch company names + latest prices from MySQL in parallel
   const codes = aggResult.map((r) => r._id as string).filter(Boolean)
   let nameMap: Record<string, string> = {}
+  const priceMap: Record<string, { close: number | null; change_pct: number | null }> = {}
   if (codes.length > 0) {
     const placeholders = codes.map(() => '?').join(',')
     const mysqlDb = Database.getInstance()
-    const companies = await mysqlDb.select<{ code: string; name: string }>(
-      `SELECT code, name FROM company WHERE code IN (${placeholders})`,
-      codes
-    )
+    const [companies, priceRows] = await Promise.all([
+      mysqlDb.select<{ code: string; name: string }>(
+        `SELECT code, name FROM company WHERE code IN (${placeholders})`,
+        codes
+      ),
+      mysqlDb.select<{ code: string; close: number; rn: number }>(
+        `SELECT code, close, rn FROM (
+           SELECT code, close,
+             ROW_NUMBER() OVER (PARTITION BY code ORDER BY date DESC) AS rn
+           FROM price WHERE code IN (${placeholders})
+         ) t WHERE rn <= 2`,
+        codes
+      ),
+    ])
     nameMap = Object.fromEntries(companies.map((c) => [c.code, c.name]))
+    const byCode: Record<string, Array<{ close: number; rn: number }>> = {}
+    for (const r of priceRows) {
+      if (!byCode[r.code]) byCode[r.code] = []
+      byCode[r.code].push({ close: r.close, rn: r.rn })
+    }
+    for (const [code, rows] of Object.entries(byCode)) {
+      rows.sort((a, b) => a.rn - b.rn)
+      const latest = rows[0]?.close ?? null
+      const prev = rows[1]?.close ?? null
+      const change_pct =
+        latest !== null && prev !== null && prev !== 0
+          ? ((latest - prev) / prev) * 100
+          : null
+      priceMap[code] = { close: latest, change_pct }
+    }
   }
 
   const items: HeatItem[] = aggResult
@@ -105,6 +133,8 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
       count_24h: r.count_24h as number,
       count_today: r.count_today as number,
       velocity: r.velocity as number,
+      close: priceMap[r._id as string]?.close ?? null,
+      change_pct: priceMap[r._id as string]?.change_pct ?? null,
     }))
     .filter((item) => item.company_name !== '') // Japanese stocks only
 
