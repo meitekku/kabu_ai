@@ -37,7 +37,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-2 px-2 py-2 min-h-[44px] rounded-lg hover:bg-gray-100 transition-colors"
       >
         {user.image ? (
           <Image
@@ -65,7 +65,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
           <div className="py-1">
             <Link
               href="/premium"
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
               onClick={() => setIsOpen(false)}
             >
               <Crown className="w-4 h-4 text-amber-500" />
@@ -73,7 +73,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             </Link>
             <Link
               href="/favorites"
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
               onClick={() => setIsOpen(false)}
             >
               <Heart className="w-4 h-4 text-red-400" />
@@ -81,7 +81,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             </Link>
             <Link
               href="/settings/billing"
-              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 min-h-[44px]"
               onClick={() => setIsOpen(false)}
             >
               <Settings className="w-4 h-4 text-gray-500" />
@@ -92,7 +92,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
           <div className="border-t border-gray-100 py-1">
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              className="flex items-center gap-2 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 min-h-[44px]"
             >
               <LogOut className="w-4 h-4" />
               ログアウト
@@ -112,8 +112,7 @@ const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetc
   marketData?: Record<string, CompanyData>;
   suspendFetch?: boolean;
 }) => {
-  const commonClasses = "logo pl-4 text-center w-full text-xl";
-  const icon = <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />;
+  const icon =<Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center">
       {pathname.includes('/admin/') ? (
@@ -126,22 +125,24 @@ const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetc
 
   return (
     <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
-      <div className="grid grid-cols-[1fr_60%_1fr] items-center w-full">
-        {isRoot ? (
-          <h1 className={commonClasses}>{logoLink}</h1>
-        ) : (
-          <div className={commonClasses}>{logoLink}</div>
-        )}
-        <div className="p-2">
+      <div className="flex items-center w-full gap-2 px-2 sm:px-4">
+        <div className="flex-shrink-0">
+          {isRoot ? (
+            <h1 className="text-xl">{logoLink}</h1>
+          ) : (
+            <div className="text-xl">{logoLink}</div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 py-2">
           <CompanySearch isDark={isDark}/>
         </div>
-        <div className="iiarea pr-4 flex items-center justify-end gap-2">
+        <div className="flex-shrink-0 flex items-center">
           {user ? (
             <UserMenu user={user} />
           ) : (
             <Link
               href="/login"
-              className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors flex items-center gap-1"
+              className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1"
             >
               <LogIn className="w-4 h-4 md:hidden" />
               <span className="hidden md:inline">ログイン</span>
@@ -193,12 +194,12 @@ const Header = ({
   return (
     <Suspense fallback={
       <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800' : 'bg-white border-gray-200'}`}>
-        <div className="grid grid-cols-[1fr_60%_1fr] items-center w-full">
-          <div className="logo pl-4 text-center w-full text-xl">
+        <div className="flex items-center w-full gap-2 px-2 sm:px-4">
+          <div className="flex-shrink-0 text-xl">
             <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />
           </div>
-          <div className="p-2"></div>
-          <div className="iiarea pr-4 flex items-center justify-end gap-2"></div>
+          <div className="flex-1 min-w-0 py-2"></div>
+          <div className="flex-shrink-0 flex items-center"></div>
         </div>
         <div className="md:flex md:justify-center">
           <div className="overflow-x-auto">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { useAuth } from '@/components/auth';
+import { LoginModal } from '@/components/common/LoginModal';
 
 interface FavoriteButtonProps {
   code: string;
@@ -13,6 +14,7 @@ export function FavoriteButton({ code, className = '' }: FavoriteButtonProps) {
   const { isLogin } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     if (!isLogin) return;
@@ -29,7 +31,11 @@ export function FavoriteButton({ code, className = '' }: FavoriteButtonProps) {
   }, [isLogin, code]);
 
   const toggle = useCallback(async () => {
-    if (!isLogin || isLoading) return;
+    if (!isLogin) {
+      setShowModal(true);
+      return;
+    }
+    if (isLoading) return;
     setIsLoading(true);
     try {
       if (isFavorite) {
@@ -50,20 +56,27 @@ export function FavoriteButton({ code, className = '' }: FavoriteButtonProps) {
     }
   }, [isLogin, isLoading, isFavorite, code]);
 
-  if (!isLogin) return null;
-
   return (
-    <button
-      onClick={toggle}
-      disabled={isLoading}
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors ${
-        isFavorite
-          ? 'text-red-500 hover:text-red-600'
-          : 'text-gray-400 hover:text-red-400'
-      } ${className}`}
-      title={isFavorite ? 'お気に入り解除' : 'お気に入りに追加'}
-    >
-      <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-    </button>
+    <>
+      <button
+        onClick={toggle}
+        disabled={isLoading}
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors ${
+          isFavorite
+            ? 'text-red-500 hover:text-red-600'
+            : 'text-gray-400 hover:text-red-400'
+        } ${className}`}
+        title={isFavorite ? 'お気に入り解除' : 'お気に入りに追加'}
+      >
+        <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+      </button>
+
+      <LoginModal
+        open={showModal}
+        onOpenChange={setShowModal}
+        title="お気に入り登録"
+        description="ログインするとお気に入り機能が使えます。"
+      />
+    </>
   );
 }
