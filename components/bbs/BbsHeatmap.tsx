@@ -322,25 +322,40 @@ function CommentList({
 }) {
   const [cycleIdx, setCycleIdx] = useState(0);
   const [cycleVisible, setCycleVisible] = useState(true);
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset cycleIdx when comments length shrinks to avoid out-of-bounds
+  useEffect(() => {
+    setCycleIdx((i) => (comments.length > 0 ? i % comments.length : 0));
+  }, [comments.length]);
 
   // Cycle the first slot through remaining comments if there are more than maxLines
   useEffect(() => {
     if (comments.length <= maxLines) return;
     const interval = setInterval(() => {
       setCycleVisible(false);
-      setTimeout(() => {
+      fadeTimerRef.current = setTimeout(() => {
         setCycleIdx((i) => (i + 1) % comments.length);
         setCycleVisible(true);
+        fadeTimerRef.current = null;
       }, 300);
     }, 4000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (fadeTimerRef.current) {
+        clearTimeout(fadeTimerRef.current);
+        fadeTimerRef.current = null;
+      }
+      setCycleVisible(true);
+    };
   }, [comments.length, maxLines]);
 
   if (comments.length === 0) return null;
 
   // Show up to maxLines comments; first slot cycles if more comments exist
   const staticComments = comments.slice(1, maxLines);
-  const firstComment = comments[cycleIdx];
+  const safeIdx = comments.length > 0 ? cycleIdx % comments.length : 0;
+  const firstComment = comments[safeIdx];
   const dividerColor = darkBg ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)";
 
   return (

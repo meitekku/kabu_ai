@@ -89,7 +89,13 @@ export async function getBbsHeatmap(): Promise<HeatmapData> {
 
   // Fetch company names + latest prices from MySQL, and top comments from MongoDB in parallel
   const codes = aggResult.map((r) => r._id as string).filter(Boolean)
-  const topCommentCodes = codes.slice(0, 15)
+  // Sort by count_today to match treemap display order (treemap size = count_today),
+  // ensuring the largest visible cells always have comments fetched
+  const topCommentCodes = [...aggResult]
+    .sort((a, b) => (b.count_today as number) - (a.count_today as number))
+    .slice(0, 20)
+    .map((r) => r._id as string)
+    .filter(Boolean)
   let nameMap: Record<string, string> = {}
   const priceMap: Record<string, { close: number | null; change_pct: number | null }> = {}
   const commentMap: Record<string, string[]> = {}
