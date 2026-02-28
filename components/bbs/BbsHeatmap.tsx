@@ -280,7 +280,7 @@ function Tooltip({ tooltip }: { tooltip: TooltipState }) {
 
 // ─── ChangeBadge ─────────────────────────────────────────────────────────────
 
-function ChangeBadge({ value, darkBg }: { value: number; darkBg: boolean }) {
+function ChangeBadge({ value, darkBg, fontSize = 11 }: { value: number; darkBg: boolean; fontSize?: number }) {
   const pos = value >= 0;
   const sign = pos ? "+" : "";
   const arrow = pos ? "↑" : "↓";
@@ -289,7 +289,7 @@ function ChangeBadge({ value, darkBg }: { value: number; darkBg: boolean }) {
   return (
     <span
       style={{
-        fontSize: 11,
+        fontSize,
         fontWeight: 700,
         padding: "1px 5px",
         borderRadius: 4,
@@ -312,10 +312,12 @@ function CommentList({
   comments,
   maxLines,
   darkBg,
+  fontSize = 10,
 }: {
   comments: string[];
   maxLines: number;
   darkBg: boolean;
+  fontSize?: number;
 }) {
   const [cycleIdx, setCycleIdx] = useState(0);
   const [cycleVisible, setCycleVisible] = useState(true);
@@ -344,7 +346,7 @@ function CommentList({
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <p
         style={{
-          fontSize: 10,
+          fontSize,
           lineHeight: 1.4,
           opacity: cycleVisible ? 0.82 : 0,
           transition: "opacity 0.3s ease",
@@ -360,7 +362,7 @@ function CommentList({
         <p
           key={i}
           style={{
-            fontSize: 10,
+            fontSize,
             lineHeight: 1.4,
             opacity: 0.68,
             fontStyle: "italic",
@@ -389,20 +391,27 @@ function Cell({
   onClick,
   onHover,
   onLeave,
+  totalArea,
 }: {
   cell: DisplayCell;
   opacity: number;
   onClick: () => void;
   onHover: (item: HeatItem, x: number, y: number) => void;
   onLeave: () => void;
+  totalArea: number;
 }) {
   const { item, x, y, w, h } = cell;
   const { bg, text } = velocityColor(item.velocity);
   const minDim = Math.min(w, h);
   const pad = minDim < 50 ? 2 : minDim < 80 ? 5 : 8;
-  const nameSize = minDim > 120 ? 18 : minDim > 80 ? 15 : minDim > 50 ? 12 : 10;
-  const codeSize = minDim > 80 ? 12 : 10;
-  const countSize = minDim > 100 ? 14 : 12;
+  // Proportional font sizes that scale continuously with cell size
+  const nameSize = Math.round(Math.min(Math.max(minDim / 8, 10), 32));
+  const codeSize = Math.round(Math.min(Math.max(minDim / 12, 9), 18));
+  const countSize = Math.round(Math.min(Math.max(minDim / 10, 10), 24));
+  const priceSize = Math.round(Math.min(Math.max(minDim / 11, 10), 18));
+  const commentSize = Math.round(Math.min(Math.max(minDim / 16, 9), 13));
+  // Show comments if cell occupies >= 10% of total area
+  const areaRatio = totalArea > 0 ? (w * h) / totalArea : 0;
 
   return (
     <div
@@ -479,15 +488,15 @@ function Cell({
         )}
         {h >= 65 && w >= 50 && item.close !== null && (
           <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 2, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, opacity: 0.88, fontWeight: 600 }}>
+            <span style={{ fontSize: priceSize, opacity: 0.88, fontWeight: 600 }}>
               {fmtPrice(item.close)}
             </span>
             {item.change_pct !== null && (
-              <ChangeBadge value={item.change_pct} darkBg={item.velocity >= 2} />
+              <ChangeBadge value={item.change_pct} darkBg={item.velocity >= 2} fontSize={priceSize} />
             )}
           </div>
         )}
-        {h >= 110 && w >= 130 && item.top_comments.length > 0 && (
+        {areaRatio >= 0.10 && h >= 90 && w >= 100 && item.top_comments.length > 0 && (
           <div
             style={{
               marginTop: 5,
@@ -499,6 +508,7 @@ function Cell({
               comments={item.top_comments}
               maxLines={h >= 180 ? 3 : h >= 140 ? 2 : 1}
               darkBg={item.velocity >= 2}
+              fontSize={commentSize}
             />
           </div>
         )}
@@ -740,6 +750,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
   }
 
   const cellsToRender = Array.from(displayCells.values());
+  const totalArea = containerW * containerH;
 
   return (
     <>
@@ -785,6 +796,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
             onClick={() => setSelectedItem({ code: cell.item.code, companyName: cell.item.company_name || cell.item.code })}
             onHover={(item, x, y) => setTooltip({ item, clientX: x, clientY: y })}
             onLeave={() => setTooltip(null)}
+            totalArea={totalArea}
           />
         ))}
       </div>
