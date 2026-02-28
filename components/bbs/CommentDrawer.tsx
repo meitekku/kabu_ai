@@ -52,6 +52,13 @@ export default function CommentDrawer({
   const [tab, setTab] = useState<"yahoo" | "stocktwits">("yahoo");
   const [data, setData] = useState<CommentsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(false);
+
+  // 初回レンダー後にアニメーション開始
+  useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 0);
+    return () => clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -65,25 +72,38 @@ export default function CommentDrawer({
       .catch(() => setLoading(false));
   }, [code]);
 
+  // スライドアウトしてから親のonCloseを呼ぶ
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 300);
+  };
+
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — フェードイン */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/50 z-40 backdrop-blur-sm transition-opacity duration-300 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+        onClick={handleClose}
       />
 
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col">
+      {/* Drawer — スライドイン */}
+      <div
+        className={`fixed right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-out ${
+          visible ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div>
             <h3 className="font-bold text-gray-900 text-sm">{companyName}</h3>
-            <p className="text-xs text-gray-400 font-mono">{code}</p>
+            <p className="text-xs text-gray-400 font-mono mt-0.5">{code}</p>
           </div>
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            onClick={handleClose}
+            className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-base leading-none"
+            aria-label="閉じる"
           >
             ✕
           </button>
@@ -96,12 +116,12 @@ export default function CommentDrawer({
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               tab === "yahoo"
                 ? "text-blue-600 border-b-2 border-blue-500"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            💬 Yahoo掲示板
+            Yahoo掲示板
             {data && (
-              <span className="ml-1.5 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
+              <span className="ml-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
                 {data.yahoo.length}
               </span>
             )}
@@ -111,12 +131,12 @@ export default function CommentDrawer({
             className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
               tab === "stocktwits"
                 ? "text-blue-600 border-b-2 border-blue-500"
-                : "text-gray-500 hover:text-gray-700"
+                : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            🐦 StockTwits
+            StockTwits
             {data && (
-              <span className="ml-1.5 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
+              <span className="ml-1.5 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">
                 {data.stocktwits.length}
               </span>
             )}
@@ -141,7 +161,7 @@ export default function CommentDrawer({
                 <div className="divide-y divide-gray-50">
                   {data.yahoo.map((c) => (
                     <div key={c.id} className="px-4 py-3">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-semibold text-gray-700">
                           {c.name || "匿名"}
                         </span>
@@ -169,7 +189,7 @@ export default function CommentDrawer({
                 <div className="divide-y divide-gray-50">
                   {data.stocktwits.map((c) => (
                     <div key={c.id} className="px-4 py-3">
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="text-xs font-semibold text-gray-700">
                             @{c.username}

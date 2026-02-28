@@ -309,13 +309,13 @@ function Cell({
         boxSizing: "border-box",
         cursor: "pointer",
         overflow: "hidden",
-        transition: "filter 0.12s",
+        transition: "filter 0.15s ease, transform 0.15s ease",
       }}
       onClick={onClick}
       onKeyDown={(e) => e.key === "Enter" && onClick()}
       onMouseEnter={(e) => onHover(item, e.clientX, e.clientY)}
       onMouseLeave={onLeave}
-      className="hover:brightness-90 active:brightness-75"
+      className="hover:brightness-90 active:brightness-75 active:scale-[0.97]"
     >
       <div
         style={{
