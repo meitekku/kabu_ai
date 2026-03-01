@@ -106,7 +106,12 @@ export default function Home() {
     <main className="container mx-auto py-4">
       {/* <LogoutButton /> */}
       <h1 className="text-2xl font-bold mb-4">リスト</h1>
-      <ApprovalList items={items} fetchData={fetchData} />
+      <ApprovalList
+        items={items}
+        fetchData={fetchData}
+        enableBatchPosting={true}
+        batchPostSiteNumber={71}
+      />
     </main>
   );
 }

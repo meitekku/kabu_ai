@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { submitTwitterAndWebPost } from '@/lib/admin/postToTwitterAndWeb';
 
 interface TwitterPostButtonProps {
   title: string;
@@ -17,22 +18,6 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
   const [error, setError] = useState<string | null>(null);
   const [compressionInfo, setCompressionInfo] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
-
-  // Unixタイムスタンプを日本時間の「MM月DD日 H:i:s」形式に変換する関数
-  const formatUnixTimestampToJST = (unixTimestamp: number): string => {
-    const date = new Date(unixTimestamp * 1000);
-    
-    // 日本時間に変換（UTC+9）
-    const jstDate = new Date(date.getTime() + (9 * 60 * 60 * 1000));
-    
-    const month = jstDate.getUTCMonth() + 1;
-    const day = jstDate.getUTCDate();
-    const hours = jstDate.getUTCHours().toString().padStart(2, '0');
-    const minutes = jstDate.getUTCMinutes().toString().padStart(2, '0');
-    const seconds = jstDate.getUTCSeconds().toString().padStart(2, '0');
-    
-    return `${month}月${day}日 ${hours}:${minutes}:${seconds}`;
-  };
 
   // チャート画像が渡された場合、それを使用
   useEffect(() => {
@@ -172,58 +157,13 @@ export default function TwitterPostButton({ title, content, chartImageUrl, onSuc
     try {
       setIsLoading(true);
       setError(null);
-      
-      const tweetContent = `${title}\n${content}`;
-      
-      // 1. Webサイトに投稿
-      const postResponse = await fetch('/api/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: '0000', // ニュース要約用の汎用コード
-          title: title,
-          content: content,
-          site: siteNumber, // サイト番号
-          accept: 1, // 承認済み
-          pickup: 0 // 通常投稿
-        }),
+
+      await submitTwitterAndWebPost({
+        title,
+        content,
+        imageUrl,
+        siteNumber,
       });
-      
-      if (!postResponse.ok) {
-        throw new Error('Webサイトへの投稿に失敗しました');
-      }
-      
-      // 2. Twitterに投稿
-      const twitterResponse = await fetch('/api/twitter/post', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          tweetContent,
-          imageUrl: imageUrl || undefined,
-        }),
-      });
-      
-      // 429エラーの場合は待機時間を日本時間で表示
-      if (twitterResponse.status === 429) {
-        const resetTime = twitterResponse.headers.get('x-rate-limit-reset');
-        if (resetTime) {
-          const resetTimestamp = parseInt(resetTime);
-          const jstTime = formatUnixTimestampToJST(resetTimestamp);
-          throw new Error(`レート制限に達しました。${jstTime}頃に再試行してください。`);
-        } else {
-          throw new Error('レート制限に達しました。少し時間をおいて再試行してください。');
-        }
-      }
-      
-      const twitterResult = await twitterResponse.json();
-      
-      if (!twitterResult.success) {
-        throw new Error(twitterResult.message || 'Twitter投稿に失敗しました');
-      }
       
       // 成功メッセージを表示
       setSuccessMessage('TwitterとWebの両方に投稿が完了しました！');
