@@ -32,6 +32,14 @@ interface BatchQueueEntry {
   chartImageUrl?: string;
 }
 
+const normalizeBatchIntervalMinutes = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 5;
+  }
+
+  return Math.max(5, Math.round(value / 5) * 5);
+};
+
 const AutoResizeTextarea: React.FC<{
   value: string;
   onChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
@@ -376,7 +384,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
       return;
     }
 
-    const safeIntervalMinutes = Math.max(1, Math.floor(Number(batchIntervalMinutes) || 5));
+    const safeIntervalMinutes = normalizeBatchIntervalMinutes(Number(batchIntervalMinutes));
     const queue: BatchQueueEntry[] = selectedIds.map(id => {
       const currentItem = items.find(item => item.id === id);
       return {
@@ -617,10 +625,10 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                 <p className="text-xs text-slate-500">投稿間隔(分)</p>
                 <input
                   type="number"
-                  min="1"
-                  step="1"
+                  min="5"
+                  step="5"
                   value={batchIntervalMinutes}
-                  onChange={e => setBatchIntervalMinutes(Math.max(1, Number(e.target.value) || 1))}
+                  onChange={e => setBatchIntervalMinutes(normalizeBatchIntervalMinutes(Number(e.target.value)))}
                   disabled={isBatchPosting}
                   className="w-24 rounded-lg border px-3 py-2 text-sm"
                 />
