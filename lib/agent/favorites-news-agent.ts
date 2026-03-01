@@ -60,6 +60,7 @@ export async function generateFavoritesReport(
       // bypassPermissions は root ユーザーで拒否されるため、
       // allowedTools で全ツールを自動許可する方式を使う
       permissionMode: 'default',
+      model: 'claude-sonnet-4-6',
       tools,
       allowedTools: tools,
       maxTurns: 10,
