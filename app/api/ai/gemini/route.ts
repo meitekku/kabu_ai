@@ -59,6 +59,12 @@ export async function POST(req: Request) {
     const data = await response.json();
     const result = data.choices?.[0]?.message?.content || '';
 
+    const usage = data.usage;
+    if (usage) {
+      const ts = new Date().toISOString();
+      console.log(`[GLM_USAGE] ${ts} model=${modelName} caller=ai/gemini/route.ts prompt=${usage.prompt_tokens ?? 0} completion=${usage.completion_tokens ?? 0} total=${usage.total_tokens ?? 0}`);
+    }
+
     return NextResponse.json({
       success: true,
       response: result,

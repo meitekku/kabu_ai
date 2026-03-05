@@ -439,6 +439,7 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
             temperature,
             max_tokens: maxTokens,
             stream: true,
+            stream_options: { include_usage: true },
           }),
           signal: controller.signal,
         });
@@ -464,6 +465,7 @@ async function generatePrediction(code: string, db: Database, chartImage?: strin
             if (data === '[DONE]') continue;
             try {
               const chunk = JSON.parse(data);
+              if (chunk.usage) { const ts = new Date().toISOString(); console.log("[GLM_USAGE] " + ts + " model=" + modelName + " caller=predict/route.ts prompt=" + (chunk.usage.prompt_tokens ?? 0) + " completion=" + (chunk.usage.completion_tokens ?? 0) + " total=" + (chunk.usage.total_tokens ?? 0)); }
               const delta = chunk.choices?.[0]?.delta;
               if (delta?.content) content += delta.content;
             } catch { /* skip malformed chunks */ }
