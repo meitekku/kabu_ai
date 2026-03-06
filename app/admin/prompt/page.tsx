@@ -235,15 +235,28 @@ export default function PromptPage() {
     return <div className="text-red-500 p-4">{error}</div>;
   }
 
+  const getTimeSlotBadge = (id: number) => {
+    if (id === 100) return <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded bg-amber-100 text-amber-700 border border-amber-300">☀ 昼用 (11:45)</span>;
+    if (id === 200) return <span className="ml-2 px-2 py-0.5 text-xs font-bold rounded bg-indigo-100 text-indigo-700 border border-indigo-300">🌙 夜用 (15:35-45)</span>;
+    return null;
+  };
+
   return (
     <main className="container mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">プロンプト管理</h1>
       <div className="max-w-4xl mx-auto">
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          <strong>自動切り替えプロンプト:</strong> id=100（昼用・11:45バッチ）/ id=200（夜用・15:35〜15:45バッチ）。
+          更新はバッチ開始時にDBから再取得されます。
+        </div>
         <div className="space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="border p-4 rounded-lg bg-white shadow-sm">
+            <div key={item.id} className={`border p-4 rounded-lg bg-white shadow-sm ${(item.id === 100 || item.id === 200) ? 'ring-2 ring-blue-200' : ''}`}>
               <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-gray-500">ID: {item.category}</div>
+                <div className="flex items-center text-sm text-gray-500">
+                  <span>ID: {item.category}</span>
+                  {getTimeSlotBadge(item.id)}
+                </div>
                 <button
                   onClick={() => toggleCollapsed(item.id)}
                   className="text-blue-500 hover:text-blue-700 text-sm font-medium"
