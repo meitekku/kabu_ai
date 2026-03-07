@@ -363,7 +363,7 @@ jobs:
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs:
       - lint-and-typecheck
       - test-unit-api
@@ -374,6 +374,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build application (on runner)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: https://kabu-ai.jp
+          NEXT_TELEMETRY_DISABLED: 1
+
       - name: Setup SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -383,12 +398,12 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 133.130.102.77 >> ~/.ssh/known_hosts
 
-      - name: Sync files to staging directory
+      - name: Sync source files to staging directory
         env:
           SSH_USER: root
           SSH_HOST: 133.130.102.77
         run: |
-          echo "Syncing files to staging directory..."
+          echo "Syncing source files to staging directory..."
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_rsa" \
             . \
@@ -402,13 +417,25 @@ jobs:
             --exclude='playwright-report' \
             $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging
 
+          echo "Syncing built standalone output..."
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            .next/standalone/ \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging/.next/standalone/
+
+          echo "Syncing static assets..."
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            .next/static/ \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging/.next/static/
+
           echo "Syncing uploads to persistent directory..."
           rsync -avz \
             -e "ssh -i ~/.ssh/id_rsa" \
             public/uploads/ \
             $SSH_USER@$SSH_HOST:/var/www/kabu_ai_uploads/
 
-      - name: Build in staging and zero-downtime swap
+      - name: Zero-downtime swap on server
         env:
           SSH_USER: root
           SSH_HOST: 133.130.102.77
@@ -436,7 +463,17 @@ jobs:
             # .env.localをコピー
             if [ -f "$PRODUCTION/.env.local" ]; then
               cp "$PRODUCTION/.env.local" "$STAGING/.env.local"
+              cp "$PRODUCTION/.env.local" "$STAGING/.next/standalone/.env.local"
             fi
+
+            # uploadsは永続ディレクトリへのシンボリックリンク（standaloneのみ）
+            rm -rf "$STAGING/.next/standalone/public/uploads"
+            ln -sf "$UPLOADS" "$STAGING/.next/standalone/public/uploads"
+
+            # uploadsのパーミッション設定
+            chown -R root:root "$UPLOADS"
+            find "$UPLOADS" -type d -exec chmod 755 {} \;
+            find "$UPLOADS" -type f -exec chmod 644 {} \;
 
             # Python venvを再利用（コピー）
             if [ -d "$PRODUCTION/venv" ] && [ ! -d "$STAGING/venv" ]; then
@@ -444,44 +481,9 @@ jobs:
               cp -a "$PRODUCTION/venv" "$STAGING/venv"
             fi
 
-            # --- ステージングでビルド（本番は稼働中） ---
-            cd "$STAGING"
-
-            # ビルド用に空のuploadsディレクトリを作成（symlinkはNG: Turbopackが処理できない）
-            mkdir -p public/uploads
-
-            echo "Installing Node.js dependencies..."
-            rm -rf node_modules
-            npm ci --legacy-peer-deps
-
-            echo "Building application..."
-            npm run build
-
-            # --- ビルド後のセットアップ ---
-            # .env.localをstandaloneにコピー（standalone server.jsがprocess.chdir(__dirname)するため必須）
-            cp "$STAGING/.env.local" .next/standalone/.env.local
-
-            # uploadsは永続ディレクトリへのシンボリックリンク（standaloneのみ）
-            rm -rf .next/standalone/public/uploads
-            ln -sf "$UPLOADS" .next/standalone/public/uploads
-
-            # uploadsのパーミッション設定
-            chown -R root:root "$UPLOADS"
-            find "$UPLOADS" -type d -exec chmod 755 {} \;
-            find "$UPLOADS" -type f -exec chmod 644 {} \;
-
-            # --- Chrome（未インストールの場合のみ） ---
-            if ! command -v google-chrome-stable &>/dev/null; then
-              echo "Installing Chrome..."
-              wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-              echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
-              apt-get update -qq && apt-get install -y -qq google-chrome-stable
-            else
-              echo "Chrome already installed: $(google-chrome-stable --version)"
-            fi
-
             # --- Python venv更新 ---
-            if [ -f "requirements.txt" ]; then
+            if [ -f "$STAGING/requirements.txt" ]; then
+              cd "$STAGING"
               if [ ! -d "venv" ]; then
                 python3 -m venv venv --copies
               fi
