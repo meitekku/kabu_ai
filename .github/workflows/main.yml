@@ -417,6 +417,10 @@ jobs:
             --exclude='playwright-report' \
             $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging
 
+          echo "Creating .next directories on server..."
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST \
+            "mkdir -p /var/www/kabu_ai_staging/.next/standalone /var/www/kabu_ai_staging/.next/static"
+
           echo "Syncing built standalone output..."
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_rsa" \
