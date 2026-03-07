@@ -128,7 +128,7 @@ export default function BillingPage() {
 
     const getPlanPrice = () => {
         if (!subscription) return '¥3,000';
-        return subscription.plan === 'agent' ? '¥5,000' : '¥3,000';
+        return subscription.plan === 'agent' ? '¥1,000' : '¥3,000';
     };
 
     const getPlanDescription = () => {
@@ -350,7 +350,7 @@ export default function BillingPage() {
                                             <p className="text-sm text-slate-500">全機能 + AI Agent</p>
                                         </div>
                                         <div className="sm:text-right">
-                                            <div className="text-2xl font-bold text-amber-600">¥5,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                            <div className="text-2xl font-bold text-amber-600">¥1,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
                                         </div>
                                     </div>
                                     <ul className="space-y-2 text-sm text-slate-600 mb-4">

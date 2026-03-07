@@ -89,7 +89,7 @@ export default function PremiumPage() {
                                 size="lg"
                                 className="h-12 px-10 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all"
                             >
-                                月額 3,000円から始める
+                                月額 1,000円から始める
                                 <ArrowRight className="ml-2 w-4 h-4" />
                             </Button>
                         </a>
@@ -551,17 +551,11 @@ export default function PremiumPage() {
                             </div>
 
                             {/* Standard Plan */}
-                            <div className="relative p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 bg-blue-50/30 flex flex-col">
-                                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600" />
+                            <div className="relative p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
                                 <div className="mb-6">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-lg font-bold text-slate-900">
-                                            スタンダード
-                                        </h3>
-                                        <span className="px-2 py-0.5 rounded bg-blue-600 text-[10px] font-bold text-white tracking-wider">
-                                            人気 No.1
-                                        </span>
-                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
+                                        スタンダード
+                                    </h3>
                                     <p className="text-xs text-slate-400">
                                         AI株価予測 & AIチャット
                                     </p>
@@ -604,12 +598,17 @@ export default function PremiumPage() {
                             </div>
 
                             {/* Agent Plan */}
-                            <div className="relative p-6 md:p-8 flex flex-col">
+                            <div className="relative p-6 md:p-8 bg-amber-50/30 flex flex-col">
                                 <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
                                 <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        エージェント
-                                    </h3>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-lg font-bold text-slate-900">
+                                            エージェント
+                                        </h3>
+                                        <span className="px-2 py-0.5 rounded bg-amber-500 text-[10px] font-bold text-white tracking-wider">
+                                            人気 No.1
+                                        </span>
+                                    </div>
                                     <p className="text-xs text-slate-400">
                                         全機能 + AI Agent
                                     </p>
@@ -706,7 +705,7 @@ export default function PremiumPage() {
                 <section className="py-20 md:py-28 bg-slate-900">
                     <div className="max-w-3xl mx-auto px-4 text-center">
                         <h2 className="text-2xl md:text-4xl font-bold text-white mb-4 tracking-tight">
-                            月額 3,000円からAIを味方に。
+                            月額 1,000円からAIを味方に。
                         </h2>
                         <p className="text-base text-slate-400 mb-10 max-w-lg mx-auto leading-relaxed">
                             制限なしのAI対話と、高精度な株価予測。
