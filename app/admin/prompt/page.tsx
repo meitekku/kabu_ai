@@ -60,7 +60,18 @@ export default function PromptPage() {
       const result: DatabaseResponse = await response.json();
 
       if (result.success && result.data) {
-        setItems(result.data);
+        // 表示対象: 午前(101-107), 午後(201-207), 海外まとめ(8)のみ
+        const filtered = result.data.filter((item: PromptItem) =>
+          (item.id >= 101 && item.id <= 107) ||
+          (item.id >= 201 && item.id <= 207) ||
+          item.id === 8
+        );
+        // 表示順: 午前→午後→海外まとめ
+        filtered.sort((a: PromptItem, b: PromptItem) => {
+          const order = (id: number) => id === 8 ? 999 : id;
+          return order(a.id) - order(b.id);
+        });
+        setItems(filtered);
         // 初期値を設定
         const initialValues = result.data.reduce((acc, item) => {
           acc[item.id] = item.prompt;
@@ -261,33 +272,44 @@ export default function PromptPage() {
         </div>
         <div className="space-y-4">
           {items.map((item) => (
-            <div key={item.id} className={`border p-4 rounded-lg bg-white shadow-sm ${isAutoPrompt(item.id) ? 'ring-2 ring-blue-200' : ''}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center text-sm text-gray-500">
-                  <span>ID: {item.category}</span>
-                  {getTimeSlotBadge(item.id)}
-                </div>
-                <button
-                  onClick={() => toggleCollapsed(item.id)}
-                  className="text-blue-500 hover:text-blue-700 text-sm font-medium"
-                >
-                  {collapsedItems[item.id] ? '▼ 展開' : '▲ 折りたたみ'}
-                </button>
-              </div>
-              {!collapsedItems[item.id] && (
-                <textarea
-                  data-id={item.id}
-                  value={editValues[item.id] || ''}
-                  onChange={(e) => {
-                    handleChange(item.id, e.target.value);
-                    adjustTextareaHeight(e.target);
-                  }}
-                  onFocus={(e) => adjustTextareaHeight(e.target)}
-                  className="w-full p-3 border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="プロンプトを入力してください..."
-                />
+            <React.Fragment key={item.id}>
+              {item.id === 101 && (
+                <h2 className="text-lg font-bold text-amber-700 flex items-center gap-2 mt-2">☀ 午前（11:45バッチ）</h2>
               )}
-            </div>
+              {item.id === 201 && (
+                <h2 className="text-lg font-bold text-indigo-700 flex items-center gap-2 mt-6">🌙 午後（15:35〜15:45バッチ）</h2>
+              )}
+              {item.id === 8 && (
+                <h2 className="text-lg font-bold text-green-700 flex items-center gap-2 mt-6">🌐 海外まとめ</h2>
+              )}
+              <div className={`border p-4 rounded-lg bg-white shadow-sm ${isAutoPrompt(item.id) ? 'ring-2 ring-blue-200' : 'ring-2 ring-green-200'}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center text-sm text-gray-500">
+                    <span>ID: {item.category}</span>
+                    {getTimeSlotBadge(item.id)}
+                  </div>
+                  <button
+                    onClick={() => toggleCollapsed(item.id)}
+                    className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                  >
+                    {collapsedItems[item.id] ? '▼ 展開' : '▲ 折りたたみ'}
+                  </button>
+                </div>
+                {!collapsedItems[item.id] && (
+                  <textarea
+                    data-id={item.id}
+                    value={editValues[item.id] || ''}
+                    onChange={(e) => {
+                      handleChange(item.id, e.target.value);
+                      adjustTextareaHeight(e.target);
+                    }}
+                    onFocus={(e) => adjustTextareaHeight(e.target)}
+                    className="w-full p-3 border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="プロンプトを入力してください..."
+                  />
+                )}
+              </div>
+            </React.Fragment>
           ))}
         </div>
       </div>
