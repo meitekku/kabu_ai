@@ -168,29 +168,37 @@ export const NewsListSkeleton = ({
 
   return (
     <div data-testid="news-list-skeleton">
-      {h3Title && <div className="mb-4 h-7 w-48 rounded bg-gray-200" />}
-      {title && <div className="mt-4 mb-2 h-7 w-32 rounded bg-gray-200" />}
+      {h3Title && (
+        <div className="mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-shikiho-accent-red">
+          <div className="h-[27px] w-48 rounded bg-[#e8e8e8]" />
+        </div>
+      )}
+      {title && (
+        <div className="mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">
+          <div className="h-[30px] w-32 rounded bg-[#e8e8e8]" />
+        </div>
+      )}
 
-      <div className="divide-y divide-gray-100">
+      <div className="border-t border-shikiho-bg-border">
         {rows.map((index) => (
           <div
             key={index}
-            className="rounded-lg bg-card text-card-foreground border-0 shadow-none"
+            className="border-b border-shikiho-bg-border-light"
           >
-            <div className="py-1 px-0 sm:py-3 sm:px-2">
+            <div className="py-3 px-2">
               <div className="mb-1 flex items-center gap-2">
-                <div className="h-4 w-24 rounded bg-gray-200" />
-                <div className="h-4 w-14 rounded bg-gray-200" />
+                <div className="h-[16px] w-24 rounded bg-[#e8e8e8]" />
+                <div className="h-[16px] w-14 rounded bg-[#e8e8e8]" />
               </div>
-              <div className="mt-0.5 h-5 w-full rounded bg-gray-200" />
+              <div className="mt-0.5 h-[22px] w-full rounded bg-[#e8e8e8]" />
             </div>
           </div>
         ))}
       </div>
 
       {showMoreButton && (
-        <div className="text-right">
-          <div className="ml-auto h-4 w-20 rounded bg-gray-200" />
+        <div className="text-right mt-4">
+          <div className="ml-auto h-[21px] w-20 rounded bg-[#e8e8e8]" />
         </div>
       )}
     </div>
