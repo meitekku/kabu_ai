@@ -56,27 +56,27 @@ export const CompanyBasicInfoSkeleton = () => {
   return (
     <div
       data-testid="company-basic-info-skeleton"
-      className="w-full bg-white px-2 min-h-[90px]"
+      className="w-full bg-white px-2"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="h-4 w-12 rounded bg-gray-200" />
-          <div className="h-6 w-32 rounded bg-gray-200" />
+          <div className="h-[24px] w-12 rounded bg-gray-200" />
+          <div className="h-[28px] w-32 rounded bg-gray-200" />
         </div>
-        <div className="h-4 w-12 rounded bg-gray-200" />
+        <div className="h-[20px] w-12 rounded bg-gray-200" />
       </div>
-      <div className="mt-1 flex items-baseline justify-between">
-        <div className="flex items-baseline space-x-4">
-          <div className="h-8 w-24 rounded bg-gray-200" />
-          <div className="h-6 w-36 rounded bg-gray-200" />
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <div className="flex items-baseline space-x-2 sm:space-x-4">
+          <div className="h-[28px] sm:h-[32px] w-24 rounded bg-gray-200" />
+          <div className="h-[24px] sm:h-[28px] w-36 rounded bg-gray-200" />
         </div>
-        <div className="h-3 w-24 rounded bg-gray-200" />
+        <div className="h-[16px] w-24 rounded bg-gray-200" />
       </div>
-      <div className="mt-2 grid grid-cols-4 text-sm">
+      <div className="mt-2 grid grid-cols-4 text-xs sm:text-sm gap-1">
         {summaryItems.map((index) => (
           <div key={index}>
-            <div className="mb-1 h-4 w-10 rounded bg-gray-200" />
-            <div className="h-4 w-16 rounded bg-gray-200" />
+            <div className="mb-1 h-[16px] sm:h-[20px] w-10 rounded bg-gray-200" />
+            <div className="h-[16px] sm:h-[20px] w-16 rounded bg-gray-200" />
           </div>
         ))}
       </div>
@@ -181,16 +181,15 @@ export const NewsListSkeleton = ({
 
       <div className="border-t border-shikiho-bg-border">
         {rows.map((index) => (
-          <div
-            key={index}
-            className="border-b border-shikiho-bg-border-light"
-          >
-            <div className="py-3 px-2">
-              <div className="mb-1 flex items-center gap-2">
-                <div className="h-[16px] w-24 rounded bg-[#e8e8e8]" />
-                <div className="h-[16px] w-14 rounded bg-[#e8e8e8]" />
+          <div key={index} className="block">
+            <div className="py-3 px-2 border-b border-shikiho-bg-border-light">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="h-[16.5px] w-24 rounded bg-[#e8e8e8]" />
+                  <div className="h-[15px] w-14 rounded bg-[#e8e8e8]" />
+                </div>
+                <div className="mt-0.5 h-[22.5px] w-full rounded bg-[#e8e8e8]" />
               </div>
-              <div className="mt-0.5 h-[22px] w-full rounded bg-[#e8e8e8]" />
             </div>
           </div>
         ))}
@@ -220,7 +219,7 @@ export const NewsPageSkeleton = ({
     <div className="animate-pulse">
       <CompanyBasicInfoSkeleton />
       <div className="flex justify-end px-2 -mt-2 mb-2">
-        <div className="h-7 w-7 rounded-lg bg-gray-200" />
+        <div className="h-[28px] w-[36px] rounded-lg bg-gray-200" />
       </div>
       <StockChartSkeleton
         width={chartWidth}

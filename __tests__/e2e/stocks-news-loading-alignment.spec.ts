@@ -10,7 +10,7 @@ type Box = {
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const getBoxByTestId = async (page: Page, testId: string): Promise<Box> => {
-  const locator = page.getByTestId(testId);
+  const locator = page.getByTestId(testId).first();
   await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   if (!box) {
@@ -140,7 +140,7 @@ test.describe("Stocks news loading alignment", () => {
     await page.goto("/stocks/3103/news");
 
     // Skip if the page didn't render skeletons (e.g., DB unavailable in CI)
-    const hasSkeleton = await page.getByTestId("company-basic-info-skeleton").isVisible({ timeout: 5000 }).catch(() => false);
+    const hasSkeleton = await page.getByTestId("company-basic-info-skeleton").first().isVisible({ timeout: 5000 }).catch(() => false);
     test.skip(!hasSkeleton, "Skeletons not rendered (DB likely unavailable in CI)");
 
     const skeletonCompanyBox = await getBoxByTestId(page, "company-basic-info-skeleton");
