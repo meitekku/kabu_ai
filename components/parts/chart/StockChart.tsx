@@ -163,7 +163,13 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   const calculateYDomain = useCallback(() => {
     if (data.length === 0) return { min: 0, max: 100 };
 
-    const allValues = data.flatMap(d => [d.high, d.low]);
+    const allValues = data.flatMap(d => {
+      const vals: number[] = [d.high, d.low];
+      // ATRバンドがある場合はそれも考慮
+      if (d.band2Upper != null) vals.push(d.band2Upper);
+      if (d.band2Lower != null) vals.push(d.band2Lower);
+      return vals;
+    });
     const minValue = Math.min(...allValues);
     const maxValue = Math.max(...allValues);
     const valueRange = maxValue - minValue;
@@ -292,6 +298,11 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 predictionHigh: p.predictedHigh,
                 predictionLow: p.predictedLow,
                 predictionClose: close,
+                // ATRバンド（存在する場合のみ）
+                band1Upper: p.band1Upper,
+                band1Lower: p.band1Lower,
+                band2Upper: p.band2Upper,
+                band2Lower: p.band2Lower,
               };
             });
             setPredictionStartIndex(convertedData.length);
@@ -303,6 +314,10 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                 predictionClose: lastActual.close,
                 predictionHigh: lastActual.close,
                 predictionLow: lastActual.close,
+                band1Upper: lastActual.close,
+                band1Lower: lastActual.close,
+                band2Upper: lastActual.close,
+                band2Lower: lastActual.close,
               };
             }
             const mergedData = [...convertedData, ...predictionEntries];
@@ -744,6 +759,68 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
                   fontSize: 10,
                 }}
               />
+            )}
+            {/* ATR 2σ信頼区間バンド（最も外側、最も薄い） */}
+            {predictionStartIndex !== null && (
+              <>
+                <Area
+                  dataKey="band2Upper"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill="rgba(99, 102, 241, 0.06)"
+                  stroke="rgba(99, 102, 241, 0.2)"
+                  strokeWidth={1}
+                  strokeDasharray="2 4"
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  name="2σ上限"
+                />
+                <Area
+                  dataKey="band2Lower"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill={colors.background}
+                  stroke="rgba(99, 102, 241, 0.2)"
+                  strokeWidth={1}
+                  strokeDasharray="2 4"
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  name="2σ下限"
+                />
+              </>
+            )}
+            {/* ATR 1σ信頼区間バンド（内側、やや濃い） */}
+            {predictionStartIndex !== null && (
+              <>
+                <Area
+                  dataKey="band1Upper"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill="rgba(99, 102, 241, 0.10)"
+                  stroke="rgba(99, 102, 241, 0.35)"
+                  strokeWidth={1}
+                  strokeDasharray="3 3"
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  name="1σ上限"
+                />
+                <Area
+                  dataKey="band1Lower"
+                  type="monotone"
+                  baseValue={calculateYDomain().min}
+                  fill={colors.background}
+                  stroke="rgba(99, 102, 241, 0.35)"
+                  strokeWidth={1}
+                  strokeDasharray="3 3"
+                  dot={false}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  name="1σ下限"
+                />
+              </>
             )}
             {/* 予測レンジバンド（High-Low間の塗りつぶし） */}
             {predictionStartIndex !== null && (

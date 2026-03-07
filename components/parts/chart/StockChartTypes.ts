@@ -27,6 +27,10 @@ export interface ExtendedChartData {
   predictionHigh?: number;
   predictionLow?: number;
   predictionClose?: number | null;
+  band1Upper?: number;
+  band1Lower?: number;
+  band2Upper?: number;
+  band2Lower?: number;
 }
 
 export interface CompanyInfo {
@@ -58,6 +62,11 @@ export interface PredictionDataPoint {
   predictedHigh: number;
   predictedLow: number;
   predictedOpen?: number;
+  // ATRベース信頼区間バンド（optional）
+  band1Upper?: number;
+  band1Lower?: number;
+  band2Upper?: number;
+  band2Lower?: number;
 }
 
 // StockChartProps

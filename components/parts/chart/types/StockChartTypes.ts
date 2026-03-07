@@ -25,4 +25,8 @@ export interface ExtendedChartData {
   predictionHigh?: number;
   predictionLow?: number;
   predictionClose?: number | null;
-} 
+  band1Upper?: number;
+  band1Lower?: number;
+  band2Upper?: number;
+  band2Lower?: number;
+}
