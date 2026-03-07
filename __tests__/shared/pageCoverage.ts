@@ -5,6 +5,7 @@ export const PAGE_COVERAGE = [
   { template: "/admin/accept_spike", systemPath: "/admin/accept_spike" },
   { template: "/admin/all-article", systemPath: "/admin/all-article" },
   { template: "/admin/comment", systemPath: "/admin/comment" },
+  { template: "/admin/line-test", systemPath: "/admin/line-test" },
   { template: "/admin/news-summary", systemPath: "/admin/news-summary" },
   { template: "/admin/post/[post_id]", systemPath: "/admin/post/1" },
   { template: "/admin/prompt", systemPath: "/admin/prompt" },
