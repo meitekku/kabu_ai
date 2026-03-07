@@ -34,7 +34,7 @@ export default function LayoutClient({
   const isBbsPage = pathname?.startsWith('/bbs')
   const isAnyChatPage = isChatPage || isAgentChatPage
   const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage
-  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[670px]'
+  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[920px]'
   const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
   const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)
 
@@ -106,8 +106,8 @@ export default function LayoutClient({
     <div className="min-h-screen flex flex-col">
       <GlobalNavigation />
       <Header isDark={isPremiumPage} marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
-      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1000px] px-3 my-4 sm:px-4 sm:my-6 md:px-6'} overflow-x-auto`}>
-        <div className="flex flex-col md:flex-row gap-6 md:gap-10 min-w-0">
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 my-4 sm:px-6 sm:my-6'} overflow-x-auto`}>
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>

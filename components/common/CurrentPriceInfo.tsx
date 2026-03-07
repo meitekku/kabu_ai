@@ -102,24 +102,24 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
   let priceColor = 'text-gray-500';
 
   if (data.diff_percent) {
-    isPriceUp = data.diff_percent < 0;
-    priceColor = isPriceUp ? 'text-blue-500' : 'text-red-500';
+    isPriceUp = data.diff_percent > 0;
+    priceColor = isPriceUp ? 'text-shikiho-positive' : 'text-shikiho-negative';
   }
 
   return (
-    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-md border transition-all cursor-pointer ${isDark ? 'border-slate-700 hover:bg-slate-800 hover:border-slate-600' : 'border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm'}`}>
-      <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{data.name}</span>
-      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-all cursor-pointer ${isDark ? 'border-slate-700 hover:bg-slate-800' : 'bg-shikiho-bg-body border-shikiho-bg-border hover:bg-shikiho-bg-gray hover:shadow-shikiho-sm'}`}>
+      <span className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-shikiho-text-secondary'}`}>{data.name}</span>
+      <span className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-shikiho-text-primary'}`}>
         {data.current_price
           ? `${data.current_price.toLocaleString()}`
           : '---'}
       </span>
       {data.diff_percent ? (
-        <span className={`${priceColor} text-xs font-medium`}>
+        <span className={`${priceColor} text-xs font-bold`}>
           {data.diff_percent > 0 ? '+' : ''}{data.diff_percent}%
         </span>
       ) : (
-        <span className="text-xs text-gray-400">-</span>
+        <span className="text-xs text-shikiho-text-tertiary">-</span>
       )}
     </Link>
   );

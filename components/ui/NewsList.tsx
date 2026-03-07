@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
@@ -165,41 +164,39 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   return (
     <div data-testid="news-list" className="animate-in fade-in duration-200">
       {h3Title && (
-        <h3 className="text-lg font-bold text-gray-900 mb-4">{h3Title}</h3>
+        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{h3Title}</h3>
       )}
       {title && (
-        <h2 className="text-xl font-bold text-gray-900 mt-4 mb-2">{title}</h2>
+        <h2 className="text-[20px] font-bold text-shikiho-text-primary mt-4 mb-3 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{title}</h2>
       )}
       
-      <div className="divide-y divide-gray-100">
+      <div className="border-t border-shikiho-bg-border">
         {news.map((item) => (
           <Link 
             href={`/stocks/${code}/news/${item.id}`}
             key={item.id}
             className="block"
           >
-            <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
-              <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-gray-500">
-                      {item.created_at}
-                    </span>
-                    {renderStatusLabels(item.status)}
-                  </div>
-                  <div className="font-bold text-base text-gray-900 mt-0.5">{item.title.replace(/【[^】]*】/g, '')}</div>
+            <div className="py-3 px-2 border-b border-shikiho-bg-border-light hover:bg-shikiho-bg-gray-light transition-colors cursor-pointer">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-[11px] text-shikiho-text-tertiary">
+                    {item.created_at}
+                  </span>
+                  {renderStatusLabels(item.status)}
                 </div>
-              </CardContent>
-            </Card>
+                <div className="font-bold text-[15px] text-shikiho-text-primary mt-0.5 hover:text-shikiho-link-primary">{item.title.replace(/【[^】]*】/g, '')}</div>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
       
       {showMoreButton && code && (
-        <div className="text-right">
+        <div className="text-right mt-4">
           <Link 
             href={`/stocks/${code}/news/list`}
-            className="font-bold hover:text-red-700 text-sm"
+            className="font-bold text-shikiho-link-primary hover:text-shikiho-link-secondary text-[14px]"
           >
             もっとみる ›
           </Link>

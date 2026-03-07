@@ -229,17 +229,17 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
             placeholder={isAdminPath ? "管理者用 銘柄検索" : "銘柄名・コードで検索"}
-            className={`w-full pl-12 pr-4 py-2 sm:py-3 rounded-lg text-sm sm:text-base focus:outline-none transition-colors ${
+            className={`w-full pl-12 pr-4 py-2 sm:py-2.5 rounded-md text-[14px] focus:outline-none transition-colors ${
               isDark 
                 ? "bg-slate-900 text-white placeholder-gray-500 border border-slate-800 focus:border-amber-500/50" 
-                : "bg-gray-50 text-gray-900 placeholder-gray-500"
+                : "bg-shikiho-bg-body text-shikiho-text-primary placeholder:text-shikiho-text-tertiary border border-shikiho-bg-border focus:border-shikiho-link-secondary focus:ring-1 focus:ring-shikiho-link-secondary"
             }`}
           />
         </div>
 
         {(suggestions.length > 0 || (showHistory && searchHistory.length > 0)) && (
-          <div className={`absolute w-full mt-1 rounded-lg shadow-xl border overflow-hidden z-50 ${
-            isDark ? "bg-slate-900 border-slate-800" : "bg-white border-gray-100"
+          <div className={`absolute w-full mt-1 rounded-md shadow-shikiho-md border overflow-hidden z-50 ${
+            isDark ? "bg-slate-900 border-slate-800" : "bg-shikiho-bg-body border-shikiho-bg-border"
           }`}>
             <ul>
               {showHistory ? (
@@ -247,11 +247,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={`${history.company.id}-${history.timestamp}`}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-gray-100"
+                      isDark ? "border-slate-800" : "border-shikiho-bg-border-light"
                     } ${
                       index === selectedIndex 
-                        ? (isDark ? 'bg-slate-800' : 'bg-blue-50') 
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
+                        ? (isDark ? 'bg-slate-800' : 'bg-shikiho-bg-gray') 
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-shikiho-bg-gray')
                     }`}
                     onClick={() => selectCompany(history.company)}
                     onMouseEnter={() => setSelectedIndex(index)}
@@ -271,11 +271,11 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={company.id}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-gray-100"
+                      isDark ? "border-slate-800" : "border-shikiho-bg-border-light"
                     } ${
                       index === selectedIndex 
-                        ? (isDark ? 'bg-slate-800' : 'bg-blue-50') 
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
+                        ? (isDark ? 'bg-slate-800' : 'bg-shikiho-bg-gray') 
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-shikiho-bg-gray')
                     }`}
                     onClick={() => selectCompany(company)}
                     onMouseEnter={() => setSelectedIndex(index)}

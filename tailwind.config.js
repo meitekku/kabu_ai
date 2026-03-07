@@ -16,7 +16,47 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: [
+          '"Helvetica Neue"',
+          'Helvetica',
+          'Arial',
+          'YakuHanJP',
+          '"Hiragino Sans"',
+          '"Hiragino Kaku Gothic ProN"',
+          '"Noto Sans JP"',
+          'Meiryo',
+          'sans-serif'
+        ],
+      },
+      fontSize: {
+        'xxs': '10px',
+      },
+      boxShadow: {
+        'shikiho-sm': '0 0 15px rgba(0, 0, 0, 0.08)',
+        'shikiho-md': '0 0 15px rgba(0, 0, 0, 0.12)',
+        'shikiho-lg': '5px 5px 6px rgba(0, 0, 0, 0.082)',
+      },
       colors: {
+        shikiho: {
+          'text-primary': '#333333',
+          'text-secondary': '#707070',
+          'text-tertiary': '#9d9d9d',
+          'link-primary': '#0066cc',
+          'link-secondary': '#4073a7',
+          'bg-body': '#FFFFFF',
+          'bg-gray': '#f7f7f7',
+          'bg-gray-light': '#f5f5f5',
+          'bg-border': '#dedede',
+          'bg-border-light': '#e8e8e8',
+          'accent-red': '#e81a0a',
+          'accent-red-light': '#ea433c',
+          'accent-orange': '#ea723c',
+          'accent-blue': '#6499c6',
+          'accent-green': '#2fba85',
+          'positive': '#2fba85',
+          'negative': '#e81a0a',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

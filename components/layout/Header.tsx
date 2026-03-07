@@ -48,7 +48,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             className="rounded-full"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-medium">
+          <div className="w-8 h-8 rounded-full bg-shikiho-accent-red-light text-white flex items-center justify-center text-sm font-medium">
             {initial}
           </div>
         )}
@@ -124,8 +124,8 @@ const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetc
   );
 
   return (
-    <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
-      <div className="flex items-center w-full gap-2 px-2 sm:px-4">
+    <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800 text-white' : 'bg-shikiho-bg-body border-shikiho-bg-border text-shikiho-text-primary'}`}>
+      <div className="flex items-center w-full gap-4 px-4 py-3 border-b border-shikiho-bg-border-light max-w-[1280px] mx-auto">
         <div className="flex-shrink-0">
           {isRoot ? (
             <h1 className="text-xl">{logoLink}</h1>
@@ -133,16 +133,16 @@ const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetc
             <div className="text-xl">{logoLink}</div>
           )}
         </div>
-        <div className="flex-1 min-w-0 py-2">
+        <div className="flex-1 min-w-0 max-w-xl mx-auto">
           <CompanySearch isDark={isDark}/>
         </div>
-        <div className="flex-shrink-0 flex items-center">
+        <div className="flex-shrink-0 flex items-center gap-2">
           {user ? (
             <UserMenu user={user} />
           ) : (
             <Link
               href="/login"
-              className="min-h-[44px] min-w-[44px] px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1"
+              className="min-h-[44px] min-w-[44px] px-6 py-2 text-sm font-semibold rounded-md transition-colors flex items-center justify-center gap-1 bg-shikiho-accent-red-light text-white hover:bg-shikiho-accent-red"
             >
               <LogIn className="w-4 h-4 md:hidden" />
               <span className="hidden md:inline">ログイン</span>
@@ -151,9 +151,9 @@ const HeaderContent = ({ isRoot, pathname, user, isDark, marketData, suspendFetc
         </div>
       </div>
       {!pathname.includes('/admin/') && (
-        <div className="md:flex md:justify-center">
-          <div className="overflow-x-auto">
-            <div className="flex min-h-[52px] min-w-max items-center gap-2 px-2 py-1">
+        <div className={`w-full ${isDark ? 'bg-[#1a1a24]' : 'bg-shikiho-bg-gray-light'}`}>
+          <div className="max-w-[1280px] mx-auto overflow-x-auto">
+            <div className="flex min-h-[40px] min-w-max items-center gap-6 px-4 py-2">
               <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} isDark={isDark} />
               <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} isDark={isDark} />
               <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} isDark={isDark} />
@@ -193,17 +193,17 @@ const Header = ({
 }) => {
   return (
     <Suspense fallback={
-      <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800' : 'bg-white border-gray-200'}`}>
-        <div className="flex items-center w-full gap-2 px-2 sm:px-4">
+      <header className={`border-b ${isDark ? 'bg-[#0a0a0f] border-slate-800' : 'bg-shikiho-bg-body border-shikiho-bg-border'}`}>
+        <div className="flex items-center w-full gap-4 px-4 py-3 border-b border-shikiho-bg-border-light max-w-[1280px] mx-auto">
           <div className="flex-shrink-0 text-xl">
             <Image src='/logo.webp' alt='' width={100} height={50} className={isDark ? "brightness-0 invert" : ""} />
           </div>
-          <div className="flex-1 min-w-0 py-2"></div>
+          <div className="flex-1 min-w-0 max-w-xl mx-auto py-2"></div>
           <div className="flex-shrink-0 flex items-center"></div>
         </div>
-        <div className="md:flex md:justify-center">
-          <div className="overflow-x-auto">
-            <div className="flex min-h-[52px] min-w-max items-center gap-2 px-2 py-1">
+        <div className={`w-full ${isDark ? 'bg-[#1a1a24]' : 'bg-shikiho-bg-gray-light'}`}>
+          <div className="max-w-[1280px] mx-auto overflow-x-auto">
+            <div className="flex min-h-[40px] min-w-max items-center gap-6 px-4 py-2">
               {[0, 1, 2, 3].map((i) => (
                 <CurrentPriceInfoSkeleton key={i} isDark={isDark} />
               ))}

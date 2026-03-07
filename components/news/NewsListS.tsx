@@ -218,7 +218,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
 
   return (
     <div className="space-y-4">
-      <div className="space-y-4">
+      <div className="border-t border-shikiho-bg-border">
         {news.map((item) => {
           const imageUrl = item.image_path || extractImageFromContent(item.content);
           const articleCode = item.code?.trim();
@@ -227,16 +227,16 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             : `/stocks/all/news/${item.id}`;
           
           return (
-            <div key={item.id} className="border-b border-gray-100 pb-3 sm:pb-4">
-              <div className="text-xs sm:text-sm text-gray-500 mb-1">
+            <div key={item.id} className="border-b border-shikiho-bg-border-light pb-4 pt-3 hover:bg-shikiho-bg-gray-light transition-colors px-2">
+              <div className="text-[11px] text-shikiho-text-tertiary mb-2">
                 {item.created_at}
               </div>
 
-              <div className="flex gap-2 sm:gap-3">
+              <div className="flex gap-3 sm:gap-4">
                 <div className="flex-1 min-w-0">
                   <Link
                     href={articleHref}
-                    className="block text-sm sm:text-base font-bold text-gray-900 hover:text-blue-600 mb-1 sm:mb-2 overflow-hidden"
+                    className="block text-[15px] sm:text-[16px] font-bold text-shikiho-text-primary hover:text-shikiho-link-primary mb-2 overflow-hidden"
                     style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -247,7 +247,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                   >
                     {item.title}
                   </Link>
-                  <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                  <p className="text-[12px] text-shikiho-text-secondary line-clamp-2">
                     {item.content?.replace(/<[^>]*>/g, '')}
                   </p>
                 </div>
@@ -268,20 +268,20 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
         })}
       </div>
       {more ? (
-        <div className="text-right">
+        <div className="text-right mt-4">
           <Link 
             href="/news/latest"
-            className="font-bold hover:text-red-700 text-sm"
+            className="font-bold text-shikiho-link-primary hover:text-shikiho-link-secondary text-[14px]"
           >
             もっと見る ›
           </Link>
         </div>
       ) : totalPages > 1 && (
-        <div className="flex justify-center items-center gap-1 sm:space-x-2 mt-4">
+        <div className="flex justify-center items-center gap-1 sm:space-x-2 mt-8">
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-2 py-2 sm:py-1 rounded disabled:opacity-50 min-w-[36px] sm:min-w-0"
+            className="px-3 py-2 rounded-md disabled:opacity-50 border border-shikiho-bg-border text-shikiho-text-primary hover:bg-shikiho-bg-gray"
           >
             &lt;
           </button>
@@ -289,26 +289,26 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           {currentPage > 2 && (
             <button
               onClick={() => setCurrentPage(1)}
-              className="px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0"
+              className="px-3 py-2 rounded-md border border-shikiho-bg-border text-shikiho-text-primary hover:bg-shikiho-bg-gray"
             >
               1
             </button>
           )}
 
-          {currentPage > 3 && <span className="px-0.5 sm:px-1">...</span>}
+          {currentPage > 3 && <span className="px-2 text-shikiho-text-tertiary">...</span>}
 
           {Array.from(
             { length: Math.min(3, totalPages) },
             (_, i) => {
               const page = Math.max(1, Math.min(currentPage - 1, totalPages - 2)) + i;
               return (
-                <button
+               <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0 ${
+                  className={`px-4 py-2 rounded-md font-medium ${
                     currentPage === page
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? 'bg-shikiho-accent-red-light text-white border border-shikiho-accent-red-light'
+                      : 'border border-shikiho-bg-border text-shikiho-text-primary hover:bg-shikiho-bg-gray'
                   }`}
                 >
                   {page}
@@ -317,12 +317,12 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             }
           )}
 
-          {currentPage < totalPages - 2 && <span className="px-0.5 sm:px-1">...</span>}
+          {currentPage < totalPages - 2 && <span className="px-2 text-shikiho-text-tertiary">...</span>}
 
           {currentPage < totalPages - 1 && (
             <button
               onClick={() => setCurrentPage(totalPages)}
-              className="px-2 sm:px-3 py-2 sm:py-1 rounded min-w-[36px] sm:min-w-0"
+              className="px-3 py-2 rounded-md border border-shikiho-bg-border text-shikiho-text-primary hover:bg-shikiho-bg-gray"
             >
               {totalPages}
             </button>
@@ -331,7 +331,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-2 py-2 sm:py-1 rounded disabled:opacity-50 min-w-[36px] sm:min-w-0"
+            className="px-3 py-2 rounded-md disabled:opacity-50 border border-shikiho-bg-border text-shikiho-text-primary hover:bg-shikiho-bg-gray"
           >
             &gt;
           </button>

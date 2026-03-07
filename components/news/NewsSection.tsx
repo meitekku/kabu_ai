@@ -31,8 +31,8 @@ function NewsCard({ item }: { item: Post }) {
 
   return (
     <Link href={articleHref} className="block h-full">
-      <div className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
-        <div className="relative w-full aspect-[2/1]">
+      <div className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm hover:shadow-shikiho-md transition-shadow overflow-hidden h-full flex flex-col">
+        <div className="relative w-full h-40 sm:h-48">
           {imageUrl && !imgError ? (
             <Image
               src={imageUrl}
@@ -44,18 +44,25 @@ function NewsCard({ item }: { item: Post }) {
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-3 sm:p-4">
-              <span className="text-red-400 text-xs sm:text-sm font-medium text-center line-clamp-3">{safeTitle}</span>
+            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
+              <span className="text-shikiho-accent-red text-sm font-bold text-center line-clamp-3">{safeTitle}</span>
             </div>
           )}
         </div>
-        <div className="p-2 flex flex-col flex-grow">
-          <h3 className="text-sm sm:text-base font-medium text-gray-900 line-clamp-2 flex-grow">{safeTitle}</h3>
-          <div className="mt-1 sm:mt-2 flex items-center justify-end">
+        <div className="p-4 flex flex-col flex-grow">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[11px] text-shikiho-text-tertiary">
+              {item.created_at ? new Date(item.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
+            </span>
             {item.company_name && (
-              <span className="text-xs sm:text-sm text-gray-600 line-clamp-1">{item.company_name}</span>
+              <span className="px-2 py-1 bg-shikiho-bg-gray-light text-[10px] text-shikiho-text-secondary rounded font-medium">
+                {item.company_name}
+              </span>
             )}
           </div>
+          <h3 className="text-[16px] font-bold text-shikiho-text-primary line-clamp-2 flex-grow hover:text-shikiho-link-primary">
+            {safeTitle}
+          </h3>
         </div>
       </div>
     </Link>
@@ -110,9 +117,9 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   }, [hasInitialData, initialPickupNews, initialMarketNews]);
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
-    <div className="mb-5 sm:mb-8">
-      <h2 className="text-lg sm:text-xl font-bold mb-2">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
+    <div className="mb-6 sm:mb-10">
+      <h2 className="text-[20px] sm:text-[22px] font-bold text-shikiho-text-primary mb-4 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {news.map((item) => (
           <NewsCard key={item.id} item={item} />
         ))}
@@ -123,29 +130,37 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="mb-5 sm:mb-8">
-          <div className="h-5 sm:h-6 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-3 sm:mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-            {[...Array(2)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>
-                <div className="p-2">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+        <div className="mb-6 sm:mb-10">
+          <div className="h-8 bg-[#e8e8e8] rounded w-1/3 sm:w-1/4 mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm overflow-hidden flex flex-col h-full">
+                <div className="w-full h-40 sm:h-48 bg-[#e8e8e8] animate-pulse"></div>
+                <div className="p-4 flex flex-col flex-grow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-3 bg-[#e8e8e8] rounded w-16 animate-pulse"></div>
+                    <div className="h-4 bg-[#e8e8e8] rounded w-20 animate-pulse"></div>
+                  </div>
+                  <div className="h-5 bg-[#e8e8e8] rounded w-full mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-[#e8e8e8] rounded w-3/4 animate-pulse"></div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="mb-5 sm:mb-8">
-          <div className="h-5 sm:h-6 bg-gray-200 rounded w-1/3 sm:w-1/4 mb-3 sm:mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-            {[...Array(2)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="w-full aspect-[2/1] bg-gray-200 animate-pulse"></div>
-                <div className="p-2">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+        <div className="mb-6 sm:mb-10">
+          <div className="h-8 bg-[#e8e8e8] rounded w-1/3 sm:w-1/4 mb-4 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div key={`skeleton-${index}`} className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm overflow-hidden flex flex-col h-full">
+                <div className="w-full h-40 sm:h-48 bg-[#e8e8e8] animate-pulse"></div>
+                <div className="p-4 flex flex-col flex-grow">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-3 bg-[#e8e8e8] rounded w-16 animate-pulse"></div>
+                    <div className="h-4 bg-[#e8e8e8] rounded w-20 animate-pulse"></div>
+                  </div>
+                  <div className="h-5 bg-[#e8e8e8] rounded w-full mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-[#e8e8e8] rounded w-3/4 animate-pulse"></div>
                 </div>
               </div>
             ))}
