@@ -118,7 +118,7 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
     <div className="mb-6 sm:mb-10">
-      <h2 className="text-[20px] sm:text-[22px] font-bold text-shikiho-text-primary mb-4 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{title}</h2>
+      <h2 className="text-[20px] sm:text-[22px] font-bold text-shikiho-text-primary mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">{title}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {news.map((item) => (
           <NewsCard key={item.id} item={item} />

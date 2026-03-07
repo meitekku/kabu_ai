@@ -86,25 +86,25 @@ export default function RankingTableClient({
 
   if (loading) {
     return (
-      <div className="w-full bg-white rounded-md shadow-shikiho-sm border border-shikiho-bg-border-light overflow-hidden">
-        <div className="px-4 py-3 border-b border-shikiho-bg-border bg-shikiho-bg-gray-light">
+      <div className="w-full bg-white rounded-lg shadow-sm">
+        <div className="px-4 py-2 border-b border-gray-100">
           <div className="animate-pulse flex items-center gap-2">
-            <div className="h-4 bg-[#e8e8e8] rounded w-24"></div>
-            <div className="h-3 bg-[#e8e8e8] rounded w-10"></div>
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="h-3 bg-gray-200 rounded w-10"></div>
           </div>
         </div>
         <div className="animate-pulse">
           {[...Array(5)].map((_, index) => (
             <div
               key={`skeleton-${tableName}-${index}`}
-              className={`px-4 py-3 flex items-center border-b border-shikiho-bg-border-light last:border-b-0`}
+              className={`px-4 py-2 flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
             >
-              <div className="w-[22px] h-[22px] rounded bg-[#e8e8e8] mr-3 flex-shrink-0"></div>
-              <div className="h-3 bg-[#e8e8e8] rounded w-8 mr-3 flex-shrink-0"></div>
-              <div className="flex-1 min-w-0 pr-2">
-                <div className="h-4 bg-[#e8e8e8] rounded w-4/5 max-w-[150px]"></div>
+              <div className="w-5 h-5 rounded-full bg-gray-200 mr-2 flex-shrink-0"></div>
+              <div className="h-3 bg-gray-200 rounded w-8 mr-2 flex-shrink-0"></div>
+              <div className="flex-1 min-w-0">
+                <div className="h-3 bg-gray-200 rounded w-4/5 max-w-[150px]"></div>
               </div>
-              <div className="h-5 bg-[#e8e8e8] rounded w-12 flex-shrink-0"></div>
+              <div className="h-4 bg-gray-200 rounded w-12 ml-3 flex-shrink-0"></div>
             </div>
           ))}
         </div>

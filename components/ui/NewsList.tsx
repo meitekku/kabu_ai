@@ -164,10 +164,10 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   return (
     <div data-testid="news-list" className="animate-in fade-in duration-200">
       {h3Title && (
-        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{h3Title}</h3>
+        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-shikiho-accent-red">{h3Title}</h3>
       )}
       {title && (
-        <h2 className="text-[20px] font-bold text-shikiho-text-primary mt-4 mb-3 border-l-4 border-shikiho-accent-red pl-3 py-1 bg-shikiho-bg-gray-light">{title}</h2>
+        <h2 className="text-[20px] font-bold text-shikiho-text-primary mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">{title}</h2>
       )}
       
       <div className="border-t border-shikiho-bg-border">
