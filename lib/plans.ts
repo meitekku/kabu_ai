@@ -16,7 +16,7 @@ export const PLANS = {
     id: 'agent' as const,
     name: 'エージェント',
     nameEn: 'Agent',
-    price: 5000,
+    price: 1000,
     stripePriceId: process.env.STRIPE_PRICE_ID_AGENT || '',
     features: [
       'スタンダードの全機能',

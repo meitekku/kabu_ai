@@ -17,6 +17,7 @@ import {
     ChevronDown,
     Bell,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -384,6 +385,28 @@ export default function PremiumPage() {
                                         </div>
                                     </div>
                                 ))}
+
+                                {/* LINE実際の通知スクリーンショット */}
+                                <div className="mt-6 grid grid-cols-2 gap-3">
+                                    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                        <Image
+                                            src="/images/line-report.png"
+                                            alt="LINEお気に入りニュースレポート"
+                                            width={300}
+                                            height={400}
+                                            className="w-full h-auto object-cover"
+                                        />
+                                    </div>
+                                    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                        <Image
+                                            src="/images/line-pts.png"
+                                            alt="LINE PTS速報通知"
+                                            width={300}
+                                            height={400}
+                                            className="w-full h-auto object-cover"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -593,7 +616,7 @@ export default function PremiumPage() {
                                 </div>
                                 <div className="mb-6">
                                     <span className="text-3xl font-extrabold text-slate-900">
-                                        ¥5,000
+                                        ¥1,000
                                     </span>
                                     <span className="text-sm text-slate-400 ml-1">
                                         /月（税込）
