@@ -37,7 +37,7 @@ export const calculateMA = (data: PriceRecord[], days: number): number[] => {
 /* --------------------------------------------------
  * データ取得と加工
  * -------------------------------------------------- */
-export const fetchChartAndNewsData = async (code: string, newsInstitution?: string, targetDate?: Date): Promise<ExtendedChartData[]> => {
+export const fetchChartAndNewsData = async (code: string, newsInstitution?: string, targetDate?: Date, additionalArticles?: NewsArticle[]): Promise<ExtendedChartData[]> => {
   // 対象日付の設定（デフォルトは2ヶ月前）
   const date = targetDate ? new Date(targetDate) : new Date();
   date.setMonth(date.getMonth() - 2);
@@ -114,6 +114,20 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
       // エラーは無視
     }
   });
+
+  // 追加記事（未承認記事など）は同日付の承認済み記事を上書きして必ず表示
+  if (additionalArticles && additionalArticles.length > 0) {
+    additionalArticles.forEach((article) => {
+      try {
+        const createdAt = new Date(article.created_at);
+        if (Number.isNaN(createdAt.getTime())) return;
+        const articleDateStr = formatDate(createdAt);
+        articlesByDate.set(articleDateStr, { article, createdAtMs: createdAt.getTime() });
+      } catch {
+        // エラーは無視
+      }
+    });
+  }
 
   // 整形
   return sortedDataWithMeta.map(({ item, dateLabel, chartDateStr }, index) => {

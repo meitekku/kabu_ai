@@ -533,6 +533,11 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                         }}
                         maxNewsTooltips={4}
                         company_name={true}
+                        additionalArticles={[{
+                          id: String(item.id),
+                          title: editedTitles[item.id] || item.title,
+                          created_at: item.created_at,
+                        }]}
                       />
                     </div>
                   )}

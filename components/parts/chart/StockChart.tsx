@@ -96,13 +96,23 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
   newsInstitution,
   targetDate,
   hideNewsTooltips = false,
-  predictionData
+  predictionData,
+  additionalArticles
 }, ref) => {
   // 高さの値をuseMemoで安定化（依存配列の不安定を防止）
   const { upper: pcUpper, lower: pcLower } = pcHeight;
   const { upper: mobileUpper, lower: mobileLower } = mobileHeight;
   const stablePcHeight = useMemo(() => ({ upper: pcUpper, lower: pcLower }), [pcUpper, pcLower]);
   const stableMobileHeight = useMemo(() => ({ upper: mobileUpper, lower: mobileLower }), [mobileUpper, mobileLower]);
+  // additionalArticles はレンダリングごとに新しい配列参照になるためコンテンツで安定化
+  const additionalArticlesKey = additionalArticles
+    ? additionalArticles.map(a => `${a.id}:${a.created_at}`).join(',')
+    : '';
+  const stableAdditionalArticles = useMemo(
+    () => additionalArticles,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [additionalArticlesKey]
+  );
   const tabletHeight = useMemo(() => tabletHeightProp ?? {
     upper: Math.round((stablePcHeight.upper + stableMobileHeight.upper) / 2),
     lower: Math.round((stablePcHeight.lower + stableMobileHeight.lower) / 2),
@@ -251,7 +261,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     let isMounted = true;
     const fetchData = async () => {
       try {
-        const formattedData = await fetchChartAndNewsData(code, newsInstitution, targetDate);
+        const formattedData = await fetchChartAndNewsData(code, newsInstitution, targetDate, stableAdditionalArticles);
         if (isMounted) {
           // 黒テーマの時だけデータの色を変換
           const convertedData = theme === 'black' ? formattedData.map(item => ({
@@ -335,7 +345,7 @@ const StockChart = forwardRef<StockChartRef, StockChartProps>(({
     return () => {
       isMounted = false;
     };
-  }, [code, theme, company_name, newsInstitution, targetDate, predictionData]);
+  }, [code, theme, company_name, newsInstitution, targetDate, predictionData, stableAdditionalArticles]);
 
   // 初期位置の計算
   useEffect(() => {

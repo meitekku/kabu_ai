@@ -77,6 +77,7 @@ export interface StockChartProps {
   targetDate?: Date;
   hideNewsTooltips?: boolean;
   predictionData?: PredictionDataPoint[];
+  additionalArticles?: NewsArticle[];
 }
 
 export interface StockChartRef {
