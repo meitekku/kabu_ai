@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, MessageSquare, Loader2, Sparkles } from 'lucide-react';
+import { TrendingUp, MessageSquare, Loader2 } from 'lucide-react';
 import { useFingerprint } from '@/hooks/useFingerprint';
 import { useCloudflareTurnstile } from '@/hooks/useCloudflareTurnstile';
 import { LoginModal } from '@/components/common/LoginModal';
@@ -111,65 +111,38 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
 
   return (
     <>
-      <div className="my-2 mx-auto max-w-lg">
-        {/* Container with premium border */}
-        <div className="relative rounded-2xl bg-gradient-to-b from-white to-gray-50/80 dark:from-gray-900 dark:to-gray-900/80 border border-gray-200/60 dark:border-gray-700/60 shadow-sm overflow-hidden">
-          {/* Subtle top accent line */}
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-400 via-amber-400 to-emerald-400" />
+      <div className="mt-4 mb-4 animate-in fade-in duration-200">
+        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-shikiho-accent-red">
+          AI機能
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => void handleFeatureClick('predict')}
+            disabled={isChecking || !fingerprint}
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-white border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors disabled:opacity-60 disabled:hover:bg-white"
+          >
+            <div className="flex items-center gap-2">
+              {isChecking ? (
+                <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+              ) : (
+                <TrendingUp className="w-5 h-5 text-shikiho-accent-red" />
+              )}
+              <div className="text-[15px] font-bold text-shikiho-text-primary">AI株価予想</div>
+            </div>
+            <div className="text-[11px] font-bold text-shikiho-text-tertiary">1ヶ月間の株価を予測</div>
+          </button>
 
-          {/* Header */}
-          <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-xs font-medium text-amber-600 dark:text-amber-400 tracking-wide">
-              AI PREMIUM FEATURES
-            </span>
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          </div>
-
-          {/* Buttons */}
-          <div className="flex gap-3 p-4 pt-2">
-            {/* AI株価予想 */}
-            <button
-              onClick={() => void handleFeatureClick('predict')}
-              disabled={isChecking || !fingerprint}
-              className="flex-1 group relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-gradient-to-br from-emerald-500/[0.08] to-green-500/[0.04] dark:from-emerald-500/[0.12] dark:to-green-500/[0.06] border border-emerald-200/60 dark:border-emerald-700/40 hover:border-emerald-300 dark:hover:border-emerald-600 hover:shadow-[0_0_24px_rgba(16,185,129,0.1)] transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-            >
-              <div className="p-2.5 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-shadow">
-                {isChecking ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <TrendingUp className="w-5 h-5" />
-                )}
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                  AI株価予想
-                </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  1ヶ月間の株価を予測
-                </div>
-              </div>
-            </button>
-
-            {/* AIチャット */}
-            <button
-              type="button"
-              onClick={() => void handleFeatureClick('chat')}
-              className="flex-1 group relative flex flex-col items-center gap-2 py-4 px-3 rounded-xl bg-gradient-to-br from-violet-500/[0.08] to-purple-500/[0.04] dark:from-violet-500/[0.12] dark:to-purple-500/[0.06] border border-violet-200/60 dark:border-violet-700/40 hover:border-violet-300 dark:hover:border-violet-600 hover:shadow-[0_0_24px_rgba(139,92,246,0.1)] transition-all duration-300 hover:-translate-y-0.5"
-            >
-              <div className="p-2.5 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/20 group-hover:shadow-violet-500/30 transition-shadow">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                  AIチャット
-                </div>
-                <div className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                  AIに何でも質問
-                </div>
-              </div>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => void handleFeatureClick('chat')}
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-white border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-shikiho-accent-blue" />
+              <div className="text-[15px] font-bold text-shikiho-text-primary">AIチャット</div>
+            </div>
+            <div className="text-[11px] font-bold text-shikiho-text-tertiary">AIに何でも質問</div>
+          </button>
         </div>
       </div>
 
