@@ -43,10 +43,17 @@ export const formatArticleTitle = (title: string): string => {
 
 const getDefaultTooltipIndices = (data: ExtendedChartData[], maxNewsTooltips?: number): number[] => {
   const indices: number[] = [];
-  
+
+  // isPriority 記事（additionalArticles由来）は最優先で必ず表示
+  data.forEach((item, index) => {
+    if (item.articles?.some(a => a.isPriority) && !indices.includes(index)) {
+      indices.push(index);
+    }
+  });
+
   // 最新日のニュースがある場合は必ず表示
   const latestDayIndex = data.length - 1;
-  if (data[latestDayIndex]?.articles && data[latestDayIndex].articles.length > 0) {
+  if (data[latestDayIndex]?.articles && data[latestDayIndex].articles.length > 0 && !indices.includes(latestDayIndex)) {
     indices.push(latestDayIndex);
   }
   

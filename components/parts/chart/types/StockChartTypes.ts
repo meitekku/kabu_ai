@@ -2,6 +2,7 @@ export interface NewsArticle {
   id: string;
   created_at: string;
   title: string;
+  isPriority?: boolean;
 }
 
 export interface ExtendedChartData {

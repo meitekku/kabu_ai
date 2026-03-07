@@ -116,13 +116,14 @@ export const fetchChartAndNewsData = async (code: string, newsInstitution?: stri
   });
 
   // 追加記事（未承認記事など）は同日付の承認済み記事を上書きして必ず表示
+  // isPriority: true を付与することで getDefaultTooltipIndices が必ず選択する
   if (additionalArticles && additionalArticles.length > 0) {
     additionalArticles.forEach((article) => {
       try {
         const createdAt = new Date(article.created_at);
         if (Number.isNaN(createdAt.getTime())) return;
         const articleDateStr = formatDate(createdAt);
-        articlesByDate.set(articleDateStr, { article, createdAtMs: createdAt.getTime() });
+        articlesByDate.set(articleDateStr, { article: { ...article, isPriority: true }, createdAtMs: createdAt.getTime() });
       } catch {
         // エラーは無視
       }
