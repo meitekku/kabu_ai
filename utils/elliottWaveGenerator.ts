@@ -15,12 +15,20 @@ export interface DailyForecast {
   predictedLow: number;
   predictedVolume: number;
   reasoning: string;
+  // ATRベースの信頼区間バンド
+  band1Upper: number;   // 終値 + 1×ATR14（絶対値）
+  band1Lower: number;   // 終値 - 1×ATR14（絶対値）
+  band2Upper: number;   // 終値 + 2×ATR14（絶対値）
+  band2Lower: number;   // 終値 - 2×ATR14（絶対値）
 }
 
 export interface VolatilityInfo {
   avgDailyReturn: string;
   dailyVolatility: string;
   avgRange: string;
+  atr14: string;           // 14日ATR（%単位）
+  volatilityRegime: 'low' | 'medium' | 'high';
+  annualizedVol: string;   // 年率ボラティリティ（%単位）
 }
 
 export interface PriceRecord {
@@ -105,6 +113,7 @@ function buildWaveSegments(
   targetPrice: number,
   totalDays: number,
   rng: () => number,
+  volRegime: 'low' | 'medium' | 'high' = 'medium',
 ): WaveSegment[] {
   const isBullish = targetPrice >= startPrice;
   const direction = isBullish ? 1 : -1;
@@ -121,23 +130,50 @@ function buildWaveSegments(
     }];
   }
 
+  // レジーム別パラメータ
+  let wave1MagLo: number, wave1MagHi: number;
+  let wave2RetraceLo: number, wave2RetraceHi: number;
+  let wave3MagLo: number, wave3MagHi: number;
+  let wave4RetraceLo: number, wave4RetraceHi: number;
+  let wave5MagLo: number, wave5MagHi: number;
+
+  if (volRegime === 'low') {
+    wave1MagLo = 0.15; wave1MagHi = 0.25;
+    wave2RetraceLo = 0.30; wave2RetraceHi = 0.50;
+    wave3MagLo = 1.40; wave3MagHi = 1.65;
+    wave4RetraceLo = 0.20; wave4RetraceHi = 0.32;
+    wave5MagLo = 0.50; wave5MagHi = 0.80;
+  } else if (volRegime === 'high') {
+    wave1MagLo = 0.25; wave1MagHi = 0.38;
+    wave2RetraceLo = 0.50; wave2RetraceHi = 0.70;
+    wave3MagLo = 1.70; wave3MagHi = 2.10;
+    wave4RetraceLo = 0.28; wave4RetraceHi = 0.45;
+    wave5MagLo = 0.70; wave5MagHi = 1.20;
+  } else {
+    // medium（デフォルト）
+    wave1MagLo = 0.20; wave1MagHi = 0.30;
+    wave2RetraceLo = 0.382; wave2RetraceHi = 0.618;
+    wave3MagLo = 1.50; wave3MagHi = 1.80;
+    wave4RetraceLo = 0.236; wave4RetraceHi = 0.382;
+    wave5MagLo = 0.618; wave5MagHi = 1.0;
+  }
+
   // Wave 1 magnitude (the reference unit)
-  // Wave 1 is roughly 20-30% of the total move
-  const wave1Mag = totalMove * randBetween(rng, 0.20, 0.30);
+  const wave1Mag = totalMove * randBetween(rng, wave1MagLo, wave1MagHi);
 
   // Wave 2 retracement of Wave 1
-  const wave2Retrace = randBetween(rng, 0.382, 0.618);
+  const wave2Retrace = randBetween(rng, wave2RetraceLo, wave2RetraceHi);
   const wave2Mag = wave1Mag * wave2Retrace;
 
-  // Wave 3 = 161.8% of Wave 1
-  const wave3Mag = wave1Mag * randBetween(rng, 1.50, 1.80);
+  // Wave 3
+  const wave3Mag = wave1Mag * randBetween(rng, wave3MagLo, wave3MagHi);
 
   // Wave 4 retracement of Wave 3
-  const wave4Retrace = randBetween(rng, 0.236, 0.382);
+  const wave4Retrace = randBetween(rng, wave4RetraceLo, wave4RetraceHi);
   const wave4Mag = wave3Mag * wave4Retrace;
 
-  // Wave 5 = 61.8-100% of Wave 1
-  const wave5Mag = wave1Mag * randBetween(rng, 0.618, 1.0);
+  // Wave 5
+  const wave5Mag = wave1Mag * randBetween(rng, wave5MagLo, wave5MagHi);
 
   // Impulse end price
   const impulseEnd = startPrice + direction * (wave1Mag - wave2Mag + wave3Mag - wave4Mag + wave5Mag);
@@ -318,6 +354,10 @@ function generateDailyPrices(
       const changeDir = close >= prevClose ? '上昇' : '下落';
       const reasoning = `${labelJa}（前日比${changeDir}${Math.abs(parseFloat(changePercent))}%）`;
 
+      // ATRベースの信頼区間バンド計算
+      const atr14Pct = parseFloat(volatility.atr14) / 100;
+      const atrAbs = roundPrice(close) * atr14Pct;
+
       result.push({
         date,
         predictedOpen: roundPrice(open),
@@ -326,6 +366,10 @@ function generateDailyPrices(
         predictedLow: roundPrice(low),
         predictedVolume: volume,
         reasoning,
+        band1Upper: roundPrice(close + atrAbs),
+        band1Lower: roundPrice(Math.max(close - atrAbs, 1)),
+        band2Upper: roundPrice(close + atrAbs * 2),
+        band2Lower: roundPrice(Math.max(close - atrAbs * 2, 1)),
       });
 
       prevClose = close;
@@ -345,6 +389,10 @@ function generateDailyPrices(
     const low = Math.max(Math.min(open, close) - Math.abs(randNormal(rng, halfRange * 0.5, halfRange * 0.2)), 1);
     const volume = Math.round(avgVolume * randBetween(rng, 0.7, 1.0));
 
+    // ATRベースの信頼区間バンド計算（横ばい部分）
+    const atr14PctFlat = parseFloat(volatility.atr14) / 100;
+    const atrAbsFlat = roundPrice(close) * atr14PctFlat;
+
     result.push({
       date,
       predictedOpen: roundPrice(open),
@@ -353,6 +401,10 @@ function generateDailyPrices(
       predictedLow: roundPrice(low),
       predictedVolume: volume,
       reasoning: '横ばい推移',
+      band1Upper: roundPrice(close + atrAbsFlat),
+      band1Lower: roundPrice(Math.max(close - atrAbsFlat, 1)),
+      band2Upper: roundPrice(close + atrAbsFlat * 2),
+      band2Lower: roundPrice(Math.max(close - atrAbsFlat * 2, 1)),
     });
 
     prevClose = close;
@@ -396,7 +448,7 @@ export function generateElliottWavePrices(
     : 1000000;
 
   // Build the 5-3 wave pattern
-  const segments = buildWaveSegments(startPrice, targetPrice, businessDays.length, rng);
+  const segments = buildWaveSegments(startPrice, targetPrice, businessDays.length, rng, volatility.volatilityRegime);
 
   // Generate daily OHLCV for each wave segment
   const forecasts = generateDailyPrices(segments, businessDays, volatility, avgVolume, rng);
@@ -409,6 +461,7 @@ export function generateElliottWavePrices(
     if (Math.abs(drift) > 0.01) {
       // Smooth the drift across the last few days to avoid a sharp jump
       const adjustDays = Math.min(3, forecasts.length);
+      const atr14PctAdj = parseFloat(volatility.atr14) / 100;
       for (let i = 0; i < adjustDays; i++) {
         const idx = forecasts.length - adjustDays + i;
         const weight = (i + 1) / adjustDays; // Increasing weight toward the end
@@ -422,6 +475,13 @@ export function generateElliottWavePrices(
         forecasts[idx].predictedLow = roundPrice(
           Math.min(forecasts[idx].predictedLow, forecasts[idx].predictedOpen, forecasts[idx].predictedClose)
         );
+        // Re-calculate ATR bands after price adjustment
+        const adjClose = forecasts[idx].predictedClose;
+        const adjAtrAbs = adjClose * atr14PctAdj;
+        forecasts[idx].band1Upper = roundPrice(adjClose + adjAtrAbs);
+        forecasts[idx].band1Lower = roundPrice(Math.max(adjClose - adjAtrAbs, 1));
+        forecasts[idx].band2Upper = roundPrice(adjClose + adjAtrAbs * 2);
+        forecasts[idx].band2Lower = roundPrice(Math.max(adjClose - adjAtrAbs * 2, 1));
       }
       // Snap the very last close exactly
       forecasts[forecasts.length - 1].predictedClose = roundPrice(targetPrice);
@@ -433,6 +493,13 @@ export function generateElliottWavePrices(
       lastForecast.predictedLow = roundPrice(
         Math.min(lastForecast.predictedLow, lastForecast.predictedOpen, lastForecast.predictedClose)
       );
+      // Re-calculate ATR bands for the final snapped close
+      const finalClose = lastForecast.predictedClose;
+      const finalAtrAbs = finalClose * atr14PctAdj;
+      lastForecast.band1Upper = roundPrice(finalClose + finalAtrAbs);
+      lastForecast.band1Lower = roundPrice(Math.max(finalClose - finalAtrAbs, 1));
+      lastForecast.band2Upper = roundPrice(finalClose + finalAtrAbs * 2);
+      lastForecast.band2Lower = roundPrice(Math.max(finalClose - finalAtrAbs * 2, 1));
     }
   }
 

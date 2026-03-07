@@ -94,7 +94,7 @@ function getNextBusinessDays(startDate: Date, count: number): string[] {
   return result;
 }
 
-function calculateVolatility(prices: PriceRecord[]): { avgDailyReturn: string; dailyVolatility: string; avgRange: string } {
+function calculateVolatility(prices: PriceRecord[]): { avgDailyReturn: string; dailyVolatility: string; avgRange: string; atr14: string; volatilityRegime: 'low' | 'medium' | 'high'; annualizedVol: string } {
   const closes = prices.slice().reverse().map(p => Number(p.close));
   const dailyReturns: number[] = [];
   for (let i = 1; i < closes.length; i++) {
@@ -107,10 +107,43 @@ function calculateVolatility(prices: PriceRecord[]): { avgDailyReturn: string; d
   const ranges = prices.map(p => (Number(p.high) - Number(p.low)) / Number(p.close) * 100);
   const avgRange = ranges.reduce((a, b) => a + b, 0) / ranges.length;
 
+  // ATR14計算（pricesはORDER BY date DESC LIMIT 60で最新が先頭）
+  const atr14Prices = prices.slice(0, 14);
+  let atrSum = 0;
+  for (let i = 0; i < atr14Prices.length; i++) {
+    const p = atr14Prices[i];
+    const high = Number(p.high);
+    const low = Number(p.low);
+    const close = Number(p.close);
+    // 前日終値: 配列上の次のインデックス（より古い日）
+    const prevClose = i + 1 < atr14Prices.length ? Number(atr14Prices[i + 1].close) : close;
+    const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+    atrSum += tr;
+  }
+  const atr14Abs = atr14Prices.length > 0 ? atrSum / atr14Prices.length : 0;
+  const latestClose = Number(prices[0].close);
+  const atr14Pct = latestClose > 0 ? (atr14Abs / latestClose) * 100 : 0;
+
+  // ボラティリティレジーム判定
+  let volatilityRegime: 'low' | 'medium' | 'high';
+  if (stdDev < 1.0) {
+    volatilityRegime = 'low';
+  } else if (stdDev < 2.5) {
+    volatilityRegime = 'medium';
+  } else {
+    volatilityRegime = 'high';
+  }
+
+  // 年率ボラティリティ
+  const annualizedVol = stdDev * Math.sqrt(252);
+
   return {
     avgDailyReturn: avgReturn.toFixed(3),
     dailyVolatility: stdDev.toFixed(3),
     avgRange: avgRange.toFixed(3),
+    atr14: atr14Pct.toFixed(3),
+    volatilityRegime,
+    annualizedVol: annualizedVol.toFixed(3),
   };
 }
 
@@ -173,6 +206,10 @@ interface DailyForecast {
   predictedLow: number;
   predictedVolume?: number;
   reasoning: string;
+  band1Upper?: number;
+  band1Lower?: number;
+  band2Upper?: number;
+  band2Lower?: number;
 }
 
 interface PredictionResult {
