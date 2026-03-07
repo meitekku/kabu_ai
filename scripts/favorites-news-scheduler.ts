@@ -34,16 +34,16 @@ async function triggerGeneration(reportType: 'midday' | 'closing') {
   }
 }
 
-// 平日 11:30 JST (02:30 UTC) — 昼レポート
-cron.schedule('30 11 * * 1-5', () => {
+// 平日 12:00 JST (03:00 UTC) — 昼レポート
+cron.schedule('0 12 * * 1-5', () => {
   void triggerGeneration('midday');
 }, { timezone: 'Asia/Tokyo' });
 
-// 平日 15:30 JST (06:30 UTC) — 終値レポート
-cron.schedule('30 15 * * 1-5', () => {
+// 平日 16:00 JST (07:00 UTC) — 終値レポート
+cron.schedule('0 16 * * 1-5', () => {
   void triggerGeneration('closing');
 }, { timezone: 'Asia/Tokyo' });
 
 console.log(`[${new Date().toISOString()}] Favorites news scheduler started`);
-console.log('  - midday:  weekdays 11:30 JST');
-console.log('  - closing: weekdays 15:30 JST');
+console.log('  - midday:  weekdays 12:00 JST');
+console.log('  - closing: weekdays 16:00 JST');

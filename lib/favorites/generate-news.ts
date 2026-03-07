@@ -24,7 +24,8 @@ export async function generateFavoritesNews(
      FROM user_favorite uf
      JOIN user u ON uf.user_id = u.id
      WHERE u.subscription_status = 'active'
-        OR u.createdAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)`,
+        OR u.createdAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)
+        OR u.role = 'admin'`,
     []
   );
 
@@ -102,9 +103,11 @@ export async function generateFavoritesNews(
 
         let info = `### ${company} (${f.code}) ${importance}\n`;
         if (price) {
-          info += `現在値: ¥${price.current_price?.toLocaleString() ?? '-'} (${
-            price.diff_percent > 0 ? '+' : ''
-          }${price.diff_percent?.toFixed(2) ?? '-'}%)\n`;
+          const dp = price.diff_percent != null ? Number(price.diff_percent) : null;
+          const cp = price.current_price != null ? Number(price.current_price) : null;
+          info += `現在値: ¥${cp?.toLocaleString() ?? '-'} (${
+            (dp ?? 0) > 0 ? '+' : ''
+          }${dp?.toFixed(2) ?? '-'}%)\n`;
         }
         if (stockNews.length > 0) {
           info += '最近のニュース:\n';
@@ -117,7 +120,7 @@ export async function generateFavoritesNews(
         return info;
       });
 
-      const reportLabel = reportType === 'midday' ? '昼（11:30）' : '終値（15:30）';
+      const reportLabel = reportType === 'midday' ? '昼（12:00）' : '終値（16:00）';
       const prompt = `以下のお気に入り銘柄について、${reportLabel}のパーソナルニュースレポートを生成してください。
 重要度の高い銘柄を優先的に詳しく分析してください。
 必要に応じてデータベースやウェブ検索で追加情報を取得してください。
