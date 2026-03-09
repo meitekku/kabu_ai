@@ -139,6 +139,9 @@ export async function POST(req: Request) {
 
         const code = postCodes[0].code;
 
+        // 指数コード（日経平均等）はスキップ
+        if (['0000', '0001', '0002', '9999'].includes(code)) continue;
+
         // 企業情報・企業名を並列取得
         const [priceRows, companyRows] = await Promise.all([
           db.select<CompanyPrice>(
@@ -159,13 +162,11 @@ export async function POST(req: Request) {
 
         // LINE連携済みユーザー取得:
         // - お気に入りに該当銘柄があるユーザー
-        // - OR role='admin' のユーザー（全銘柄対象）
         const lineUsers = await db.select<LineUser>(
           `SELECT DISTINCT ull.user_id, ull.line_user_id
            FROM user_line_link ull
            JOIN user u ON ull.user_id = u.id
-           WHERE u.role = 'admin'
-              OR EXISTS (
+           WHERE EXISTS (
                 SELECT 1 FROM user_favorite uf
                 WHERE uf.user_id = ull.user_id AND uf.code = ?
               )`,
