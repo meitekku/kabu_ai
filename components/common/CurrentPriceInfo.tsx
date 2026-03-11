@@ -27,11 +27,11 @@ export interface CompanyData {
 }
 
 export const CurrentPriceInfoSkeleton = ({ isDark = false }: { isDark?: boolean }) => (
-  <div className="flex items-center space-x-4 p-2">
-    <div className="animate-pulse flex items-center space-x-4">
-      <div className={`h-4 rounded w-16 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
-      <div className={`h-4 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
-      <div className={`h-4 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}></div>
+  <div className="flex items-center space-x-3 px-3 py-1.5">
+    <div className="animate-pulse flex items-center space-x-3">
+      <div className={`h-3.5 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
+      <div className={`h-3.5 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
+      <div className={`h-3.5 rounded w-10 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
     </div>
   </div>
 );
@@ -99,27 +99,27 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
   if (!data) return null;
 
   let isPriceUp = false;
-  let priceColor = 'text-gray-500';
+  let priceColor = 'text-gray-400';
 
   if (data.diff_percent) {
     isPriceUp = data.diff_percent > 0;
-    priceColor = isPriceUp ? 'text-shikiho-positive' : 'text-shikiho-negative';
+    priceColor = isPriceUp ? 'text-emerald-600' : 'text-red-500';
   }
 
   return (
-    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-4 py-2 rounded-md border transition-all cursor-pointer ${isDark ? 'border-slate-700 hover:bg-slate-800' : 'bg-shikiho-bg-body border-shikiho-bg-border hover:bg-shikiho-bg-gray hover:shadow-shikiho-sm'}`}>
-      <span className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-shikiho-text-secondary'}`}>{data.name}</span>
-      <span className={`text-sm font-bold ${isDark ? 'text-gray-300' : 'text-shikiho-text-primary'}`}>
+    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-white hover:shadow-card'}`}>
+      <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{data.name}</span>
+      <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
         {data.current_price
           ? `${data.current_price.toLocaleString()}`
           : '---'}
       </span>
       {data.diff_percent ? (
-        <span className={`${priceColor} text-xs font-bold`}>
+        <span className={`${priceColor} text-xs font-semibold tabular-nums`}>
           {data.diff_percent > 0 ? '+' : ''}{data.diff_percent}%
         </span>
       ) : (
-        <span className="text-xs text-shikiho-text-tertiary">-</span>
+        <span className="text-xs text-gray-300">-</span>
       )}
     </Link>
   );

@@ -30,8 +30,8 @@ function NewsCard({ item }: { item: Post }) {
   const articleHref = articleCode ? `/stocks/${articleCode}/news/${item.id}` : `/stocks/all/news/${item.id}`;
 
   return (
-    <Link href={articleHref} className="block h-full">
-      <div className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm hover:shadow-shikiho-md transition-shadow overflow-hidden h-full flex flex-col">
+    <Link href={articleHref} className="block h-full group">
+      <div className="bg-white border border-gray-100 rounded-xl shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200 overflow-hidden h-full flex flex-col">
         <div className="relative w-full h-40 sm:h-48">
           {imageUrl && !imgError ? (
             <Image
@@ -44,23 +44,23 @@ function NewsCard({ item }: { item: Post }) {
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-              <span className="text-shikiho-accent-red text-sm font-bold text-center line-clamp-3">{safeTitle}</span>
+            <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+              <span className="text-gray-500 text-sm font-medium text-center line-clamp-3">{safeTitle}</span>
             </div>
           )}
         </div>
         <div className="p-4 flex flex-col flex-grow">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] text-shikiho-text-tertiary">
+            <span className="text-[11px] text-gray-400">
               {item.created_at ? new Date(item.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
             </span>
             {item.company_name && (
-              <span className="px-2 py-1 bg-shikiho-bg-gray-light text-[10px] text-shikiho-text-secondary rounded font-medium">
+              <span className="px-2 py-0.5 bg-gray-50 text-[10px] text-gray-500 rounded-md font-medium">
                 {item.company_name}
               </span>
             )}
           </div>
-          <h3 className="text-[16px] font-bold text-shikiho-text-primary line-clamp-2 flex-grow hover:text-shikiho-link-primary">
+          <h3 className="text-[15px] font-semibold text-gray-900 line-clamp-2 flex-grow group-hover:text-blue-600 transition-colors">
             {safeTitle}
           </h3>
         </div>
@@ -117,9 +117,9 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   }, [hasInitialData, initialPickupNews, initialMarketNews]);
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
-    <div className="mb-6 sm:mb-10">
-      <h2 className="text-[20px] sm:text-[22px] font-bold text-shikiho-text-primary mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+    <div className="mb-8 sm:mb-10">
+      <h2 className="text-lg font-semibold text-gray-900 mb-5 pb-3 border-b border-gray-100">{title}</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
         {news.map((item) => (
           <NewsCard key={item.id} item={item} />
         ))}
@@ -130,37 +130,37 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 sm:mb-10">
-          <div className="h-8 bg-[#e8e8e8] rounded w-1/3 sm:w-1/4 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="mb-8 sm:mb-10">
+          <div className="h-6 bg-gray-100 rounded w-1/4 mb-5 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             {[...Array(4)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm overflow-hidden flex flex-col h-full">
-                <div className="w-full h-40 sm:h-48 bg-[#e8e8e8] animate-pulse"></div>
+              <div key={`skeleton-${index}`} className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col h-full">
+                <div className="w-full h-40 sm:h-48 bg-gray-100 animate-pulse"></div>
                 <div className="p-4 flex flex-col flex-grow">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="h-3 bg-[#e8e8e8] rounded w-16 animate-pulse"></div>
-                    <div className="h-4 bg-[#e8e8e8] rounded w-20 animate-pulse"></div>
+                    <div className="h-3 bg-gray-100 rounded w-16 animate-pulse"></div>
+                    <div className="h-4 bg-gray-100 rounded w-20 animate-pulse"></div>
                   </div>
-                  <div className="h-5 bg-[#e8e8e8] rounded w-full mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-[#e8e8e8] rounded w-3/4 animate-pulse"></div>
+                  <div className="h-4 bg-gray-100 rounded w-full mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-gray-100 rounded w-3/4 animate-pulse"></div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="mb-6 sm:mb-10">
-          <div className="h-8 bg-[#e8e8e8] rounded w-1/3 sm:w-1/4 mb-4 animate-pulse"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="mb-8 sm:mb-10">
+          <div className="h-6 bg-gray-100 rounded w-1/4 mb-5 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             {[...Array(4)].map((_, index) => (
-              <div key={`skeleton-${index}`} className="bg-shikiho-bg-body border border-shikiho-bg-border-light rounded-md shadow-shikiho-sm overflow-hidden flex flex-col h-full">
-                <div className="w-full h-40 sm:h-48 bg-[#e8e8e8] animate-pulse"></div>
+              <div key={`skeleton-${index}`} className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col h-full">
+                <div className="w-full h-40 sm:h-48 bg-gray-100 animate-pulse"></div>
                 <div className="p-4 flex flex-col flex-grow">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="h-3 bg-[#e8e8e8] rounded w-16 animate-pulse"></div>
-                    <div className="h-4 bg-[#e8e8e8] rounded w-20 animate-pulse"></div>
+                    <div className="h-3 bg-gray-100 rounded w-16 animate-pulse"></div>
+                    <div className="h-4 bg-gray-100 rounded w-20 animate-pulse"></div>
                   </div>
-                  <div className="h-5 bg-[#e8e8e8] rounded w-full mb-2 animate-pulse"></div>
-                  <div className="h-5 bg-[#e8e8e8] rounded w-3/4 animate-pulse"></div>
+                  <div className="h-4 bg-gray-100 rounded w-full mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-gray-100 rounded w-3/4 animate-pulse"></div>
                 </div>
               </div>
             ))}
@@ -176,4 +176,4 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
       <NewsBlock title="市場ニュース" news={marketNews} />
     </div>
   );
-} 
+}

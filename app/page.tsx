@@ -36,7 +36,7 @@ export default async function Home() {
     <DefaultTemplate>
       <HeroCarousel initialSlides={carouselSlides} />
       <TrendingSection initialData={trendingData} />
-      <h2 className="text-xl font-bold mb-2">新着ニュース</h2>
+      <h2 className="text-base font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-100">新着ニュース</h2>
       <NewsListS more={true} site={[1, 70]} initialData={latestInitialData} />
     </DefaultTemplate>
   );

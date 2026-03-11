@@ -23,7 +23,7 @@ interface CompanySearchProps {
 const HISTORY_KEY = 'company-search-history';
 const MAX_HISTORY_ITEMS = 5;
 
-const CompanySearch: React.FC<CompanySearchProps> = ({ 
+const CompanySearch: React.FC<CompanySearchProps> = ({
   enableNavigation = true,
   onCompanySelect,
   isDark
@@ -40,7 +40,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
   const [selectedFromSuggestion, setSelectedFromSuggestion] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 全角英数字を半角に変換する関数
   const toHalfWidth = (str: string): string => {
     return str.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
       return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
@@ -57,7 +56,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
           .filter(row => row.trim())
           .map(row => {
             const [id, name] = row.split(',');
-            // 企業名の英数字を半角に変換
             return { id: id.trim(), name: toHalfWidth(name.trim()) };
           });
 
@@ -134,7 +132,6 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     }
 
     setShowHistory(false);
-    // 検索時は入力値を半角に変換して検索
     const halfWidthValue = toHalfWidth(value);
     const filtered = companies
       .filter(company =>
@@ -152,12 +149,10 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     setShowHistory(false);
     setSelectedFromSuggestion(true);
 
-    // Call onCompanySelect callback if provided
     if (onCompanySelect) {
       onCompanySelect(company);
     }
 
-    // Only navigate if enableNavigation is true
     if (enableNavigation) {
       router.push(`/stocks/${company.id}/news`);
     }
@@ -170,13 +165,13 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setSelectedIndex(prevIndex => 
+        setSelectedIndex(prevIndex =>
           prevIndex < currentList.length - 1 ? prevIndex + 1 : prevIndex
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setSelectedIndex(prevIndex => 
+        setSelectedIndex(prevIndex =>
           prevIndex > 0 ? prevIndex - 1 : -1
         );
         break;
@@ -221,7 +216,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     <div className="w-full max-w-4xl mx-auto" ref={containerRef}>
       <div className="relative">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className={`absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
           <input
             type="text"
             value={searchTerm}
@@ -229,17 +224,17 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={handleInputFocus}
             placeholder={isAdminPath ? "管理者用 銘柄検索" : "銘柄名・コードで検索"}
-            className={`w-full pl-12 pr-4 py-2 sm:py-2.5 rounded-md text-[14px] focus:outline-none transition-colors ${
-              isDark 
-                ? "bg-slate-900 text-white placeholder-gray-500 border border-slate-800 focus:border-amber-500/50" 
-                : "bg-shikiho-bg-body text-shikiho-text-primary placeholder:text-shikiho-text-tertiary border border-shikiho-bg-border focus:border-shikiho-link-secondary focus:ring-1 focus:ring-shikiho-link-secondary"
+            className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-lg text-[14px] focus:outline-none transition-all ${
+              isDark
+                ? "bg-slate-900 text-white placeholder-slate-500 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                : "bg-gray-100 text-gray-900 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-300"
             }`}
           />
         </div>
 
         {(suggestions.length > 0 || (showHistory && searchHistory.length > 0)) && (
-          <div className={`absolute w-full mt-1 rounded-md shadow-shikiho-md border overflow-hidden z-50 ${
-            isDark ? "bg-slate-900 border-slate-800" : "bg-shikiho-bg-body border-shikiho-bg-border"
+          <div className={`absolute w-full mt-1.5 rounded-xl shadow-lg border overflow-hidden z-50 ${
+            isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"
           }`}>
             <ul>
               {showHistory ? (
@@ -247,22 +242,22 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={`${history.company.id}-${history.timestamp}`}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-shikiho-bg-border-light"
+                      isDark ? "border-slate-800" : "border-gray-50"
                     } ${
-                      index === selectedIndex 
-                        ? (isDark ? 'bg-slate-800' : 'bg-shikiho-bg-gray') 
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-shikiho-bg-gray')
+                      index === selectedIndex
+                        ? (isDark ? 'bg-slate-800' : 'bg-gray-50')
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
                     }`}
                     onClick={() => selectCompany(history.company)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <div className="flex items-center px-4 py-2">
-                      <Clock className="text-gray-400 w-4 h-4 mr-3" />
-                      <span className="text-gray-500 font-bold text-xs sm:text-sm mr-4 min-w-[3rem]">{history.company.id}</span>
+                    <div className="flex items-center px-4 py-2.5">
+                      <Clock className="text-gray-300 w-3.5 h-3.5 mr-3" />
+                      <span className="text-gray-400 font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{history.company.id}</span>
                       {/^[A-Z]+$/.test(history.company.id) && (
-                        <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 rounded mr-2 font-bold">US</span>
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
                       )}
-                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-900"}`}>{history.company.name}</span>
+                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{history.company.name}</span>
                     </div>
                   </li>
                 ))
@@ -271,21 +266,21 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={company.id}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-shikiho-bg-border-light"
+                      isDark ? "border-slate-800" : "border-gray-50"
                     } ${
-                      index === selectedIndex 
-                        ? (isDark ? 'bg-slate-800' : 'bg-shikiho-bg-gray') 
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-shikiho-bg-gray')
+                      index === selectedIndex
+                        ? (isDark ? 'bg-slate-800' : 'bg-gray-50')
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
                     }`}
                     onClick={() => selectCompany(company)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
-                    <div className="flex items-center px-4 py-2">
-                      <span className="text-gray-500 font-bold text-xs sm:text-sm mr-4 min-w-[3rem]">{company.id}</span>
+                    <div className="flex items-center px-4 py-2.5">
+                      <span className="text-gray-400 font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{company.id}</span>
                       {/^[A-Z]+$/.test(company.id) && (
-                        <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 rounded mr-2 font-bold">US</span>
+                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
                       )}
-                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-900"}`}>{company.name}</span>
+                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{company.name}</span>
                     </div>
                   </li>
                 ))

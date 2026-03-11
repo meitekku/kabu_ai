@@ -103,11 +103,11 @@ export default function LayoutClient({
   const showSidebar = !isFullWidthPage
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       <GlobalNavigation />
       <Header isDark={isPremiumPage} marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
-      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 my-4 sm:px-6 sm:my-6'} overflow-x-auto`}>
-        <div className="flex flex-col md:flex-row gap-6 md:gap-8 min-w-0">
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 sm:px-6 py-6 sm:py-8'} overflow-x-auto`}>
+        <div className="flex flex-col md:flex-row gap-8 md:gap-10 min-w-0">
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>
@@ -118,10 +118,10 @@ export default function LayoutClient({
                 <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
               </aside>
               {/* Mobile sidebar drawer */}
-              <div className="md:hidden fixed bottom-4 right-4 z-40">
+              <div className="md:hidden fixed bottom-5 right-5 z-40">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <button className="w-12 h-12 rounded-full bg-emerald-600 text-white shadow-lg flex items-center justify-center hover:bg-emerald-700 transition-colors">
+                    <button className="w-12 h-12 rounded-full bg-gray-900 text-white shadow-lg flex items-center justify-center hover:bg-gray-800 transition-all hover:scale-105">
                       <BarChart3 className="w-5 h-5" />
                     </button>
                   </SheetTrigger>

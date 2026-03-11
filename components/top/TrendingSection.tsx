@@ -11,79 +11,50 @@ import type {
   ContentType,
 } from "@/lib/top/trending";
 
-// Full Tailwind class strings — must be static for JIT
 const TYPE_STYLES: Record<
   ContentType,
   {
-    borderColor: string;
-    headerBorder: string;
+    accentColor: string;
     badgeBg: string;
     badgeText: string;
-    sectionBorder: string;
     icon: string;
-    upColor: string;
-    downColor: string;
   }
 > = {
   market_up: {
-    borderColor: "border-l-green-500",
-    headerBorder: "border-l-4 border-l-green-500",
-    badgeBg: "bg-green-50 border border-green-200",
-    badgeText: "text-green-700",
-    sectionBorder: "border-l-4 border-green-500",
+    accentColor: "border-l-emerald-500",
+    badgeBg: "bg-emerald-50",
+    badgeText: "text-emerald-700",
     icon: "📈",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   trading_value: {
-    borderColor: "border-l-blue-500",
-    headerBorder: "border-l-4 border-l-blue-500",
-    badgeBg: "bg-blue-50 border border-blue-200",
+    accentColor: "border-l-blue-500",
+    badgeBg: "bg-blue-50",
     badgeText: "text-blue-700",
-    sectionBorder: "border-l-4 border-blue-500",
     icon: "💹",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   stop_high: {
-    borderColor: "border-l-rose-500",
-    headerBorder: "border-l-4 border-l-rose-500",
-    badgeBg: "bg-rose-50 border border-rose-200",
+    accentColor: "border-l-rose-500",
+    badgeBg: "bg-rose-50",
     badgeText: "text-rose-700",
-    sectionBorder: "border-l-4 border-rose-500",
     icon: "🔺",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   pts: {
-    borderColor: "border-l-violet-500",
-    headerBorder: "border-l-4 border-l-violet-500",
-    badgeBg: "bg-violet-50 border border-violet-200",
+    accentColor: "border-l-violet-500",
+    badgeBg: "bg-violet-50",
     badgeText: "text-violet-700",
-    sectionBorder: "border-l-4 border-violet-500",
     icon: "🌙",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   yahoo_buzz: {
-    borderColor: "border-l-amber-500",
-    headerBorder: "border-l-4 border-l-amber-500",
-    badgeBg: "bg-amber-50 border border-amber-200",
+    accentColor: "border-l-amber-500",
+    badgeBg: "bg-amber-50",
     badgeText: "text-amber-700",
-    sectionBorder: "border-l-4 border-amber-500",
     icon: "💬",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
   latest_ai: {
-    borderColor: "border-l-slate-400",
-    headerBorder: "border-l-4 border-l-slate-400",
-    badgeBg: "bg-slate-50 border border-slate-200",
+    accentColor: "border-l-slate-400",
+    badgeBg: "bg-slate-50",
     badgeText: "text-slate-600",
-    sectionBorder: "border-l-4 border-slate-400",
     icon: "📰",
-    upColor: "text-green-700 bg-green-50 border border-green-200",
-    downColor: "text-red-700 bg-red-50 border border-red-200",
   },
 };
 
@@ -101,26 +72,17 @@ function formatTimeAgo(dateStr: string): string {
   }
 }
 
-// タイトル先頭の【...】を除去
 function stripLeadingBrackets(title: string): string {
   return title.replace(/^【[^】]*】\s*/, "").trim();
 }
 
-function ChangeRateBadge({
-  rate,
-  upColor,
-  downColor,
-}: {
-  rate: number | null;
-  upColor: string;
-  downColor: string;
-}) {
+function ChangeRateBadge({ rate }: { rate: number | null }) {
   if (rate === null) return null;
   const pos = rate >= 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
-        pos ? upColor : downColor
+      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0 tabular-nums ${
+        pos ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"
       }`}
     >
       {pos ? "▲" : "▼"} {Math.abs(rate).toFixed(1)}%
@@ -139,7 +101,7 @@ function LogoIcon({ code }: { code: string }) {
       alt=""
       width={28}
       height={28}
-      className="w-7 h-7 rounded bg-white object-contain flex-shrink-0"
+      className="w-7 h-7 rounded-md bg-white object-contain flex-shrink-0"
       onError={() => setImgError(true)}
     />
   );
@@ -159,50 +121,43 @@ function TrendingCard({
 
   return (
     <Link href={item.post_url} className="block group h-full">
-      <article className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-150 overflow-hidden h-full flex flex-col">
-        {/* Company header — left accent border */}
+      <article className={`bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-200 overflow-hidden h-full flex flex-col hover:-translate-y-0.5`}>
         <div
-          className={`flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-200 ${styles.headerBorder}`}
+          className={`flex items-center justify-between gap-1.5 sm:gap-2 px-3 py-2 bg-gray-50/80 border-b border-gray-100 border-l-[3px] ${styles.accentColor}`}
         >
-          <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
             {item.code && <LogoIcon code={item.code} />}
             {item.company_name && (
-              <span className="text-[11px] sm:text-xs font-bold text-gray-700 truncate">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-700 truncate">
                 {item.company_name}
               </span>
             )}
             {item.code && (
-              <span className="text-[11px] sm:text-xs text-gray-400 flex-shrink-0 font-mono">
+              <span className="text-[11px] sm:text-xs text-gray-400 flex-shrink-0 font-mono tabular-nums">
                 {item.code}
               </span>
             )}
           </div>
-          <ChangeRateBadge
-            rate={item.change_rate}
-            upColor={styles.upColor}
-            downColor={styles.downColor}
-          />
+          <ChangeRateBadge rate={item.change_rate} />
         </div>
 
-        {/* Content */}
-        <div className="px-2 sm:px-3 py-2 sm:py-2.5 flex flex-col flex-grow gap-1">
-          <h3 className="text-xs sm:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition-colors leading-snug">
+        <div className="px-3 py-2.5 flex flex-col flex-grow gap-1">
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
             {title}
           </h3>
           {item.excerpt && (
-            <p className="text-[11px] sm:text-xs text-gray-500 line-clamp-1 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-gray-400 line-clamp-1 leading-relaxed">
               {item.excerpt}
             </p>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-t border-gray-100 bg-gray-50">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-50">
           <span className="text-[11px] sm:text-xs text-gray-400">
             {formatTimeAgo(item.created_at)}
           </span>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-[11px] sm:text-xs font-medium text-gray-400 hidden sm:inline">AI分析</span>
+            <span className="text-[10px] sm:text-[11px] text-gray-300 hidden sm:inline">AI分析</span>
             {item.code && (
               <SparklineChart
                 code={item.code}
@@ -220,40 +175,36 @@ function TrendingCard({
 
 function SectionSkeleton() {
   return (
-    <div className="mb-4 sm:mb-6">
-      {/* section header — matches SectionBlock header exactly */}
-      <div className="flex items-center justify-between mb-2 sm:mb-3 pb-2 sm:pb-2.5 border-b-2 border-gray-200 pl-2 sm:pl-3 border-l-4 border-l-gray-200">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-4 h-4 sm:w-5 sm:h-5 bg-gray-100 rounded animate-pulse" />
-          <div className="h-3 sm:h-4 bg-gray-100 rounded w-24 sm:w-32 animate-pulse" />
+    <div className="mb-6 sm:mb-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 bg-gray-100 rounded animate-pulse" />
+          <div className="h-4 bg-gray-100 rounded w-28 animate-pulse" />
         </div>
-        <div className="h-4 sm:h-5 bg-gray-100 rounded w-12 sm:w-14 animate-pulse" />
+        <div className="h-5 bg-gray-100 rounded w-14 animate-pulse" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col"
+            className="bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col"
           >
-            {/* company header row */}
-            <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-50 border-b border-gray-200 border-l-4 border-l-gray-200">
-              <div className="flex items-center gap-1 sm:gap-1.5">
-                <div className="w-6 h-6 sm:w-7 sm:h-7 bg-gray-200 rounded animate-pulse flex-shrink-0" />
-                <div className="h-3 bg-gray-100 rounded w-16 sm:w-20 animate-pulse" />
-                <div className="h-3 bg-gray-100 rounded w-7 sm:w-8 animate-pulse" />
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50/80 border-b border-gray-100 border-l-[3px] border-l-gray-200">
+              <div className="flex items-center gap-1.5">
+                <div className="w-7 h-7 bg-gray-100 rounded-md animate-pulse flex-shrink-0" />
+                <div className="h-3 bg-gray-100 rounded w-20 animate-pulse" />
+                <div className="h-3 bg-gray-100 rounded w-8 animate-pulse" />
               </div>
-              <div className="h-4 sm:h-5 bg-gray-100 rounded w-10 sm:w-12 animate-pulse flex-shrink-0" />
+              <div className="h-5 bg-gray-100 rounded w-12 animate-pulse flex-shrink-0" />
             </div>
-            {/* content */}
-            <div className="px-2 sm:px-3 py-2 sm:py-2.5 flex flex-col gap-1 flex-grow">
-              <div className="h-3 sm:h-3.5 bg-gray-100 rounded w-full animate-pulse" />
-              <div className="h-3 sm:h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
+            <div className="px-3 py-2.5 flex flex-col gap-1 flex-grow">
+              <div className="h-3.5 bg-gray-100 rounded w-full animate-pulse" />
+              <div className="h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
               <div className="h-2.5 bg-gray-100 rounded w-3/5 animate-pulse mt-0.5" />
             </div>
-            {/* footer */}
-            <div className="flex items-center justify-between px-2 sm:px-3 py-1.5 sm:py-2 border-t border-gray-100 bg-gray-50">
-              <div className="h-2.5 bg-gray-100 rounded w-8 sm:w-10 animate-pulse" />
-              <div className="h-4 sm:h-5 bg-gray-100 rounded w-16 sm:w-20 animate-pulse" />
+            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-50">
+              <div className="h-2.5 bg-gray-100 rounded w-10 animate-pulse" />
+              <div className="h-4 bg-gray-100 rounded w-20 animate-pulse" />
             </div>
           </div>
         ))}
@@ -271,25 +222,21 @@ function SectionBlock({
 }) {
   const styles = TYPE_STYLES[section.type];
   return (
-    <div className="mb-4 sm:mb-6">
-      {/* Section header */}
-      <div
-        className={`flex items-center justify-between mb-2 sm:mb-3 pb-2 sm:pb-2.5 border-b-2 border-gray-200 pl-2 sm:pl-3 ${styles.sectionBorder}`}
-      >
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <span className="text-sm sm:text-base leading-none">{styles.icon}</span>
-          <h2 className="text-xs sm:text-sm font-bold text-gray-800 tracking-wide">
+    <div className="mb-6 sm:mb-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <span className="text-base leading-none">{styles.icon}</span>
+          <h2 className="text-sm font-semibold text-gray-900 tracking-wide">
             {section.label}
           </h2>
         </div>
         <span
-          className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2.5 py-0.5 rounded ${styles.badgeBg} ${styles.badgeText}`}
+          className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${styles.badgeBg} ${styles.badgeText}`}
         >
           {section.time_label}
         </span>
       </div>
 
-      {/* Cards */}
       {section.items.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {section.items.map((item) => (
@@ -302,7 +249,7 @@ function SectionBlock({
           ))}
         </div>
       ) : (
-        <div className="text-sm text-gray-400 py-6 text-center bg-gray-50 rounded-lg border border-gray-200">
+        <div className="text-sm text-gray-400 py-8 text-center bg-gray-50 rounded-xl border border-gray-100">
           現在データがありません
         </div>
       )}
