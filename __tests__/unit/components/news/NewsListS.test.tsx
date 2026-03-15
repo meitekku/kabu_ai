@@ -308,7 +308,7 @@ describe("NewsListS", () => {
     render(<NewsListS more={true} />);
 
     await waitFor(() => {
-      const moreLink = screen.getByText("もっと見る ›");
+      const moreLink = screen.getByText("もっと見る");
       expect(moreLink).toBeInTheDocument();
       expect(moreLink.closest("a")).toHaveAttribute("href", "/news/latest");
     });
