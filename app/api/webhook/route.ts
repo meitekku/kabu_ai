@@ -17,15 +17,14 @@ interface UserRow extends RowDataPacket {
     subscription_id: string | null;
 }
 
-function verifyFincodeSignature(body: string, signature: string, secret: string): boolean {
-    const expected = crypto.createHmac('sha256', secret).update(body).digest('hex');
-    const normalizedSignature = signature.replace(/^sha256=/i, '').trim();
-
+function verifyFincodeSignature(_body: string, signature: string, secret: string): boolean {
+    // fincodeはHMACではなくトークン直接比較方式:
+    // ダッシュボードに登録したsignatureをそのままfincode-signatureヘッダーで送信してくる
     try {
-        return crypto.timingSafeEqual(
-            Buffer.from(expected, 'hex'),
-            Buffer.from(normalizedSignature, 'hex'),
-        );
+        const sigBuf = Buffer.from(signature.trim());
+        const secretBuf = Buffer.from(secret.trim());
+        if (sigBuf.length !== secretBuf.length) return false;
+        return crypto.timingSafeEqual(sigBuf, secretBuf);
     } catch {
         return false;
     }
