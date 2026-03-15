@@ -8,7 +8,7 @@
 |---------|------|
 | フレームワーク | Next.js 16 + React 19 + TypeScript |
 | 認証 | better-auth |
-| 決済 | Stripe |
+| 決済 | fincode by GMO |
 | DB | MySQL 8.0+（`lib/database/Mysql.ts` Singleton） |
 | UI | Tailwind CSS + shadcn/ui |
 | AI チャット | GLM-4（glm-4-plus / glm-4v-flash） |
@@ -21,8 +21,8 @@
 |---------|------|
 | `lib/auth/auth.ts` | better-auth 設定 |
 | `lib/database/Mysql.ts` | MySQL Singleton |
-| `lib/stripe.ts` | Stripe インスタンス |
-| `lib/plans.ts` | プランID定数（STRIPE_PRICE_ID_STANDARD/AGENT） |
+| `lib/fincode.ts` | fincode インスタンス |
+| `lib/plans.ts` | プランID定数（FINCODE_PLAN_ID_STANDARD/AGENT） |
 | `lib/agent/orchestrator.ts` | Agent Chat（Claude SDK 3エージェント構成） |
 | `lib/line/favorites-handler.ts` | LINEボット（Local LLM Qwen3-14B でインテント解析） |
 | `hooks/useSubscription.ts` | `isPremium` チェック |
@@ -185,7 +185,7 @@ import { ProtectedRoute } from "@/components/auth";
 <!-- MEMORY:START -->
 # kabu_ai
 
-_Last updated: 2026-03-07 | 0 active memories, 0 total_
+_Last updated: 2026-03-15 | 0 active memories, 0 total_
 
 _For deeper context, use memory_search, memory_related, or memory_ask tools._
 <!-- MEMORY:END -->
