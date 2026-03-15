@@ -150,7 +150,7 @@ test.describe("Login System Tests", () => {
 
       // Should display error message in the login form area
       await expect(
-        page.locator(".text-red-500.text-sm.text-center")
+        page.locator(".text-shikiho-negative.text-sm.text-center")
       ).toBeVisible({ timeout: 5000 });
 
       // Should stay on login page

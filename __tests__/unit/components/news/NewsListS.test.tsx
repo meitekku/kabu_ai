@@ -288,12 +288,12 @@ describe("NewsListS", () => {
     // With real timers the retries will happen via setTimeout
     await waitFor(
       () => {
-        const errorEl = document.querySelector(".text-red-600");
+        const errorEl = document.querySelector(".text-shikiho-negative");
         expect(errorEl).toBeInTheDocument();
       },
       { timeout: 10000 }
     );
-  });
+  }, 15000);
 
   it("renders 'もっと見る' link when more=true", async () => {
     vi.useRealTimers();
