@@ -4,7 +4,7 @@ export const PLANS = {
     name: 'スタンダード',
     nameEn: 'Standard',
     price: 3000,
-    stripePriceId: process.env.STRIPE_PRICE_ID_STANDARD || '',
+    fincodePlanId: process.env.FINCODE_PLAN_ID_STANDARD || '',
     features: [
       'AIチャット無制限',
       '株価予測無制限',
@@ -17,7 +17,7 @@ export const PLANS = {
     name: 'エージェント',
     nameEn: 'Agent',
     price: 1000,
-    stripePriceId: process.env.STRIPE_PRICE_ID_AGENT || '',
+    fincodePlanId: process.env.FINCODE_PLAN_ID_AGENT || '',
     features: [
       'スタンダードの全機能',
       'AI Agent利用（高度な投資分析）',
@@ -27,9 +27,9 @@ export const PLANS = {
 
 export type PlanType = 'none' | 'standard' | 'agent';
 
-export function getPlanByPriceId(priceId: string): PlanType {
-  if (priceId === PLANS.standard.stripePriceId) return 'standard';
-  if (priceId === PLANS.agent.stripePriceId) return 'agent';
+export function getPlanByPlanId(planId: string): PlanType {
+  if (planId === PLANS.standard.fincodePlanId) return 'standard';
+  if (planId === PLANS.agent.fincodePlanId) return 'agent';
   return 'none';
 }
 

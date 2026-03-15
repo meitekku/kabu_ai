@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import LegalPageLayout, { LegalSection } from "@/components/legal/LegalPageLayout";
 
-const UPDATED_AT = "2026年2月17日";
+const UPDATED_AT = "2026年3月15日";
 
 export const metadata: Metadata = {
   title: "特定商取引法に基づく表記",
@@ -23,14 +23,14 @@ const rows = [
   { label: "お問い合わせ先", value: "smartaiinvest@gmail.com" },
   {
     label: "販売価格",
-    value: "各プラン申込画面に税込価格を表示（例: プレミアムプラン 月額5,000円）。",
+    value: "各プラン申込画面に税込価格を表示（例: スタンダードプラン 月額3,000円、エージェントプラン 月額1,000円）。",
   },
   {
     label: "商品代金以外の必要料金",
     value:
       "インターネット接続料金、通信料金等はお客様負担です。決済に伴う手数料が発生する場合は、決済事業者の規定に従います。",
   },
-  { label: "支払方法", value: "クレジットカード等（Stripeが定める支払方法）。" },
+  { label: "支払方法", value: "クレジットカード（GMO fincode による決済）。" },
   {
     label: "支払時期",
     value:
@@ -43,7 +43,7 @@ const rows = [
   {
     label: "解約方法",
     value:
-      "アカウントの請求管理ページ、またはStripeカスタマーポータルから解約手続きが可能です。",
+      "アカウントの請求・プラン管理ページから解約手続きが可能です。解約後は次回以降の自動課金を停止し、有料機能は利用できなくなります。",
   },
   {
     label: "返品・交換・キャンセル",

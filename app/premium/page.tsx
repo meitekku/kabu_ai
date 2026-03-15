@@ -654,7 +654,7 @@ export default function PremiumPage() {
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-slate-400">
                             <div className="flex items-center gap-2">
                                 <Shield className="w-4 h-4" />
-                                Stripe安全決済
+                                GMO fincode 安全決済
                             </div>
                             <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4" />
@@ -679,7 +679,7 @@ export default function PremiumPage() {
                         <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 md:px-8">
                             <FAQItem
                                 question="プレミアムプランはいつでも解約できますか？"
-                                answer="はい、いつでも解約可能です。設定画面のお支払い管理から、Stripe顧客ポータルにアクセスして即座に解約できます。解約後も残りの課金期間中はすべての機能をご利用いただけます。"
+                                answer="はい、いつでも解約可能です。設定画面の請求・プラン管理から手続きでき、次回以降の自動課金は停止されます。"
                             />
                             <FAQItem
                                 question="無料プランとの違いは何ですか？"
@@ -687,7 +687,7 @@ export default function PremiumPage() {
                             />
                             <FAQItem
                                 question="支払い方法は何がありますか？"
-                                answer="クレジットカード（Visa, Mastercard, JCB, American Express, Diners Club）に対応しています。Stripeによる安全な決済処理を行っており、カード情報は当サイトでは保持しません。"
+                                answer="クレジットカード（Visa, Mastercard, JCB, American Express, Diners Club）に対応しています。GMO fincode による安全な決済処理を行っており、カード情報は当サイトでは保持しません。"
                             />
                             <FAQItem
                                 question="スタンダードとエージェントプランの違いは？"
@@ -695,7 +695,7 @@ export default function PremiumPage() {
                             />
                             <FAQItem
                                 question="プランの変更やアップグレードはできますか？"
-                                answer="はい、設定画面のお支払い管理からいつでもプランの変更が可能です。スタンダードからエージェントへのアップグレード、またはその逆のダウングレードにも対応しています。"
+                                answer="はい、設定画面の請求・プラン管理から変更手続きが可能です。変更内容に応じて、再度カード登録が必要になる場合があります。"
                             />
                         </div>
                     </div>

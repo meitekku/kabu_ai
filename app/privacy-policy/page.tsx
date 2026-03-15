@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPageLayout, { LegalSection } from "@/components/legal/LegalPageLayout";
 import Link from "next/link";
 
-const UPDATED_AT = "2026年2月17日";
+const UPDATED_AT = "2026年3月15日";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー",
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
         <p>当サイトでは、サービス運営上、以下の外部サービスを利用します。</p>
         <ul className="list-disc space-y-1 pl-4 sm:pl-5">
           <li>Google Analytics（アクセス解析）</li>
-          <li>Stripe（決済処理）</li>
+          <li>GMO fincode（決済処理）</li>
           <li>認証基盤・メール配信基盤等の運営上必要なサービス</li>
         </ul>
         <p>

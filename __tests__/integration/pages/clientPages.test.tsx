@@ -109,9 +109,11 @@ describe("client page integrations", () => {
       json: () =>
         Promise.resolve({
           isPremium: true,
+          plan: "standard",
           status: "active",
           currentPeriodEnd: "2026-03-01T00:00:00.000Z",
-          hasStripeCustomer: true,
+          hasFincodeCustomer: true,
+          canCancel: true,
         }),
     }) as unknown as typeof fetch;
 
@@ -123,9 +125,9 @@ describe("client page integrations", () => {
         screen.getByRole("heading", { name: "請求・プラン管理" })
       ).toBeInTheDocument();
     });
-    expect(screen.getByText("プレミアムプラン")).toBeInTheDocument();
+    expect(screen.getByText("スタンダードプラン")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "サブスクリプションを管理" })
+      screen.getByRole("button", { name: "サブスクリプションを解約" })
     ).toBeInTheDocument();
   });
 

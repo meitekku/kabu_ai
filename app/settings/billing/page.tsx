@@ -14,12 +14,14 @@ interface SubscriptionInfo {
     plan: 'none' | 'standard' | 'agent';
     status: 'none' | 'active' | 'canceled' | 'past_due';
     currentPeriodEnd: string | null;
-    hasStripeCustomer: boolean;
+    hasFincodeCustomer: boolean;
+    canCancel: boolean;
 }
 
 export default function BillingPage() {
     const [loading, setLoading] = useState<'standard' | 'agent' | null>(null);
-    const [portalLoading, setPortalLoading] = useState(false);
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [cancelLoading, setCancelLoading] = useState(false);
     const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -84,8 +86,8 @@ export default function BillingPage() {
         }
     };
 
-    const handleManageSubscription = async () => {
-        setPortalLoading(true);
+    const handleCancelSubscription = async () => {
+        setCancelLoading(true);
         try {
             const response = await fetch('/api/subscription/portal', {
                 method: 'POST',
@@ -93,17 +95,17 @@ export default function BillingPage() {
 
             const data = await response.json();
 
-            if (data.url) {
-                window.location.href = data.url;
+            if (data.success) {
+                setShowCancelDialog(false);
+                await fetchSubscription();
             } else {
-                console.error('Portal error:', data.error);
-                alert(data.error || 'ポータルを開けませんでした。');
+                alert(data.error || '解約に失敗しました。');
             }
         } catch (error) {
-            console.error('Portal error:', error);
+            console.error('Cancel error:', error);
             alert('エラーが発生しました。');
         } finally {
-            setPortalLoading(false);
+            setCancelLoading(false);
         }
     };
 
@@ -125,6 +127,8 @@ export default function BillingPage() {
             default: return 'プレミアムプラン';
         }
     };
+
+    const hasSubscribedPlan = subscription?.plan === 'standard' || subscription?.plan === 'agent';
 
     const getPlanPrice = () => {
         if (!subscription) return '¥3,000';
@@ -221,7 +225,7 @@ export default function BillingPage() {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {subscription.isPremium ? (
+                                {hasSubscribedPlan ? (
                                     <div className="space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
                                             <div>
@@ -245,12 +249,12 @@ export default function BillingPage() {
                                                 </div>
                                                 <p className="text-xs text-amber-700 mb-3">AI Agentによる高度な投資分析が利用可能になります。</p>
                                                 <Button
-                                                    onClick={handleManageSubscription}
-                                                    disabled={portalLoading}
+                                                    onClick={() => handleCheckout('agent')}
+                                                    disabled={loading !== null}
                                                     size="sm"
                                                     className="bg-amber-600 hover:bg-amber-700 text-white"
                                                 >
-                                                    {portalLoading ? (
+                                                    {loading === 'agent' ? (
                                                         <>
                                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                                             処理中...
@@ -269,22 +273,14 @@ export default function BillingPage() {
                                     </div>
                                 )}
                             </CardContent>
-                            {subscription.hasStripeCustomer && (
+                            {subscription.canCancel && (
                                 <CardFooter>
                                     <Button
-                                        onClick={handleManageSubscription}
-                                        disabled={portalLoading}
+                                        onClick={() => setShowCancelDialog(true)}
                                         variant="outline"
                                         className="w-full sm:w-auto"
                                     >
-                                        {portalLoading ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                処理中...
-                                            </>
-                                        ) : (
-                                            'サブスクリプションを管理'
-                                        )}
+                                        サブスクリプションを解約
                                     </Button>
                                 </CardFooter>
                             )}
@@ -292,7 +288,7 @@ export default function BillingPage() {
                     )}
 
                     {/* プラン申し込み（未登録の場合） */}
-                    {subscription && !subscription.isPremium && (
+                    {subscription && !hasSubscribedPlan && (
                         <Card className="bg-white border-slate-200 text-slate-900 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -400,6 +396,35 @@ export default function BillingPage() {
                     )}
                 </div>
             </div>
+
+            {/* 解約確認ダイアログ */}
+            {showCancelDialog && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">サブスクリプションを解約</h3>
+                        <p className="text-sm text-slate-600 mb-6">解約すると、次回以降の自動課金を停止し、プレミアム機能は利用できなくなります。本当に解約しますか？</p>
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={() => setShowCancelDialog(false)}
+                                variant="outline"
+                                className="flex-1"
+                                disabled={cancelLoading}
+                            >
+                                キャンセル
+                            </Button>
+                            <Button
+                                onClick={handleCancelSubscription}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                disabled={cancelLoading}
+                            >
+                                {cancelLoading ? (
+                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />処理中...</>
+                                ) : '解約する'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </DefaultTemplate>
     );
 }
