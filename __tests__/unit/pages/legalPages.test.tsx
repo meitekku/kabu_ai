@@ -1,11 +1,31 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import TermsPage from "@/app/terms/page";
 import PrivacyPolicyPage from "@/app/privacy-policy/page";
 import ContactPage from "@/app/contact/page";
 import DisclaimerPage from "@/app/disclaimer/page";
 import CommercialTransactionsPage from "@/app/commercial-transactions/page";
 import SuccessPage from "@/app/premium/success/page";
+
+vi.mock("@/lib/auth/auth", () => ({
+  auth: {
+    api: {
+      getSession: vi.fn().mockResolvedValue({ user: { id: "user-1" } }),
+    },
+  },
+}));
+
+vi.mock("@/lib/database/Mysql", () => ({
+  Database: {
+    getInstance: () => ({
+      select: vi.fn().mockResolvedValue([{ subscription_status: "active" }]),
+    }),
+  },
+}));
+
+vi.mock("next/headers", () => ({
+  headers: vi.fn().mockResolvedValue(new Headers()),
+}));
 
 describe("legal/static pages", () => {
   it("renders terms page heading", () => {
@@ -44,13 +64,15 @@ describe("legal/static pages", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders premium success page", () => {
-    render(<SuccessPage />);
+  it("renders premium success page", async () => {
+    await act(async () => {
+      render(<SuccessPage />);
+    });
     expect(
       screen.getByRole("heading", { name: "ありがとうございます！" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "ダッシュボードへ移動" })
+      screen.getByRole("link", { name: /ダッシュボードへ/ })
     ).toBeInTheDocument();
   });
 });
