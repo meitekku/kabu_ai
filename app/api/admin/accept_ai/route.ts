@@ -72,27 +72,52 @@ export async function POST(request: NextRequest) {
             params.push(72);
           }
 
-          // 現在時刻を取得して、15:30以降かどうかで条件を切り替え
+          // 現在時刻を取得
           const now = new Date();
           const currentHour = now.getHours();
           const currentMinute = now.getMinutes();
+          const dayOfWeek = now.getDay(); // 0=日曜, 1=月曜, ..., 5=金曜, 6=土曜
 
-          if (currentHour > 15 || (currentHour === 15 && currentMinute >= 30)) {
-            const year = now.getFullYear();
-            const month = ('0' + (now.getMonth() + 1)).slice(-2);
-            const day = ('0' + now.getDate()).slice(-2);
-            const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
-            if (operation.table === 'post' && operation.data.includes('code')) {
-              conditionParts.push(`p.created_at >= ?`);
-            } else {
-              conditionParts.push(`created_at >= ?`);
-            }
-            params.push(targetTimestamp);
-          } else {
+          if (dayOfWeek === 6) {
+            // 土曜: 本日の記事を全て表示（15:30制限なし）
             if (operation.table === 'post' && operation.data.includes('code')) {
               conditionParts.push(`DATE(p.created_at) = CURDATE()`);
             } else {
               conditionParts.push(`DATE(created_at) = CURDATE()`);
+            }
+          } else if (dayOfWeek === 0) {
+            // 日曜: 昨日（土曜）の記事を表示
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const satYear = yesterday.getFullYear();
+            const satMonth = ('0' + (yesterday.getMonth() + 1)).slice(-2);
+            const satDay = ('0' + yesterday.getDate()).slice(-2);
+            const saturdayDate = `${satYear}-${satMonth}-${satDay}`;
+            if (operation.table === 'post' && operation.data.includes('code')) {
+              conditionParts.push(`DATE(p.created_at) = ?`);
+            } else {
+              conditionParts.push(`DATE(created_at) = ?`);
+            }
+            params.push(saturdayDate);
+          } else {
+            // 平日: 15:30以降は当日15:30以降のみ表示
+            if (currentHour > 15 || (currentHour === 15 && currentMinute >= 30)) {
+              const year = now.getFullYear();
+              const month = ('0' + (now.getMonth() + 1)).slice(-2);
+              const day = ('0' + now.getDate()).slice(-2);
+              const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
+              if (operation.table === 'post' && operation.data.includes('code')) {
+                conditionParts.push(`p.created_at >= ?`);
+              } else {
+                conditionParts.push(`created_at >= ?`);
+              }
+              params.push(targetTimestamp);
+            } else {
+              if (operation.table === 'post' && operation.data.includes('code')) {
+                conditionParts.push(`DATE(p.created_at) = CURDATE()`);
+              } else {
+                conditionParts.push(`DATE(created_at) = CURDATE()`);
+              }
             }
           }
 
