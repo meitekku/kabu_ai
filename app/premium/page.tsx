@@ -550,55 +550,8 @@ export default function PremiumPage() {
                                 </Button>
                             </div>
 
-                            {/* Standard Plan */}
-                            <div className="relative p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        スタンダード
-                                    </h3>
-                                    <p className="text-xs text-slate-400">
-                                        AI株価予測 & AIチャット
-                                    </p>
-                                </div>
-                                <div className="mb-6">
-                                    <span className="text-3xl font-extrabold text-slate-900">
-                                        ¥3,000
-                                    </span>
-                                    <span className="text-sm text-slate-400 ml-1">
-                                        /月（税込）
-                                    </span>
-                                </div>
-                                <ul className="space-y-3 mb-8 text-sm flex-1">
-                                    <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        AIチャット無制限
-                                    </li>
-                                    <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        株価予測無制限
-                                    </li>
-                                    <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        お気に入りニュース
-                                    </li>
-                                    <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                                        リアルタイム市場分析
-                                    </li>
-                                    <li className="flex items-center gap-2.5 text-slate-400">
-                                        <Minus className="w-4 h-4 flex-shrink-0" />
-                                        AI Agent
-                                    </li>
-                                </ul>
-                                <Link href="/settings/billing">
-                                    <Button className="w-full h-11 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-                                        スタンダードを始める
-                                    </Button>
-                                </Link>
-                            </div>
-
                             {/* Agent Plan */}
-                            <div className="relative p-6 md:p-8 bg-amber-50/30 flex flex-col">
+                            <div className="relative p-6 md:p-8 bg-amber-50/30 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
                                 <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
                                 <div className="mb-6">
                                     <div className="flex items-center gap-2 mb-1">
@@ -646,6 +599,53 @@ export default function PremiumPage() {
                                 <Link href="/settings/billing?plan=agent">
                                     <Button className="w-full h-11 font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg">
                                         エージェントを始める
+                                    </Button>
+                                </Link>
+                            </div>
+
+                            {/* Standard Plan */}
+                            <div className="relative p-6 md:p-8 flex flex-col">
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
+                                        スタンダード
+                                    </h3>
+                                    <p className="text-xs text-slate-400">
+                                        AI株価予測 & AIチャット
+                                    </p>
+                                </div>
+                                <div className="mb-6">
+                                    <span className="text-3xl font-extrabold text-slate-900">
+                                        ¥3,000
+                                    </span>
+                                    <span className="text-sm text-slate-400 ml-1">
+                                        /月（税込）
+                                    </span>
+                                </div>
+                                <ul className="space-y-3 mb-8 text-sm flex-1">
+                                    <li className="flex items-center gap-2.5 text-slate-700">
+                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        AIチャット無制限
+                                    </li>
+                                    <li className="flex items-center gap-2.5 text-slate-700">
+                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        株価予測無制限
+                                    </li>
+                                    <li className="flex items-center gap-2.5 text-slate-700">
+                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        お気に入りニュース
+                                    </li>
+                                    <li className="flex items-center gap-2.5 text-slate-700">
+                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        リアルタイム市場分析
+                                    </li>
+                                    <li className="flex items-center gap-2.5 text-slate-400">
+                                        <Minus className="w-4 h-4 flex-shrink-0" />
+                                        AI Agent
+                                    </li>
+                                </ul>
+                                <Link href="/settings/billing">
+                                    <Button className="w-full h-11 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                        スタンダードを始める
                                     </Button>
                                 </Link>
                             </div>

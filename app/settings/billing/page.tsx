@@ -300,41 +300,6 @@ export default function BillingPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                {/* Standard Plan */}
-                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
-                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-slate-900">スタンダードプラン</h3>
-                                            <p className="text-sm text-slate-500">AIチャット・株価予測が無制限</p>
-                                        </div>
-                                        <div className="sm:text-right">
-                                            <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
-                                        </div>
-                                    </div>
-                                    <ul className="space-y-2 text-sm text-slate-600 mb-4">
-                                        {['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'].map((f, i) => (
-                                            <li key={i} className="flex items-center">
-                                                <CheckCircle2 className="w-4 h-4 text-blue-600 mr-2" />
-                                                {f}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <Button
-                                        onClick={() => handleCheckout('standard')}
-                                        disabled={loading !== null}
-                                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                                    >
-                                        {loading === 'standard' ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                処理中...
-                                            </>
-                                        ) : (
-                                            'スタンダードを申し込む'
-                                        )}
-                                    </Button>
-                                </div>
-
                                 {/* Agent Plan */}
                                 <div className={`p-4 rounded-lg border ${searchParams.get('plan') === 'agent' ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-400' : 'bg-amber-50/50 border-amber-200'}`}>
                                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
@@ -369,6 +334,41 @@ export default function BillingPage() {
                                             </>
                                         ) : (
                                             'エージェントを申し込む'
+                                        )}
+                                    </Button>
+                                </div>
+
+                                {/* Standard Plan */}
+                                <div className="p-4 rounded-lg bg-slate-50 border border-slate-200">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-slate-900">スタンダードプラン</h3>
+                                            <p className="text-sm text-slate-500">AIチャット・株価予測が無制限</p>
+                                        </div>
+                                        <div className="sm:text-right">
+                                            <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                        </div>
+                                    </div>
+                                    <ul className="space-y-2 text-sm text-slate-600 mb-4">
+                                        {['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'].map((f, i) => (
+                                            <li key={i} className="flex items-center">
+                                                <CheckCircle2 className="w-4 h-4 text-blue-600 mr-2" />
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <Button
+                                        onClick={() => handleCheckout('standard')}
+                                        disabled={loading !== null}
+                                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                    >
+                                        {loading === 'standard' ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                                処理中...
+                                            </>
+                                        ) : (
+                                            'スタンダードを申し込む'
                                         )}
                                     </Button>
                                 </div>
