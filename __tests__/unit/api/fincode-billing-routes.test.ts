@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type DbSelectFn = (query: string, params?: Array<string | number | boolean | null>) => Promise<unknown[]>;
@@ -88,10 +87,8 @@ import { POST as webhookPOST } from '@/app/api/webhook/route';
 
 function createWebhookRequest(payload: Record<string, unknown>) {
   const body = JSON.stringify(payload);
-  const signature = crypto
-    .createHmac('sha256', process.env.FINCODE_WEBHOOK_SECRET || '')
-    .update(body)
-    .digest('hex');
+  // fincodeはHMACではなくシークレットをそのままfincode-signatureヘッダーで送信する
+  const signature = process.env.FINCODE_WEBHOOK_SECRET || '';
 
   return new Request('http://localhost/api/webhook', {
     method: 'POST',
