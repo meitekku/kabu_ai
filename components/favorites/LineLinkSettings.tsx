@@ -68,28 +68,28 @@ export function LineLinkSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 rounded-lg bg-green-100">
-          <MessageCircle className="w-5 h-5 text-green-600" />
+        <div className="p-2 rounded-lg bg-shikiho-positive/10">
+          <MessageCircle className="w-5 h-5 text-shikiho-positive" />
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900">LINE通知設定</h3>
-          <p className="text-xs text-gray-500">AIレポートをLINEで受け取る</p>
+          <h3 className="font-semibold text-foreground">LINE通知設定</h3>
+          <p className="text-xs text-muted-foreground">AIレポートをLINEで受け取る</p>
         </div>
       </div>
 
       {linkInfo?.linked ? (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200">
-            <Link2 className="w-4 h-4 text-green-600" />
-            <span className="text-sm text-green-700 font-medium">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-shikiho-positive/10 border border-shikiho-positive/30">
+            <Link2 className="w-4 h-4 text-shikiho-positive" />
+            <span className="text-sm text-shikiho-positive font-medium">
               連携済み: {linkInfo.displayName || 'LINEユーザー'}
             </span>
           </div>
@@ -98,7 +98,7 @@ export function LineLinkSettings() {
             size="sm"
             onClick={handleUnlink}
             disabled={isProcessing}
-            className="text-red-600 border-red-200 hover:bg-red-50"
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
           >
             {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Unlink className="w-4 h-4 mr-1" />}
             連携解除
@@ -106,7 +106,7 @@ export function LineLinkSettings() {
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             LINE連携すると、AIレポートが自動でLINEに届きます。
           </p>
           <Button

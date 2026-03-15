@@ -183,14 +183,14 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   const isUS = info.market === 100 || (info.market === 12 && ['1', '2'].includes(info.code));
 
   return (
-    <div data-testid="company-basic-info" className="w-full bg-white px-2 animate-in fade-in duration-200">
+    <div data-testid="company-basic-info" className="w-full bg-card px-2 animate-in fade-in duration-200">
       {/* 企業コード + 企業名 + 市場名 */}
       <div className="flex items-center justify-between">
         <h1 className="flex items-center space-x-2">
-          <div className="text-gray-500">{code}</div>
+          <div className="text-muted-foreground">{code}</div>
           <div className="text-lg font-bold">{info.name}</div>
         </h1>
-        <div className="text-sm text-gray-600">{getMarketName(info.market)}</div>
+        <div className="text-sm text-muted-foreground">{getMarketName(info.market)}</div>
       </div>
 
       {/* 現在株価と値幅の表示 */}
@@ -201,7 +201,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           </div>
           <div
             className={`text-base sm:text-lg ${
-              parseFloat(info.price_change) >= 0 ? 'text-red-500' : 'text-blue-500'
+              parseFloat(info.price_change) >= 0 ? 'text-shikiho-negative' : 'text-primary'
             }`}
           >
             {parseFloat(info.price_change) >= 0 ? '+' : ''}
@@ -210,14 +210,14 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
           </div>
         </div>
         {!isUS && (info.trailing_pe || info.price_to_book) && (
-          <Link href={`/stocks/${code}/valuation`} className="text-xs text-blue-500 hover:text-blue-700 whitespace-nowrap">
+          <Link href={`/stocks/${code}/valuation`} className="text-xs text-primary hover:text-primary/80 whitespace-nowrap">
             バリュエーション分析 →
           </Link>
         )}
       </div>
 
       {isJPMarketHours() && (
-        <div className="text-xs text-gray-400 mt-1">
+        <div className="text-xs text-muted-foreground mt-1">
           約5分ディレイ
           {info.price_updated_at && (
             <span> · {getRelativeTime(info.price_updated_at)}</span>
@@ -228,19 +228,19 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       {/* 各種指標を4列で表示 */}
       <div className="grid grid-cols-4 text-xs sm:text-sm mt-2 gap-1">
         <div>
-          <div className="text-gray-600">PER</div>
+          <div className="text-muted-foreground">PER</div>
           <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>
         </div>
         <div>
-          <div className="text-gray-600">PBR</div>
+          <div className="text-muted-foreground">PBR</div>
           <div>{formatNumber(info.price_to_book, 2, '倍')}</div>
         </div>
         <div>
-          <div className="text-gray-600">利回り</div>
+          <div className="text-muted-foreground">利回り</div>
           <div>{formatNumber(info.dividend_yield, 2, '%')}</div>
         </div>
         <div>
-          <div className="text-gray-600">時価総額</div>
+          <div className="text-muted-foreground">時価総額</div>
           <div>{isUS ? formatMarketCapUS(info.market_cap) : formatMarketCap(info.market_cap)}</div>
         </div>
       </div>

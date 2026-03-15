@@ -63,7 +63,7 @@ function CompanyVisual({
   return (
     <div className="flex-shrink-0 flex flex-col items-center gap-1 w-16 sm:w-20">
       {logoUrl && !logoError && (
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoUrl}
@@ -153,23 +153,23 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-        <p className="text-red-600 text-sm">{error}</p>
+      <div className="p-4 bg-shikiho-negative/10 rounded-xl border border-shikiho-negative/20">
+        <p className="text-shikiho-negative text-sm">{error}</p>
       </div>
     );
   }
 
   if (!news || news.length === 0) {
     return (
-      <div className="p-6 bg-gray-50 rounded-xl border border-gray-100 text-center">
-        <p className="text-gray-400 text-sm">現在、ニュースはありません。</p>
+      <div className="p-6 bg-muted rounded-xl border border-border text-center">
+        <p className="text-muted-foreground text-sm">現在、ニュースはありません。</p>
       </div>
     );
   }
@@ -213,7 +213,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
 
   return (
     <div className="space-y-0">
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-border">
         {news.map((item) => {
           const imageUrl = item.image_path || extractImageFromContent(item.content);
           const articleCode = item.code?.trim();
@@ -222,8 +222,8 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             : `/stocks/all/news/${item.id}`;
 
           return (
-            <div key={item.id} className="py-4 first:pt-0 hover:bg-gray-50/50 transition-colors px-2 -mx-2 rounded-lg">
-              <div className="text-[11px] text-gray-400 mb-2">
+            <div key={item.id} className="py-4 first:pt-0 hover:bg-accent/50 transition-colors px-2 -mx-2 rounded-lg">
+              <div className="text-[11px] text-muted-foreground mb-2">
                 {item.created_at}
               </div>
 
@@ -231,7 +231,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                 <div className="flex-1 min-w-0">
                   <Link
                     href={articleHref}
-                    className="block text-[15px] sm:text-[16px] font-semibold text-gray-900 hover:text-blue-600 mb-1.5 overflow-hidden transition-colors"
+                    className="block text-[15px] sm:text-[16px] font-semibold text-foreground hover:text-primary mb-1.5 overflow-hidden transition-colors"
                     style={{
                       display: '-webkit-box',
                       WebkitLineClamp: 2,
@@ -242,7 +242,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                   >
                     {item.title}
                   </Link>
-                  <p className="text-[12px] text-gray-400 line-clamp-2 leading-relaxed">
+                  <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed">
                     {item.content?.replace(/<[^>]*>/g, '')}
                   </p>
                 </div>
@@ -266,7 +266,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
         <div className="text-right pt-4">
           <Link
             href="/news/latest"
-            className="inline-flex items-center gap-1 font-medium text-blue-600 hover:text-blue-800 text-[14px] transition-colors"
+            className="inline-flex items-center gap-1 font-medium text-primary hover:text-primary/80 text-[14px] transition-colors"
           >
             もっと見る
             <span className="text-xs">→</span>
@@ -277,7 +277,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           <button
             onClick={() => setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-2 rounded-lg disabled:opacity-30 text-gray-600 hover:bg-gray-100 transition-colors"
+            className="px-3 py-2 rounded-lg disabled:opacity-30 text-muted-foreground hover:bg-accent transition-colors"
           >
             &lt;
           </button>
@@ -285,13 +285,13 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           {currentPage > 2 && (
             <button
               onClick={() => setCurrentPage(1)}
-              className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent transition-colors"
             >
               1
             </button>
           )}
 
-          {currentPage > 3 && <span className="px-2 text-gray-300">...</span>}
+          {currentPage > 3 && <span className="px-2 text-muted-foreground/50">...</span>}
 
           {Array.from(
             { length: Math.min(3, totalPages) },
@@ -303,8 +303,8 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
                   onClick={() => setCurrentPage(page)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     currentPage === page
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
+                      ? 'bg-foreground text-background'
+                      : 'text-muted-foreground hover:bg-accent'
                   }`}
                 >
                   {page}
@@ -313,12 +313,12 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             }
           )}
 
-          {currentPage < totalPages - 2 && <span className="px-2 text-gray-300">...</span>}
+          {currentPage < totalPages - 2 && <span className="px-2 text-muted-foreground/50">...</span>}
 
           {currentPage < totalPages - 1 && (
             <button
               onClick={() => setCurrentPage(totalPages)}
-              className="px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent transition-colors"
             >
               {totalPages}
             </button>
@@ -327,7 +327,7 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
           <button
             onClick={() => setCurrentPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-3 py-2 rounded-lg disabled:opacity-30 text-gray-600 hover:bg-gray-100 transition-colors"
+            className="px-3 py-2 rounded-lg disabled:opacity-30 text-muted-foreground hover:bg-accent transition-colors"
           >
             &gt;
           </button>

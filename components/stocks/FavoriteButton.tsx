@@ -63,8 +63,8 @@ export function FavoriteButton({ code, className = '' }: FavoriteButtonProps) {
         disabled={isLoading}
         className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors ${
           isFavorite
-            ? 'text-red-500 hover:text-red-600'
-            : 'text-gray-400 hover:text-red-400'
+            ? 'text-shikiho-negative hover:text-shikiho-negative/80'
+            : 'text-muted-foreground hover:text-shikiho-negative/70'
         } ${className}`}
         title={isFavorite ? 'お気に入り解除' : 'お気に入りに追加'}
       >

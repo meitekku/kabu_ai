@@ -45,7 +45,7 @@ export default async function SuccessPage() {
 
     return (
         <DefaultTemplate>
-            <div className="bg-white text-slate-800">
+            <div className="bg-card text-foreground">
                 <div className="max-w-2xl mx-auto px-4 py-20 md:py-32 text-center">
                     <PollingWrapper>
                         <SuccessContent bare />
@@ -60,13 +60,13 @@ function SuccessContent({ bare }: { bare?: boolean }) {
     const content = (
         <>
             {/* Icon */}
-            <div className="w-16 h-16 bg-blue-50 border border-blue-200/60 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-8 h-8 text-blue-600" />
+            <div className="w-16 h-16 bg-accent border border-primary/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
 
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-blue-50 border border-blue-200/60">
-                <span className="text-[11px] font-bold text-blue-600 tracking-[0.15em] uppercase">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-accent border border-primary/20">
+                <span className="text-[11px] font-bold text-primary tracking-[0.15em] uppercase">
                     Premium Plan
                 </span>
             </div>
@@ -84,8 +84,8 @@ function SuccessContent({ bare }: { bare?: boolean }) {
                 {[
                     {
                         icon: MessageSquare,
-                        color: "text-blue-600",
-                        bg: "bg-blue-50",
+                        color: "text-primary",
+                        bg: "bg-accent",
                         title: "AIチャット無制限",
                         desc: "銘柄分析・投資相談を制限なく",
                     },
@@ -106,7 +106,7 @@ function SuccessContent({ bare }: { bare?: boolean }) {
                 ].map((item, i) => (
                     <div
                         key={i}
-                        className="p-4 rounded-xl border border-slate-200 bg-white"
+                        className="p-4 rounded-xl border border-border bg-card"
                     >
                         <div className={`inline-flex p-2 rounded-lg ${item.bg} mb-3`}>
                             <item.icon className={`w-4 h-4 ${item.color}`} />
@@ -125,7 +125,7 @@ function SuccessContent({ bare }: { bare?: boolean }) {
             <Link href="/">
                 <Button
                     size="lg"
-                    className="h-12 px-10 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm"
+                    className="h-12 px-10 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-lg shadow-sm"
                 >
                     ダッシュボードへ
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -140,7 +140,7 @@ function SuccessContent({ bare }: { bare?: boolean }) {
 
     return (
         <DefaultTemplate>
-            <div className="bg-white text-slate-800">
+            <div className="bg-card text-foreground">
                 <div className="max-w-2xl mx-auto px-4 py-20 md:py-32 text-center">
                     {content}
                 </div>

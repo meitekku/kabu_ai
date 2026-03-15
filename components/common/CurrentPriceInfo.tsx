@@ -29,9 +29,9 @@ export interface CompanyData {
 export const CurrentPriceInfoSkeleton = ({ isDark = false }: { isDark?: boolean }) => (
   <div className="flex items-center space-x-3 px-3 py-1.5">
     <div className="animate-pulse flex items-center space-x-3">
-      <div className={`h-3.5 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
-      <div className={`h-3.5 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
-      <div className={`h-3.5 rounded w-10 ${isDark ? 'bg-slate-800' : 'bg-gray-100'}`}></div>
+      <div className={`h-3.5 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
+      <div className={`h-3.5 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
+      <div className={`h-3.5 rounded w-10 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
     </div>
   </div>
 );
@@ -95,21 +95,21 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
     return <CurrentPriceInfoSkeleton isDark={isDark} />;
   }
 
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (error) return <div className="text-destructive">{error}</div>;
   if (!data) return null;
 
   let isPriceUp = false;
-  let priceColor = 'text-gray-400';
+  let priceColor = 'text-muted-foreground';
 
   if (data.diff_percent) {
     isPriceUp = data.diff_percent > 0;
-    priceColor = isPriceUp ? 'text-emerald-600' : 'text-red-500';
+    priceColor = isPriceUp ? 'text-shikiho-positive' : 'text-shikiho-negative';
   }
 
   return (
-    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-white hover:shadow-card'}`}>
-      <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{data.name}</span>
-      <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-900'}`}>
+    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-card hover:shadow-card'}`}>
+      <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-muted-foreground'}`}>{data.name}</span>
+      <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-foreground'}`}>
         {data.current_price
           ? `${data.current_price.toLocaleString()}`
           : '---'}

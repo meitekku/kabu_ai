@@ -88,15 +88,15 @@ export default function UltraThinkPage() {
   }
 
   if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
+    return <div className="text-shikiho-negative p-4">{error}</div>;
   }
 
   return (
     <main className="container mx-auto py-4">
       <h1 className="text-2xl font-bold mb-4">Ultra Think - Twitter投稿</h1>
-      <div className="mb-4 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-        <h3 className="font-semibold text-blue-900 mb-2">📋 使用方法</h3>
-        <ul className="text-blue-800 text-sm space-y-1">
+      <div className="mb-4 p-4 bg-accent rounded-lg border-l-4 border-primary/20">
+        <h3 className="font-semibold text-foreground mb-2">📋 使用方法</h3>
+        <ul className="text-muted-foreground text-sm space-y-1">
           <li>• まず既存のChromeプロファイル（ログイン済み）の使用を試みます</li>
           <li>• 「手動ログイン投稿」ボタンをクリックすると、新しいブラウザウィンドウが開きます</li>
           <li>• <strong>自動フォールバック</strong>：既存プロファイルでログインされていない場合、完全に新規のプロファイルで再起動します</li>
@@ -105,9 +105,9 @@ export default function UltraThinkPage() {
         </ul>
       </div>
       
-      <div className="mb-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
-        <h3 className="font-semibold text-green-900 mb-2">🔄 動作パターン</h3>
-        <div className="text-green-800 text-sm space-y-2">
+      <div className="mb-4 p-4 bg-muted rounded-lg border-l-4 border-border">
+        <h3 className="font-semibold text-foreground mb-2">🔄 動作パターン</h3>
+        <div className="text-muted-foreground text-sm space-y-2">
           <div>
             <strong>パターン1:</strong> 既存プロファイルにログイン情報がある場合
             <div className="ml-4 text-xs">→ 既存プロファイルを使用して投稿</div>

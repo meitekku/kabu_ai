@@ -64,8 +64,8 @@ describe("legal/static pages", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders premium success page", async () => {
-    await act(async () => {
+  it("renders premium success page", () => {
+    act(() => {
       render(<SuccessPage />);
     });
     expect(

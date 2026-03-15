@@ -264,9 +264,9 @@ export default function PromptPage() {
 
   return (
     <main className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">プロンプト管理</h1>
+      <h1 className="text-3xl font-bold mb-6 text-foreground">プロンプト管理</h1>
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div className="mb-4 p-3 bg-accent border border-primary/20 rounded-lg text-sm text-primary">
           <strong>自動切り替えプロンプト:</strong> id=101〜107（午前・11:45バッチ）/ id=201〜207（午後・15:35〜15:45バッチ）。
           曜日ごとに個別設定可能。更新はバッチ開始時にDBから再取得されます。
         </div>
@@ -282,15 +282,15 @@ export default function PromptPage() {
               {item.id === 8 && (
                 <h2 className="text-lg font-bold text-green-700 flex items-center gap-2 mt-6">🌐 海外まとめ</h2>
               )}
-              <div className={`border p-4 rounded-lg bg-white shadow-sm ${isAutoPrompt(item.id) ? 'ring-2 ring-blue-200' : 'ring-2 ring-green-200'}`}>
+              <div className={`border border-border p-4 rounded-lg bg-card shadow-sm ${isAutoPrompt(item.id) ? 'ring-2 ring-primary/20' : 'ring-2 ring-green-200'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center text-sm text-gray-500">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <span>ID: {item.category}</span>
                     {getTimeSlotBadge(item.id)}
                   </div>
                   <button
                     onClick={() => toggleCollapsed(item.id)}
-                    className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+                    className="text-primary hover:text-primary/80 text-sm font-medium"
                   >
                     {collapsedItems[item.id] ? '▼ 展開' : '▲ 折りたたみ'}
                   </button>
@@ -304,7 +304,7 @@ export default function PromptPage() {
                       adjustTextareaHeight(e.target);
                     }}
                     onFocus={(e) => adjustTextareaHeight(e.target)}
-                    className="w-full p-3 border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-border rounded-md resize-none overflow-hidden min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
                     placeholder="プロンプトを入力してください..."
                   />
                 )}

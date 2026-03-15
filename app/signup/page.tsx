@@ -80,26 +80,26 @@ function SignUpForm() {
   // メール確認待ち画面
   if (emailSent) {
     return (
-      <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
-        <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md text-center">
-          <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen flex items-start justify-center bg-muted px-4 pt-8 sm:pt-12">
+        <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-card rounded-lg shadow-md text-center">
+          <div className="mx-auto w-16 h-16 bg-accent rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-foreground">
             メールを確認してください
           </h2>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             <span className="font-medium">{email}</span> に確認メールを送信しました。
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             メール内のリンクをクリックして、登録を完了してください。
           </p>
           <div className="pt-4">
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-500 text-sm"
+              className="text-primary hover:text-primary/80 text-sm"
             >
               ログインページへ戻る
             </Link>
@@ -110,13 +110,13 @@ function SignUpForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-start justify-center bg-muted px-4 pt-8 sm:pt-12">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-card rounded-lg shadow-md">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             新規登録
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             新しいアカウントを作成
           </p>
         </div>
@@ -163,19 +163,19 @@ function SignUpForm() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className="text-shikiho-negative text-sm text-center">{error}</div>
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "処理中..." : "登録"}
           </Button>
-          <p className="text-xs text-center text-gray-500">
+          <p className="text-xs text-center text-muted-foreground">
             登録により
-            <Link href="/terms" className="mx-1 text-blue-600 underline">
+            <Link href="/terms" className="mx-1 text-primary underline">
               利用規約
             </Link>
             と
-            <Link href="/privacy-policy" className="mx-1 text-blue-600 underline">
+            <Link href="/privacy-policy" className="mx-1 text-primary underline">
               プライバシーポリシー
             </Link>
             に同意したものとみなされます。
@@ -187,7 +187,7 @@ function SignUpForm() {
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">または</span>
+            <span className="bg-card px-2 text-muted-foreground">または</span>
           </div>
         </div>
 
@@ -239,7 +239,7 @@ function SignUpForm() {
         <div className="text-center">
           <Link
             href="/login"
-            className="text-blue-600 hover:text-blue-500 text-sm"
+            className="text-primary hover:text-primary/80 text-sm"
           >
             すでにアカウントをお持ちの方はこちら
           </Link>

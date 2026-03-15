@@ -118,37 +118,37 @@ const RelatedStocksNews = ({ code, excludeId, limit = 5 }: RelatedStocksNewsProp
 
   if (loading) return null;
   if (error) {
-    return <div className="text-red-500 p-4">Error: {error}</div>;
+    return <div className="text-shikiho-negative p-4">Error: {error}</div>;
   }
 
   if (!news || news.length === 0) {
-    return <div className="text-gray-500 p-4">関連銘柄の記事がありません。</div>;
+    return <div className="text-muted-foreground p-4">関連銘柄の記事がありません。</div>;
   }
 
   return (
     <div>
-      <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">関連銘柄の最新記事</h3>
+      <h3 className="text-base sm:text-lg font-bold text-foreground mb-3 sm:mb-4">関連銘柄の最新記事</h3>
 
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-border">
         {news.map((item) => (
           <Link
             href={`/stocks/${item.code}/news/${item.id}`}
             key={item.id}
             className="block"
           >
-            <Card className="rounded-lg bg-card text-card-foreground hover:bg-gray-50 transition-colors cursor-pointer border-0 shadow-none">
+            <Card className="rounded-lg bg-card text-card-foreground hover:bg-accent transition-colors cursor-pointer border-0 shadow-none">
               <CardContent className="py-1 px-0 sm:py-3 sm:px-2">
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1 flex-wrap">
-                    <span className="font-bold text-xs sm:text-sm text-blue-600">
+                    <span className="font-bold text-xs sm:text-sm text-primary">
                       {item.company_name}
                     </span>
-                    <span className="font-bold text-xs sm:text-sm text-gray-500">
+                    <span className="font-bold text-xs sm:text-sm text-muted-foreground">
                       {item.created_at}
                     </span>
                     {renderStatusLabels(item.status)}
                   </div>
-                  <div className="font-bold text-sm sm:text-base text-gray-900 mt-0.5">{item.title}</div>
+                  <div className="font-bold text-sm sm:text-base text-foreground mt-0.5">{item.title}</div>
                 </div>
               </CardContent>
             </Card>

@@ -552,9 +552,9 @@ function Skeleton({ height }: { height: number }) {
   return (
     <div
       style={{ height }}
-      className="w-full bg-gray-100 rounded-xl animate-pulse flex items-center justify-center"
+      className="w-full bg-secondary rounded-xl animate-pulse flex items-center justify-center"
     >
-      <p className="text-gray-400 text-sm">データ読み込み中...</p>
+      <p className="text-muted-foreground text-sm">データ読み込み中...</p>
     </div>
   );
 }
@@ -566,7 +566,7 @@ const LEGEND_POINTS = [0.2, 0.8, 1.5, 2.5, 4, 6] as const;
 function ColorLegend() {
   return (
     <div className="flex items-center gap-0.5">
-      <span className="text-[10px] text-gray-400 mr-1">普通</span>
+      <span className="text-[10px] text-muted-foreground mr-1">普通</span>
       {LEGEND_POINTS.map((v) => (
         <span
           key={v}
@@ -574,7 +574,7 @@ function ColorLegend() {
           className="w-5 h-3 rounded-sm inline-block"
         />
       ))}
-      <span className="text-[10px] text-gray-400 ml-1">大盛り上がり</span>
+      <span className="text-[10px] text-muted-foreground ml-1">大盛り上がり</span>
     </div>
   );
 }
@@ -772,7 +772,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
 
   if (!data || data.items.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400 text-sm bg-gray-50 rounded-xl">
+      <div className="text-center py-12 text-muted-foreground text-sm bg-muted rounded-xl">
         現在データがありません
       </div>
     );
@@ -785,10 +785,10 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
     <>
       {/* Meta bar */}
       <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>{data.items.length}銘柄</span>
           {lastUpdated && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               更新:{" "}
               {lastUpdated.toLocaleTimeString("ja-JP", {
                 hour: "2-digit",
@@ -797,7 +797,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
               })}
             </span>
           )}
-          <span className="flex items-center gap-1 text-xs text-gray-400">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             {countdown}秒後に更新
           </span>
@@ -805,7 +805,7 @@ export default function BbsHeatmap({ initialData }: BbsHeatmapProps) {
         <div className="flex items-center gap-3">
           <ColorLegend />
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-gray-400">シェア</span>
+            <span className="text-[10px] text-muted-foreground">シェア</span>
             {/* X (Twitter) */}
             <button
               onClick={() => {

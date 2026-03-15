@@ -71,10 +71,10 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
   }, [tableName, limit]);
 
   const getDiffPercentColor = (diffPercent: number | null) => {
-    if (!diffPercent) return 'text-gray-600';
-    if (diffPercent > 0) return 'text-red-500';
-    if (diffPercent < 0) return 'text-blue-500';
-    return 'text-gray-600';
+    if (!diffPercent) return 'text-muted-foreground';
+    if (diffPercent > 0) return 'text-shikiho-negative';
+    if (diffPercent < 0) return 'text-primary';
+    return 'text-muted-foreground';
   };
 
   const formatDiffPercent = (diffPercent: number | null): string => {
@@ -91,12 +91,12 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-sm">
+        <div className="w-full max-w-2xl p-6 bg-card rounded-lg shadow-sm">
           <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-secondary rounded w-1/4"></div>
             <div className="space-y-3">
               {[...Array(limit)].map((_, index) => (
-                <div key={`skeleton-${tableName}-${index}`} className="h-12 bg-gray-200 rounded"></div>
+                <div key={`skeleton-${tableName}-${index}`} className="h-12 bg-secondary rounded"></div>
               ))}
             </div>
           </div>
@@ -105,8 +105,8 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
     }
 
     return (
-      <div className="w-full max-w-2xl bg-white rounded-lg shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-100">
+      <div className="w-full max-w-2xl bg-card rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-border">
           <div className="flex items-center">
             <h3 className="text-xl font-bold">{title}</h3>
           </div>
@@ -119,14 +119,14 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
               </Alert>
             </div>
           ) : data.length === 0 ? (
-            <div key="no-data" className="px-6 py-8 text-center text-gray-500">
+            <div key="no-data" className="px-6 py-8 text-center text-muted-foreground">
               本日のデータはありません
             </div>
           ) : (
             data.map((item, index) => (
               <div 
                 key={`${tableName}-${item.code}-${index}`}
-                className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-gray-50' : ''}`}
+                className={`px-6 py-4 hover:bg-accent transition-colors duration-150 cursor-pointer flex items-center border-b border-border last:border-b-0 ${(index + 1) % 2 === 0 ? 'bg-muted' : ''}`}
                 onClick={() => handleItemClick(item.code)}
                 role="button"
                 tabIndex={0}
@@ -140,14 +140,14 @@ const StyledRankingTable = ({ title, tableName, limit = DEFAULT_LIMIT }: Ranking
                   {index + 1}
                 </div>
                 <div className="flex-1">
-                  <div className="text-gray-600">
+                  <div className="text-muted-foreground">
                     {item.name}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {item.code}
                   </div>
                 </div>
-                <div className="text-right text-lg font-bold text-gray-800">
+                <div className="text-right text-lg font-bold text-foreground">
                   {item.current_price ? `${item.current_price}円` : '-'}
                 </div>
                 <div className={`text-right text-lg font-bold ${getDiffPercentColor(item.diff_percent)}`}>

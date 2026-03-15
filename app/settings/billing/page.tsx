@@ -189,11 +189,11 @@ export default function BillingPage() {
         return (
             <DefaultTemplate>
                 <div className="container mx-auto py-10 px-4">
-                    <Card className="max-w-md mx-auto bg-white border-red-200">
+                    <Card className="max-w-md mx-auto bg-card border-destructive/30">
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                                <p className="text-red-600">{error}</p>
+                                <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                                <p className="text-destructive">{error}</p>
                                 <Button
                                     onClick={() => window.location.reload()}
                                     variant="outline"
@@ -217,7 +217,7 @@ export default function BillingPage() {
                 <div className="max-w-3xl space-y-6">
                     {/* 現在のプラン状態 */}
                     {subscription && (
-                        <Card className="bg-white border-slate-200 text-slate-900 shadow-sm">
+                        <Card className="bg-card border-border text-foreground shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     <span>現在のプラン</span>
@@ -289,7 +289,7 @@ export default function BillingPage() {
 
                     {/* プラン申し込み（未登録の場合） */}
                     {subscription && !hasSubscribedPlan && (
-                        <Card className="bg-white border-slate-200 text-slate-900 shadow-sm">
+                        <Card className="bg-card border-border text-foreground shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <CreditCard className="w-5 h-5 text-emerald-600" />
@@ -346,13 +346,13 @@ export default function BillingPage() {
                                             <p className="text-sm text-slate-500">AIチャット・株価予測が無制限</p>
                                         </div>
                                         <div className="sm:text-right">
-                                            <div className="text-2xl font-bold text-blue-600">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
+                                            <div className="text-2xl font-bold text-primary">¥3,000<span className="text-sm text-slate-500 font-normal">/月</span></div>
                                         </div>
                                     </div>
                                     <ul className="space-y-2 text-sm text-slate-600 mb-4">
                                         {['AIチャット無制限', '株価予測無制限', 'お気に入りニュース', 'リアルタイム市場分析'].map((f, i) => (
                                             <li key={i} className="flex items-center">
-                                                <CheckCircle2 className="w-4 h-4 text-blue-600 mr-2" />
+                                                <CheckCircle2 className="w-4 h-4 text-primary mr-2" />
                                                 {f}
                                             </li>
                                         ))}
@@ -360,7 +360,7 @@ export default function BillingPage() {
                                     <Button
                                         onClick={() => handleCheckout('standard')}
                                         disabled={loading !== null}
-                                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                        className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-bold"
                                     >
                                         {loading === 'standard' ? (
                                             <>
@@ -400,7 +400,7 @@ export default function BillingPage() {
             {/* 解約確認ダイアログ */}
             {showCancelDialog && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+                    <div className="bg-card rounded-lg p-6 max-w-sm mx-4 shadow-xl">
                         <h3 className="text-lg font-bold text-slate-900 mb-2">サブスクリプションを解約</h3>
                         <p className="text-sm text-slate-600 mb-6">解約すると、次回以降の自動課金を停止し、プレミアム機能は利用できなくなります。本当に解約しますか？</p>
                         <div className="flex gap-3">
@@ -414,7 +414,7 @@ export default function BillingPage() {
                             </Button>
                             <Button
                                 onClick={handleCancelSubscription}
-                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                className="flex-1 bg-destructive hover:bg-destructive/90 text-white"
                                 disabled={cancelLoading}
                             >
                                 {cancelLoading ? (

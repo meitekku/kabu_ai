@@ -66,13 +66,13 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-start justify-center bg-gray-50 px-4 pt-8 sm:pt-12">
-      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md">
+    <div className="min-h-screen flex items-start justify-center bg-muted px-4 pt-8 sm:pt-12">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-card rounded-lg shadow-md">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="text-center text-3xl font-bold text-foreground">
             ログイン
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-muted-foreground">
             アカウントにログイン
           </p>
         </div>
@@ -106,7 +106,7 @@ function LoginForm() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
+            <div className="text-shikiho-negative text-sm text-center">{error}</div>
           )}
 
           <Button type="submit" className="w-full" disabled={loading}>
@@ -119,7 +119,7 @@ function LoginForm() {
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-gray-500">または</span>
+            <span className="bg-card px-2 text-muted-foreground">または</span>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ function LoginForm() {
         <div className="text-center">
           <Link
             href="/signup"
-            className="text-blue-600 hover:text-blue-500 text-sm"
+            className="text-primary hover:text-primary/80 text-sm"
           >
             アカウントをお持ちでない方はこちら
           </Link>

@@ -119,11 +119,11 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
           <button
             onClick={() => void handleFeatureClick('predict')}
             disabled={isChecking || !fingerprint}
-            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-white border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors disabled:opacity-60 disabled:hover:bg-white"
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-card border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors disabled:opacity-60 disabled:hover:bg-card"
           >
             <div className="flex items-center gap-2">
               {isChecking ? (
-                <Loader2 className="w-5 h-5 text-gray-500 animate-spin" />
+                <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
               ) : (
                 <TrendingUp className="w-5 h-5 text-shikiho-accent-red" />
               )}
@@ -135,7 +135,7 @@ export function AiFeatureNav({ code }: AiFeatureNavProps) {
           <button
             type="button"
             onClick={() => void handleFeatureClick('chat')}
-            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-white border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors"
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 bg-card border border-shikiho-bg-border hover:bg-shikiho-bg-gray-light transition-colors"
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-shikiho-accent-blue" />

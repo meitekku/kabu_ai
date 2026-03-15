@@ -15,7 +15,7 @@ const Navigation: React.FC<NavigationProps> = ({ urls }) => {
   }
 
   return (
-    <nav className="w-full bg-white mb-2 overflow-x-auto">
+    <nav className="w-full bg-card mb-2 overflow-x-auto">
       <div className="container mx-auto">
         <ul className="flex justify-evenly min-w-max sm:min-w-0">
           {urls.map((url, index) => (
@@ -25,7 +25,7 @@ const Navigation: React.FC<NavigationProps> = ({ urls }) => {
                 text-center
                 max-w-[200px]
                 border-r
-                border-gray-200
+                border-border
                 last:border-r-0
                 flex-shrink-0
                 sm:flex-shrink
@@ -42,11 +42,11 @@ const Navigation: React.FC<NavigationProps> = ({ urls }) => {
                   min-h-[44px]
                   text-sm
                   sm:text-base
-                  text-gray-700
+                  text-foreground
                   font-medium
-                  bg-gray-50
-                  hover:text-blue-600
-                  hover:bg-gray-100
+                  bg-muted
+                  hover:text-primary
+                  hover:bg-accent
                   rounded-md
                   transition-all
                   duration-200

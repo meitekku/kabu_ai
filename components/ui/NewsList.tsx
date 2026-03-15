@@ -154,11 +154,11 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
     );
   }
   if (error) {
-    return <div className="text-red-500 p-4">Error: {error}</div>;
+    return <div className="text-shikiho-negative p-4">Error: {error}</div>;
   }
 
   if (!news || news.length === 0) {
-    return <div className="text-gray-500 p-4">まだニュースがありません。</div>;
+    return <div className="text-muted-foreground p-4">まだニュースがありません。</div>;
   }
 
   return (

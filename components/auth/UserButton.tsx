@@ -26,7 +26,7 @@ export function UserButton() {
 
   if (isLoading) {
     return (
-      <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse"></div>
+      <div className="h-8 w-8 rounded-full bg-secondary animate-pulse"></div>
     );
   }
 

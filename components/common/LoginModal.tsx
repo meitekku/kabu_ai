@@ -30,8 +30,8 @@ export function LoginModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <LogIn className="w-5 h-5 text-blue-500" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <LogIn className="w-5 h-5 text-primary" />
             </div>
             <DialogTitle>{title}</DialogTitle>
           </div>
@@ -42,7 +42,7 @@ export function LoginModal({
             閉じる
           </Button>
           <Link href="/login">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button className="bg-primary hover:bg-primary/90 text-white">
               <LogIn className="w-4 h-4 mr-2" />
               ログインする
             </Button>

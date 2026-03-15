@@ -36,8 +36,8 @@ export default function LineTestPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">LINE通知テスト</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">LINE通知テスト</h1>
+        <p className="mt-2 text-muted-foreground">
           お気に入り銘柄のAIレポートを生成し、自分のLINEにテスト送信します。
         </p>
       </div>
@@ -46,7 +46,7 @@ export default function LineTestPage() {
         <button
           onClick={() => sendTest('midday')}
           disabled={loading !== null}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading === 'midday' ? '生成中...' : '昼レポート(12:00)を今すぐ送信'}
         </button>
@@ -71,7 +71,7 @@ export default function LineTestPage() {
           className={`mt-4 p-4 rounded-lg border ${
             result.success
               ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              : 'bg-destructive/10 border-destructive/20 text-destructive'
           }`}
         >
           {result.message}

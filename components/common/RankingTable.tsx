@@ -16,10 +16,10 @@ type RankingTableProps = {
 
 export default function RankingTable({ title, tableName, data }: RankingTableProps) {
   const getDiffPercentColor = (diffPercent: number | null) => {
-    if (!diffPercent) return 'text-gray-400';
-    if (diffPercent > 0) return 'text-red-500';
-    if (diffPercent < 0) return 'text-blue-500';
-    return 'text-gray-400';
+    if (!diffPercent) return 'text-muted-foreground';
+    if (diffPercent > 0) return 'text-shikiho-negative';
+    if (diffPercent < 0) return 'text-primary';
+    return 'text-muted-foreground';
   };
 
   const formatDiffPercent = (diffPercent: number | null): string => {
@@ -33,22 +33,22 @@ export default function RankingTable({ title, tableName, data }: RankingTablePro
     if (index === 0) return 'bg-amber-500 text-white';
     if (index === 1) return 'bg-gray-400 text-white';
     if (index === 2) return 'bg-amber-700 text-white';
-    return 'bg-gray-100 text-gray-500';
+    return 'bg-secondary text-muted-foreground';
   };
 
   return (
-    <div className="w-full bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-2.5 border-b border-gray-100">
+    <div className="w-full bg-card rounded-xl border border-border overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="text-sm font-semibold text-gray-900">{title}</div>
-          <div className="text-[11px] text-gray-400">
+          <div className="text-sm font-semibold text-foreground">{title}</div>
+          <div className="text-[11px] text-muted-foreground">
             {tableName.startsWith('ranking_pts') ? '終値比' : '前日比'}
           </div>
         </div>
       </div>
       <div>
         {data.length === 0 ? (
-          <div className="px-4 py-6 text-center text-xs text-gray-400">
+          <div className="px-4 py-6 text-center text-xs text-muted-foreground">
             本日のデータはありません
           </div>
         ) : (
@@ -56,16 +56,16 @@ export default function RankingTable({ title, tableName, data }: RankingTablePro
             <Link
               key={`${tableName}-${item.code}-${index}`}
               href={`/stocks/${item.code}/news`}
-              className="px-4 py-2 hover:bg-gray-50 transition-colors duration-150 cursor-pointer flex items-center border-b border-gray-50 last:border-b-0"
+              className="px-4 py-2 hover:bg-accent transition-colors duration-150 cursor-pointer flex items-center border-b border-border last:border-b-0"
             >
               <div className={`w-5 h-5 rounded-md flex items-center justify-center mr-2.5 font-bold text-[10px] ${getRankBadge(index)}`}>
                 {index + 1}
               </div>
-              <div className="text-[11px] text-gray-400 mr-2 font-mono tabular-nums">
+              <div className="text-[11px] text-muted-foreground mr-2 font-mono tabular-nums">
                 {item.code}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-xs text-gray-700 font-medium truncate">
+                <div className="text-xs text-foreground font-medium truncate">
                   {item.name}
                 </div>
               </div>

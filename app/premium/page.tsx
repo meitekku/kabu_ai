@@ -29,7 +29,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full flex items-center justify-between py-5 text-left group cursor-pointer"
             >
-                <span className="text-[15px] font-semibold text-slate-800 pr-8 group-hover:text-blue-600 transition-colors">
+                <span className="text-[15px] font-semibold text-slate-800 pr-8 group-hover:text-primary transition-colors">
                     {question}
                 </span>
                 <ChevronDown
@@ -50,12 +50,12 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 export default function PremiumPage() {
     return (
         <DefaultTemplate>
-            <div className="bg-white text-slate-800">
+            <div className="bg-card text-foreground">
                 {/* ===== Hero ===== */}
                 <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-slate-50/80 to-white border-b border-slate-100">
                     <div className="max-w-5xl mx-auto px-4 pt-16 pb-14 md:pt-24 md:pb-20 text-center">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full bg-blue-50 border border-blue-200/60">
-                            <span className="text-[11px] font-bold text-blue-600 tracking-[0.15em] uppercase">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full bg-accent border border-primary/20">
+                            <span className="text-[11px] font-bold text-primary tracking-[0.15em] uppercase">
                                 Premium Plan
                             </span>
                         </div>
@@ -87,7 +87,7 @@ export default function PremiumPage() {
                         <a href="#plans">
                             <Button
                                 size="lg"
-                                className="h-12 px-10 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all"
+                                className="h-12 px-10 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-lg shadow-sm hover:shadow-md transition-all"
                             >
                                 月額 1,000円から始める
                                 <ArrowRight className="ml-2 w-4 h-4" />
@@ -105,10 +105,10 @@ export default function PremiumPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white text-xs font-bold">
+                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white text-xs font-bold">
                                         01
                                     </span>
-                                    <span className="text-xs font-bold text-blue-600 tracking-[0.15em] uppercase">
+                                    <span className="text-xs font-bold text-primary tracking-[0.15em] uppercase">
                                         POINT
                                     </span>
                                 </div>
@@ -128,7 +128,7 @@ export default function PremiumPage() {
                                             key={i}
                                             className="flex items-center gap-3 text-sm text-slate-600"
                                         >
-                                            <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                            <Check className="w-4 h-4 text-primary flex-shrink-0" />
                                             {text}
                                         </li>
                                     ))}
@@ -136,7 +136,7 @@ export default function PremiumPage() {
                             </div>
 
                             {/* Chat Demo */}
-                            <div className="rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                            <div className="rounded-xl border border-border bg-card shadow-lg overflow-hidden">
                                 <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2 bg-slate-50">
                                     <div className="flex gap-1.5">
                                         <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
@@ -149,13 +149,13 @@ export default function PremiumPage() {
                                 </div>
                                 <div className="p-5 space-y-4">
                                     <div className="flex justify-end">
-                                        <div className="bg-blue-600 text-white text-[13px] rounded-2xl rounded-br-sm py-2.5 px-4 max-w-[80%]">
+                                        <div className="bg-primary text-white text-[13px] rounded-2xl rounded-br-sm py-2.5 px-4 max-w-[80%]">
                                             ソニーグループの成長戦略は？
                                         </div>
                                     </div>
                                     <div className="flex justify-start">
                                         <div className="bg-slate-100 text-slate-700 text-[13px] rounded-2xl rounded-bl-sm py-3 px-4 max-w-[85%]">
-                                            <span className="text-blue-600 font-bold text-xs block mb-1.5">
+                                            <span className="text-primary font-bold text-xs block mb-1.5">
                                                 AI解析レポート
                                             </span>
                                             IP（知的財産）の価値最大化を軸に、ゲーム・映画・音楽を融合した
@@ -166,7 +166,7 @@ export default function PremiumPage() {
                                         </div>
                                     </div>
                                     <div className="flex justify-end">
-                                        <div className="bg-blue-600 text-white text-[13px] rounded-2xl rounded-br-sm py-2.5 px-4 max-w-[80%]">
+                                        <div className="bg-primary text-white text-[13px] rounded-2xl rounded-br-sm py-2.5 px-4 max-w-[80%]">
                                             競合他社と比較した強みは？
                                         </div>
                                     </div>
@@ -190,7 +190,7 @@ export default function PremiumPage() {
                     <div className="max-w-6xl mx-auto px-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
                             {/* Chart Demo (left on desktop) */}
-                            <div className="order-2 md:order-1 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+                            <div className="order-2 md:order-1 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
                                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                                     <div className="flex items-center gap-2">
                                         <LineChart className="w-4 h-4 text-emerald-600" />
@@ -344,8 +344,8 @@ export default function PremiumPage() {
                                 {[
                                     {
                                         icon: Heart,
-                                        iconColor: "text-red-500",
-                                        bgColor: "bg-red-50",
+                                        iconColor: "text-shikiho-negative",
+                                        bgColor: "bg-shikiho-negative/10",
                                         label: "銘柄登録",
                                         desc: "最大50銘柄を登録。重要度を星で設定し、優先的に分析。",
                                     },
@@ -358,7 +358,7 @@ export default function PremiumPage() {
                                     },
                                     {
                                         icon: MessageSquare,
-                                        iconColor: "text-green-600",
+                                        iconColor: "text-shikiho-positive",
                                         bgColor: "bg-green-50",
                                         label: "LINE Bot",
                                         desc: "LINEでレポート自動通知＆銘柄の追加・削除・情報取得が可能。",
@@ -366,7 +366,7 @@ export default function PremiumPage() {
                                 ].map((card, i) => (
                                     <div
                                         key={i}
-                                        className="flex items-start gap-4 p-5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors"
+                                        className="flex items-start gap-4 p-5 rounded-xl border border-border bg-card hover:border-border/80 transition-colors"
                                     >
                                         <div
                                             className={`p-2.5 rounded-lg ${card.bgColor} flex-shrink-0`}
@@ -428,8 +428,8 @@ export default function PremiumPage() {
                             {[
                                 {
                                     icon: MessageSquare,
-                                    color: "text-blue-600",
-                                    bg: "bg-blue-50",
+                                    color: "text-primary",
+                                    bg: "bg-accent",
                                     title: "AIチャット無制限",
                                     desc: "無料プランは1日3回。プレミアムなら制限なく対話できます。",
                                 },
@@ -449,8 +449,8 @@ export default function PremiumPage() {
                                 },
                                 {
                                     icon: Bell,
-                                    color: "text-green-600",
-                                    bg: "bg-green-50",
+                                    color: "text-shikiho-positive",
+                                    bg: "bg-shikiho-positive/10",
                                     title: "LINE通知連携",
                                     desc: "LINEでレポート自動通知＆銘柄管理。外出先でも見逃さない。",
                                 },
@@ -471,7 +471,7 @@ export default function PremiumPage() {
                             ].map((item, i) => (
                                 <div
                                     key={i}
-                                    className="p-6 rounded-xl bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all"
+                                    className="p-6 rounded-xl bg-card border border-border hover:border-border/80 hover:shadow-sm transition-all"
                                 >
                                     <div
                                         className={`inline-flex p-2.5 rounded-lg ${item.bg} mb-4`}
@@ -504,7 +504,7 @@ export default function PremiumPage() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto rounded-xl border border-slate-200 overflow-hidden bg-white text-left">
+                        <div className="grid grid-cols-1 md:grid-cols-3 max-w-4xl mx-auto rounded-xl border border-border overflow-hidden bg-card text-left">
                             {/* Free Plan */}
                             <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col">
                                 <div className="mb-6">
@@ -623,19 +623,19 @@ export default function PremiumPage() {
                                 </div>
                                 <ul className="space-y-3 mb-8 text-sm flex-1">
                                     <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                                         AIチャット無制限
                                     </li>
                                     <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                                         株価予測無制限
                                     </li>
                                     <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                                         お気に入りニュース
                                     </li>
                                     <li className="flex items-center gap-2.5 text-slate-700">
-                                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
                                         リアルタイム市場分析
                                     </li>
                                     <li className="flex items-center gap-2.5 text-slate-400">
@@ -644,7 +644,7 @@ export default function PremiumPage() {
                                     </li>
                                 </ul>
                                 <Link href="/settings/billing">
-                                    <Button className="w-full h-11 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                    <Button className="w-full h-11 font-bold bg-primary hover:bg-primary/90 text-white rounded-lg">
                                         スタンダードを始める
                                     </Button>
                                 </Link>
@@ -676,7 +676,7 @@ export default function PremiumPage() {
                                 よくある質問
                             </h2>
                         </div>
-                        <div className="bg-white rounded-xl border border-slate-200 px-4 sm:px-6 md:px-8">
+                        <div className="bg-card rounded-xl border border-border px-4 sm:px-6 md:px-8">
                             <FAQItem
                                 question="プレミアムプランはいつでも解約できますか？"
                                 answer="はい、いつでも解約可能です。設定画面の請求・プラン管理から手続きでき、次回以降の自動課金は停止されます。"
@@ -715,7 +715,7 @@ export default function PremiumPage() {
                         <a href="#plans">
                             <Button
                                 size="lg"
-                                className="h-12 px-10 text-base font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg"
+                                className="h-12 px-10 text-base font-bold bg-primary hover:bg-primary/90 text-white rounded-lg"
                             >
                                 プランを選ぶ
                             </Button>

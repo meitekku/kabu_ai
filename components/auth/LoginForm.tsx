@@ -32,12 +32,12 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="absolute top-[100px] sm:top-[150px] max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-white rounded-lg shadow-md">
-        <h2 className="text-3xl font-bold text-center text-gray-900">Login</h2>
+    <div className="relative min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="absolute top-[100px] sm:top-[150px] max-w-md w-full space-y-6 sm:space-y-8 p-6 sm:p-8 bg-card rounded-lg shadow-md">
+        <h2 className="text-3xl font-bold text-center text-foreground">Login</h2>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="username" className="block text-sm font-medium text-foreground">
               Username
             </label>
             <input
@@ -50,7 +50,7 @@ const LoginForm = () => {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Password
             </label>
             <input
@@ -63,11 +63,11 @@ const LoginForm = () => {
             />
           </div>
           {errorMsg && (
-            <p className="text-red-500 text-sm">{errorMsg}</p>
+            <p className="text-shikiho-negative text-sm">{errorMsg}</p>
           )}
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90"
           >
             Login
           </button>

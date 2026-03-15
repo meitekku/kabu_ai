@@ -28,8 +28,8 @@ const TYPE_STYLES: Record<
   },
   trading_value: {
     accentColor: "border-l-blue-500",
-    badgeBg: "bg-blue-50",
-    badgeText: "text-blue-700",
+    badgeBg: "bg-accent",
+    badgeText: "text-primary",
     icon: "💹",
   },
   stop_high: {
@@ -82,7 +82,7 @@ function ChangeRateBadge({ rate }: { rate: number | null }) {
   return (
     <span
       className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0 tabular-nums ${
-        pos ? "text-emerald-700 bg-emerald-50" : "text-red-600 bg-red-50"
+        pos ? "text-shikiho-positive bg-shikiho-positive/10" : "text-shikiho-negative bg-shikiho-negative/10"
       }`}
     >
       {pos ? "▲" : "▼"} {Math.abs(rate).toFixed(1)}%
@@ -121,19 +121,19 @@ function TrendingCard({
 
   return (
     <Link href={item.post_url} className="block group h-full">
-      <article className={`bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-card-hover transition-all duration-200 overflow-hidden h-full flex flex-col hover:-translate-y-0.5`}>
+      <article className={`bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all duration-200 overflow-hidden h-full flex flex-col hover:-translate-y-0.5`}>
         <div
-          className={`flex items-center justify-between gap-1.5 sm:gap-2 px-3 py-2 bg-gray-50/80 border-b border-gray-100 border-l-[3px] ${styles.accentColor}`}
+          className={`flex items-center justify-between gap-1.5 sm:gap-2 px-3 py-2 bg-muted/80 border-b border-border border-l-[3px] ${styles.accentColor}`}
         >
           <div className="flex items-center gap-1.5 min-w-0">
             {item.code && <LogoIcon code={item.code} />}
             {item.company_name && (
-              <span className="text-[11px] sm:text-xs font-semibold text-gray-700 truncate">
+              <span className="text-[11px] sm:text-xs font-semibold text-foreground truncate">
                 {item.company_name}
               </span>
             )}
             {item.code && (
-              <span className="text-[11px] sm:text-xs text-gray-400 flex-shrink-0 font-mono tabular-nums">
+              <span className="text-[11px] sm:text-xs text-muted-foreground flex-shrink-0 font-mono tabular-nums">
                 {item.code}
               </span>
             )}
@@ -142,22 +142,22 @@ function TrendingCard({
         </div>
 
         <div className="px-3 py-2.5 flex flex-col flex-grow gap-1">
-          <h3 className="text-xs sm:text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors leading-snug">
+          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
             {title}
           </h3>
           {item.excerpt && (
-            <p className="text-[11px] sm:text-xs text-gray-400 line-clamp-1 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 leading-relaxed">
               {item.excerpt}
             </p>
           )}
         </div>
 
-        <div className="flex items-center justify-between px-3 py-2 border-t border-gray-50">
-          <span className="text-[11px] sm:text-xs text-gray-400">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
+          <span className="text-[11px] sm:text-xs text-muted-foreground">
             {formatTimeAgo(item.created_at)}
           </span>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <span className="text-[10px] sm:text-[11px] text-gray-300 hidden sm:inline">AI分析</span>
+            <span className="text-[10px] sm:text-[11px] text-muted-foreground/50 hidden sm:inline">AI分析</span>
             {item.code && (
               <SparklineChart
                 code={item.code}
@@ -176,35 +176,35 @@ function TrendingCard({
 function SectionSkeleton() {
   return (
     <div className="mb-6 sm:mb-8">
-      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-gray-100">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-gray-100 rounded animate-pulse" />
-          <div className="h-4 bg-gray-100 rounded w-28 animate-pulse" />
+          <div className="w-5 h-5 bg-secondary rounded animate-pulse" />
+          <div className="h-4 bg-secondary rounded w-28 animate-pulse" />
         </div>
-        <div className="h-5 bg-gray-100 rounded w-14 animate-pulse" />
+        <div className="h-5 bg-secondary rounded w-14 animate-pulse" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col"
+            className="bg-card rounded-xl border border-border overflow-hidden flex flex-col"
           >
-            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gray-50/80 border-b border-gray-100 border-l-[3px] border-l-gray-200">
+            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/80 border-b border-border border-l-[3px] border-l-border">
               <div className="flex items-center gap-1.5">
-                <div className="w-7 h-7 bg-gray-100 rounded-md animate-pulse flex-shrink-0" />
-                <div className="h-3 bg-gray-100 rounded w-20 animate-pulse" />
-                <div className="h-3 bg-gray-100 rounded w-8 animate-pulse" />
+                <div className="w-7 h-7 bg-secondary rounded-md animate-pulse flex-shrink-0" />
+                <div className="h-3 bg-secondary rounded w-20 animate-pulse" />
+                <div className="h-3 bg-secondary rounded w-8 animate-pulse" />
               </div>
-              <div className="h-5 bg-gray-100 rounded w-12 animate-pulse flex-shrink-0" />
+              <div className="h-5 bg-secondary rounded w-12 animate-pulse flex-shrink-0" />
             </div>
             <div className="px-3 py-2.5 flex flex-col gap-1 flex-grow">
-              <div className="h-3.5 bg-gray-100 rounded w-full animate-pulse" />
-              <div className="h-3.5 bg-gray-100 rounded w-4/5 animate-pulse" />
-              <div className="h-2.5 bg-gray-100 rounded w-3/5 animate-pulse mt-0.5" />
+              <div className="h-3.5 bg-secondary rounded w-full animate-pulse" />
+              <div className="h-3.5 bg-secondary rounded w-4/5 animate-pulse" />
+              <div className="h-2.5 bg-secondary rounded w-3/5 animate-pulse mt-0.5" />
             </div>
-            <div className="flex items-center justify-between px-3 py-2 border-t border-gray-50">
-              <div className="h-2.5 bg-gray-100 rounded w-10 animate-pulse" />
-              <div className="h-4 bg-gray-100 rounded w-20 animate-pulse" />
+            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
+              <div className="h-2.5 bg-secondary rounded w-10 animate-pulse" />
+              <div className="h-4 bg-secondary rounded w-20 animate-pulse" />
             </div>
           </div>
         ))}
@@ -223,10 +223,10 @@ function SectionBlock({
   const styles = TYPE_STYLES[section.type];
   return (
     <div className="mb-6 sm:mb-8">
-      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-gray-100">
+      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
           <span className="text-base leading-none">{styles.icon}</span>
-          <h2 className="text-sm font-semibold text-gray-900 tracking-wide">
+          <h2 className="text-sm font-semibold text-foreground tracking-wide">
             {section.label}
           </h2>
         </div>
@@ -249,7 +249,7 @@ function SectionBlock({
           ))}
         </div>
       ) : (
-        <div className="text-sm text-gray-400 py-8 text-center bg-gray-50 rounded-xl border border-gray-100">
+        <div className="text-sm text-muted-foreground py-8 text-center bg-muted rounded-xl border border-border">
           現在データがありません
         </div>
       )}

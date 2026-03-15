@@ -281,12 +281,12 @@ export default function Home() {
 
       {loading && (
         <div className="text-center py-4">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
         </div>
       )}
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+        <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md border border-destructive/20">
           {error}
         </div>
       )}
@@ -295,7 +295,7 @@ export default function Home() {
         <div className="mb-4 flex justify-center">
           <Button
             onClick={handleCopyClick}
-            className="w-full max-w-xs flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full max-w-xs flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white"
           >
             <Copy className="w-4 h-4" />
             コメントをコピー
@@ -306,7 +306,7 @@ export default function Home() {
       <div className="space-y-4">
         {comments.length > 0 && (
           <div className="mb-4">
-            <div className="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">
+            <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap">
               {combinedCommentText}
             </div>
           </div>
@@ -314,7 +314,7 @@ export default function Home() {
       </div>
 
       {comments.length > 0 && (
-        <div className="mt-4 text-sm text-gray-600">
+        <div className="mt-4 text-sm text-muted-foreground">
           {comments.length}件のコメントを表示中
         </div>
       )}

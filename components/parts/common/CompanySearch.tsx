@@ -216,7 +216,7 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
     <div className="w-full max-w-4xl mx-auto" ref={containerRef}>
       <div className="relative">
         <div className="relative">
-          <Search className={`absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+          <Search className={`absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`} />
           <input
             type="text"
             value={searchTerm}
@@ -227,14 +227,14 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
             className={`w-full pl-10 pr-4 py-2 sm:py-2.5 rounded-lg text-[14px] focus:outline-none transition-all ${
               isDark
                 ? "bg-slate-900 text-white placeholder-slate-500 border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                : "bg-gray-100 text-gray-900 placeholder:text-gray-400 border border-transparent focus:bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-300"
+                : "bg-secondary text-foreground placeholder:text-muted-foreground border border-transparent focus:bg-card focus:border-border focus:ring-1 focus:ring-border"
             }`}
           />
         </div>
 
         {(suggestions.length > 0 || (showHistory && searchHistory.length > 0)) && (
           <div className={`absolute w-full mt-1.5 rounded-xl shadow-lg border overflow-hidden z-50 ${
-            isDark ? "bg-slate-900 border-slate-700" : "bg-white border-gray-200"
+            isDark ? "bg-slate-900 border-slate-700" : "bg-card border-border"
           }`}>
             <ul>
               {showHistory ? (
@@ -242,22 +242,22 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={`${history.company.id}-${history.timestamp}`}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-gray-50"
+                      isDark ? "border-slate-800" : "border-border"
                     } ${
                       index === selectedIndex
-                        ? (isDark ? 'bg-slate-800' : 'bg-gray-50')
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
+                        ? (isDark ? 'bg-slate-800' : 'bg-accent')
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-accent')
                     }`}
                     onClick={() => selectCompany(history.company)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="flex items-center px-4 py-2.5">
-                      <Clock className="text-gray-300 w-3.5 h-3.5 mr-3" />
-                      <span className="text-gray-400 font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{history.company.id}</span>
+                      <Clock className="text-muted-foreground w-3.5 h-3.5 mr-3" />
+                      <span className="text-muted-foreground font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{history.company.id}</span>
                       {/^[A-Z]+$/.test(history.company.id) && (
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
+                        <span className="text-[10px] bg-accent text-primary px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
                       )}
-                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{history.company.name}</span>
+                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-foreground"}`}>{history.company.name}</span>
                     </div>
                   </li>
                 ))
@@ -266,21 +266,21 @@ const CompanySearch: React.FC<CompanySearchProps> = ({
                   <li
                     key={company.id}
                     className={`border-b last:border-b-0 cursor-pointer ${
-                      isDark ? "border-slate-800" : "border-gray-50"
+                      isDark ? "border-slate-800" : "border-border"
                     } ${
                       index === selectedIndex
-                        ? (isDark ? 'bg-slate-800' : 'bg-gray-50')
-                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-gray-50')
+                        ? (isDark ? 'bg-slate-800' : 'bg-accent')
+                        : (isDark ? 'hover:bg-slate-800/50' : 'hover:bg-accent')
                     }`}
                     onClick={() => selectCompany(company)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="flex items-center px-4 py-2.5">
-                      <span className="text-gray-400 font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{company.id}</span>
+                      <span className="text-muted-foreground font-medium text-xs sm:text-sm mr-4 min-w-[3rem] font-mono tabular-nums">{company.id}</span>
                       {/^[A-Z]+$/.test(company.id) && (
-                        <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
+                        <span className="text-[10px] bg-accent text-primary px-1.5 py-0.5 rounded mr-2 font-semibold">US</span>
                       )}
-                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-gray-700"}`}>{company.name}</span>
+                      <span className={`text-xs sm:text-sm ${isDark ? "text-slate-200" : "text-foreground"}`}>{company.name}</span>
                     </div>
                   </li>
                 ))

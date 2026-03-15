@@ -472,7 +472,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
               key={item.id}
               className={`relative rounded-lg border p-4 transition-opacity duration-500 ${
                 fadingOut[item.id] ? 'opacity-0' : 'opacity-100'
-              } ${selectedOrder >= 0 ? 'border-blue-400 ring-2 ring-blue-200' : ''}`}
+              } ${selectedOrder >= 0 ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}
             >
               <div className="flex flex-col items-start gap-4 md:flex-row">
                 <div className="min-w-0 w-full flex-1">
@@ -498,7 +498,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                     ref={el => { chartButtonRefs.current[item.id] = el; }}
                     data-chart-id={item.id}
                     onClick={() => toggleChart(item.id)}
-                    className="mt-2 mb-2 flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1 text-sm transition-colors hover:bg-gray-200"
+                    className="mt-2 mb-2 flex items-center gap-2 rounded-lg bg-secondary px-3 py-1 text-sm transition-colors hover:bg-accent"
                   >
                     <span
                       className="inline-block transition-transform duration-200"
@@ -508,7 +508,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                     </span>
                     チャートを{expandedCharts[item.id] ? '非表示' : '表示'}
                     {autoExpandedIds.has(item.id) && !expandedCharts[item.id] && (
-                      <span className="text-xs text-gray-500">（自動展開済み）</span>
+                      <span className="text-xs text-muted-foreground">（自動展開済み）</span>
                     )}
                   </button>
 
@@ -542,14 +542,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                     </div>
                   )}
 
-                  <p className="mt-2 text-sm text-gray-500">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     作成日時: {ServerToDate(item.created_at)}
                   </p>
                 </div>
 
                 <div className="order-last flex w-full flex-col gap-2 md:sticky md:top-4 md:w-[220px] md:flex-shrink-0 md:pt-2">
                   {enableBatchPosting && (
-                    <label className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm">
+                    <label className="flex items-center gap-2 rounded-lg border border-primary/20 bg-accent px-3 py-2 text-sm">
                       <input
                         type="checkbox"
                         checked={selectedOrder >= 0}
@@ -559,7 +559,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                       />
                       <span>一括投稿に追加</span>
                       {selectedOrder >= 0 && (
-                        <span className="ml-auto rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">
+                        <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-xs text-white">
                           {selectedOrder + 1}番目
                         </span>
                       )}
@@ -582,7 +582,7 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                   </button>
                   <button
                     onClick={() => handleCopy(item.id)}
-                    className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+                    className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90"
                   >
                     コピー
                   </button>
@@ -617,17 +617,17 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
       </ul>
 
       {showBatchBar && (
-        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-4xl -translate-x-1/2 rounded-2xl border border-slate-300 bg-white/95 shadow-2xl backdrop-blur">
+        <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-4xl -translate-x-1/2 rounded-2xl border border-border bg-card/95 shadow-2xl backdrop-blur">
           <div className="flex flex-col gap-3 p-4 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <p className="text-xs text-slate-500">選択数</p>
-                <div className="rounded-lg border bg-slate-50 px-3 py-2 text-sm font-semibold">
+                <p className="text-xs text-muted-foreground">選択数</p>
+                <div className="rounded-lg border border-border bg-muted px-3 py-2 text-sm font-semibold">
                   {selectedIds.length} 件
                 </div>
               </div>
               <label>
-                <p className="text-xs text-slate-500">投稿間隔(分)</p>
+                <p className="text-xs text-muted-foreground">投稿間隔(分)</p>
                 <input
                   type="number"
                   min="5"
@@ -639,8 +639,8 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                 />
               </label>
               <div>
-                <p className="text-xs text-slate-500">カウント</p>
-                <div className="min-w-24 rounded-lg border bg-slate-50 px-3 py-2 text-sm font-semibold">
+                <p className="text-xs text-muted-foreground">カウント</p>
+                <div className="min-w-24 rounded-lg border border-border bg-muted px-3 py-2 text-sm font-semibold">
                   {formatCountdown(countdownSeconds)}
                 </div>
               </div>
@@ -658,14 +658,14 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
                 {isBatchPosting && (
                   <button
                     onClick={stopBatchPosting}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent"
                   >
                     停止
                   </button>
                 )}
               </div>
-              {batchStatus && <p className="text-sm text-slate-600">{batchStatus}</p>}
-              {batchError && <p className="text-sm text-red-600">{batchError}</p>}
+              {batchStatus && <p className="text-sm text-muted-foreground">{batchStatus}</p>}
+              {batchError && <p className="text-sm text-destructive">{batchError}</p>}
             </div>
           </div>
         </div>

@@ -97,14 +97,14 @@ export default function ArticlePromptPage() {
 
   return (
     <main className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">記事プロンプト確認</h1>
+      <h1 className="text-3xl font-bold mb-6 text-foreground">記事プロンプト確認</h1>
 
       <div className="mb-8">
-        <label htmlFor="company-select" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="company-select" className="block text-sm font-medium text-foreground mb-2">
           会社を選択
         </label>
         {loadingCompanies ? (
-          <div className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+          <div className="w-full max-w-md px-4 py-2 border border-border rounded-md bg-muted text-muted-foreground">
             読み込み中...
           </div>
         ) : (
@@ -112,7 +112,7 @@ export default function ArticlePromptPage() {
             id="company-select"
             value={selectedCode}
             onChange={handleCompanyChange}
-            className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full max-w-md px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground"
           >
             <option value="">-- 選択してください --</option>
             {companies.map((company) => (
@@ -126,7 +126,7 @@ export default function ArticlePromptPage() {
 
       {loading && (
         <div className="flex justify-center p-8">
-          <div className="text-gray-600">読み込み中...</div>
+          <div className="text-muted-foreground">読み込み中...</div>
         </div>
       )}
 
@@ -139,36 +139,36 @@ export default function ArticlePromptPage() {
       {data && (
         <div className="space-y-6">
           {/* プロンプト表示 */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">プロンプト</h2>
-            <div className="bg-gray-50 p-4 rounded-md">
-              <p className="text-sm text-gray-600 mb-2">Code: {data.prompt.code}</p>
-              <p className="whitespace-pre-wrap text-gray-800">{data.prompt.prompt}</p>
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-4 text-foreground">プロンプト</h2>
+            <div className="bg-muted p-4 rounded-md">
+              <p className="text-sm text-muted-foreground mb-2">Code: {data.prompt.code}</p>
+              <p className="whitespace-pre-wrap text-foreground">{data.prompt.prompt}</p>
             </div>
           </div>
 
           {/* 記事データ表示 */}
           {data.articles.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-4 text-gray-800">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+              <h2 className="text-xl font-bold mb-4 text-foreground">
                 本日の最新記事
               </h2>
               <div className="space-y-4">
                 {data.articles.map((article) => (
                   <div
                     key={article.id}
-                    className="border border-gray-200 rounded-md p-4 bg-gray-50"
+                    className="border border-border rounded-md p-4 bg-muted"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-lg text-gray-800">{article.title}</h3>
-                      <span className="text-xs text-gray-500">
+                      <h3 className="font-bold text-lg text-foreground">{article.title}</h3>
+                      <span className="text-xs text-muted-foreground">
                         {new Date(article.created_at).toLocaleString('ja-JP')}
                       </span>
                     </div>
-                    <p className="whitespace-pre-wrap text-gray-700 text-sm">
+                    <p className="whitespace-pre-wrap text-foreground text-sm">
                       {article.content}
                       {article.content.length >= 500 && (
-                        <span className="text-gray-400 italic"> ...</span>
+                        <span className="text-muted-foreground italic"> ...</span>
                       )}
                     </p>
                   </div>
