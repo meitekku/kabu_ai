@@ -62,14 +62,14 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // site=72の記事を除外
+          // site=72（除外）とsite=80,81（US株）を除外
           if (operation.table === 'post') {
             if (operation.data.includes('code')) {
-              conditionParts.push(`p.site != ?`);
+              conditionParts.push(`p.site NOT IN (?, ?, ?)`);
             } else {
-              conditionParts.push(`site != ?`);
+              conditionParts.push(`site NOT IN (?, ?, ?)`);
             }
-            params.push(72);
+            params.push(72, 80, 81);
           }
 
           // 現在時刻を取得
