@@ -313,8 +313,12 @@ export default function TrendingSection({
 
   return (
     <>
-      <SectionBlock section={data.section1} sparklines={sparklines} />
-      <SectionBlock section={data.section2} sparklines={sparklines} />
+      {data.section1.items.length > 0 && (
+        <SectionBlock section={data.section1} sparklines={sparklines} />
+      )}
+      {data.section2.items.length > 0 && (
+        <SectionBlock section={data.section2} sparklines={sparklines} />
+      )}
     </>
   );
 }
