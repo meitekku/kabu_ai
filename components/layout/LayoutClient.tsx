@@ -34,7 +34,7 @@ export default function LayoutClient({
   const isBbsPage = pathname?.startsWith('/bbs')
   const isAnyChatPage = isChatPage || isAgentChatPage
   const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage
-  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:w-[920px]'
+  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:flex-1'
   const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
   const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)
 
@@ -103,25 +103,25 @@ export default function LayoutClient({
   const showSidebar = !isFullWidthPage
 
   return (
-    <div className="min-h-screen flex flex-col bg-card">
+    <div className="min-h-screen flex flex-col bg-background">
       <GlobalNavigation />
       <Header marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
-      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 sm:px-6 py-6 sm:py-8'} overflow-x-auto`}>
-        <div className="flex flex-col md:flex-row gap-8 md:gap-10 min-w-0">
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 sm:px-5 py-4 sm:py-5'} overflow-x-auto`}>
+        <div className={`flex flex-col md:flex-row gap-6 md:gap-8 min-w-0${!isFullWidthPage ? ' bg-white' : ''}`}>
           <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
             {children}
           </main>
           {showSidebar && (
             <>
               {/* Desktop sidebar */}
-              <aside className="hidden md:block w-[300px] flex-shrink-0">
+              <aside className="hidden md:block w-[300px] flex-shrink-0 border-l border-[#e5e5e5] pl-8 dark:border-[#2a2a2a]">
                 <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
               </aside>
               {/* Mobile sidebar drawer */}
               <div className="md:hidden fixed bottom-5 right-5 z-40">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <button className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-all hover:scale-105">
+                    <button className="w-12 h-12 rounded-full bg-[#cc0000] text-white shadow-lg flex items-center justify-center hover:bg-[#990000] transition-all hover:scale-105">
                       <BarChart3 className="w-5 h-5" />
                     </button>
                   </SheetTrigger>

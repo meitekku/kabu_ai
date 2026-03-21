@@ -12,7 +12,7 @@ const Footer = ({ isDark: _isDark }: { isDark?: boolean }) => {
     return (
         <footer>
             {/* メインフッター — グレー背景 */}
-            <div className="border-t border-[#d9d9d9] bg-white dark:border-[#333] dark:bg-[#2a2a2a]">
+            <div className="border-t border-[#d9d9d9] bg-[#f5f5f5] dark:border-[#333] dark:bg-[#2a2a2a]">
                 <div className="max-w-[1280px] mx-auto px-4 py-6">
                     <nav className="grid grid-cols-2 gap-x-3 gap-y-1 sm:flex sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-1">
                         {FOOTER_LINKS.map((link) => (

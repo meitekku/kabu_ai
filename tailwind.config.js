@@ -46,7 +46,7 @@ module.exports = {
           'text-tertiary': '#999999',
           'link-primary': '#cc0000',
           'link-secondary': '#990000',
-          'bg-body': '#ffffff',
+          'bg-body': '#f5f5f5',
           'bg-gray': '#fafafa',
           'bg-gray-light': '#f2f2f2',
           'bg-border': '#d9d9d9',
