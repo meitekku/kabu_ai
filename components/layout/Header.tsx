@@ -130,25 +130,25 @@ const HeaderContent = ({ isRoot, pathname, user, marketData, suspendFetch = fals
       {/* Top Bar - black ticker bar (hidden on admin pages) */}
       {!isAdminPage && (
         <div className="bg-[#1a1a1a]">
-          <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6" style={{ minHeight: '48px' }}>
+          <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6" style={{ minHeight: '36px' }}>
             {/* Left: Market Ticker */}
-            <div className="hidden sm:flex items-stretch overflow-x-auto">
+            <div className="hidden sm:flex items-center overflow-x-auto">
               <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
             </div>
             {/* Mobile: all 4 indicators with horizontal scroll */}
-            <div className="flex sm:hidden items-stretch overflow-x-auto whitespace-nowrap">
+            <div className="flex sm:hidden items-center overflow-x-auto">
               <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
-              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
               <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
             </div>
             {/* Right: Login / User Menu */}
