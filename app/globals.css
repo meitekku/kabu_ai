@@ -4,60 +4,60 @@
 
 @layer base {
   :root {
-    /* Shikiho Pro — ライトモード */
-    --background: 210 18% 97%;
-    --foreground: 221 38% 12%;
+    /* 楽天証券風 黒ベース + 赤アクセント — ライトモード */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;
     --card: 0 0% 100%;
-    --card-foreground: 221 38% 12%;
+    --card-foreground: 0 0% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 221 38% 12%;
-    --primary: 221 83% 52%;
+    --popover-foreground: 0 0% 13%;
+    --primary: 0 0% 10%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 95%;
-    --secondary-foreground: 221 38% 12%;
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 9% 47%;
-    --accent: 214 96% 96%;
-    --accent-foreground: 221 80% 42%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 41%;
+    --accent: 0 100% 40%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 12% 90%;
-    --input: 220 12% 90%;
-    --ring: 221 83% 52%;
-    --radius: 0.375rem;
-    --chart-1: 221 83% 52%;
-    --chart-2: 160 84% 39%;
-    --chart-3: 0 84% 60%;
-    --chart-4: 221 38% 12%;
-    --chart-5: 38 92% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 85%;
+    --input: 0 0% 82%;
+    --ring: 0 0% 10%;
+    --radius: 0.25rem;
+    --chart-1: 0 0% 10%;
+    --chart-2: 0 100% 40%;
+    --chart-3: 160 84% 39%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 0% 50%;
   }
 
   .dark {
-    /* Shikiho Pro — ダークモード */
-    --background: 222 44% 7%;
-    --foreground: 210 36% 96%;
-    --card: 222 44% 10%;
-    --card-foreground: 210 36% 96%;
-    --popover: 222 44% 7%;
-    --popover-foreground: 210 36% 96%;
-    --primary: 213 90% 66%;
-    --primary-foreground: 222 44% 7%;
-    --secondary: 217 30% 17%;
-    --secondary-foreground: 210 36% 96%;
-    --muted: 217 30% 17%;
-    --muted-foreground: 215 18% 64%;
-    --accent: 217 30% 22%;
-    --accent-foreground: 213 90% 66%;
-    --destructive: 0 63% 42%;
-    --destructive-foreground: 210 36% 96%;
-    --border: 217 30% 21%;
-    --input: 217 30% 21%;
-    --ring: 213 90% 66%;
-    --chart-1: 221 80% 58%;
-    --chart-2: 160 78% 46%;
-    --chart-3: 0 80% 62%;
-    --chart-4: 213 90% 66%;
-    --chart-5: 38 88% 54%;
+    /* 楽天証券風 黒ベース + 赤アクセント — ダークモード */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 0 0% 92%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 90% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 80%;
+    --chart-1: 0 0% 85%;
+    --chart-2: 0 90% 55%;
+    --chart-3: 160 70% 50%;
+    --chart-4: 38 80% 55%;
+    --chart-5: 0 0% 55%;
   }
 }
 
@@ -72,5 +72,93 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.72;
   }
+  a:not([class]) {
+    color: #cc0000;
+  }
+  a:not([class]):hover {
+    color: #990000;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: 2px;
+  }
+
+  /* セクション見出しの共通スタイル */
+  .section-header-black {
+    background-color: #1a1a1a;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 0.25rem 0.25rem 0 0;
+  }
+
+  /* 楽天風テーブルの共通スタイル */
+  .rakuten-table {
+    border: 1px solid #e5e5e5;
+    border-radius: 0 0 0.25rem 0.25rem;
+    overflow: hidden;
+  }
+
+  .rakuten-table tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  .rakuten-table tr:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* 赤アクセントリンク */
+  .accent-link {
+    color: #cc0000;
+    transition: color 0.2s;
+  }
+  .accent-link:hover {
+    color: #990000;
+    text-decoration: underline;
+  }
+}
+
+/* スリムスクロールバー（楽天風） */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* テキスト選択色 */
+::selection {
+  background: rgba(204, 0, 0, 0.15);
+  color: #1a1a1a;
+}
+
+/* フローティングボタンアニメーション */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+.animate-float-delay-1 {
+  animation: float 3s ease-in-out 0.5s infinite;
+}
+.animate-float-delay-2 {
+  animation: float 3s ease-in-out 1s infinite;
+}
+.animate-float-delay-3 {
+  animation: float 3s ease-in-out 1.5s infinite;
 }

@@ -33,11 +33,17 @@ export default async function Home() {
     carouselResult.status === 'fulfilled' ? carouselResult.value : [];
 
   return (
-    <DefaultTemplate>
+    <DefaultTemplate variant="plain">
       <HeroCarousel initialSlides={carouselSlides} />
-      <TrendingSection initialData={trendingData} />
-      <h2 className="text-base font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-100">新着ニュース</h2>
-      <NewsListS more={true} site={[1, 70]} initialData={latestInitialData} />
+      <div className="bg-white py-5 -mx-4 px-4 sm:-mx-6 sm:px-6 rounded">
+        <TrendingSection initialData={trendingData} />
+      </div>
+      <div className="bg-white py-5">
+        <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-bold rounded-t">新着ニュース</div>
+        <div className="border border-[#e5e5e5] border-t-0 rounded-b">
+          <NewsListS more={true} site={[1, 70]} initialData={latestInitialData} />
+        </div>
+      </div>
     </DefaultTemplate>
   );
 }
