@@ -39,8 +39,7 @@ export default async function Home() {
         <TrendingSection initialData={trendingData} />
       </div>
       <div className="bg-white py-5">
-        <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-bold rounded-t">新着ニュース</div>
-        <div className="border border-[#e5e5e5] border-t-0 rounded-b">
+        <div className="border border-[#e5e5e5] rounded">
           <NewsListS more={true} site={[1, 70]} initialData={latestInitialData} />
         </div>
       </div>

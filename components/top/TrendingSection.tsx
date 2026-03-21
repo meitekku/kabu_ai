@@ -239,26 +239,11 @@ function SectionBlock({
   section: TrendingSectionData;
   sparklines: Record<string, { prices: number[]; change: number | null }>;
 }) {
-  const styles = TYPE_STYLES[section.type];
   const displayItems = section.items;
   return (
     <div className="mb-4 sm:mb-5">
-      <div className="border-l-[3px] border-[#1a1a1a] bg-[#f8f8f8] py-1.5 px-3 border-b border-[#e5e5e5] flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm leading-none">{styles.icon}</span>
-          <h2 className="text-[13px] font-bold text-foreground">
-            {section.label}
-          </h2>
-        </div>
-        <span
-          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${styles.badgeBg} ${styles.badgeText}`}
-        >
-          {section.time_label}
-        </span>
-      </div>
-
       {displayItems.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {displayItems.map((item, idx) => (
             <TrendingCard
               key={item.post_id}
@@ -334,10 +319,7 @@ export default function TrendingSection({
 
   return (
     <div>
-      <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-extrabold rounded-t tracking-wide">
-        市場動向
-      </div>
-      <div className="border border-[#e5e5e5] border-t-0 rounded-b p-3">
+      <div className="border border-[#e5e5e5] rounded p-3">
         {data.section1.items.length > 0 && (
           <SectionBlock section={data.section1} sparklines={sparklines} />
         )}
