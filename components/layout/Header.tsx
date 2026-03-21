@@ -202,44 +202,6 @@ const HeaderContent = ({ isRoot, pathname, user, marketData, suspendFetch = fals
         </div>
       </div>
 
-      {/* Global Navigation Bar (hidden on admin pages) */}
-      {!isAdminPage && (
-        <nav className="bg-white border-b border-[#d9d9d9]">
-          <div className="max-w-[1280px] mx-auto px-4">
-            <div className="flex justify-start gap-0 overflow-x-auto whitespace-nowrap md:overflow-visible" style={{ minHeight: '44px' }}>
-              {[
-                { label: 'トップ', href: '/' },
-                { label: 'ニュース', href: '/news/latest' },
-                { label: 'ランキング', href: '#' },
-                { label: 'お気に入り', href: '/favorites' },
-                { label: 'AI予測', href: '#' },
-                { label: 'AIチャット', href: '/chat' },
-                { label: '掲示板', href: '/bbs' },
-              ].map(({ label, href }, idx, arr) => {
-                const isActive = href === '/'
-                  ? pathname === '/'
-                  : href !== '#' && pathname.startsWith(href);
-                const isLast = idx === arr.length - 1;
-                return (
-                  <Link
-                    key={label}
-                    href={href}
-                    className={`inline-flex items-center px-5 text-[13px] font-semibold transition-colors duration-200 ${
-                      !isLast ? 'border-r border-[#e5e5e5]' : ''
-                    } ${
-                      isActive
-                        ? 'text-[#1a1a1a] border-b-2 border-b-[#1a1a1a] pb-[calc(0.625rem-1px)] pt-[0.625rem]'
-                        : 'text-[#333] hover:text-[#cc0000] hover:border-b-2 hover:border-b-[#333] hover:pb-[calc(0.625rem-1px)] hover:pt-[0.625rem] py-2.5'
-                    }`}
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-      )}
     </header>
   );
 };
