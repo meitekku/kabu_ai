@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import TermsPage from "@/app/terms/page";
 import PrivacyPolicyPage from "@/app/privacy-policy/page";
@@ -65,9 +65,9 @@ describe("legal/static pages", () => {
   });
 
   it("renders premium success page", async () => {
-    await act(() => {
-      render(<SuccessPage />);
-    });
+    // SuccessPage is an async Server Component — call it as a function and render the JSX
+    const element = await SuccessPage();
+    render(element);
     expect(
       screen.getByRole("heading", { name: "ありがとうございます！" })
     ).toBeInTheDocument();

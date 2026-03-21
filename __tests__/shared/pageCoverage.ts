@@ -16,6 +16,7 @@ export const PAGE_COVERAGE = [
   { template: "/agent-chat", systemPath: "/agent-chat" },
   { template: "/bbs", systemPath: "/bbs" },
   { template: "/chat", systemPath: "/chat?code=7203" },
+  { template: "/content/[id]", systemPath: "/content/1" },
   {
     template: "/commercial-transactions",
     systemPath: "/commercial-transactions",
