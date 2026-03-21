@@ -27,11 +27,11 @@ export interface CompanyData {
 }
 
 export const CurrentPriceInfoSkeleton = ({ isDark = false }: { isDark?: boolean }) => (
-  <div className="flex items-center space-x-3 px-3 py-1.5">
-    <div className="animate-pulse flex items-center space-x-3">
-      <div className={`h-3.5 rounded w-14 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
-      <div className={`h-3.5 rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
-      <div className={`h-3.5 rounded w-10 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
+  <div className="flex flex-col justify-center px-3 py-1.5 animate-pulse">
+    <div className={`h-[10px] rounded w-14 mb-1.5 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
+    <div className="flex items-center gap-1.5">
+      <div className={`h-[13px] rounded w-16 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
+      <div className={`h-[11px] rounded w-12 ${isDark ? 'bg-slate-800' : 'bg-secondary'}`}></div>
     </div>
   </div>
 );
@@ -107,20 +107,25 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
   }
 
   return (
-    <Link href={`/stocks/${code}/news`} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${isDark ? 'hover:bg-slate-800' : 'hover:bg-card hover:shadow-card'}`}>
-      <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-muted-foreground'}`}>{data.name}</span>
-      <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-foreground'}`}>
-        {data.current_price
-          ? `${data.current_price.toLocaleString()}`
-          : '---'}
+    <Link
+      href={`/stocks/${code}/news`}
+      className={`flex flex-col justify-center px-3 py-1.5 rounded transition-all cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-card hover:shadow-card'}`}
+    >
+      <span className={`text-[10px] leading-none mb-1 ${isDark ? 'text-gray-500' : 'text-muted-foreground'}`}>
+        {data.name}
       </span>
-      {data.diff_percent ? (
-        <span className={`${priceColor} text-xs font-semibold tabular-nums`}>
-          {data.diff_percent > 0 ? '+' : ''}{data.diff_percent}%
+      <div className="flex items-center gap-1.5">
+        <span className={`text-[13px] font-bold tabular-nums leading-none ${isDark ? 'text-gray-100' : 'text-foreground'}`}>
+          {data.current_price ? data.current_price.toLocaleString() : '---'}
         </span>
-      ) : (
-        <span className="text-xs text-gray-300">-</span>
-      )}
+        {data.diff_percent ? (
+          <span className={`${priceColor} text-[11px] font-bold tabular-nums leading-none`}>
+            {isPriceUp ? '▲' : '▼'}{Math.abs(data.diff_percent).toFixed(2)}%
+          </span>
+        ) : (
+          <span className={`text-[11px] leading-none ${isDark ? 'text-gray-600' : 'text-muted-foreground'}`}>-</span>
+        )}
+      </div>
     </Link>
   );
 };

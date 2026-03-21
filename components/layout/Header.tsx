@@ -38,35 +38,36 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-2 min-h-[44px] rounded-lg hover:bg-accent transition-colors"
+        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 transition-colors"
       >
         {user.image ? (
           <Image
             src={user.image}
             alt={displayName}
-            width={32}
-            height={32}
+            width={24}
+            height={24}
             className="rounded-full"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+          <div className="w-6 h-6 rounded-full bg-[#bf0000] text-white flex items-center justify-center text-xs font-medium">
             {initial}
           </div>
         )}
-        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <span className="hidden sm:inline text-xs text-white/80">{displayName}</span>
+        <ChevronDown className={`w-3 h-3 text-white/60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-card rounded-xl shadow-lg border border-border py-1 z-50">
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#d9d9d9] py-1 z-50">
+          <div className="px-4 py-3 border-b border-[#e5e5e5]">
+            <p className="text-sm font-semibold text-[#333] truncate">{displayName}</p>
+            <p className="text-xs text-[#888] truncate mt-0.5">{user.email}</p>
           </div>
 
           <div className="py-1">
             <Link
               href="/premium"
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground min-h-[44px] transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#555] hover:bg-[#f5f5f5] hover:text-[#333] min-h-[44px] transition-colors"
               onClick={() => setIsOpen(false)}
             >
               <Crown className="w-4 h-4 text-amber-500" />
@@ -74,7 +75,7 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             </Link>
             <Link
               href="/favorites"
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground min-h-[44px] transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#555] hover:bg-[#f5f5f5] hover:text-[#333] min-h-[44px] transition-colors"
               onClick={() => setIsOpen(false)}
             >
               <Heart className="w-4 h-4 text-rose-400" />
@@ -82,18 +83,18 @@ const UserMenu = ({ user }: { user: { name?: string | null; email?: string | nul
             </Link>
             <Link
               href="/settings/billing"
-              className="flex items-center gap-3 px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground min-h-[44px] transition-colors"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#555] hover:bg-[#f5f5f5] hover:text-[#333] min-h-[44px] transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              <Settings className="w-4 h-4 text-muted-foreground" />
+              <Settings className="w-4 h-4 text-[#888]" />
               請求・プラン管理
             </Link>
           </div>
 
-          <div className="border-t border-border py-1">
+          <div className="border-t border-[#e5e5e5] py-1">
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-muted-foreground hover:bg-red-50 hover:text-red-600 min-h-[44px] transition-colors"
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-[#555] hover:bg-red-50 hover:text-red-600 min-h-[44px] transition-colors"
             >
               <LogOut className="w-4 h-4" />
               ログアウト
@@ -112,10 +113,11 @@ const HeaderContent = ({ isRoot, pathname, user, marketData, suspendFetch = fals
   marketData?: Record<string, CompanyData>;
   suspendFetch?: boolean;
 }) => {
-  const icon = <Image src='/logo.webp' alt='' width={100} height={50} />;
+  const isAdminPage = pathname.includes('/admin/');
+  const icon = <Image src='/logo.webp' alt='' width={120} height={60} className="h-[34px] w-auto" />;
   const logoLink = (
     <Link href="/" className="hover:opacity-80 flex items-center justify-center transition-opacity">
-      {pathname.includes('/admin/') ? (
+      {isAdminPage ? (
         <span className="text-xl font-bold text-foreground">株AI 管理画面</span>
       ) : (
         icon
@@ -124,42 +126,119 @@ const HeaderContent = ({ isRoot, pathname, user, marketData, suspendFetch = fals
   );
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md border-b bg-card/95 border-border">
-      <div className="flex items-center w-full gap-4 px-4 sm:px-6 py-3 max-w-[1280px] mx-auto">
-        <div className="flex-shrink-0">
-          {isRoot ? (
-            <h1 className="text-xl">{logoLink}</h1>
-          ) : (
-            <div className="text-xl">{logoLink}</div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0 max-w-xl mx-auto">
-          <CompanySearch />
-        </div>
-        <div className="flex-shrink-0 flex items-center gap-2">
-          {user ? (
-            <UserMenu user={user} />
-          ) : (
-            <Button asChild size="sm" className="min-h-[44px] min-w-[44px] px-5">
-              <Link href="/login" className="flex items-center gap-1.5">
-                <LogIn className="w-4 h-4 md:hidden" />
-                <span className="hidden md:inline">ログイン</span>
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
-      {!pathname.includes('/admin/') && (
-        <div className="w-full border-t bg-muted border-border">
-          <div className="max-w-[1280px] mx-auto overflow-x-auto">
-            <div className="flex min-h-[40px] min-w-max items-center gap-3 px-4 sm:px-6 py-1.5">
+    <header className="sticky top-0 z-40">
+      {/* Top Bar - black ticker bar (hidden on admin pages) */}
+      {!isAdminPage && (
+        <div className="bg-[#1a1a1a]">
+          <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6" style={{ minHeight: '48px' }}>
+            {/* Left: Market Ticker */}
+            <div className="hidden sm:flex items-stretch overflow-x-auto">
               <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1" />
               <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1" />
               <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1" />
               <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
+            </div>
+            {/* Mobile: all 4 indicators with horizontal scroll */}
+            <div className="flex sm:hidden items-stretch overflow-x-auto whitespace-nowrap">
+              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
+              <div className="w-px bg-white/15 my-2 mx-1 flex-shrink-0" />
+              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
+            </div>
+            {/* Right: Login / User Menu */}
+            <div className="flex-shrink-0 flex items-center">
+              {user ? (
+                <UserMenu user={user} />
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 bg-[#cc0000] text-white hover:bg-[#990000] rounded px-4 py-1.5 text-xs font-bold transition-colors"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">ログイン</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Main Header - white background */}
+      <div className={`bg-white ${isAdminPage ? 'border-b border-[#d9d9d9]' : 'border-b border-[#d9d9d9]'}`}>
+        <div className="flex items-center w-full gap-4 px-4 sm:px-6 py-3 max-w-[1280px] mx-auto">
+          {/* Left: Logo */}
+          <div className="flex-shrink-0 border-r border-[#e5e5e5] pr-4 mr-4">
+            {isRoot ? (
+              <h1 className="text-xl">{logoLink}</h1>
+            ) : (
+              <div className="text-xl">{logoLink}</div>
+            )}
+          </div>
+          {/* Center: Search Bar */}
+          <div className="flex-1 min-w-0 max-w-2xl mx-auto">
+            <CompanySearch />
+          </div>
+          {/* Right: user menu for admin pages (normal pages have user menu in top bar) */}
+          {isAdminPage && (
+            <div className="flex-shrink-0 flex items-center gap-2">
+              {user ? (
+                <UserMenu user={user} />
+              ) : (
+                <Button asChild size="sm" className="min-h-[44px] min-w-[44px] px-5">
+                  <Link href="/login" className="flex items-center gap-1.5">
+                    <LogIn className="w-4 h-4 md:hidden" />
+                    <span className="hidden md:inline">ログイン</span>
+                  </Link>
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Global Navigation Bar (hidden on admin pages) */}
+      {!isAdminPage && (
+        <nav className="bg-white border-b border-[#d9d9d9]">
+          <div className="max-w-[1280px] mx-auto px-4">
+            <div className="flex justify-start gap-0 overflow-x-auto whitespace-nowrap md:overflow-visible" style={{ minHeight: '44px' }}>
+              {[
+                { label: 'トップ', href: '/' },
+                { label: 'ニュース', href: '/news/latest' },
+                { label: 'ランキング', href: '#' },
+                { label: 'お気に入り', href: '/favorites' },
+                { label: 'AI予測', href: '#' },
+                { label: 'AIチャット', href: '/chat' },
+                { label: '掲示板', href: '/bbs' },
+              ].map(({ label, href }, idx, arr) => {
+                const isActive = href === '/'
+                  ? pathname === '/'
+                  : href !== '#' && pathname.startsWith(href);
+                const isLast = idx === arr.length - 1;
+                return (
+                  <Link
+                    key={label}
+                    href={href}
+                    className={`inline-flex items-center px-5 text-[13px] font-semibold transition-colors duration-200 ${
+                      !isLast ? 'border-r border-[#e5e5e5]' : ''
+                    } ${
+                      isActive
+                        ? 'text-[#1a1a1a] border-b-2 border-b-[#1a1a1a] pb-[calc(0.625rem-1px)] pt-[0.625rem]'
+                        : 'text-[#333] hover:text-[#cc0000] hover:border-b-2 hover:border-b-[#333] hover:pb-[calc(0.625rem-1px)] hover:pt-[0.625rem] py-2.5'
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
       )}
     </header>
   );
@@ -190,23 +269,44 @@ const Header = ({
 }) => {
   return (
     <Suspense fallback={
-      <header className="sticky top-0 z-40 backdrop-blur-md border-b bg-card/95 border-border">
-        <div className="flex items-center w-full gap-4 px-4 sm:px-6 py-3 max-w-[1280px] mx-auto">
-          <div className="flex-shrink-0 text-xl">
-            <Image src='/logo.webp' alt='' width={100} height={50} />
-          </div>
-          <div className="flex-1 min-w-0 max-w-xl mx-auto py-2"></div>
-          <div className="flex-shrink-0 flex items-center"></div>
-        </div>
-        <div className="w-full border-t bg-muted border-border">
-          <div className="max-w-[1280px] mx-auto overflow-x-auto">
-            <div className="flex min-h-[40px] min-w-max items-center gap-3 px-4 sm:px-6 py-1.5">
+      <header className="sticky top-0 z-40">
+        {/* Top Bar Skeleton */}
+        <div className="bg-[#1a1a1a]">
+          <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6" style={{ minHeight: '30px' }}>
+            <div className="hidden sm:flex items-center gap-3 text-[11px] text-white/80">
               {[0, 1, 2, 3].map((i) => (
+                <CurrentPriceInfoSkeleton key={i} />
+              ))}
+            </div>
+            <div className="flex sm:hidden items-center gap-3 text-[11px] text-white/80">
+              {[0, 1].map((i) => (
                 <CurrentPriceInfoSkeleton key={i} />
               ))}
             </div>
           </div>
         </div>
+        {/* Main Header Skeleton */}
+        <div className="bg-white border-b border-[#d9d9d9]">
+          <div className="flex items-center w-full gap-4 px-4 sm:px-6 py-3 max-w-[1280px] mx-auto">
+            <div className="flex-shrink-0 text-xl border-r border-[#e5e5e5] pr-4 mr-4">
+              <Image src='/logo.webp' alt='' width={120} height={60} className="h-[34px] w-auto" />
+            </div>
+            <div className="flex-1 min-w-0 max-w-2xl mx-auto py-2"></div>
+            <div className="flex-shrink-0 flex items-center"></div>
+          </div>
+        </div>
+        {/* Global Navigation Skeleton */}
+        <nav className="bg-white border-b border-[#d9d9d9]">
+          <div className="max-w-[1280px] mx-auto px-4">
+            <div className="flex justify-start gap-0" style={{ minHeight: '44px' }}>
+              {['トップ', 'ニュース', 'ランキング', 'お気に入り', 'AI予測', 'AIチャット', '掲示板'].map((label) => (
+                <span key={label} className="inline-flex items-center px-5 py-2.5 text-[13px] font-semibold text-[#333]">
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </nav>
       </header>
     }>
       <HeaderInner marketData={marketData} suspendFetch={suspendFetch} />
