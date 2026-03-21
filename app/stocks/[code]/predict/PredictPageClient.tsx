@@ -534,7 +534,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   }, [shareModal]);
 
   return (
-    <div className="py-4 sm:py-6">
+    <div>
       {/* Header */}
       <div className="mb-6">
         <CompanyBasicInfo code={code} />

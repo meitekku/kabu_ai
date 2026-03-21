@@ -41,7 +41,7 @@ export default function LegalPageLayout({
 }: LegalPageLayoutProps) {
   return (
     <DefaultTemplate>
-      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-8 sm:py-14">
+      <div className="mx-auto w-full max-w-3xl py-8 sm:py-14">
         <header className="mb-6 space-y-2 border-b border-slate-200 pb-5 sm:mb-8 sm:space-y-3 sm:pb-6">
           <p className="text-xs font-semibold tracking-wider text-emerald-700">
             株AI ポリシー
