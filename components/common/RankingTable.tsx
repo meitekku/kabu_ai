@@ -14,7 +14,7 @@ type RankingTableProps = {
   limit?: number;
 };
 
-export default function RankingTable({ tableName, data }: RankingTableProps) {
+export default function RankingTable({ title, tableName, data }: RankingTableProps) {
   const getDiffPercentColor = (diffPercent: number | null) => {
     if (!diffPercent) return 'text-muted-foreground';
     if (diffPercent > 0) return 'text-shikiho-negative';
@@ -30,14 +30,22 @@ export default function RankingTable({ tableName, data }: RankingTableProps) {
   };
 
   const getRankBadge = (index: number) => {
-    if (index === 0) return 'bg-[#cc0000] text-white';
-    if (index === 1) return 'bg-[#333333] text-white';
-    if (index === 2) return 'bg-[#666666] text-white';
+    if (index === 0) return 'bg-amber-500 text-white';
+    if (index === 1) return 'bg-gray-400 text-white';
+    if (index === 2) return 'bg-amber-700 text-white';
     return 'bg-secondary text-muted-foreground';
   };
 
   return (
-    <div className="w-full bg-card rounded border border-[#e5e5e5] overflow-hidden shadow-sm">
+    <div className="w-full bg-card rounded-xl border border-border overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-border">
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-semibold text-foreground">{title}</div>
+          <div className="text-[11px] text-muted-foreground">
+            {tableName.startsWith('ranking_pts') ? '終値比' : '前日比'}
+          </div>
+        </div>
+      </div>
       <div>
         {data.length === 0 ? (
           <div className="px-4 py-6 text-center text-xs text-muted-foreground">
@@ -48,12 +56,12 @@ export default function RankingTable({ tableName, data }: RankingTableProps) {
             <Link
               key={`${tableName}-${item.code}-${index}`}
               href={`/stocks/${item.code}/news`}
-              className={`px-2 py-1.5 hover:bg-[#f0f0f0] hover:text-[#cc0000] transition-colors duration-150 cursor-pointer flex items-center border-b border-[#e5e5e5] last:border-b-0 ${index === 0 ? 'bg-[#cc0000]/5' : index % 2 === 0 ? 'bg-white' : 'bg-[#fafafa]'}`}
+              className="px-4 py-2 hover:bg-accent transition-colors duration-150 cursor-pointer flex items-center border-b border-border last:border-b-0"
             >
-              <div className={`${index === 0 ? 'w-5 h-5' : 'w-[18px] h-[18px]'} rounded flex items-center justify-center mr-2 font-bold text-[9px] ${getRankBadge(index)}`}>
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center mr-2.5 font-bold text-[10px] ${getRankBadge(index)}`}>
                 {index + 1}
               </div>
-              <div className="text-[10px] text-[#999] mr-1.5 font-mono tabular-nums">
+              <div className="text-[11px] text-muted-foreground mr-2 font-mono tabular-nums">
                 {item.code}
               </div>
               <div className="flex-1 min-w-0">
@@ -61,7 +69,7 @@ export default function RankingTable({ tableName, data }: RankingTableProps) {
                   {item.name}
                 </div>
               </div>
-              <div className={`text-right text-xs font-bold tabular-nums ${getDiffPercentColor(item.diff_percent)}`}>
+              <div className={`text-right text-sm font-bold tabular-nums ${getDiffPercentColor(item.diff_percent)}`}>
                 {formatDiffPercent(item.diff_percent)}
               </div>
             </Link>
