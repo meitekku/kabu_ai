@@ -65,12 +65,12 @@ export const CompanyBasicInfoSkeleton = () => {
         </div>
         <div className="h-[20px] w-12 rounded bg-gray-200" />
       </div>
-      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex items-baseline space-x-2 sm:space-x-4">
           <div className="h-[28px] sm:h-[32px] w-24 rounded bg-gray-200" />
           <div className="h-[24px] sm:h-[28px] w-36 rounded bg-gray-200" />
         </div>
-        <div className="h-[16px] w-24 rounded bg-gray-200" />
+        <div className="h-[28px] w-[36px] rounded-lg bg-gray-200" />
       </div>
       <div className="mt-2 border border-[#e5e5e5] rounded-sm overflow-hidden">
         <div className="grid grid-cols-4 bg-[#f5f5f5]">
@@ -107,7 +107,7 @@ export const StockChartSkeleton = ({
   return (
     <div
       data-testid="stock-chart-skeleton"
-      className="mt-2"
+      className="mt-2 py-2"
       style={{ width: toCssWidth(width) }}
     >
       <div
@@ -221,11 +221,8 @@ export const NewsPageSkeleton = ({
   chartMobileHeight = DEFAULT_MOBILE_CHART_HEIGHT,
 }: NewsPageSkeletonProps) => {
   return (
-    <div className="animate-pulse px-4 sm:px-6">
+    <div className="space-y-4 animate-pulse px-4 sm:px-6">
       <CompanyBasicInfoSkeleton />
-      <div className="flex justify-end -mt-2 mb-2">
-        <div className="h-[28px] w-[36px] rounded-lg bg-gray-200" />
-      </div>
       <StockChartSkeleton
         width={chartWidth}
         pcHeight={chartPcHeight}
