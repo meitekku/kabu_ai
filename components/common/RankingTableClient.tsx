@@ -86,25 +86,25 @@ export default function RankingTableClient({
 
   if (loading) {
     return (
-      <div className="w-full bg-white rounded-xl border border-gray-100 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-gray-100">
-          <div className="animate-pulse flex items-center gap-2">
-            <div className="h-4 bg-gray-100 rounded w-24"></div>
-            <div className="h-3 bg-gray-100 rounded w-10"></div>
+      <div className="w-full bg-white rounded-sm shadow-shikiho-sm border border-[#e5e5e5] overflow-hidden">
+        <div className="px-3 py-2 border-b border-[#e5e5e5] bg-[#f5f5f5]">
+          <div className="animate-pulse flex items-center gap-1.5">
+            <div className="h-[13px] bg-gray-200 rounded w-24"></div>
+            <div className="h-[11px] bg-gray-200 rounded w-8"></div>
           </div>
         </div>
         <div>
           {[...Array(5)].map((_, index) => (
             <div
               key={`skeleton-${tableName}-${index}`}
-              className="px-4 py-2 flex items-center border-b border-gray-50 last:border-b-0"
+              className="px-3 py-2 flex items-center border-b border-[#eeeeee] last:border-b-0"
             >
-              <div className="w-5 h-5 rounded-md bg-gray-100 mr-2.5 flex-shrink-0 animate-pulse"></div>
-              <div className="h-3 bg-gray-100 rounded w-8 mr-2 flex-shrink-0 animate-pulse"></div>
-              <div className="flex-1 min-w-0">
-                <div className="h-3 bg-gray-100 rounded w-4/5 max-w-[150px] animate-pulse"></div>
+              <div className="w-[18px] h-[18px] rounded-sm bg-gray-200 mr-2 flex-shrink-0 animate-pulse"></div>
+              <div className="h-[11px] bg-gray-200 rounded w-[30px] mr-2 flex-shrink-0 animate-pulse"></div>
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="h-[12px] bg-gray-200 rounded w-4/5 animate-pulse"></div>
               </div>
-              <div className="h-4 bg-gray-100 rounded w-12 ml-3 flex-shrink-0 animate-pulse"></div>
+              <div className="h-[13px] bg-gray-200 rounded w-10 flex-shrink-0 animate-pulse"></div>
             </div>
           ))}
         </div>

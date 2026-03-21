@@ -30,7 +30,7 @@ export default function Sidebar({ rankingData, suspendFetch = false }: SidebarPr
     : rankingSections.filter((s) => !s.tableName.startsWith('ranking_pts'))
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <RandomAd />
       {visibleSections.map((section) => (
         <RankingTableClient
