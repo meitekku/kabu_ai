@@ -109,7 +109,7 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
       href={`/stocks/${code}/news`}
       className={`flex items-center gap-2 px-3 py-1.5 rounded transition-all cursor-pointer whitespace-nowrap ${isDark ? 'hover:bg-white/5' : 'hover:bg-card hover:shadow-card'}`}
     >
-      <span className={`text-xs font-medium ${isDark ? 'text-white/60' : 'text-muted-foreground'}`}>
+      <span className={`text-xs font-medium ${isDark ? 'text-white' : 'text-muted-foreground'}`}>
         {data.name}
       </span>
       <span className={`text-sm font-bold tabular-nums ${isDark ? 'text-white' : 'text-foreground'}`}>
