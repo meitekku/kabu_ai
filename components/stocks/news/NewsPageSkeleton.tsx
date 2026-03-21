@@ -56,7 +56,7 @@ export const CompanyBasicInfoSkeleton = () => {
   return (
     <div
       data-testid="company-basic-info-skeleton"
-      className="w-full bg-white px-2"
+      className="w-full bg-card py-2"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -72,13 +72,21 @@ export const CompanyBasicInfoSkeleton = () => {
         </div>
         <div className="h-[16px] w-24 rounded bg-gray-200" />
       </div>
-      <div className="mt-2 grid grid-cols-4 text-xs sm:text-sm gap-1">
-        {summaryItems.map((index) => (
-          <div key={index}>
-            <div className="mb-1 h-[16px] sm:h-[20px] w-10 rounded bg-gray-200" />
-            <div className="h-[16px] sm:h-[20px] w-16 rounded bg-gray-200" />
-          </div>
-        ))}
+      <div className="mt-2 border border-[#e5e5e5] rounded-sm overflow-hidden">
+        <div className="grid grid-cols-4 bg-[#f5f5f5]">
+          {summaryItems.map((index) => (
+            <div key={`header-${index}`} className={`py-1 px-2 ${index < 3 ? 'border-r border-[#e5e5e5]' : ''}`}>
+              <div className="h-[16px] sm:h-[20px] w-10 rounded bg-gray-200" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-4 bg-white">
+          {summaryItems.map((index) => (
+            <div key={`value-${index}`} className={`py-1 px-2 ${index < 3 ? 'border-r border-[#e5e5e5]' : ''}`}>
+              <div className="h-[16px] sm:h-[20px] w-16 rounded bg-gray-200" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -133,26 +141,23 @@ export const StockChartSkeleton = ({
 
 export const AiFeatureNavSkeleton = () => {
   return (
-    <div data-testid="ai-feature-nav-skeleton" className="my-2 mx-auto max-w-lg">
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200/60 bg-gray-50/70 p-4 pt-0 shadow-sm">
-        <div className="absolute left-0 right-0 top-0 h-[2px] bg-gray-200" />
-        <div className="flex items-center justify-center gap-1.5 pt-4 pb-1">
-          <div className="h-3.5 w-3.5 rounded-full bg-gray-200" />
-          <div className="h-3 w-32 rounded bg-gray-200" />
-          <div className="h-3.5 w-3.5 rounded-full bg-gray-200" />
-        </div>
-        <div className="flex gap-3 pt-2">
-          {[0, 1].map((index) => (
-            <div
-              key={index}
-              className="flex-1 rounded-xl border border-gray-200 p-4"
-            >
-              <div className="mx-auto h-10 w-10 rounded-full bg-gray-200" />
-              <div className="mx-auto mt-3 h-4 w-20 rounded bg-gray-200" />
-              <div className="mx-auto mt-2 h-3 w-24 rounded bg-gray-200" />
+    <div data-testid="ai-feature-nav-skeleton" className="mt-4 mb-4">
+      <div className="mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-[#1a1a1a]">
+        <div className="h-[18px] w-16 rounded bg-[#e8e8e8]" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {[0, 1].map((index) => (
+          <div
+            key={index}
+            className="flex flex-col items-center justify-center gap-1.5 py-4 px-2 border border-shikiho-bg-border"
+          >
+            <div className="flex items-center gap-2">
+              <div className="h-5 w-5 rounded bg-[#e8e8e8]" />
+              <div className="h-[15px] w-20 rounded bg-[#e8e8e8]" />
             </div>
-          ))}
-        </div>
+            <div className="h-[11px] w-28 rounded bg-[#e8e8e8]" />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -169,12 +174,12 @@ export const NewsListSkeleton = ({
   return (
     <div data-testid="news-list-skeleton">
       {h3Title && (
-        <div className="mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-shikiho-accent-red">
+        <div className="mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-[#1a1a1a]">
           <div className="h-[27px] w-48 rounded bg-[#e8e8e8]" />
         </div>
       )}
       {title && (
-        <div className="mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">
+        <div className="mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-[#1a1a1a]">
           <div className="h-[30px] w-32 rounded bg-[#e8e8e8]" />
         </div>
       )}
@@ -182,7 +187,7 @@ export const NewsListSkeleton = ({
       <div className="border-t border-shikiho-bg-border">
         {rows.map((index) => (
           <div key={index} className="block">
-            <div className="py-3 px-2 border-b border-shikiho-bg-border-light">
+            <div className="py-3.5 border-b border-shikiho-bg-gray-light">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="h-[16.5px] w-24 rounded bg-[#e8e8e8]" />
@@ -216,9 +221,9 @@ export const NewsPageSkeleton = ({
   chartMobileHeight = DEFAULT_MOBILE_CHART_HEIGHT,
 }: NewsPageSkeletonProps) => {
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse px-4 sm:px-6">
       <CompanyBasicInfoSkeleton />
-      <div className="flex justify-end px-2 -mt-2 mb-2">
+      <div className="flex justify-end -mt-2 mb-2">
         <div className="h-[28px] w-[36px] rounded-lg bg-gray-200" />
       </div>
       <StockChartSkeleton

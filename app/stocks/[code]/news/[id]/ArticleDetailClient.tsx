@@ -252,15 +252,15 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading article...</div>;
+    return <div className="flex justify-center px-4 sm:px-6 py-8">Loading article...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500 p-4">Error: {error}</div>;
+    return <div className="text-red-500 px-4 sm:px-6 py-4">Error: {error}</div>;
   }
 
   if (!article) {
-    return <div className="text-gray-500 p-4">Article not found.</div>;
+    return <div className="text-gray-500 px-4 sm:px-6 py-4">Article not found.</div>;
   }
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';

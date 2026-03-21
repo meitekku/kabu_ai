@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="mx-auto animate-pulse">
+    <div className="mx-auto animate-pulse px-4 sm:px-6">
       {/* Back link */}
       <div className="mb-4">
         <div className="h-5 bg-gray-200 rounded w-44"></div>
@@ -47,7 +47,7 @@ export default function Loading() {
         <div className="h-6 bg-gray-200 rounded w-48 mb-4"></div>
         <div className="divide-y divide-gray-100">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="py-3 px-2">
+            <div key={i} className="py-3.5">
               <div className="h-4 bg-gray-200 rounded w-24 mb-1"></div>
               <div className="h-5 bg-gray-200 rounded w-full mt-0.5"></div>
             </div>
