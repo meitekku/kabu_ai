@@ -35,7 +35,7 @@ export default async function Home() {
   return (
     <DefaultTemplate variant="plain">
       <HeroCarousel initialSlides={carouselSlides} />
-      <div className="bg-white py-5 -mx-4 px-4 sm:-mx-6 sm:px-6 rounded">
+      <div className="bg-white py-5">
         <TrendingSection initialData={trendingData} />
       </div>
       <div className="bg-white py-5">
