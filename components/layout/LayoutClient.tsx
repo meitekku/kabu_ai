@@ -107,14 +107,14 @@ export default function LayoutClient({
       <GlobalNavigation />
       <Header marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
       <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 sm:px-5 py-4 sm:py-5'} overflow-x-auto`}>
-        <div className={`flex flex-col md:flex-row gap-6 md:gap-8 min-w-0${!isFullWidthPage ? ' bg-white' : ''}`}>
-          <main className={`${mainClassName} min-w-0 overflow-x-auto`}>
+        <div className="flex flex-col md:flex-row gap-5 md:gap-6 min-w-0">
+          <main className={`${mainClassName} min-w-0 overflow-x-auto bg-white`}>
             {children}
           </main>
           {showSidebar && (
             <>
               {/* Desktop sidebar */}
-              <aside className="hidden md:block w-[300px] flex-shrink-0 border-l border-[#e5e5e5] pl-8 dark:border-[#2a2a2a]">
+              <aside className="hidden md:block w-[300px] flex-shrink-0 bg-white dark:bg-[#1a1a1a]">
                 <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
               </aside>
               {/* Mobile sidebar drawer */}
