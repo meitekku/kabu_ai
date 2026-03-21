@@ -162,12 +162,12 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
   }
 
   return (
-    <div data-testid="news-list" className="animate-in fade-in duration-200">
+    <div data-testid="news-list" className="bg-white animate-in fade-in duration-200">
       {h3Title && (
-        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-shikiho-accent-red">{h3Title}</h3>
+        <h3 className="text-[18px] font-bold text-shikiho-text-primary mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-[#1a1a1a]">{h3Title}</h3>
       )}
       {title && (
-        <h2 className="text-[20px] font-bold text-shikiho-text-primary mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-shikiho-accent-red">{title}</h2>
+        <h2 className="text-[20px] font-bold text-shikiho-text-primary mt-4 mb-5 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-[#1a1a1a]">{title}</h2>
       )}
       
       <div className="border-t border-shikiho-bg-border">
@@ -177,7 +177,7 @@ const NewsList = React.memo(({ num = '10', title, excludeId, h3Title, showMoreBu
             key={item.id}
             className="block"
           >
-            <div className="py-3 px-2 border-b border-shikiho-bg-border-light hover:bg-shikiho-bg-gray-light transition-colors cursor-pointer">
+            <div className="py-3.5 border-b border-shikiho-bg-gray-light hover:bg-shikiho-bg-gray-light transition-colors cursor-pointer">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-[11px] text-shikiho-text-tertiary">

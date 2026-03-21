@@ -278,10 +278,10 @@ const ValuationPageClient = ({ code }: { code: string }) => {
       : report?.per_evaluation ?? 'neutral';
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 min-h-screen px-4 sm:px-6">
       <CompanyBasicInfo code={code} />
 
-      <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      <div className="max-w-4xl mx-auto py-4 sm:py-6">
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-8 w-8 border-3 border-gray-200 border-t-blue-600" />

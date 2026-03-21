@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { CompanyBasicInfoSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
+import { FavoriteButton } from '@/components/stocks/FavoriteButton';
 
 const isJPMarketHours = (): boolean => {
   const now = new Date();
@@ -183,7 +184,7 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   const isUS = info.market === 100 || (info.market === 12 && ['1', '2'].includes(info.code));
 
   return (
-    <div data-testid="company-basic-info" className="w-full bg-card px-2 animate-in fade-in duration-200">
+    <div data-testid="company-basic-info" className="w-full bg-card py-2 animate-in fade-in duration-200">
       {/* 企業コード + 企業名 + 市場名 */}
       <div className="flex items-center justify-between">
         <h1 className="flex items-center space-x-2">
@@ -194,14 +195,14 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
       </div>
 
       {/* 現在株価と値幅の表示 */}
-      <div className="flex flex-wrap items-baseline justify-between mt-1 gap-x-2 gap-y-1">
+      <div className="flex flex-wrap items-center justify-between mt-1 gap-x-2 gap-y-1">
         <div className="flex items-baseline space-x-2 sm:space-x-4">
           <div className="text-xl sm:text-2xl font-bold">
             {isUS ? `$${formatPrice(info.current_price)}` : `${formatPrice(info.current_price)}円`}
           </div>
           <div
             className={`text-base sm:text-lg ${
-              parseFloat(info.price_change) >= 0 ? 'text-shikiho-negative' : 'text-primary'
+              parseFloat(info.price_change) >= 0 ? 'text-emerald-600' : 'text-red-600'
             }`}
           >
             {parseFloat(info.price_change) >= 0 ? '+' : ''}
@@ -209,11 +210,14 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
             {formatNumber(calculatePriceChangePercent().toString(), 2, '%')})
           </div>
         </div>
-        {!isUS && (info.trailing_pe || info.price_to_book) && (
-          <Link href={`/stocks/${code}/valuation`} className="text-xs text-primary hover:text-primary/80 whitespace-nowrap">
-            バリュエーション分析 →
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {!isUS && (info.trailing_pe || info.price_to_book) && (
+            <Link href={`/stocks/${code}/valuation`} className="text-xs text-shikiho-link-primary hover:text-shikiho-link-secondary whitespace-nowrap">
+              バリュエーション分析 →
+            </Link>
+          )}
+          <FavoriteButton code={code} />
+        </div>
       </div>
 
       {isJPMarketHours() && (
@@ -225,24 +229,26 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
         </div>
       )}
 
-      {/* 各種指標を4列で表示 */}
-      <div className="grid grid-cols-4 text-xs sm:text-sm mt-2 gap-1">
-        <div>
-          <div className="text-muted-foreground">PER</div>
-          <div>{formatNumber(info.trailing_pe, 2, '倍')}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground">PBR</div>
-          <div>{formatNumber(info.price_to_book, 2, '倍')}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground">利回り</div>
-          <div>{formatNumber(info.dividend_yield, 2, '%')}</div>
-        </div>
-        <div>
-          <div className="text-muted-foreground">時価総額</div>
-          <div>{isUS ? formatMarketCapUS(info.market_cap) : formatMarketCap(info.market_cap)}</div>
-        </div>
+      {/* 各種指標を4列で表示（楽天証券風テーブル） */}
+      <div className="mt-2 border border-[#e5e5e5] rounded-sm overflow-hidden">
+        <table className="w-full border-collapse text-xs sm:text-sm">
+          <thead>
+            <tr className="bg-[#f5f5f5]">
+              <th className="py-1 px-2 text-left font-normal text-muted-foreground border-r border-[#e5e5e5]">PER</th>
+              <th className="py-1 px-2 text-left font-normal text-muted-foreground border-r border-[#e5e5e5]">PBR</th>
+              <th className="py-1 px-2 text-left font-normal text-muted-foreground border-r border-[#e5e5e5]">利回り</th>
+              <th className="py-1 px-2 text-left font-normal text-muted-foreground">時価総額</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="bg-white">
+              <td className="py-1 px-2 border-r border-[#e5e5e5]">{formatNumber(info.trailing_pe, 2, '倍')}</td>
+              <td className="py-1 px-2 border-r border-[#e5e5e5]">{formatNumber(info.price_to_book, 2, '倍')}</td>
+              <td className="py-1 px-2 border-r border-[#e5e5e5]">{formatNumber(info.dividend_yield, 2, '%')}</td>
+              <td className="py-1 px-2">{isUS ? formatMarketCapUS(info.market_cap) : formatMarketCap(info.market_cap)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );

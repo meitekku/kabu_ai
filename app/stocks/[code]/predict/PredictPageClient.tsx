@@ -534,7 +534,7 @@ export default function PredictPageClient({ code, companyName }: PredictPageClie
   }, [shareModal]);
 
   return (
-    <div>
+    <div className="px-4 sm:px-6">
       {/* Header */}
       <div className="mb-6">
         <CompanyBasicInfo code={code} />

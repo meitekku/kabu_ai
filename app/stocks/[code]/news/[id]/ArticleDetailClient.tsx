@@ -272,7 +272,7 @@ const ArticleDetailClient = ({ code, id }: ArticleDetailClientProps) => {
       : `/stocks/${code}/news`;
 
   return (
-    <div className="mx-auto px-1 sm:px-0">
+    <div className="mx-auto px-4 sm:px-6">
       <div className="mb-4">
         <Link
           href={companyNewsHref}
