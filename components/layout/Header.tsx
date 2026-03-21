@@ -133,23 +133,23 @@ const HeaderContent = ({ isRoot, pathname, user, marketData, suspendFetch = fals
           <div className="max-w-[1280px] mx-auto flex items-center justify-between px-4 sm:px-6" style={{ minHeight: '36px' }}>
             {/* Left: Market Ticker */}
             <div className="hidden sm:flex items-center overflow-x-auto">
-              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} isDark />
             </div>
             {/* Mobile: all 4 indicators with horizontal scroll */}
             <div className="flex sm:hidden items-center overflow-x-auto">
-              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="0" initialData={marketData?.['0']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="3" initialData={marketData?.['3']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="1" initialData={marketData?.['1']} suspendFetch={suspendFetch} isDark />
               <div className="w-px h-4 bg-white/20 mx-1 flex-shrink-0" />
-              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} />
+              <CurrentPriceInfo code="2" initialData={marketData?.['2']} suspendFetch={suspendFetch} isDark />
             </div>
             {/* Right: Login / User Menu */}
             <div className="flex-shrink-0 flex items-center">
