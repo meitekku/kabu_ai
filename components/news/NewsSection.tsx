@@ -51,16 +51,16 @@ function NewsCard({ item }: { item: Post }) {
         </div>
         <div className="p-4 flex flex-col flex-grow">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[11px] text-shikiho-text-tertiary">
               {item.created_at ? new Date(item.created_at).toLocaleDateString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}
             </span>
             {item.company_name && (
-              <span className="px-2 py-0.5 bg-muted text-[10px] text-muted-foreground rounded-md font-medium">
+              <span className="px-2 py-0.5 bg-shikiho-bg-gray-light text-[10px] text-shikiho-text-tertiary rounded-md font-medium">
                 {item.company_name}
               </span>
             )}
           </div>
-          <h3 className="text-[15px] font-semibold text-foreground line-clamp-2 flex-grow group-hover:text-primary transition-colors">
+          <h3 className="text-[15px] font-bold text-shikiho-text-primary line-clamp-1 flex-grow group-hover:text-shikiho-link-primary transition-colors">
             {safeTitle}
           </h3>
         </div>
@@ -118,7 +118,7 @@ export default function NewsSection({ initialPickupNews, initialMarketNews }: Ne
 
   const NewsBlock = ({ title, news }: { title: string; news: Post[] }) => (
     <div className="mb-8 sm:mb-10">
-      <h2 className="text-lg font-semibold text-foreground mb-5 pb-3 border-b border-border">{title}</h2>
+      <h2 className="text-lg font-bold text-shikiho-text-primary mb-5 pb-3 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-12 before:h-[2px] before:bg-[#1a1a1a]">{title}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
         {news.map((item) => (
           <NewsCard key={item.id} item={item} />

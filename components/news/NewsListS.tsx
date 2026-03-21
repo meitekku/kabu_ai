@@ -33,13 +33,13 @@ function NewsThumbnail({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
   if (error) return null;
   return (
-    <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 relative">
+    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 relative">
       <Image
         src={src}
         alt={alt}
         fill
         className="object-cover rounded-lg"
-        sizes="(max-width: 640px) 64px, 80px"
+        sizes="(max-width: 640px) 56px, 64px"
         unoptimized
         onError={() => setError(true)}
       />
@@ -61,7 +61,7 @@ function CompanyVisual({
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="flex-shrink-0 flex flex-col items-center gap-1 w-16 sm:w-20">
+    <div className="flex-shrink-0 flex flex-col items-center gap-1 w-14 sm:w-16">
       {logoUrl && !logoError && (
         <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -212,8 +212,8 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
   };
 
   return (
-    <div className="space-y-0">
-      <div className="divide-y divide-border">
+    <div className="space-y-2">
+      <div>
         {news.map((item) => {
           const imageUrl = item.image_path || extractImageFromContent(item.content);
           const articleCode = item.code?.trim();
@@ -222,27 +222,20 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
             : `/stocks/all/news/${item.id}`;
 
           return (
-            <div key={item.id} className="py-4 first:pt-0 hover:bg-accent/50 transition-colors px-2 -mx-2 rounded-lg">
-              <div className="text-[11px] text-muted-foreground mb-2">
+            <div key={item.id} className="bg-white border border-[#eee] rounded shadow-sm hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow p-3">
+              <div className="text-[10px] text-[#999] mb-1.5">
                 {item.created_at}
               </div>
 
-              <div className="flex gap-3 sm:gap-4">
+              <div className="flex gap-3">
                 <div className="flex-1 min-w-0">
                   <Link
                     href={articleHref}
-                    className="block text-[15px] sm:text-[16px] font-semibold text-foreground hover:text-primary mb-1.5 overflow-hidden transition-colors"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}
+                    className="block text-sm font-bold text-[#333] hover:text-[#cc0000] mb-1 overflow-hidden transition-colors line-clamp-1"
                   >
                     {item.title}
                   </Link>
-                  <p className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-[#686868] line-clamp-2 leading-snug">
                     {item.content?.replace(/<[^>]*>/g, '')}
                   </p>
                 </div>
@@ -263,10 +256,10 @@ const NewsListS = ({ limit = 4, site = 0, more = false, initialData }: NewsListS
         })}
       </div>
       {more ? (
-        <div className="text-right pt-4">
+        <div className="text-right pt-3">
           <Link
             href="/news/latest"
-            className="inline-flex items-center gap-1 font-medium text-primary hover:text-primary/80 text-[14px] transition-colors"
+            className="inline-flex items-center gap-1 border border-[#d9d9d9] rounded text-sm text-[#333] hover:text-[#cc0000] hover:border-[#cc0000] px-4 py-1.5 transition-colors"
           >
             もっと見る
             <span className="text-xs">→</span>

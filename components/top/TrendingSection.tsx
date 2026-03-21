@@ -161,11 +161,11 @@ function TrendingCard({
         </div>
 
         <div className="px-3 py-2 flex flex-col gap-0">
-          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 group-hover:text-[#cc0000] transition-colors leading-snug">
+          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-1 group-hover:text-[#cc0000] transition-colors leading-snug">
             {title}
           </h3>
           {item.excerpt && (
-            <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 leading-tight mt-0.5">
+            <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 leading-tight mt-0.5">
               {item.excerpt}
             </p>
           )}
