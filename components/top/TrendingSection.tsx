@@ -27,33 +27,33 @@ const TYPE_STYLES: Record<
     icon: "📈",
   },
   trading_value: {
-    accentColor: "border-l-blue-500",
+    accentColor: "border-l-[#1a1a1a]",
     badgeBg: "bg-accent",
     badgeText: "text-primary",
     icon: "💹",
   },
   stop_high: {
-    accentColor: "border-l-rose-500",
-    badgeBg: "bg-rose-50",
-    badgeText: "text-rose-700",
+    accentColor: "border-l-[#1a1a1a]",
+    badgeBg: "bg-[#cc0000]/10",
+    badgeText: "text-[#cc0000]",
     icon: "🔺",
   },
   pts: {
-    accentColor: "border-l-violet-500",
-    badgeBg: "bg-violet-50",
-    badgeText: "text-violet-700",
+    accentColor: "border-l-[#666666]",
+    badgeBg: "bg-[#666666]/10",
+    badgeText: "text-[#666666]",
     icon: "🌙",
   },
   yahoo_buzz: {
-    accentColor: "border-l-amber-500",
-    badgeBg: "bg-amber-50",
-    badgeText: "text-amber-700",
+    accentColor: "border-l-[#1a1a1a]",
+    badgeBg: "bg-[#cc0000]/10",
+    badgeText: "text-[#cc0000]",
     icon: "💬",
   },
   latest_ai: {
-    accentColor: "border-l-slate-400",
-    badgeBg: "bg-slate-50",
-    badgeText: "text-slate-600",
+    accentColor: "border-l-[#333333]",
+    badgeBg: "bg-[#333333]/10",
+    badgeText: "text-[#333333]",
     icon: "📰",
   },
 };
@@ -81,7 +81,7 @@ function ChangeRateBadge({ rate }: { rate: number | null }) {
   const pos = rate >= 0;
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-[11px] font-semibold px-1.5 py-0.5 rounded-md flex-shrink-0 tabular-nums ${
+      className={`inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 tabular-nums text-right ${
         pos ? "text-shikiho-positive bg-shikiho-positive/10" : "text-shikiho-negative bg-shikiho-negative/10"
       }`}
     >
@@ -107,25 +107,44 @@ function LogoIcon({ code }: { code: string }) {
   );
 }
 
+function RankBadge({ rank }: { rank: number }) {
+  const bg =
+    rank === 1
+      ? "bg-[#cc0000] text-white"
+      : rank <= 3
+        ? "bg-[#333] text-white"
+        : "bg-[#999] text-white";
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold flex-shrink-0 ${bg}`}
+    >
+      {rank}
+    </span>
+  );
+}
+
 function TrendingCard({
   item,
   type,
   sparklines,
+  rank,
 }: {
   item: TrendingItem;
   type: ContentType;
   sparklines: Record<string, { prices: number[]; change: number | null }>;
+  rank: number;
 }) {
   const styles = TYPE_STYLES[type];
   const title = stripLeadingBrackets(item.title || "タイトルなし");
 
   return (
-    <Link href={item.post_url} className="block group h-full">
-      <article className={`bg-card rounded-xl border border-border shadow-card hover:shadow-card-hover transition-all duration-200 overflow-hidden h-full flex flex-col hover:-translate-y-0.5`}>
+    <Link href={item.post_url} className="block group">
+      <article className={`bg-card rounded-xl border border-[#e5e5e5] shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-card-hover transition-all duration-200 overflow-hidden flex flex-col hover:-translate-y-0.5 hover:bg-[#f5f5f5] cursor-pointer`}>
         <div
           className={`flex items-center justify-between gap-1.5 sm:gap-2 px-3 py-2 bg-muted/80 border-b border-border border-l-[3px] ${styles.accentColor}`}
         >
           <div className="flex items-center gap-1.5 min-w-0">
+            <RankBadge rank={rank} />
             {item.code && <LogoIcon code={item.code} />}
             {item.company_name && (
               <span className="text-[11px] sm:text-xs font-semibold text-foreground truncate">
@@ -133,7 +152,7 @@ function TrendingCard({
               </span>
             )}
             {item.code && (
-              <span className="text-[11px] sm:text-xs text-muted-foreground flex-shrink-0 font-mono tabular-nums">
+              <span className="text-[10px] text-[#999] flex-shrink-0 font-mono tabular-nums">
                 {item.code}
               </span>
             )}
@@ -141,19 +160,19 @@ function TrendingCard({
           <ChangeRateBadge rate={item.change_rate} />
         </div>
 
-        <div className="px-3 py-2.5 flex flex-col flex-grow gap-1">
-          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+        <div className="px-3 py-2 flex flex-col gap-0">
+          <h3 className="text-xs sm:text-sm font-semibold text-foreground line-clamp-2 group-hover:text-[#cc0000] transition-colors leading-snug">
             {title}
           </h3>
           {item.excerpt && (
-            <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 leading-relaxed">
+            <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1 leading-tight mt-0.5">
               {item.excerpt}
             </p>
           )}
         </div>
 
-        <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
-          <span className="text-[11px] sm:text-xs text-muted-foreground">
+        <div className="flex items-center justify-between px-3 py-1.5 border-t border-border/50">
+          <span className="text-[10px] sm:text-[11px] text-muted-foreground">
             {formatTimeAgo(item.created_at)}
           </span>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -175,8 +194,8 @@ function TrendingCard({
 
 function SectionSkeleton() {
   return (
-    <div className="mb-6 sm:mb-8">
-      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-border">
+    <div className="mb-4 sm:mb-5">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 pb-3 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 bg-secondary rounded animate-pulse" />
           <div className="h-4 bg-secondary rounded w-28 animate-pulse" />
@@ -221,30 +240,32 @@ function SectionBlock({
   sparklines: Record<string, { prices: number[]; change: number | null }>;
 }) {
   const styles = TYPE_STYLES[section.type];
+  const displayItems = section.items;
   return (
-    <div className="mb-6 sm:mb-8">
-      <div className="flex items-center justify-between mb-3 sm:mb-4 pb-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-base leading-none">{styles.icon}</span>
-          <h2 className="text-sm font-semibold text-foreground tracking-wide">
+    <div className="mb-4 sm:mb-5">
+      <div className="border-l-[3px] border-[#1a1a1a] bg-[#f8f8f8] py-1.5 px-3 border-b border-[#e5e5e5] flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm leading-none">{styles.icon}</span>
+          <h2 className="text-[13px] font-bold text-foreground">
             {section.label}
           </h2>
         </div>
         <span
-          className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${styles.badgeBg} ${styles.badgeText}`}
+          className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${styles.badgeBg} ${styles.badgeText}`}
         >
           {section.time_label}
         </span>
       </div>
 
-      {section.items.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {section.items.map((item) => (
+      {displayItems.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+          {displayItems.map((item, idx) => (
             <TrendingCard
               key={item.post_id}
               item={item}
               type={section.type}
               sparklines={sparklines}
+              rank={idx + 1}
             />
           ))}
         </div>
@@ -312,13 +333,18 @@ export default function TrendingSection({
   if (!data) return null;
 
   return (
-    <>
-      {data.section1.items.length > 0 && (
-        <SectionBlock section={data.section1} sparklines={sparklines} />
-      )}
-      {data.section2.items.length > 0 && (
-        <SectionBlock section={data.section2} sparklines={sparklines} />
-      )}
-    </>
+    <div>
+      <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-extrabold rounded-t tracking-wide">
+        市場動向
+      </div>
+      <div className="border border-[#e5e5e5] border-t-0 rounded-b p-3">
+        {data.section1.items.length > 0 && (
+          <SectionBlock section={data.section1} sparklines={sparklines} />
+        )}
+        {data.section2.items.length > 0 && (
+          <SectionBlock section={data.section2} sparklines={sparklines} />
+        )}
+      </div>
+    </div>
   );
 }
