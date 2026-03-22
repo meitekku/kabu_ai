@@ -90,19 +90,21 @@ function ChangeRateBadge({ rate }: { rate: number | null }) {
   );
 }
 
-function LogoIcon({ code }: { code: string }) {
-  const [imgError, setImgError] = useState(false);
+function LogoIcon({ logo_url }: { logo_url: string | null }) {
+  const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading');
 
-  if (imgError) return null;
+  if (!logo_url || state === 'error') return null;
 
   return (
     <Image
-      src={`/images/logos/${code}.png`}
+      src={logo_url}
       alt=""
       width={28}
       height={28}
-      className="w-7 h-7 rounded-md bg-white object-contain flex-shrink-0"
-      onError={() => setImgError(true)}
+      className={`w-7 h-7 rounded-md bg-white object-contain flex-shrink-0 ${state === 'loaded' ? '' : 'invisible'}`}
+      onLoad={() => setState('loaded')}
+      onError={() => setState('error')}
+      unoptimized
     />
   );
 }
@@ -145,7 +147,7 @@ function TrendingCard({
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <RankBadge rank={rank} />
-            {item.code && <LogoIcon code={item.code} />}
+            <LogoIcon logo_url={item.logo_url ?? null} />
             {item.company_name && (
               <span className="text-[11px] sm:text-xs font-semibold text-foreground truncate">
                 {item.company_name}

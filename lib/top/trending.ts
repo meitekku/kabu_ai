@@ -27,6 +27,7 @@ export interface TrendingItem {
   change_rate: number | null
   created_at: string
   post_url: string
+  logo_url: string | null
 }
 
 export interface TrendingSectionData {
@@ -106,6 +107,7 @@ interface RankingRow {
   created_at: string
   site: number
   diff_percent: number | null
+  logo_url: string | null
 }
 
 interface PtsRow {
@@ -117,6 +119,7 @@ interface PtsRow {
   created_at: string
   site: number
   pts_pct: number | null
+  logo_url: string | null
 }
 
 interface LatestAiRow {
@@ -128,6 +131,7 @@ interface LatestAiRow {
   company_name: string
   code: string | null
   diff_percent: number | null
+  logo_url: string | null
 }
 
 const RANKING_TABLE_MAP: Partial<Record<ContentType, string>> = {
@@ -141,7 +145,7 @@ async function fetchRanking(db: Database, table: string, type: ContentType): Pro
   const rows = await db.select<RankingRow>(`
     SELECT r.code, c.name AS company_name,
            lp.id AS post_id, lp.title, lp.content, lp.created_at, lp.site,
-           ci.diff_percent
+           ci.diff_percent, ci.logo_url
     FROM \`${table}\` r
     JOIN company c ON r.code = c.code
     INNER JOIN (
@@ -165,6 +169,7 @@ async function fetchRanking(db: Database, table: string, type: ContentType): Pro
     change_rate: r.diff_percent ?? null,
     created_at: String(r.created_at),
     post_url: `/stocks/${r.code}/news/${r.post_id}`,
+    logo_url: r.logo_url ?? null,
   }))
 }
 
@@ -172,10 +177,11 @@ async function fetchPts(db: Database): Promise<TrendingItem[]> {
   const rows = await db.select<PtsRow>(`
     SELECT pal.code, c.name AS company_name,
            p.id AS post_id, p.title, p.content, p.created_at, p.site,
-           pal.pts_pct
+           pal.pts_pct, ci.logo_url
     FROM pts_article_log pal
     JOIN company c ON pal.code = c.code
     JOIN post p ON pal.post_id = p.id AND p.accept = 1
+    LEFT JOIN company_info ci ON pal.code = ci.code
     WHERE pal.article_date >= DATE_SUB(CURDATE(), INTERVAL 3 DAY)
     ORDER BY pal.article_date DESC, ABS(pal.pts_pct) DESC
     LIMIT 4
@@ -190,6 +196,7 @@ async function fetchPts(db: Database): Promise<TrendingItem[]> {
     change_rate: r.pts_pct ?? null,
     created_at: String(r.created_at),
     post_url: `/stocks/${r.code}/news/${r.post_id}`,
+    logo_url: r.logo_url ?? null,
   }))
 }
 
@@ -198,7 +205,7 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
     SELECT p.id AS post_id, p.title, p.content, p.created_at, p.site,
            COALESCE(c.name, '') AS company_name,
            pc.code,
-           ci.diff_percent
+           ci.diff_percent, ci.logo_url
     FROM post p
     LEFT JOIN (
       SELECT post_id, MIN(code) AS code
@@ -223,6 +230,7 @@ async function fetchLatestAi(db: Database): Promise<TrendingItem[]> {
     post_url: r.code
       ? `/stocks/${r.code}/news/${r.post_id}`
       : `/stocks/all/news/${r.post_id}`,
+    logo_url: r.logo_url ?? null,
   }))
 }
 
