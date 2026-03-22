@@ -3,17 +3,19 @@ export default function Loading() {
     <div className="animate-pulse">
       {/* HeroCarousel skeleton - matches w-full mb-4, h-44 md:h-52 rounded-lg */}
       <div className="w-full mb-4">
-        <div className="rounded-lg bg-gray-700 h-44 md:h-52 shadow-lg" />
+        <div className="relative rounded-lg overflow-hidden bg-gray-700 h-44 md:h-52 shadow-lg" />
       </div>
 
-      {/* TrendingSection skeleton - matches bg-[#1a1a1a] header + border box + 2 SectionBlocks */}
+      {/* TrendingSection skeleton - matches bg-[#1a1a1a] py-2 px-4 rounded-t */}
       <div className="bg-white py-5">
-        <div className="bg-gray-800 h-9 rounded-t" />
+        <div className="bg-[#1a1a1a] py-2 px-4 rounded-t">
+          <div className="h-5 w-16 bg-gray-700 rounded" />
+        </div>
         <div className="border border-[#e5e5e5] border-t-0 rounded-b p-3">
           {[0, 1].map((section) => (
             <div key={section} className="mb-4 sm:mb-5">
               {/* SectionBlock header - matches border-l-[3px] bg-[#f8f8f8] py-1.5 px-3 */}
-              <div className="border-l-[3px] border-gray-300 bg-gray-100 py-1.5 px-3 border-b border-gray-200 flex items-center justify-between">
+              <div className="border-l-[3px] border-[#1a1a1a] bg-[#f8f8f8] py-1.5 px-3 border-b border-[#e5e5e5] flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="w-4 h-4 bg-gray-200 rounded" />
                   <div className="h-[13px] bg-gray-200 rounded w-28" />
@@ -53,26 +55,32 @@ export default function Loading() {
         </div>
       </div>
 
-      {/* 新着ニュース section skeleton - matches bg-[#1a1a1a] header + border box + NewsListS */}
+      {/* 新着ニュース section skeleton - matches bg-[#1a1a1a] py-2 px-4 rounded-t */}
       <div className="bg-white py-5">
-        <div className="bg-gray-800 h-9 rounded-t" />
+        <div className="bg-[#1a1a1a] py-2 px-4 rounded-t">
+          <div className="h-5 w-16 bg-gray-700 rounded" />
+        </div>
         <div className="border border-[#e5e5e5] border-t-0 rounded-b">
-          {/* NewsListS items - matches bg-white border border-[#eee] rounded shadow-sm p-3 */}
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border-b border-[#eee] p-3">
-              <div className="h-[10px] bg-gray-200 rounded w-24 mb-1.5" />
-              <div className="flex gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="h-[14px] bg-gray-200 rounded w-full mb-1" />
-                  <div className="h-[12px] bg-gray-200 rounded w-4/5" />
+          <div className="space-y-2">
+            {/* NewsListS items - matches bg-white border border-[#eee] rounded shadow-sm p-3 */}
+            <div>
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="bg-white border border-[#eee] rounded shadow-sm p-3">
+                  <div className="h-[10px] bg-gray-200 rounded w-24 mb-1.5" />
+                  <div className="flex gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="h-[14px] bg-gray-200 rounded w-full mb-1" />
+                      <div className="h-[12px] bg-gray-200 rounded w-4/5" />
+                    </div>
+                    <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded" />
+                  </div>
                 </div>
-                <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 bg-gray-200 rounded" />
-              </div>
+              ))}
             </div>
-          ))}
-          {/* もっと見るボタン skeleton */}
-          <div className="text-right py-3 px-3">
-            <div className="inline-block h-7 w-28 bg-gray-200 rounded border border-gray-200" />
+            {/* もっと見るボタン skeleton */}
+            <div className="text-right pt-3">
+              <div className="inline-block h-7 w-28 bg-gray-200 rounded border border-gray-200" />
+            </div>
           </div>
         </div>
       </div>

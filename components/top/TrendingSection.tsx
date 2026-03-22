@@ -195,14 +195,15 @@ function TrendingCard({
 function SectionSkeleton() {
   return (
     <div className="mb-4 sm:mb-5">
-      <div className="flex items-center justify-between mb-2 sm:mb-3 pb-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 bg-secondary rounded animate-pulse" />
-          <div className="h-4 bg-secondary rounded w-28 animate-pulse" />
+      {/* SectionBlock header - matches border-l-[3px] border-[#1a1a1a] bg-[#f8f8f8] */}
+      <div className="border-l-[3px] border-secondary bg-muted py-1.5 px-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <div className="w-4 h-4 bg-secondary rounded animate-pulse" />
+          <div className="h-[13px] bg-secondary rounded w-28 animate-pulse" />
         </div>
-        <div className="h-5 bg-secondary rounded w-14 animate-pulse" />
+        <div className="h-[18px] bg-secondary rounded-full w-16 animate-pulse" />
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
         {[...Array(4)].map((_, i) => (
           <div
             key={i}
@@ -210,20 +211,21 @@ function SectionSkeleton() {
           >
             <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/80 border-b border-border border-l-[3px] border-l-border">
               <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 bg-secondary rounded-full animate-pulse flex-shrink-0" />
                 <div className="w-7 h-7 bg-secondary rounded-md animate-pulse flex-shrink-0" />
                 <div className="h-3 bg-secondary rounded w-20 animate-pulse" />
                 <div className="h-3 bg-secondary rounded w-8 animate-pulse" />
               </div>
               <div className="h-5 bg-secondary rounded w-12 animate-pulse flex-shrink-0" />
             </div>
-            <div className="px-3 py-2.5 flex flex-col gap-1 flex-grow">
+            <div className="px-3 py-2 flex flex-col gap-0.5 flex-grow">
               <div className="h-3.5 bg-secondary rounded w-full animate-pulse" />
               <div className="h-3.5 bg-secondary rounded w-4/5 animate-pulse" />
               <div className="h-2.5 bg-secondary rounded w-3/5 animate-pulse mt-0.5" />
             </div>
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border/50">
+            <div className="flex items-center justify-between px-3 py-1.5 border-t border-border/50">
               <div className="h-2.5 bg-secondary rounded w-10 animate-pulse" />
-              <div className="h-4 bg-secondary rounded w-20 animate-pulse" />
+              <div className="h-4 bg-secondary rounded w-16 animate-pulse" />
             </div>
           </div>
         ))}
@@ -323,10 +325,13 @@ export default function TrendingSection({
 
   if (loading) {
     return (
-      <>
-        <SectionSkeleton />
-        <SectionSkeleton />
-      </>
+      <div>
+        <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-extrabold rounded-t tracking-wide">市場動向</div>
+        <div className="border border-[#e5e5e5] border-t-0 rounded-b p-3 animate-pulse">
+          <SectionSkeleton />
+          <SectionSkeleton />
+        </div>
+      </div>
     );
   }
 
