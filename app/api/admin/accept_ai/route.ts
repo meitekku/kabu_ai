@@ -100,12 +100,23 @@ export async function POST(request: NextRequest) {
             }
             params.push(saturdayDate);
           } else {
-            // 平日: 15:30以降は当日15:30以降のみ表示
+            // 平日:
+            //   15:30以降 → 当日15:30以降のみ表示（終値確定後の記事）
+            //   12:30以降15:30未満 → 当日12:30以降のみ表示（前場記事を非表示）
+            //   12:30未満 → 当日全記事を表示
+            const year = now.getFullYear();
+            const month = ('0' + (now.getMonth() + 1)).slice(-2);
+            const day = ('0' + now.getDate()).slice(-2);
             if (currentHour > 15 || (currentHour === 15 && currentMinute >= 30)) {
-              const year = now.getFullYear();
-              const month = ('0' + (now.getMonth() + 1)).slice(-2);
-              const day = ('0' + now.getDate()).slice(-2);
               const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
+              if (operation.table === 'post' && operation.data.includes('code')) {
+                conditionParts.push(`p.created_at >= ?`);
+              } else {
+                conditionParts.push(`created_at >= ?`);
+              }
+              params.push(targetTimestamp);
+            } else if (currentHour > 12 || (currentHour === 12 && currentMinute >= 30)) {
+              const targetTimestamp = `${year}-${month}-${day} 12:30:00`;
               if (operation.table === 'post' && operation.data.includes('code')) {
                 conditionParts.push(`p.created_at >= ?`);
               } else {
