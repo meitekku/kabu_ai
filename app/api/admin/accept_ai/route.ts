@@ -72,26 +72,31 @@ export async function POST(request: NextRequest) {
             params.push(72, 80, 81);
           }
 
-          // 現在時刻を取得
+          // 現在時刻をJST（UTC+9）で取得
           const now = new Date();
-          const currentHour = now.getHours();
-          const currentMinute = now.getMinutes();
-          const dayOfWeek = now.getDay(); // 0=日曜, 1=月曜, ..., 5=金曜, 6=土曜
+          const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+          const currentHour = jstNow.getUTCHours();
+          const currentMinute = jstNow.getUTCMinutes();
+          const dayOfWeek = jstNow.getUTCDay(); // 0=日曜, 1=月曜, ..., 5=金曜, 6=土曜
+          const year = jstNow.getUTCFullYear();
+          const month = ('0' + (jstNow.getUTCMonth() + 1)).slice(-2);
+          const day = ('0' + jstNow.getUTCDate()).slice(-2);
+          const todayDate = `${year}-${month}-${day}`;
 
           if (dayOfWeek === 6) {
             // 土曜: 本日の記事を全て表示（15:30制限なし）
             if (operation.table === 'post' && operation.data.includes('code')) {
-              conditionParts.push(`DATE(p.created_at) = CURDATE()`);
+              conditionParts.push(`DATE(p.created_at) = ?`);
             } else {
-              conditionParts.push(`DATE(created_at) = CURDATE()`);
+              conditionParts.push(`DATE(created_at) = ?`);
             }
+            params.push(todayDate);
           } else if (dayOfWeek === 0) {
             // 日曜: 昨日（土曜）の記事を表示
-            const yesterday = new Date(now);
-            yesterday.setDate(yesterday.getDate() - 1);
-            const satYear = yesterday.getFullYear();
-            const satMonth = ('0' + (yesterday.getMonth() + 1)).slice(-2);
-            const satDay = ('0' + yesterday.getDate()).slice(-2);
+            const yesterday = new Date(jstNow.getTime() - 24 * 60 * 60 * 1000);
+            const satYear = yesterday.getUTCFullYear();
+            const satMonth = ('0' + (yesterday.getUTCMonth() + 1)).slice(-2);
+            const satDay = ('0' + yesterday.getUTCDate()).slice(-2);
             const saturdayDate = `${satYear}-${satMonth}-${satDay}`;
             if (operation.table === 'post' && operation.data.includes('code')) {
               conditionParts.push(`DATE(p.created_at) = ?`);
@@ -104,9 +109,6 @@ export async function POST(request: NextRequest) {
             //   15:30以降 → 当日15:30以降のみ表示（終値確定後の記事）
             //   12:30以降15:30未満 → 当日12:30以降のみ表示（前場記事を非表示）
             //   12:30未満 → 当日全記事を表示
-            const year = now.getFullYear();
-            const month = ('0' + (now.getMonth() + 1)).slice(-2);
-            const day = ('0' + now.getDate()).slice(-2);
             if (currentHour > 15 || (currentHour === 15 && currentMinute >= 30)) {
               const targetTimestamp = `${year}-${month}-${day} 15:30:00`;
               if (operation.table === 'post' && operation.data.includes('code')) {
@@ -125,10 +127,11 @@ export async function POST(request: NextRequest) {
               params.push(targetTimestamp);
             } else {
               if (operation.table === 'post' && operation.data.includes('code')) {
-                conditionParts.push(`DATE(p.created_at) = CURDATE()`);
+                conditionParts.push(`DATE(p.created_at) = ?`);
               } else {
-                conditionParts.push(`DATE(created_at) = CURDATE()`);
+                conditionParts.push(`DATE(created_at) = ?`);
               }
+              params.push(todayDate);
             }
           }
 
