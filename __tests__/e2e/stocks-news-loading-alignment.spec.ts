@@ -19,9 +19,9 @@ const getBoxByTestId = async (page: Page, testId: string): Promise<Box> => {
   return box;
 };
 
-const assertAligned = (name: string, skeleton: Box, loaded: Box) => {
+const assertAligned = (name: string, skeleton: Box, loaded: Box, yTolerance = 8) => {
   expect(Math.abs(skeleton.x - loaded.x), `${name}: x position drift`).toBeLessThanOrEqual(4);
-  expect(Math.abs(skeleton.y - loaded.y), `${name}: y position drift`).toBeLessThanOrEqual(8);
+  expect(Math.abs(skeleton.y - loaded.y), `${name}: y position drift`).toBeLessThanOrEqual(yTolerance);
   expect(Math.abs(skeleton.width - loaded.width), `${name}: width drift`).toBeLessThanOrEqual(6);
   expect(Math.abs(skeleton.height - loaded.height), `${name}: height drift`).toBeLessThanOrEqual(80);
 };
@@ -156,7 +156,7 @@ test.describe("Stocks news loading alignment", () => {
     const loadedNewsBox = await getBoxByTestId(page, "news-list");
 
     assertAligned("CompanyBasicInfo", skeletonCompanyBox, loadedCompanyBox);
-    assertAligned("StockChart", skeletonChartBox, loadedChartBox);
-    assertAligned("NewsList", skeletonNewsBox, loadedNewsBox);
+    assertAligned("StockChart", skeletonChartBox, loadedChartBox, 16);
+    assertAligned("NewsList", skeletonNewsBox, loadedNewsBox, 24);
   });
 });

@@ -342,16 +342,21 @@ export default function TrendingSection({
 
   if (!data) return null;
 
+  const hasSection1 = data.section1.items.length > 0;
+  const hasSection2 = data.section2.items.length > 0;
+
+  if (!hasSection1 && !hasSection2) return null;
+
   return (
     <div>
       <div className="bg-[#1a1a1a] text-white py-2 px-4 text-sm font-extrabold rounded-t tracking-wide">
         市場動向
       </div>
       <div className="border border-[#e5e5e5] border-t-0 rounded-b p-3">
-        {data.section1.items.length > 0 && (
+        {hasSection1 && (
           <SectionBlock section={data.section1} sparklines={sparklines} />
         )}
-        {data.section2.items.length > 0 && (
+        {hasSection2 && (
           <SectionBlock section={data.section2} sparklines={sparklines} />
         )}
       </div>
