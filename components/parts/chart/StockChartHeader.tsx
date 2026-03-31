@@ -66,7 +66,7 @@ export const CompanyHeader: React.FC<CompanyHeaderProps> = ({
               {companyInfo.currentPrice.toLocaleString()}円 {companyInfo.changePrice >= 0 ? '↑' : '↓'}
             </span>
             <span className="text-base font-medium ml-1">
-              {Math.abs(companyInfo.changePrice).toFixed(0)} ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(1)}%)
+              {Math.abs(companyInfo.changePrice).toFixed(2)} ({companyInfo.changePrice >= 0 ? '+' : ''}{companyInfo.changePercent.toFixed(2)}%)
             </span>
           </div>
         </div>
