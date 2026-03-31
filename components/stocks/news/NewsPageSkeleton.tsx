@@ -143,7 +143,7 @@ export const AiFeatureNavSkeleton = () => {
   return (
     <div data-testid="ai-feature-nav-skeleton" className="mt-4 mb-4">
       <div className="mb-4 pb-2 border-b border-shikiho-bg-border relative before:absolute before:bottom-[-1px] before:left-0 before:w-10 before:h-[2px] before:bg-[#1a1a1a]">
-        <div className="h-[18px] w-16 rounded bg-[#e8e8e8]" />
+        <div className="h-[27px] w-16 rounded bg-[#e8e8e8]" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         {[0, 1].map((index) => (
@@ -153,9 +153,9 @@ export const AiFeatureNavSkeleton = () => {
           >
             <div className="flex items-center gap-2">
               <div className="h-5 w-5 rounded bg-[#e8e8e8]" />
-              <div className="h-[15px] w-20 rounded bg-[#e8e8e8]" />
+              <div className="h-[23px] w-20 rounded bg-[#e8e8e8]" />
             </div>
-            <div className="h-[11px] w-28 rounded bg-[#e8e8e8]" />
+            <div className="h-[17px] w-28 rounded bg-[#e8e8e8]" />
           </div>
         ))}
       </div>
