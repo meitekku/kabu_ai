@@ -138,7 +138,7 @@ def perform_login_if_needed(driver):
         # パスワード入力（改良版検出使用）
         password_input = find_password_input_advanced(driver)
         if password_input:
-            password_input.send_keys("***REMOVED_DB_PASSWORD***")
+            password_input.send_keys(os.environ['TWITTER_PASSWORD'])
             password_input.send_keys(Keys.RETURN)
             print("パスワード入力完了")
             time.sleep(5)

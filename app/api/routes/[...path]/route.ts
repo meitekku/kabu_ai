@@ -65,8 +65,14 @@ export async function GET(
     if (!fileBuffer || !foundPath) {
       // ローカル開発環境のみ: 本番サーバーからプロキシ
       if (process.env.NODE_ENV !== 'production') {
+        const proxyBase = process.env.REMOTE_UPLOAD_PROXY_URL;
+        if (!proxyBase) {
+          const notFound = new NextResponse('Image not found', { status: 404 });
+          notFound.headers.set('Cache-Control', 'no-store, must-revalidate');
+          return notFound;
+        }
         try {
-          const remoteUrl = `http://133.130.102.77:3000/uploads/${relativePath}`;
+          const remoteUrl = `${proxyBase.replace(/\/$/, '')}/uploads/${relativePath}`;
           const remoteRes = await fetch(remoteUrl);
           if (remoteRes.ok) {
             const remoteBuffer = await remoteRes.arrayBuffer();

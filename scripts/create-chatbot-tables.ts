@@ -1,11 +1,15 @@
 import mysql from 'mysql2/promise';
 
 async function createTables() {
+  const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+  if (!DB_HOST || !DB_USER || !DB_PASSWORD || !DB_NAME) {
+    throw new Error('DB_HOST / DB_USER / DB_PASSWORD / DB_NAME must be set');
+  }
   const connection = await mysql.createConnection({
-    host: process.env.DB_HOST || '133.130.102.77',
-    user: process.env.DB_USER || 'meiteko',
-    password: process.env.DB_PASSWORD || '***REMOVED_DB_PASSWORD***',
-    database: process.env.DB_NAME || 'kabu_ai',
+    host: DB_HOST,
+    user: DB_USER,
+    password: DB_PASSWORD,
+    database: DB_NAME,
     port: parseInt(process.env.DB_PORT || '3306'),
   });
 

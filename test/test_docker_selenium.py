@@ -8,10 +8,11 @@ import time
 
 # Set Docker-like environment variables
 os.environ['DISPLAY'] = ':99'
-os.environ['TWITTER_USERNAME'] = 'meiteko_stock'
-os.environ['TWITTER_PASSWORD'] = '***REMOVED_DB_PASSWORD***'
-os.environ['TWITTER_EMAIL'] = 'meiteko.stock@gmail.com'
+os.environ.setdefault('TWITTER_USERNAME', 'meiteko_stock')
+os.environ.setdefault('TWITTER_EMAIL', 'meiteko.stock@gmail.com')
 os.environ['PYTHONUNBUFFERED'] = '1'
+if not os.environ.get('TWITTER_PASSWORD'):
+    raise RuntimeError('TWITTER_PASSWORD env var is required')
 
 # Add the Python modules to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'python'))

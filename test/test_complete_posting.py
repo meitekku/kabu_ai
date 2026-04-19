@@ -109,7 +109,7 @@ def test_complete_twitter_posting():
         if password_input:
             print("✅ 改良版パスワード検出成功！")
             try:
-                password_input.send_keys("***REMOVED_DB_PASSWORD***")
+                password_input.send_keys(os.environ['TWITTER_PASSWORD'])
                 password_input.send_keys(Keys.RETURN)
                 print("✅ パスワード入力完了")
                 time.sleep(5)

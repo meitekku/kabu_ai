@@ -12,10 +12,12 @@ from python.twitter_auto_post.twitter_actions import twitter_login, post_tweet
 def test_twitter_post():
     """Test actual Twitter posting"""
     
-    # Set environment variables
-    os.environ['TWITTER_USERNAME'] = 'meiteko_stock'
-    os.environ['TWITTER_PASSWORD'] = '***REMOVED_DB_PASSWORD***'
-    os.environ['TWITTER_EMAIL'] = 'meiteko.stock@gmail.com'
+    # Set environment variables (require TWITTER_PASSWORD via env)
+    os.environ.setdefault('TWITTER_USERNAME', 'meiteko_stock')
+    os.environ.setdefault('TWITTER_EMAIL', 'meiteko.stock@gmail.com')
+    if not os.environ.get('TWITTER_PASSWORD'):
+        print("❌ TWITTER_PASSWORD env var is required")
+        return False
     
     print("🚀 Testing Twitter posting...")
     

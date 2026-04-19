@@ -1,5 +1,6 @@
 # coding:utf-8
 
+import os
 import requests
 import datetime
 import argparse
@@ -99,7 +100,14 @@ def make_html(html):
 
 def connect_db():
     import pymysql
-    return pymysql.connect(host='133.130.102.77', user='meiteko', db='kabu_ai', charset='utf8mb4', password='***REMOVED_DB_PASSWORD***',port=3306, cursorclass=pymysql.cursors.DictCursor)
+    host = os.environ.get('DB_HOST')
+    user = os.environ.get('DB_USER')
+    password = os.environ.get('DB_PASSWORD')
+    db = os.environ.get('DB_NAME', 'kabu_ai')
+    port = int(os.environ.get('DB_PORT', '3306'))
+    if not (host and user and password):
+        raise RuntimeError('DB_HOST / DB_USER / DB_PASSWORD must be set')
+    return pymysql.connect(host=host, user=user, db=db, charset='utf8mb4', password=password, port=port, cursorclass=pymysql.cursors.DictCursor)
 
 def insert_sql(insert_sql):
     if insert_sql == "":
@@ -687,13 +695,14 @@ def upload_file(local_file_path: str, remote_path: str) -> None:
         local_file_path: アップロードするローカルファイルのパス
         remote_path: リモートサーバーでの保存パス
     """
-    import os
     import paramiko
 
-    host = '133.130.102.77'
-    username = 'root'
-    password = '***REMOVED_DB_PASSWORD***'
-    port = 22  # SFTPのデフォルトポート
+    host = os.environ.get('SFTP_HOST') or os.environ.get('DB_HOST')
+    username = os.environ.get('SFTP_USER', 'root')
+    password = os.environ.get('SFTP_PASSWORD') or os.environ.get('DB_PASSWORD')
+    port = int(os.environ.get('SFTP_PORT', '22'))
+    if not (host and password):
+        raise RuntimeError('SFTP_HOST / SFTP_PASSWORD (or DB_HOST / DB_PASSWORD) must be set')
 
     # SFTPセッションの開始
     transport = paramiko.Transport((host, port))
@@ -859,7 +868,10 @@ def get_comments_by_code(code: str, limit: int, today_only: bool = False):
     """
     try:
         # MongoDBクライアントの初期化
-        client = MongoClient('mongodb://meiteko:***REMOVED_DB_PASSWORD_URLENC***@133.130.102.77:27017/')
+        mongo_uri = os.environ.get('MONGODB_URI')
+        if not mongo_uri:
+            raise RuntimeError('MONGODB_URI must be set')
+        client = MongoClient(mongo_uri)
         db = client['kabu_ai']
         collection = db['yahoo_comment']
 

@@ -2,12 +2,13 @@ import { MongoClient } from 'mongodb'
 import { Database } from '@/lib/database/Mysql'
 import { cacheGet, cacheSet, makeCacheKey } from '@/lib/cache'
 
-const MONGO_URI = 'mongodb://meiteko:***REMOVED_DB_PASSWORD_URLENC***@133.130.102.77:27017/'
 let mongoClient: MongoClient | null = null
 
 async function getMongoClient(): Promise<MongoClient> {
   if (!mongoClient) {
-    mongoClient = new MongoClient(MONGO_URI)
+    const uri = process.env.MONGODB_URI
+    if (!uri) throw new Error('MONGODB_URI is not set')
+    mongoClient = new MongoClient(uri)
     await mongoClient.connect()
   }
   return mongoClient
