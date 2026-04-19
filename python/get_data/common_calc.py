@@ -44,13 +44,12 @@ def send_mail(subject, error_message, sender_address, receiver_address, email_pa
     except Exception as e:
         print(f"予期せぬエラー: {e}")
 
-#send_mail(f"torエラー","aaaa","seneca.meiteko", "seneca.meiteko","***REMOVED_GMAIL_APP_PASSWORD***")
 
 def chatwork(message):
     # コマンドライン引数からルームID、メッセージ内容を取得
     psr = argparse.ArgumentParser()
-    psr.add_argument('-a', '--apikey', default='***REMOVED_CHATWORK_API_KEY***')
-    psr.add_argument('-r', '--roomid', default='162471617')
+    psr.add_argument('-a', '--apikey', default=os.environ.get('CHATWORK_API_KEY', ''))
+    psr.add_argument('-r', '--roomid', default=os.environ.get('CHATWORK_ROOM_ID', ''))
     psr.add_argument('-m', '--message', default=message)
     psr.add_argument('--version', action='version', version='%(prog)s 1.0')
     args = psr.parse_args()
