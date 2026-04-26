@@ -100,7 +100,7 @@ test.describe("Chat System", () => {
 
     // Wait for the empty state heading
     await expect(
-      page.getByText("株式投資AIアシスタント")
+      page.getByText("株式投資AIアシスタント").first()
     ).toBeVisible({ timeout: 15000 });
 
     // Starter questions section should be visible
