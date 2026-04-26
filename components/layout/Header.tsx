@@ -10,7 +10,7 @@ import { Crown, Settings, LogOut, LogIn, ChevronDown, Heart } from 'lucide-react
 import { useSession, signOut } from '@/lib/auth/auth-client';
 import { Button } from '@/components/ui/button';
 
-const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {
+export const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();

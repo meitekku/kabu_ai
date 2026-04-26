@@ -1,13 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { MenuIcon, PlusIcon, SparklesIcon } from "lucide-react";
+import Link from "next/link";
+import { Crown, LogIn, MenuIcon, PlusIcon, SparklesIcon } from "lucide-react";
 import { PortfolioChatPanel } from "@/components/agent-portfolio/PortfolioChatPanel";
 import { PortfolioSidebar } from "@/components/agent-portfolio/PortfolioSidebar";
 import { usePortfolioChatHistory } from "@/hooks/usePortfolioChatHistory";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getChat } from "@/lib/agent/chat-history-store";
+import CompanySearch from "@/components/parts/common/CompanySearch";
+import { UserMenu } from "@/components/layout/Header";
+import { useSession } from "@/lib/auth/auth-client";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const FALLBACK_CHAT_ID = "portfolio-agent";
 
@@ -22,6 +27,9 @@ export default function TopChatShell() {
   } = usePortfolioChatHistory();
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { data: session, isPending: isSessionPending } = useSession();
+  const { isPremium, isLoading: isSubLoading } = useSubscription();
+  const user = session?.user ?? null;
 
   // WHY: when the selected chat changes, we must re-mount PortfolioChatPanel
   // so useChat re-initialises with the restored messages.
@@ -60,6 +68,11 @@ export default function TopChatShell() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
 
+  // WHY: avoid auth UI flicker. Render a placeholder slot until both session
+  // and subscription resolve so the right cluster doesn't pop in/out.
+  const isAuthResolving = isSessionPending || isSubLoading;
+  const showPremiumCta = !isAuthResolving && !isPremium;
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-background">
       {/* Desktop sidebar */}
@@ -90,7 +103,7 @@ export default function TopChatShell() {
 
       {/* Right pane: header + chat */}
       <div className="relative flex flex-1 min-w-0 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <Button
             type="button"
             variant="ghost"
@@ -101,18 +114,26 @@ export default function TopChatShell() {
           >
             <MenuIcon className="size-4" />
           </Button>
+          {/* Left: title + BETA */}
           <div className="flex min-w-0 items-center gap-2">
             <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 ring-1 ring-primary/15">
               <SparklesIcon className="size-3.5 text-primary" />
             </span>
-            <h1 className="truncate text-sm font-semibold text-foreground">
+            <h1 className="truncate text-sm font-semibold text-foreground max-w-[8rem] sm:max-w-[14rem]">
               {headerTitle}
             </h1>
             <span className="hidden sm:inline rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-medium text-zinc-600">
               BETA
             </span>
           </div>
-          <div className="ml-auto flex items-center gap-1">
+
+          {/* Center: company search */}
+          <div className="ml-2 hidden md:block flex-1 min-w-0 max-w-md">
+            <CompanySearch />
+          </div>
+
+          {/* Right cluster */}
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <Button
               type="button"
               variant="ghost"
@@ -122,8 +143,35 @@ export default function TopChatShell() {
               aria-label="新しいチャット"
             >
               <PlusIcon className="size-3.5" />
-              <span className="hidden sm:inline">新しいチャット</span>
+              <span className="hidden lg:inline">新しいチャット</span>
             </Button>
+
+            {showPremiumCta && (
+              <Link
+                href="/premium"
+                className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+                aria-label="プレミアムプランを見る"
+              >
+                <Crown className="size-3.5 text-amber-500" />
+                <span className="hidden md:inline">プレミアム</span>
+              </Link>
+            )}
+
+            {isAuthResolving ? (
+              <div className="h-7 w-7 rounded-full bg-muted animate-pulse" aria-hidden />
+            ) : user ? (
+              <div className="rounded-md bg-zinc-900 px-1.5 py-0.5">
+                <UserMenu user={user} />
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1 rounded-md bg-[#cc0000] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#990000]"
+              >
+                <LogIn className="size-3.5" />
+                <span className="hidden sm:inline">ログイン</span>
+              </Link>
+            )}
           </div>
         </header>
 
