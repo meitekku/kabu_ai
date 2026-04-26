@@ -2,12 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import {
-  TargetIcon,
-  CalendarIcon,
-  CoinsIcon,
-  StarIcon,
-} from "lucide-react";
+import { NewspaperIcon, PieChartIcon, SparklesIcon } from "lucide-react";
 
 export interface PresetQuestion {
   id: string;
@@ -17,40 +12,29 @@ export interface PresetQuestion {
   icon: ReactNode;
 }
 
-const BASE_PRESETS: PresetQuestion[] = [
-  {
-    id: "goal-1000",
-    title: "10年で1000万円つくる",
-    description: "長期目標から逆算して必要な利回り・配分を提案",
-    prompt:
-      "10年で1000万円を目標に、月いくら積み立てれば達成できそうか試算して、ポートフォリオを組んでください。リスク許容度は中程度です。",
-    icon: <TargetIcon className="size-4" />,
-  },
-  {
-    id: "monthly-30k",
-    title: "月3万の積立で老後資金",
-    description: "つみたて前提でセクター分散を含む銘柄案を提案",
-    prompt:
-      "月3万円を25年間積み立てる前提で、老後資金として運用する日本株のポートフォリオを組んでください。守り重視です。",
-    icon: <CalendarIcon className="size-4" />,
-  },
-  {
-    id: "high-dividend-5",
-    title: "高配当だけで5銘柄",
-    description: "配当利回り重視・安定セクターから5銘柄を提案",
-    prompt:
-      "配当利回り3.5%以上の日本株から、業種を分散して5銘柄選んでください。各銘柄の配当・PER・直近業績も教えてください。",
-    icon: <CoinsIcon className="size-4" />,
-  },
-];
+const NEWS_PRESET: PresetQuestion = {
+  id: "latest-news",
+  title: "最新のニュース",
+  description: "今日の市場で押さえるべき注目ポイントを5つ",
+  prompt: "今日の市場の最新ニュースから注目ポイントを5つ教えて",
+  icon: <NewspaperIcon className="size-4" />,
+};
 
 const FAVORITES_PRESET: PresetQuestion = {
-  id: "favorites",
-  title: "今のお気に入りでポートフォリオ組んで",
-  description: "登録済みのお気に入り銘柄を使った配分案を提案",
+  id: "favorites-portfolio",
+  title: "自分のポートフォリオを評価",
+  description: "お気に入り銘柄のリスク・分散・改善点を診断",
   prompt:
-    "私のお気に入り銘柄をベースに、リスクとリターンのバランスが取れたポートフォリオを組んでください。",
-  icon: <StarIcon className="size-4" />,
+    "私のお気に入り銘柄でポートフォリオを組んだ場合の評価をして(リスク・分散・改善点)",
+  icon: <PieChartIcon className="size-4" />,
+};
+
+const RECOMMEND_PRESET: PresetQuestion = {
+  id: "recommend-5",
+  title: "おすすめの銘柄5つ",
+  description: "今注目の日本株を推し理由付きで5銘柄ピックアップ",
+  prompt: "今おすすめの日本株を5銘柄、それぞれの推し理由付きで教えて",
+  icon: <SparklesIcon className="size-4" />,
 };
 
 interface PresetQuestionCardsProps {
@@ -66,14 +50,15 @@ export function PresetQuestionCards({
   disabled,
   className,
 }: PresetQuestionCardsProps) {
-  const presets = showFavorites
-    ? [...BASE_PRESETS, FAVORITES_PRESET]
-    : BASE_PRESETS;
+  // お気に入り未登録時は評価カードを除外
+  const presets: PresetQuestion[] = showFavorites
+    ? [NEWS_PRESET, FAVORITES_PRESET, RECOMMEND_PRESET]
+    : [NEWS_PRESET, RECOMMEND_PRESET];
 
   return (
     <div
       className={cn(
-        "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2",
+        "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3",
         className,
       )}
     >

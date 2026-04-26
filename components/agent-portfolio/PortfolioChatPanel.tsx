@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type UIMessage } from "ai";
 import { AlertCircleIcon, SparklesIcon } from "lucide-react";
 import {
   Conversation,
@@ -20,9 +20,21 @@ import { useAgentQuota } from "@/hooks/useAgentQuota";
 
 interface PortfolioChatPanelProps {
   className?: string;
+  // WHY: chat id keys the underlying useChat instance so history switching
+  // hot-swaps state cleanly (sendMessage / messages reset per id).
+  chatId?: string;
+  initialMessages?: UIMessage[];
+  onMessagesChange?: (messages: UIMessage[]) => void;
+  onLinkClick?: (text: string, href: string) => void;
 }
 
-export function PortfolioChatPanel({ className }: PortfolioChatPanelProps) {
+export function PortfolioChatPanel({
+  className,
+  chatId,
+  initialMessages,
+  onMessagesChange,
+  onLinkClick,
+}: PortfolioChatPanelProps) {
   const { isLogin, isLoading: authLoading } = useAuth();
   const favorites = useFavoritesAccess();
   const quota = useAgentQuota();
@@ -36,7 +48,8 @@ export function PortfolioChatPanel({ className }: PortfolioChatPanelProps) {
     status,
     error,
   } = useChat({
-    id: "portfolio-agent",
+    id: chatId ?? "portfolio-agent",
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/agent-portfolio",
     }),
@@ -54,6 +67,19 @@ export function PortfolioChatPanel({ className }: PortfolioChatPanelProps) {
       quota.refetch();
     }
   }, [status, quota]);
+
+  // WHY: bubble messages up to history persistence layer; only persist after a
+  // turn settles (ready/error) to avoid spamming localStorage during streaming.
+  const onMessagesChangeRef = useRef(onMessagesChange);
+  useEffect(() => {
+    onMessagesChangeRef.current = onMessagesChange;
+  }, [onMessagesChange]);
+  useEffect(() => {
+    if (!onMessagesChangeRef.current) return;
+    if (status !== "ready" && status !== "error") return;
+    if (messages.length === 0) return;
+    onMessagesChangeRef.current(messages);
+  }, [messages, status]);
 
   const handleSend = useCallback(
     (text: string) => {
@@ -77,6 +103,22 @@ export function PortfolioChatPanel({ className }: PortfolioChatPanelProps) {
   const handleCopy = useCallback((text: string) => {
     navigator.clipboard.writeText(text).catch(() => {});
   }, []);
+
+  // WHY: clicking a stock link inside an assistant reply should ask the agent
+  // for a deeper explanation in the same chat instead of leaving the page.
+  const handleStockLinkClick = useCallback(
+    (text: string, _href: string) => {
+      if (status === "submitted" || status === "streaming") return;
+      const question = `${text} について詳しく教えて`;
+      handleSend(question);
+    },
+    [handleSend, status],
+  );
+
+  const linkClickHandler = useMemo(
+    () => onLinkClick ?? handleStockLinkClick,
+    [onLinkClick, handleStockLinkClick],
+  );
 
   const showFavoritesPreset = isLogin && favorites.isAllowed;
   const remaining = quota.isUnlimited ? quota.total : quota.remaining;
@@ -146,6 +188,7 @@ export function PortfolioChatPanel({ className }: PortfolioChatPanelProps) {
                         ? handleRegenerate
                         : undefined
                     }
+                    onLinkClick={linkClickHandler}
                   />
                 );
               })}

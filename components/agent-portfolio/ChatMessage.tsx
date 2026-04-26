@@ -76,6 +76,8 @@ interface ChatMessageProps {
   stopped?: boolean;
   onCopy: (text: string) => void;
   onRegenerate?: () => void;
+  // WHY: TopChatShell wires this later to intercept stock-link clicks.
+  onLinkClick?: (text: string, href: string) => void;
 }
 
 export const ChatMessage = memo(function ChatMessage({
@@ -84,6 +86,7 @@ export const ChatMessage = memo(function ChatMessage({
   stopped,
   onCopy,
   onRegenerate,
+  onLinkClick,
 }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
 
@@ -118,6 +121,9 @@ export const ChatMessage = memo(function ChatMessage({
                 key={key}
                 isActiveStreaming={
                   message.role === "assistant" ? isActiveStreaming : false
+                }
+                onLinkClick={
+                  message.role === "assistant" ? onLinkClick : undefined
                 }
               >
                 {text}

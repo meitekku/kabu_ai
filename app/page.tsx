@@ -1,10 +1,9 @@
-import DefaultTemplate from "@/components/template/DefaultTemplate";
 import NewsListS from "@/components/news/NewsListS";
 import TrendingSection from "@/components/top/TrendingSection";
 import HeroCarousel from "@/components/top/HeroCarousel";
 import IndexTicker from "@/components/top/IndexTicker";
 import FavoriteMiniChartList from "@/components/top/FavoriteMiniChartList";
-import AgentPortfolioPanel from "@/components/top/AgentPortfolioPanel";
+import TopChatShell from "@/components/top/TopChatShell";
 import { getTrendingContent } from "@/lib/top/trending";
 import { searchNews } from "@/lib/news/search";
 import { getLatestCarousel } from "@/lib/top/carousel";
@@ -36,17 +35,16 @@ export default async function Home() {
     carouselResult.status === 'fulfilled' ? carouselResult.value : [];
 
   return (
-    <DefaultTemplate variant="plain">
+    <>
+      {/* WHY: full-bleed chat shell occupies the visible viewport (minus admin nav). */}
+      <section className="w-full h-[calc(100dvh-2rem)] md:h-[calc(100dvh-0px)]">
+        <TopChatShell />
+      </section>
+
+      {/* Information sections — scroll past the chat to reach them. */}
       <IndexTicker />
-      <div className="bg-zinc-50 py-6">
-        <div className="max-w-7xl mx-auto px-4">
-          <AgentPortfolioPanel />
-        </div>
-      </div>
       <div className="bg-white py-5">
-        <div className="max-w-7xl mx-auto px-4">
-          <FavoriteMiniChartList />
-        </div>
+        <FavoriteMiniChartList />
       </div>
       <HeroCarousel initialSlides={carouselSlides} />
       <div className="bg-white py-5">
@@ -58,6 +56,6 @@ export default async function Home() {
           <NewsListS more={true} site={[1, 70]} initialData={latestInitialData} />
         </div>
       </div>
-    </DefaultTemplate>
+    </>
   );
 }

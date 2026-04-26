@@ -42,8 +42,16 @@ vi.mock("@/components/top/AgentPortfolioPanel", () => ({
   default: () => <div data-testid="agent-portfolio-panel" />,
 }));
 
+vi.mock("@/components/top/TopChatShell", () => ({
+  default: () => <div data-testid="top-chat-shell" />,
+}));
+
 vi.mock("@/components/top/FavoriteMiniChartList", () => ({
   default: () => <div data-testid="favorite-mini-chart-list" />,
+}));
+
+vi.mock("@/components/top/HeroCarousel", () => ({
+  default: () => <div data-testid="hero-carousel" />,
 }));
 
 const mockTrendingData = {
