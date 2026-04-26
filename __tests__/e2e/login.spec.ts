@@ -6,8 +6,10 @@ test.describe("Login Page", () => {
   });
 
   test("page loads with login heading", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "ログイン" })).toBeVisible();
-    await expect(page.getByText("アカウントにログイン")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "ログイン" }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("アカウントにログイン").first()).toBeVisible();
   });
 
   test("email and password fields are present", async ({ page }) => {
@@ -36,7 +38,7 @@ test.describe("Login Page", () => {
   });
 
   test("separator text is displayed", async ({ page }) => {
-    await expect(page.getByText("または")).toBeVisible();
+    await expect(page.getByText("または").first()).toBeVisible();
   });
 
   test("can type into email and password fields", async ({ page }) => {
