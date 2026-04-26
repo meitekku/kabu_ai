@@ -2,6 +2,9 @@ import DefaultTemplate from "@/components/template/DefaultTemplate";
 import NewsListS from "@/components/news/NewsListS";
 import TrendingSection from "@/components/top/TrendingSection";
 import HeroCarousel from "@/components/top/HeroCarousel";
+import IndexTicker from "@/components/top/IndexTicker";
+import FavoriteMiniChartList from "@/components/top/FavoriteMiniChartList";
+import AgentPortfolioPanel from "@/components/top/AgentPortfolioPanel";
 import { getTrendingContent } from "@/lib/top/trending";
 import { searchNews } from "@/lib/news/search";
 import { getLatestCarousel } from "@/lib/top/carousel";
@@ -34,6 +37,17 @@ export default async function Home() {
 
   return (
     <DefaultTemplate variant="plain">
+      <IndexTicker />
+      <div className="bg-zinc-50 py-6">
+        <div className="max-w-7xl mx-auto px-4">
+          <AgentPortfolioPanel />
+        </div>
+      </div>
+      <div className="bg-white py-5">
+        <div className="max-w-7xl mx-auto px-4">
+          <FavoriteMiniChartList />
+        </div>
+      </div>
       <HeroCarousel initialSlides={carouselSlides} />
       <div className="bg-white py-5">
         <TrendingSection initialData={trendingData} />
