@@ -96,9 +96,14 @@ node scripts/agent-db-query.cjs "SELECT ..."
   ユーザーのお気に入り銘柄（別途取得）を前提に、リスク・分散・改善案を提示する。
   お気に入り情報がない場合はその旨を伝えて目標ヒアリングに切り替える。`;
 
+// WHY: sessionId は kabu_ai 側の usage_log 主キー。Claude Code SDK の会話
+// セッションIDではないため `resume` には使えない(渡すと "No conversation found"
+// になる)。引数として受け取るのは route.ts のシグネチャ維持のためで、SDK へは
+// 渡さない。会話継続が必要になった場合は SDK の result メッセージから返ってくる
+// session_id を別途記録して resume する設計に切り替える。
 export function createPortfolioStream(
   userMessage: string,
-  sessionId?: string,
+  _sessionId?: string,
 ): AsyncIterable<SDKMessage> {
   ensureWorkspaceDir();
 
@@ -127,7 +132,6 @@ export function createPortfolioStream(
       stderr: (data: string) => {
         console.error('[Portfolio Agent stderr]', data);
       },
-      ...(sessionId ? { resume: sessionId } : {}),
     },
   });
 }
