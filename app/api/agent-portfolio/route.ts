@@ -12,6 +12,7 @@ import {
 export const maxDuration = 300;
 
 const UNLIMITED_PLANS = new Set(['standard', 'agent']);
+const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
 const DAILY_LIMIT = 3;
 const STALE_IN_PROGRESS_MINUTES = 5;
 
@@ -26,6 +27,7 @@ interface PortfolioRequestBody {
 interface UserSubscriptionRow extends RowDataPacket {
   subscription_status: string | null;
   subscription_plan: string | null;
+  email: string | null;
 }
 
 interface CountRow extends RowDataPacket {
@@ -40,6 +42,7 @@ interface InProgressRow extends RowDataPacket {
 
 function isUnlimitedUser(row: UserSubscriptionRow | undefined): boolean {
   if (!row) return false;
+  if (row.email === ADMIN_EMAIL) return true;
   if (row.subscription_status !== 'active') return false;
   return !!row.subscription_plan && UNLIMITED_PLANS.has(row.subscription_plan);
 }
@@ -107,7 +110,7 @@ export async function POST(req: Request) {
     const db = Database.getInstance();
 
     const userRows = await db.select<UserSubscriptionRow>(
-      'SELECT subscription_status, subscription_plan FROM user WHERE id = ?',
+      'SELECT subscription_status, subscription_plan, email FROM user WHERE id = ?',
       [userId],
     );
     const isUnlimited = isUnlimitedUser(userRows[0]);

@@ -4,12 +4,14 @@ import { auth } from '@/lib/auth/auth';
 import { Database } from '@/lib/database/Mysql';
 
 const UNLIMITED_PLANS = new Set(['standard', 'agent']);
+const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
 const DAILY_LIMIT = 3;
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 interface UserSubscriptionRow extends RowDataPacket {
   subscription_status: string | null;
   subscription_plan: string | null;
+  email: string | null;
 }
 
 interface CountRow extends RowDataPacket {
@@ -44,15 +46,16 @@ export async function GET() {
     const userId = session.user.id;
     const db = Database.getInstance();
     const userRows = await db.select<UserSubscriptionRow>(
-      'SELECT subscription_status, subscription_plan FROM user WHERE id = ?',
+      'SELECT subscription_status, subscription_plan, email FROM user WHERE id = ?',
       [userId],
     );
     const row = userRows[0];
     const isUnlimited =
       !!row &&
-      row.subscription_status === 'active' &&
-      !!row.subscription_plan &&
-      UNLIMITED_PLANS.has(row.subscription_plan);
+      (row.email === ADMIN_EMAIL ||
+        (row.subscription_status === 'active' &&
+          !!row.subscription_plan &&
+          UNLIMITED_PLANS.has(row.subscription_plan)));
 
     const resetAt = nextJstMidnightIso();
 
