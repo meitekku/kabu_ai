@@ -10,10 +10,17 @@ import { Crown, Settings, LogOut, LogIn, ChevronDown, Heart } from 'lucide-react
 import { useSession, signOut } from '@/lib/auth/auth-client';
 import { Button } from '@/components/ui/button';
 
-export const UserMenu = ({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) => {
+export const UserMenu = ({
+  user,
+  variant = 'dark',
+}: {
+  user: { name?: string | null; email?: string | null; image?: string | null };
+  variant?: 'dark' | 'light';
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const isLight = variant === 'light';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,7 +45,11 @@ export const UserMenu = ({ user }: { user: { name?: string | null; email?: strin
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 transition-colors"
+        className={
+          isLight
+            ? 'flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-100 transition-colors'
+            : 'flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 transition-colors'
+        }
       >
         {user.image ? (
           <Image
@@ -53,12 +64,24 @@ export const UserMenu = ({ user }: { user: { name?: string | null; email?: strin
             {initial}
           </div>
         )}
-        <span className="hidden sm:inline text-xs text-white/80">{displayName}</span>
-        <ChevronDown className={`w-3 h-3 text-white/60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <span
+          className={
+            isLight
+              ? 'hidden sm:inline text-xs text-zinc-700'
+              : 'hidden sm:inline text-xs text-white/80'
+          }
+        >
+          {displayName}
+        </span>
+        <ChevronDown
+          className={`w-3 h-3 transition-transform duration-200 ${
+            isLight ? 'text-zinc-500' : 'text-white/60'
+          } ${isOpen ? 'rotate-180' : ''}`}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#d9d9d9] py-1 z-50">
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-[#d9d9d9] py-1 z-[100]">
           <div className="px-4 py-3 border-b border-[#e5e5e5]">
             <p className="text-sm font-semibold text-[#333] truncate">{displayName}</p>
             <p className="text-xs text-[#888] truncate mt-0.5">{user.email}</p>

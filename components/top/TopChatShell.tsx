@@ -103,7 +103,7 @@ export default function TopChatShell() {
 
       {/* Right pane: header + chat */}
       <div className="relative flex flex-1 min-w-0 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <header className="relative z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <Button
             type="button"
             variant="ghost"
@@ -160,9 +160,7 @@ export default function TopChatShell() {
             {isAuthResolving ? (
               <div className="h-7 w-7 rounded-full bg-muted animate-pulse" aria-hidden />
             ) : user ? (
-              <div className="rounded-md bg-zinc-900 px-1.5 py-0.5">
-                <UserMenu user={user} />
-              </div>
+              <UserMenu user={user} variant="light" />
             ) : (
               <Link
                 href="/login"
