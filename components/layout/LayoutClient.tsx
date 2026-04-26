@@ -33,7 +33,8 @@ export default function LayoutClient({
   const isFavoritesPage = pathname?.startsWith('/favorites')
   const isBbsPage = pathname?.startsWith('/bbs')
   const isAnyChatPage = isChatPage || isAgentChatPage
-  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage
+  const isTopPage = pathname === '/'
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage || isTopPage
   const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:flex-1'
   const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
   const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)
@@ -92,6 +93,18 @@ export default function LayoutClient({
   if (isAnyChatPage) {
     return (
       <div className="h-screen flex flex-col">
+        <GlobalNavigation />
+        <main className="flex-1 min-h-0">
+          {children}
+        </main>
+      </div>
+    )
+  }
+
+  // トップページもヘッダー・サイドバーなし（縦スクロール許容）
+  if (isTopPage) {
+    return (
+      <div className="min-h-screen flex flex-col">
         <GlobalNavigation />
         <main className="flex-1 min-h-0">
           {children}
