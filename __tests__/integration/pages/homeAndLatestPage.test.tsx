@@ -34,6 +34,18 @@ vi.mock("@/components/news/NewsListS", () => ({
   },
 }));
 
+vi.mock("@/components/top/IndexTicker", () => ({
+  default: () => <div data-testid="index-ticker" />,
+}));
+
+vi.mock("@/components/top/AgentPortfolioPanel", () => ({
+  default: () => <div data-testid="agent-portfolio-panel" />,
+}));
+
+vi.mock("@/components/top/FavoriteMiniChartList", () => ({
+  default: () => <div data-testid="favorite-mini-chart-list" />,
+}));
+
 const mockTrendingData = {
   section1: {
     type: "market_up" as const,
