@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
+import { isAdminRole } from '@/lib/auth/admin';
 import { headers, cookies } from 'next/headers';
 
 function getClientIp(headersList: Headers): string {
@@ -42,9 +43,8 @@ export async function POST(
     const db = Database.getInstance();
 
     // 管理者チェック（better-auth + レガシークッキー両対応）
-    const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
     const cookieStore = await cookies();
-    const isAdmin = !!cookieStore.get('username')?.value || session?.user?.email === ADMIN_EMAIL;
+    const isAdmin = !!cookieStore.get('username')?.value || isAdminRole((session?.user as { role?: unknown } | undefined)?.role);
 
     // プレミアム会員チェック
     let isPremium = false;

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { isAdminRole } from "@/lib/auth/admin";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -32,9 +33,10 @@ function LoginForm() {
         return;
       }
 
-      // 管理者メールの場合は/adminへ、それ以外はトップへ
-      const ADMIN_EMAIL = "smartaiinvest@gmail.com";
-      if (email === ADMIN_EMAIL) {
+      // 管理者の場合は/adminへ、それ以外はトップへ
+      const role = (result.data as { user?: { role?: unknown } } | undefined)
+        ?.user?.role;
+      if (isAdminRole(role)) {
         router.push("/admin/comment");
       } else {
         router.push("/");

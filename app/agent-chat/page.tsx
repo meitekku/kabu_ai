@@ -9,8 +9,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { Bot, Crown, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-
-const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
+import { isAdminRole } from '@/lib/auth/admin';
 
 function AgentPlanRequired() {
   return (
@@ -49,7 +48,7 @@ export default function AgentChatPage() {
   const { user } = useAuth();
   const { plan, isLoading: subLoading } = useSubscription();
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminRole(user?.role);
   const hasAgentAccess = plan === 'agent' || isAdmin;
 
   const handleChatCreated = useCallback((newChatId: string) => {

@@ -3,8 +3,7 @@
 import { useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
-
-const ADMIN_EMAIL = "smartaiinvest@gmail.com";
+import { isAdminRole } from "@/lib/auth/admin";
 
 interface AdminProtectedRouteProps {
   children: ReactNode;
@@ -18,7 +17,7 @@ export function AdminProtectedRoute({
   const { isLogin, isLoading, user } = useAuth();
   const router = useRouter();
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = isAdminRole(user?.role);
 
   useEffect(() => {
     if (!isLoading) {

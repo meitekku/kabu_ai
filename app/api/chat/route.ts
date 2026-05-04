@@ -1,5 +1,6 @@
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
+import { isAdminRole } from '@/lib/auth/admin';
 import { headers, cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,7 +11,6 @@ const FREE_USAGE_LIMIT_AUTHENTICATED = 3;
 const FREE_USAGE_LIMIT_GUEST = 1;
 const GLM_API_URL = process.env.GLM_API_URL || 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const CHAT_MODEL = process.env.GLM_CHAT_MODEL || 'glm-4-plus';
-const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
@@ -413,7 +413,7 @@ export async function POST(req: Request) {
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id || null;
     const clientIp = getClientIp(headersList);
-    const isAdmin = !!cookieStore.get('username')?.value || session?.user?.email === ADMIN_EMAIL;
+    const isAdmin = !!cookieStore.get('username')?.value || isAdminRole((session?.user as { role?: unknown } | undefined)?.role);
 
     const db = Database.getInstance();
 

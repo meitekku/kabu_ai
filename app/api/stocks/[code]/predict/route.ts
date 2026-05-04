@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
+import { isAdminRole } from '@/lib/auth/admin';
 import { headers, cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { generateElliottWavePrices } from '@/utils/elliottWaveGenerator';
@@ -265,8 +266,7 @@ export async function POST(
     const session = await auth.api.getSession({ headers: headersList });
     const userId = session?.user?.id || null;
     const clientIp = getClientIp(headersList);
-    const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
-    const isAdmin = !!cookieStore.get('username')?.value || session?.user?.email === ADMIN_EMAIL;
+    const isAdmin = !!cookieStore.get('username')?.value || isAdminRole((session?.user as { role?: unknown } | undefined)?.role);
 
     // キャッシュヒット: 利用ログを記録して即返却（認証チェック不要）
     if (cacheResult.length > 0) {

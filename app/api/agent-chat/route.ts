@@ -1,5 +1,6 @@
 import { Database } from '@/lib/database/Mysql';
 import { auth } from '@/lib/auth/auth';
+import { isAdminRole } from '@/lib/auth/admin';
 import { headers } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { createAgentStream, type SDKMessage } from '@/lib/agent/claude-code';
@@ -9,7 +10,6 @@ import { RowDataPacket } from 'mysql2';
 export const maxDuration = 120;
 
 const MAX_QUESTIONS = 20;
-const ADMIN_EMAIL = 'smartaiinvest@gmail.com';
 
 interface AgentChatRequestBody {
   message?: unknown;
@@ -64,14 +64,14 @@ export async function POST(req: Request) {
     // エージェントプランまたは管理者のみ利用可能
     interface UserPlanRow extends RowDataPacket {
       subscription_plan: string;
-      email: string;
+      role: string;
     }
     const [userRow] = await db.select<UserPlanRow>(
-      'SELECT subscription_plan, email FROM user WHERE id = ?',
+      'SELECT subscription_plan, role FROM user WHERE id = ?',
       [userId],
     );
 
-    const isAdmin = session.user.email === ADMIN_EMAIL;
+    const isAdmin = isAdminRole(userRow?.role);
     const hasAgentPlan = userRow?.subscription_plan === 'agent';
 
     if (!isAdmin && !hasAgentPlan) {

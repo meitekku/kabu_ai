@@ -4,8 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/components/auth';
-
-const ADMIN_EMAIL = "smartaiinvest@gmail.com";
+import { isAdminRole } from '@/lib/auth/admin';
 
 const NAVIGATION_LINKS = [
   { href: '/admin/accept_ai', label: '承認リスト' },
@@ -21,7 +20,7 @@ const NAVIGATION_LINKS = [
 const GlobalNavigation = () => {
   const { user, isLogin } = useAuth();
   const pathname = usePathname();
-  const isAdmin = isLogin && user?.email === ADMIN_EMAIL;
+  const isAdmin = isLogin && isAdminRole(user?.role);
 
   // 現在のURLが記事ページかどうかをチェック
   const newsArticleMatch = pathname?.match(/^\/([^/]+)\/news\/article\/([^/]+)$/);

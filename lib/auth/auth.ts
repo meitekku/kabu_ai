@@ -52,6 +52,16 @@ function createAuth() {
         maxAge: 60 * 5, // 5分
       },
     },
+    user: {
+      additionalFields: {
+        role: {
+          type: "string",
+          required: false,
+          input: false,
+          defaultValue: "user",
+        },
+      },
+    },
   });
 }
 

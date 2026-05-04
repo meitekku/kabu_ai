@@ -11,6 +11,7 @@ interface User {
   emailVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
+  role?: string | null;
 }
 
 interface Session {
