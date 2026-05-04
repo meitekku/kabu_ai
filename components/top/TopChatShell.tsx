@@ -17,7 +17,7 @@ import { usePortfolioChatHistory } from "@/hooks/usePortfolioChatHistory";
 import { useFavoritesList } from "@/hooks/useFavoritesList";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { getChat } from "@/lib/agent/chat-history-store";
+import { getChat, scopeForUser } from "@/lib/agent/chat-history-store";
 import CompanySearch from "@/components/parts/common/CompanySearch";
 import { UserMenu } from "@/components/layout/Header";
 import { useSession } from "@/lib/auth/auth-client";
@@ -27,6 +27,12 @@ const FALLBACK_CHAT_ID = "portfolio-agent";
 const MAX_BUILDER_STOCKS = 5;
 
 export default function TopChatShell() {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const { data: session, isPending: isSessionPending } = useSession();
+  const { isPremium, isLoading: isSubLoading } = useSubscription();
+  const user = session?.user ?? null;
+  const isLogin = !!user;
+
   const {
     chats,
     currentChatId,
@@ -34,13 +40,20 @@ export default function TopChatShell() {
     createNewChat,
     persistCurrent,
     removeChat,
-  } = usePortfolioChatHistory();
+    migratedCount,
+    acknowledgeMigrated,
+  } = usePortfolioChatHistory(user?.id ?? null, isSessionPending);
 
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const { data: session, isPending: isSessionPending } = useSession();
-  const { isPremium, isLoading: isSubLoading } = useSubscription();
-  const user = session?.user ?? null;
-  const isLogin = !!user;
+  // 匿名→ログイン移植件数の通知(簡易: alert ではなく1回だけ表示するバナー)
+  const [migrationNotice, setMigrationNotice] = useState<number | null>(null);
+  useEffect(() => {
+    if (migratedCount && migratedCount > 0) {
+      setMigrationNotice(migratedCount);
+      acknowledgeMigrated();
+      const t = setTimeout(() => setMigrationNotice(null), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [migratedCount, acknowledgeMigrated]);
 
   const {
     favorites,
@@ -85,11 +98,12 @@ export default function TopChatShell() {
   // WHY: when the selected chat changes, we must re-mount PortfolioChatPanel
   // so useChat re-initialises with the restored messages.
   const activeChatId = currentChatId ?? FALLBACK_CHAT_ID;
+  const scope = scopeForUser(user?.id ?? null);
   const initialMessages = useMemo(() => {
     if (!currentChatId) return undefined;
-    const stored = getChat(currentChatId);
+    const stored = getChat(scope, currentChatId);
     return stored?.messages;
-  }, [currentChatId]);
+  }, [scope, currentChatId]);
 
   const activeChat = chats.find((c) => c.id === currentChatId);
   const headerTitle = activeChat?.title ?? "AIポートフォリオエージェント";
@@ -127,7 +141,15 @@ export default function TopChatShell() {
   const showPremiumCta = !isAuthResolving && !isPremium;
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-background">
+    <div className="relative flex h-full w-full overflow-hidden bg-background">
+      {migrationNotice !== null && (
+        <div
+          role="status"
+          className="absolute left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-1.5 text-xs font-medium text-emerald-700 shadow-sm"
+        >
+          以前のチャット {migrationNotice} 件を引き継ぎました
+        </div>
+      )}
       {/* Desktop sidebar */}
       <div className="hidden md:flex h-full">
         <PortfolioSidebar
