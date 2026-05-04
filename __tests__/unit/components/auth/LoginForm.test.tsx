@@ -122,15 +122,19 @@ describe("LoginPage", () => {
     });
   });
 
-  it("redirects admin email to /admin/comment", async () => {
+  it("redirects admin role to /admin/comment", async () => {
     const user = userEvent.setup();
-    mockSignInEmail.mockResolvedValue({ data: { user: {} } });
+    // 認可は session.user.role 由来になったので、role=admin が返ったときに
+    // /admin/comment へ遷移することを検証する。
+    mockSignInEmail.mockResolvedValue({
+      data: { user: { role: "admin" } },
+    });
 
     render(<LoginPage />);
 
     await user.type(
       screen.getByLabelText("メールアドレス"),
-      "smartaiinvest@gmail.com"
+      "admin@example.com"
     );
     await user.type(screen.getByLabelText("パスワード"), "adminpass1");
     await user.click(screen.getByRole("button", { name: "ログイン" }));

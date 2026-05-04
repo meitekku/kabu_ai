@@ -70,23 +70,26 @@ vi.mock('@/lib/auth/email', () => ({
 
 import { POST } from '@/app/api/agent-chat/route';
 
-// Helper: mockSelect responds to plan check first, then other queries
+// Helper: mockSelect responds to plan check first, then message-count query.
+// 認可は subscription_plan + role(=admin) の DB 行で判定する仕様。
 function setupAgentPlanUser(email = 'user@example.com') {
   mockGetSession.mockResolvedValue({
     user: { id: 'user-1', email },
   });
-  // First select: plan check, second select: message count
   mockSelect
-    .mockResolvedValueOnce([{ subscription_plan: 'agent', email }])
+    .mockResolvedValueOnce([{ subscription_plan: 'agent', role: 'user', email }])
     .mockResolvedValueOnce([{ cnt: 0 }]);
 }
 
 function setupAdminUser() {
+  const email = 'admin@example.com';
   mockGetSession.mockResolvedValue({
-    user: { id: 'admin-1', email: 'smartaiinvest@gmail.com' },
+    user: { id: 'admin-1', email },
   });
-  // Admin bypasses plan check but still has plan query + message count query
   mockSelect
+    .mockResolvedValueOnce([
+      { subscription_plan: 'standard', role: 'admin', email },
+    ])
     .mockResolvedValueOnce([{ cnt: 0 }]);
 }
 
@@ -94,7 +97,9 @@ function setupNonAgentUser(email = 'free@example.com') {
   mockGetSession.mockResolvedValue({
     user: { id: 'user-2', email },
   });
-  mockSelect.mockResolvedValueOnce([{ subscription_plan: 'standard', email }]);
+  mockSelect.mockResolvedValueOnce([
+    { subscription_plan: 'standard', role: 'user', email },
+  ]);
 }
 
 describe('POST /api/agent-chat', () => {
@@ -166,11 +171,16 @@ describe('POST /api/agent-chat', () => {
   });
 
   it('returns 429 when question limit reached', async () => {
+    const email = 'admin@example.com';
     mockGetSession.mockResolvedValue({
-      user: { id: 'user-1', email: 'smartaiinvest@gmail.com' },
+      user: { id: 'admin-1', email },
     });
-    // Admin: skips plan check, message count returns 20
-    mockSelect.mockResolvedValue([{ cnt: 20 }]);
+    // 1回目: プランチェック(admin), 2回目: メッセージ件数(20)
+    mockSelect
+      .mockResolvedValueOnce([
+        { subscription_plan: 'standard', role: 'admin', email },
+      ])
+      .mockResolvedValueOnce([{ cnt: 20 }]);
 
     const req = new Request('http://localhost/api/agent-chat', {
       method: 'POST',
