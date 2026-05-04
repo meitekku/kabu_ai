@@ -13,6 +13,9 @@ export class Database {
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       port: parseInt(process.env.DB_PORT || '3306'),
+      // 接続セッションを JST に固定。CURDATE()/NOW() を JST 基準で扱うため。
+      // DATETIME 型カラムへの JS Date 値の往復もこのオフセットで一貫させる。
+      timezone: '+09:00',
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0

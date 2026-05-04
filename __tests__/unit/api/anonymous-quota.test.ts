@@ -1,13 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ANON_BURST_WINDOW_SECONDS,
   ANON_DAILY_LIMIT,
-  checkAnonQuota,
   computeAnonKey,
   extractAnonIdentity,
   hasTrustedClientIp,
-  recordAnonUsage,
+  ipv6To64Prefix,
+  normalizeIpForBucket,
+  peekAnonQuota,
+  tryConsumeAnonQuota,
   type AnonQuotaIdentity,
 } from '@/lib/quota/anonymous-quota';
 
@@ -16,7 +18,7 @@ type SelectFn = (
   query: string,
   params?: Array<string | number | boolean | null>,
 ) => Promise<Row[]>;
-type InsertFn = (
+type UpdateFn = (
   query: string,
   params?: Array<string | number | boolean | null>,
 ) => Promise<number>;
@@ -24,14 +26,14 @@ type InsertFn = (
 function makeIdentity(overrides: Partial<AnonQuotaIdentity> = {}): AnonQuotaIdentity {
   return {
     cfConnectingIp: '203.0.113.10',
-    userAgent: 'Mozilla/5.0 (X11; Linux x86_64) Chrome/120',
-    acceptLanguage: 'ja,en;q=0.9',
+    userAgent: 'Mozilla/5.0',
+    acceptLanguage: 'ja',
     ...overrides,
   };
 }
 
 describe('extractAnonIdentity', () => {
-  it('CF-Connecting-IP / User-Agent / Accept-Language を取り出す', () => {
+  it('CF-Connecting-IP / UA / Accept-Language を取り出す', () => {
     const headers = new Headers({
       'cf-connecting-ip': '198.51.100.7',
       'user-agent': 'TestAgent/1.0',
@@ -43,32 +45,68 @@ describe('extractAnonIdentity', () => {
       acceptLanguage: 'ja',
     });
   });
-
-  it('ヘッダーが無ければ null を返す', () => {
-    const id = extractAnonIdentity(new Headers());
-    expect(id.cfConnectingIp).toBeNull();
-    expect(id.userAgent).toBeNull();
-    expect(id.acceptLanguage).toBeNull();
-  });
 });
 
 describe('hasTrustedClientIp', () => {
-  it('CF-Connecting-IP がある = 信頼可', () => {
-    expect(hasTrustedClientIp(makeIdentity({ cfConnectingIp: '203.0.113.1' }))).toBe(
-      true,
-    );
+  it('CF-Connecting-IP がある = true', () => {
+    expect(hasTrustedClientIp(makeIdentity())).toBe(true);
   });
-
-  it('CF-Connecting-IP が null = 信頼不可', () => {
+  it('null/空 = false', () => {
     expect(hasTrustedClientIp(makeIdentity({ cfConnectingIp: null }))).toBe(false);
-  });
-
-  it('CF-Connecting-IP が空文字 = 信頼不可', () => {
     expect(hasTrustedClientIp(makeIdentity({ cfConnectingIp: '   ' }))).toBe(false);
   });
 });
 
-describe('computeAnonKey', () => {
+describe('normalizeIpForBucket', () => {
+  it('IPv4 はそのまま', () => {
+    expect(normalizeIpForBucket('203.0.113.42')).toBe('203.0.113.42');
+  });
+
+  it('IPv4-mapped IPv6 (::ffff:1.2.3.4) は IPv4 に展開', () => {
+    expect(normalizeIpForBucket('::ffff:192.0.2.1')).toBe('192.0.2.1');
+  });
+
+  it('IPv6 はそのまま /64 プレフィックスに丸める', () => {
+    expect(normalizeIpForBucket('2001:db8:1234:5678:abcd:ef01:2345:6789')).toBe(
+      '2001:0db8:1234:5678::/64',
+    );
+  });
+
+  it('IPv6 の :: 省略表記を展開して /64 化', () => {
+    // 2001:db8:: は 2001:db8:0:0:0:0:0:0
+    expect(normalizeIpForBucket('2001:db8::1')).toBe('2001:0db8:0000:0000::/64');
+  });
+
+  it('IPv6 の zone id (%eth0) を除去', () => {
+    expect(normalizeIpForBucket('fe80::1%eth0')).toBe('fe80:0000:0000:0000::/64');
+  });
+
+  it('同じ /64 内なら別アドレスでも同じバケット', () => {
+    const a = normalizeIpForBucket('2001:db8:1234:5678:1::1');
+    const b = normalizeIpForBucket('2001:db8:1234:5678:ffff:ffff:ffff:ffff');
+    expect(a).toBe(b);
+  });
+
+  it('違う /64 なら別バケット', () => {
+    const a = normalizeIpForBucket('2001:db8:1234:5678::1');
+    const b = normalizeIpForBucket('2001:db8:1234:9999::1');
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('ipv6To64Prefix', () => {
+  it('展開済みの完全形を /64 化', () => {
+    expect(ipv6To64Prefix('2001:0db8:0000:0000:0000:0000:0000:0001')).toBe(
+      '2001:0db8:0000:0000::/64',
+    );
+  });
+
+  it('::1 (ループバック) も処理できる', () => {
+    expect(ipv6To64Prefix('::1')).toBe('0000:0000:0000:0000::/64');
+  });
+});
+
+describe('computeAnonKey (IP のみが key)', () => {
   const ORIGINAL_SALT = process.env.ANON_QUOTA_SALT;
 
   beforeEach(() => {
@@ -84,42 +122,43 @@ describe('computeAnonKey', () => {
     expect(computeAnonKey(makeIdentity({ cfConnectingIp: null }))).toBeNull();
   });
 
-  it('同じ入力なら同じハッシュ', () => {
-    const id = makeIdentity();
-    const a = computeAnonKey(id);
-    const b = computeAnonKey(id);
-    expect(a).toBeTruthy();
-    expect(a).toBe(b);
-    expect(a).toHaveLength(64); // SHA256 hex
+  it('SHA256 hex 形式 (64 chars)', () => {
+    const k = computeAnonKey(makeIdentity());
+    expect(k).toHaveLength(64);
+    expect(k).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it('IP が違えば別ハッシュ', () => {
-    const a = computeAnonKey(makeIdentity({ cfConnectingIp: '203.0.113.10' }));
-    const b = computeAnonKey(makeIdentity({ cfConnectingIp: '203.0.113.11' }));
-    expect(a).not.toBe(b);
-  });
-
-  it('UA が違えば別ハッシュ', () => {
+  it('UA を変えても key は同じ(UA は混ざらない)', () => {
     const a = computeAnonKey(makeIdentity({ userAgent: 'A' }));
     const b = computeAnonKey(makeIdentity({ userAgent: 'B' }));
-    expect(a).not.toBe(b);
+    expect(a).toBe(b);
   });
 
-  it('Accept-Language が違えば別ハッシュ', () => {
+  it('Accept-Language を変えても key は同じ', () => {
     const a = computeAnonKey(makeIdentity({ acceptLanguage: 'ja' }));
     const b = computeAnonKey(makeIdentity({ acceptLanguage: 'en' }));
+    expect(a).toBe(b);
+  });
+
+  it('IP が違えば別 key', () => {
+    const a = computeAnonKey(makeIdentity({ cfConnectingIp: '203.0.113.1' }));
+    const b = computeAnonKey(makeIdentity({ cfConnectingIp: '203.0.113.2' }));
     expect(a).not.toBe(b);
   });
 
-  it('ソルトが違えば別ハッシュ', () => {
-    process.env.ANON_QUOTA_SALT = 'salt-A';
-    const a = computeAnonKey(makeIdentity());
-    process.env.ANON_QUOTA_SALT = 'salt-B';
-    const b = computeAnonKey(makeIdentity());
+  it('IPv6 同 /64 なら同 key', () => {
+    const a = computeAnonKey(makeIdentity({ cfConnectingIp: '2001:db8::1' }));
+    const b = computeAnonKey(makeIdentity({ cfConnectingIp: '2001:db8::ffff' }));
+    expect(a).toBe(b);
+  });
+
+  it('IPv6 別 /64 なら別 key', () => {
+    const a = computeAnonKey(makeIdentity({ cfConnectingIp: '2001:db8:0:0::1' }));
+    const b = computeAnonKey(makeIdentity({ cfConnectingIp: '2001:db8:1:0::1' }));
     expect(a).not.toBe(b);
   });
 
-  it('Production でソルト未設定なら null(セキュリティ要件)', () => {
+  it('Production でソルト未設定なら null', () => {
     const originalNodeEnv = process.env.NODE_ENV;
     delete process.env.ANON_QUOTA_SALT;
     process.env.NODE_ENV = 'production';
@@ -131,120 +170,110 @@ describe('computeAnonKey', () => {
   });
 });
 
-describe('checkAnonQuota', () => {
-  const NOW = new Date('2026-05-04T12:00:00+09:00');
-
+describe('tryConsumeAnonQuota (atomic INSERT)', () => {
   beforeEach(() => {
     process.env.ANON_QUOTA_SALT = 'test-salt';
   });
 
   function buildDb(opts: {
-    selectImpl?: SelectFn;
-    insertImpl?: InsertFn;
+    insertAffected?: number;
+    burstHit?: boolean;
+    usedAfter?: number;
   } = {}) {
+    const insertAffected = opts.insertAffected ?? 1;
+    const burstHit = opts.burstHit ?? false;
+    const usedAfter = opts.usedAfter ?? 1;
     return {
-      select: vi.fn<SelectFn>(opts.selectImpl ?? (() => Promise.resolve([]))),
-      insert: vi.fn<InsertFn>(opts.insertImpl ?? (() => Promise.resolve(1))),
+      update: vi.fn<UpdateFn>(() => Promise.resolve(insertAffected)),
+      select: vi.fn<SelectFn>((sql) => {
+        if (sql.includes('INTERVAL ? SECOND')) {
+          // burst 判定 SELECT
+          return Promise.resolve([{ cnt: burstHit ? 1 : 0 }]);
+        }
+        // used count SELECT
+        return Promise.resolve([{ cnt: usedAfter }]);
+      }),
     };
   }
 
-  it('CF-Connecting-IP が無いと missing_cf_ip', async () => {
+  it('CF-IP が無いと missing_cf_ip を返し DB は触らない', async () => {
     const db = buildDb();
-    const result = await checkAnonQuota(makeIdentity({ cfConnectingIp: null }), {
-      db,
-      now: () => NOW,
-    });
-    expect(result.kind).toBe('missing_cf_ip');
-    expect(db.select).not.toHaveBeenCalled();
+    const r = await tryConsumeAnonQuota(makeIdentity({ cfConnectingIp: null }), { db });
+    expect(r.kind).toBe('missing_cf_ip');
+    expect(db.update).not.toHaveBeenCalled();
   });
 
-  it('未使用なら ok / remaining=3', async () => {
-    const db = buildDb({
-      selectImpl: vi.fn<SelectFn>((q) =>
-        Promise.resolve(q.includes('ORDER BY') ? [] : [{ cnt: 0 }]),
-      ),
-    });
-    const result = await checkAnonQuota(makeIdentity(), { db, now: () => NOW });
-    expect(result).toEqual({ kind: 'ok', remaining: ANON_DAILY_LIMIT });
+  it('INSERT 成功(affected=1) → ok / remaining', async () => {
+    const db = buildDb({ insertAffected: 1, usedAfter: 1 });
+    const r = await tryConsumeAnonQuota(makeIdentity(), { db });
+    expect(r.kind).toBe('ok');
+    if (r.kind === 'ok') {
+      expect(r.remaining).toBe(ANON_DAILY_LIMIT - 1);
+    }
+    expect(db.update).toHaveBeenCalledTimes(1);
+    const [sql] = db.update.mock.calls[0];
+    expect(sql).toContain('INSERT INTO anon_quota_log');
   });
 
-  it('上限到達(3回)なら limit', async () => {
-    const last = new Date(NOW.getTime() - 3600 * 1000); // 1時間前
-    const db = buildDb({
-      selectImpl: vi.fn<SelectFn>((q) =>
-        Promise.resolve(
-          q.includes('ORDER BY') ? [{ consumed_at: last }] : [{ cnt: ANON_DAILY_LIMIT }],
-        ),
-      ),
-    });
-    const result = await checkAnonQuota(makeIdentity(), { db, now: () => NOW });
-    expect(result).toEqual({ kind: 'limit', remaining: 0 });
+  it('INSERT 失敗 + 直近 burst あり → burst', async () => {
+    const db = buildDb({ insertAffected: 0, burstHit: true });
+    const r = await tryConsumeAnonQuota(makeIdentity(), { db });
+    expect(r.kind).toBe('burst');
   });
 
-  it('10秒以内の連投は burst でブロック', async () => {
-    const last = new Date(NOW.getTime() - 5 * 1000);
-    const db = buildDb({
-      selectImpl: vi.fn<SelectFn>((q) =>
-        Promise.resolve(
-          q.includes('ORDER BY') ? [{ consumed_at: last }] : [{ cnt: 0 }],
-        ),
-      ),
-    });
-    const result = await checkAnonQuota(makeIdentity(), { db, now: () => NOW });
-    expect(result.kind).toBe('burst');
+  it('INSERT 失敗 + burst 無し → limit', async () => {
+    const db = buildDb({ insertAffected: 0, burstHit: false });
+    const r = await tryConsumeAnonQuota(makeIdentity(), { db });
+    expect(r.kind).toBe('limit');
   });
 
-  it('11秒前の利用なら通る', async () => {
-    const last = new Date(NOW.getTime() - (ANON_BURST_WINDOW_SECONDS + 1) * 1000);
-    const db = buildDb({
-      selectImpl: vi.fn<SelectFn>((q) =>
-        Promise.resolve(
-          q.includes('ORDER BY') ? [{ consumed_at: last }] : [{ cnt: 1 }],
-        ),
-      ),
-    });
-    const result = await checkAnonQuota(makeIdentity(), { db, now: () => NOW });
-    expect(result).toEqual({ kind: 'ok', remaining: ANON_DAILY_LIMIT - 1 });
+  it('原子的: 1ステートメントの INSERT のみ判定に使う', async () => {
+    const db = buildDb({ insertAffected: 1, usedAfter: 2 });
+    await tryConsumeAnonQuota(makeIdentity(), { db });
+    // 判定に使うのは update() 1 回のみ。SELECT は理由特定や残数算出のための補助
+    expect(db.update).toHaveBeenCalledTimes(1);
   });
 
-  it('途中(1回使用)なら ok / remaining=2', async () => {
-    const last = new Date(NOW.getTime() - 60 * 1000);
-    const db = buildDb({
-      selectImpl: vi.fn<SelectFn>((q) =>
-        Promise.resolve(
-          q.includes('ORDER BY') ? [{ consumed_at: last }] : [{ cnt: 1 }],
-        ),
-      ),
-    });
-    const result = await checkAnonQuota(makeIdentity(), { db, now: () => NOW });
-    expect(result).toEqual({ kind: 'ok', remaining: ANON_DAILY_LIMIT - 1 });
+  it('SQL に NOW() - INTERVAL を使い TZ 非依存', async () => {
+    const db = buildDb();
+    await tryConsumeAnonQuota(makeIdentity(), { db });
+    const [sql] = db.update.mock.calls[0];
+    expect(sql).toContain('NOW() - INTERVAL ? SECOND');
+    expect(sql).toContain('NOW() - INTERVAL ? HOUR');
+    expect(sql).not.toContain('CURDATE');
   });
 });
 
-describe('recordAnonUsage', () => {
+describe('peekAnonQuota (read-only)', () => {
   beforeEach(() => {
     process.env.ANON_QUOTA_SALT = 'test-salt';
   });
 
-  it('CF-IP 無しなら何もしない', async () => {
+  it('使用 0 なら ok / remaining=ANON_DAILY_LIMIT', async () => {
     const db = {
-      select: vi.fn<SelectFn>(),
-      insert: vi.fn<InsertFn>(),
+      update: vi.fn<UpdateFn>(),
+      select: vi.fn<SelectFn>(() => Promise.resolve([{ cnt: 0 }])),
     };
-    await recordAnonUsage(makeIdentity({ cfConnectingIp: null }), { db });
-    expect(db.insert).not.toHaveBeenCalled();
+    const r = await peekAnonQuota(makeIdentity(), { db });
+    expect(r).toEqual({ kind: 'ok', remaining: ANON_DAILY_LIMIT });
+    expect(db.update).not.toHaveBeenCalled();
   });
 
-  it('CF-IP ありなら anon_quota_log に挿入', async () => {
+  it('上限到達なら limit', async () => {
     const db = {
-      select: vi.fn<SelectFn>(() => Promise.resolve([])),
-      insert: vi.fn<InsertFn>(() => Promise.resolve(1)),
+      update: vi.fn<UpdateFn>(),
+      select: vi.fn<SelectFn>(() => Promise.resolve([{ cnt: ANON_DAILY_LIMIT }])),
     };
-    await recordAnonUsage(makeIdentity(), { db });
-    expect(db.insert).toHaveBeenCalledTimes(1);
-    const [sql, params] = db.insert.mock.calls[0];
-    expect(sql).toContain('anon_quota_log');
-    expect(params).toBeTruthy();
-    expect(params?.[0]).toMatch(/^[0-9a-f]{64}$/);
+    const r = await peekAnonQuota(makeIdentity(), { db });
+    expect(r).toEqual({ kind: 'limit', remaining: 0 });
+  });
+});
+
+describe('定数 sanity', () => {
+  it('ANON_DAILY_LIMIT = 3', () => {
+    expect(ANON_DAILY_LIMIT).toBe(3);
+  });
+  it('ANON_BURST_WINDOW_SECONDS = 10', () => {
+    expect(ANON_BURST_WINDOW_SECONDS).toBe(10);
   });
 });

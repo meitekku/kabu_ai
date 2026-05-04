@@ -13,11 +13,11 @@ import {
   isTurnstileEnabled,
   TURNSTILE_COOKIE_NAME,
 } from '@/lib/security/turnstile';
+import { verifyTurnstileCookie } from '@/lib/security/turnstile-cookie';
 import {
   ANON_DAILY_LIMIT,
-  checkAnonQuota,
   extractAnonIdentity,
-  recordAnonUsage,
+  tryConsumeAnonQuota,
 } from '@/lib/quota/anonymous-quota';
 
 export const maxDuration = 300;
@@ -228,11 +228,10 @@ async function handleAnonymous(
   headersList: Headers,
   cookieStore: Awaited<ReturnType<typeof cookies>>,
 ): Promise<Response> {
-  // 1. Turnstile 必須(本番環境): 既存 verify エンドポイントが付与する
-  //    cf_turnstile_verified cookie の有無で判定
+  // 1. Turnstile 必須(本番): cookie は HMAC 署名済トークン。値の偽装は不可。
   if (isTurnstileEnabled()) {
-    const verified = cookieStore.get(TURNSTILE_COOKIE_NAME)?.value === '1';
-    if (!verified) {
+    const cookieValue = cookieStore.get(TURNSTILE_COOKIE_NAME)?.value;
+    if (!verifyTurnstileCookie(cookieValue)) {
       return jsonResponse(401, { error: 'turnstile_required' });
     }
   }
@@ -243,8 +242,15 @@ async function handleAnonymous(
     return jsonResponse(400, { error: 'missing_cf_ip' });
   }
 
-  // 3. クオータチェック
-  const quota = await checkAnonQuota(identity);
+  // 3. メッセージ抽出(クオータ消費前に行う。空メッセージで残数を消費させない)
+  const body = (await req.json()) as PortfolioRequestBody;
+  const userMessage = extractLastUserMessage(body);
+  if (!userMessage) {
+    return jsonResponse(400, { error: 'empty_message' });
+  }
+
+  // 4. atomic クオータ判定 + 利用記録(1ステートメントで race-free)
+  const quota = await tryConsumeAnonQuota(identity);
   if (quota.kind === 'missing_cf_ip') {
     return jsonResponse(400, { error: 'missing_cf_ip' });
   }
@@ -259,17 +265,7 @@ async function handleAnonymous(
     });
   }
 
-  // 4. メッセージ抽出
-  const body = (await req.json()) as PortfolioRequestBody;
-  const userMessage = extractLastUserMessage(body);
-  if (!userMessage) {
-    return jsonResponse(400, { error: 'empty_message' });
-  }
-
-  // 5. 利用記録(送信開始時点で消費とみなす。乱用防止のため)
-  await recordAnonUsage(identity);
-
-  // 6. ストリーム返却(匿名なので usage_log は付けない)
+  // 5. ストリーム返却(匿名なので usage_log は付けない)
   const sessionId = randomUUID();
   const q = createPortfolioStream(userMessage, sessionId);
   const signal = req.signal;

@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import {
   ANON_DAILY_LIMIT,
-  checkAnonQuota,
   extractAnonIdentity,
+  peekAnonQuota,
 } from '@/lib/quota/anonymous-quota';
 
-// 匿名クオータの残回数を返す軽量エンドポイント。
-// ログイン済みユーザーは触らない (この URL を踏んでも 200 で 0 回を返さない)。
+// 匿名クオータの残回数を返す軽量エンドポイント(参照のみ・書き込みなし)。
+// ログイン済みユーザーは触らない。
 export async function GET(): Promise<NextResponse> {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList });
@@ -32,17 +32,9 @@ export async function GET(): Promise<NextResponse> {
     );
   }
 
-  const result = await checkAnonQuota(identity);
-  let remaining = ANON_DAILY_LIMIT;
-  if (result.kind === 'ok') remaining = result.remaining;
-  else if (result.kind === 'limit') remaining = 0;
-  // burst の場合は表示上は今日の残数を別途数えたいが、簡略化のため
-  // recheck しない (ユーザー側 UI は 10秒待てば回復する旨を表示する)
-  if (result.kind === 'burst') {
-    // 直近の利用は1回消費後の状態なので、もう一度数える代わりに -1 を返す
-    // (UI 上は "あと N 回" 表示なのでズレは小さく、突破ではない)
-    remaining = Math.max(0, ANON_DAILY_LIMIT - 1);
-  }
+  const result = await peekAnonQuota(identity);
+  const remaining =
+    result.kind === 'ok' ? result.remaining : 0;
 
   return NextResponse.json(
     {
