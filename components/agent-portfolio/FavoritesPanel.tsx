@@ -4,21 +4,22 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Plus,
   Sparkles,
   Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { FavoriteItem } from "@/hooks/useFavoritesList";
-import type { BuilderStock } from "./PortfolioBuilder";
+
+export interface FavoriteStock {
+  id: string;
+  name: string;
+}
 
 interface FavoritesPanelProps {
   favorites: FavoriteItem[];
   isLoading: boolean;
-  isEmpty: boolean;
-  onAddToBuilder: (s: BuilderStock) => void;
-  onAskAI: (s: BuilderStock) => void;
+  onAskAI: (s: FavoriteStock) => void;
 }
 
 const STORAGE_KEY = "portfolio-favorites-panel-open";
@@ -93,8 +94,6 @@ interface InnerProps extends FavoritesPanelProps {
 
 function FavoritesPanelInner({
   favorites,
-  isEmpty,
-  onAddToBuilder,
   onAskAI,
   open,
   onToggle,
@@ -141,7 +140,7 @@ function FavoritesPanelInner({
           {favorites.map((f) => {
             const diff =
               f.diff_percent !== null ? Number(f.diff_percent) : null;
-            const stock: BuilderStock = {
+            const stock: FavoriteStock = {
               id: f.code,
               name: f.name ?? f.code,
             };
@@ -179,23 +178,14 @@ function FavoritesPanelInner({
                   <button
                     type="button"
                     onClick={() => {
-                      if (isEmpty) onAddToBuilder(stock);
-                      else onAskAI(stock);
+                      onAskAI(stock);
                       onActionDone?.();
                     }}
                     className="rounded-md p-1.5 text-muted-foreground opacity-60 transition-all hover:bg-primary/10 hover:text-primary group-hover:opacity-100 focus:opacity-100"
-                    title={isEmpty ? "ビルダーに追加" : "AIに質問"}
-                    aria-label={
-                      isEmpty
-                        ? `${stock.name} をビルダーに追加`
-                        : `${stock.name} についてAIに質問`
-                    }
+                    title="AIに質問"
+                    aria-label={`${stock.name} についてAIに質問`}
                   >
-                    {isEmpty ? (
-                      <Plus className="size-3.5" />
-                    ) : (
-                      <Sparkles className="size-3.5" />
-                    )}
+                    <Sparkles className="size-3.5" />
                   </button>
                 </div>
               </li>

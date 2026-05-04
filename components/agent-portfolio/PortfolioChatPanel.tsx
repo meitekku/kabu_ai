@@ -21,11 +21,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { QuotaBadge } from "./QuotaBadge";
 import { LockedOverlay } from "./LockedOverlay";
-import {
-  PortfolioBuilder,
-  type BuilderStock,
-  type RiskLevel,
-} from "./PortfolioBuilder";
+import { PortfolioWelcome, buildPresetPrompt } from "./PortfolioWelcome";
 import { useAuth } from "@/components/auth";
 import { useAgentQuota } from "@/hooks/useAgentQuota";
 import { useAnonAgentQuota } from "@/hooks/useAnonAgentQuota";
@@ -45,13 +41,6 @@ interface PortfolioChatPanelProps {
   onMessagesChange?: (messages: UIMessage[]) => void;
   onLinkClick?: (text: string, href: string) => void;
   onHasMessagesChange?: (hasMessages: boolean) => void;
-  // ビルダー状態(空状態のときだけ表示する)
-  builderRisk: RiskLevel | null;
-  setBuilderRisk: (r: RiskLevel) => void;
-  builderStocks: BuilderStock[];
-  onAddBuilderStock: (s: BuilderStock) => void;
-  onRemoveBuilderStock: (id: string) => void;
-  onClearBuilder: () => void;
 }
 
 export const PortfolioChatPanel = forwardRef<
@@ -65,12 +54,6 @@ export const PortfolioChatPanel = forwardRef<
     onMessagesChange,
     onLinkClick,
     onHasMessagesChange,
-    builderRisk,
-    setBuilderRisk,
-    builderStocks,
-    onAddBuilderStock,
-    onRemoveBuilderStock,
-    onClearBuilder,
   },
   ref,
 ) {
@@ -255,12 +238,11 @@ export const PortfolioChatPanel = forwardRef<
         ? "投資目標を入力(匿名でお試し中)..."
         : "投資目標やリスク許容度を入力してください...";
 
-  const handleBuilderSubmit = useCallback(
-    (prompt: string) => {
-      handleSend(prompt);
-      onClearBuilder();
+  const handlePresetPick = useCallback(
+    (label: string) => {
+      handleSend(buildPresetPrompt(label));
     },
-    [handleSend, onClearBuilder],
+    [handleSend],
   );
 
   return (
@@ -270,14 +252,9 @@ export const PortfolioChatPanel = forwardRef<
       <Conversation className="flex-1 min-w-0">
         <ConversationContent className="min-h-full !gap-0 !p-0">
           {messages.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-5 p-8 pb-32">
-              <PortfolioBuilder
-                risk={builderRisk}
-                setRisk={setBuilderRisk}
-                stocks={builderStocks}
-                onAddStock={onAddBuilderStock}
-                onRemoveStock={onRemoveBuilderStock}
-                onSubmit={handleBuilderSubmit}
+            <div className="mx-auto w-full max-w-3xl px-4 pt-12 pb-32">
+              <PortfolioWelcome
+                onPick={handlePresetPick}
                 disabled={inputDisabled || isLoading}
               />
             </div>

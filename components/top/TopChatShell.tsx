@@ -8,11 +8,10 @@ import {
   type PortfolioChatHandle,
 } from "@/components/agent-portfolio/PortfolioChatPanel";
 import { PortfolioSidebar } from "@/components/agent-portfolio/PortfolioSidebar";
-import { FavoritesPanel } from "@/components/agent-portfolio/FavoritesPanel";
-import type {
-  BuilderStock,
-  RiskLevel,
-} from "@/components/agent-portfolio/PortfolioBuilder";
+import {
+  FavoritesPanel,
+  type FavoriteStock,
+} from "@/components/agent-portfolio/FavoritesPanel";
 import { usePortfolioChatHistory } from "@/hooks/usePortfolioChatHistory";
 import { useFavoritesList } from "@/hooks/useFavoritesList";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -24,7 +23,6 @@ import { useSession } from "@/lib/auth/auth-client";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const FALLBACK_CHAT_ID = "portfolio-agent";
-const MAX_BUILDER_STOCKS = 5;
 
 export default function TopChatShell() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -60,36 +58,10 @@ export default function TopChatShell() {
     isLoading: favoritesLoading,
   } = useFavoritesList(isLogin);
 
-  // ビルダー状態(リスク・含めたい銘柄)
-  const [builderRisk, setBuilderRiskState] = useState<RiskLevel | null>(null);
-  const [builderStocks, setBuilderStocks] = useState<BuilderStock[]>([]);
-  const [hasMessages, setHasMessages] = useState(false);
-
-  const setBuilderRisk = useCallback((r: RiskLevel) => {
-    setBuilderRiskState(r);
-  }, []);
-
-  const addBuilderStock = useCallback((s: BuilderStock) => {
-    setBuilderStocks((prev) => {
-      if (prev.some((p) => p.id === s.id)) return prev;
-      if (prev.length >= MAX_BUILDER_STOCKS) return prev;
-      return [...prev, s];
-    });
-  }, []);
-
-  const removeBuilderStock = useCallback((id: string) => {
-    setBuilderStocks((prev) => prev.filter((p) => p.id !== id));
-  }, []);
-
-  const clearBuilder = useCallback(() => {
-    setBuilderRiskState(null);
-    setBuilderStocks([]);
-  }, []);
-
   // チャットへの imperative ハンドル(右パネルから "AI に質問" を発火させる)
   const chatRef = useRef<PortfolioChatHandle>(null);
 
-  const handleAskAI = useCallback((s: BuilderStock) => {
+  const handleAskAI = useCallback((s: FavoriteStock) => {
     chatRef.current?.sendMessage(
       `${s.name}(${s.id}) を今のポートフォリオに加えて再提案してください`,
     );
@@ -112,16 +84,14 @@ export default function TopChatShell() {
     (id: string) => {
       selectChat(id);
       setMobileSidebarOpen(false);
-      clearBuilder();
     },
-    [selectChat, clearBuilder],
+    [selectChat],
   );
 
   const handleNewChat = useCallback(() => {
     createNewChat();
     setMobileSidebarOpen(false);
-    clearBuilder();
-  }, [createNewChat, clearBuilder]);
+  }, [createNewChat]);
 
   // WHY: close drawer on viewport widening so it doesn't stick open after
   // a resize from mobile → desktop.
@@ -256,13 +226,6 @@ export default function TopChatShell() {
             chatId={activeChatId}
             initialMessages={initialMessages}
             onMessagesChange={persistCurrent}
-            onHasMessagesChange={setHasMessages}
-            builderRisk={builderRisk}
-            setBuilderRisk={setBuilderRisk}
-            builderStocks={builderStocks}
-            onAddBuilderStock={addBuilderStock}
-            onRemoveBuilderStock={removeBuilderStock}
-            onClearBuilder={clearBuilder}
           />
         </div>
       </div>
@@ -271,8 +234,6 @@ export default function TopChatShell() {
       <FavoritesPanel
         favorites={favorites}
         isLoading={favoritesLoading}
-        isEmpty={!hasMessages}
-        onAddToBuilder={addBuilderStock}
         onAskAI={handleAskAI}
       />
     </div>
