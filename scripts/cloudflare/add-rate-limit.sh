@@ -1,67 +1,93 @@
 #!/bin/bash
-# Cloudflare Rate Limit を /api/agent-portfolio に追加。Free プランは無料枠 1 件。
-# Legacy Rate Limit API (/rate_limits) を使う(Zone:Rate Limit:Edit のみで動く)。
-# 同一 IP が 10 秒で 5 リクエストを超えたら 60 秒 ban。
+# Rate Limit ルール(新 Rulesets API)。Free プランは 1 件無料枠。
+# /api/agent-portfolio 以下で同一 IP が 10秒に 5 リクエスト超 → 60秒 block。
 
 set -eu
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./cf-helpers.sh
-source "$SCRIPT_DIR/cf-helpers.sh"
+cd /home/meiteko/project/kabu_ai
+source scripts/cloudflare/cf-helpers.sh
 load_cf_env
 
-ZONE_NAME="${ZONE_NAME:-kabu-ai.jp}"
-ZONE_ID=$(cf_zone_id "$ZONE_NAME")
-echo "zone=$ZONE_NAME id=$ZONE_ID"
+ZONE_ID=$(cf_zone_id kabu-ai.jp)
 
-echo
-echo '==> 既存の同名 Rate Limit を一掃(冪等にするため)'
-EXIST=$(cf_api GET "/zones/${ZONE_ID}/rate_limits" \
-  | python3 -c '
+# Rate Limit phase の ruleset 取得 / 無ければ作成
+cf_api GET "/zones/${ZONE_ID}/rulesets" > /tmp/_rs_list.json
+RULESET_ID=$(python3 -c "
+import json
+d = json.load(open('/tmp/_rs_list.json'))
+for r in d.get('result', []):
+    if r.get('phase') == 'http_ratelimit':
+        print(r['id']); break
+")
+
+if [ -z "${RULESET_ID:-}" ]; then
+  echo "==> http_ratelimit ruleset を新規作成"
+  cf_api POST "/zones/${ZONE_ID}/rulesets" --data '{
+    "name": "kabu-ai rate limits",
+    "kind": "zone",
+    "phase": "http_ratelimit",
+    "rules": []
+  }' > /tmp/_rs_create.json
+  RULESET_ID=$(python3 -c "
 import json, sys
-d = json.load(sys.stdin)
-if not d.get("success"):
-    sys.exit(0)
-for r in d.get("result", []) or []:
-    if "kabu-ai-anon-api" in (r.get("description") or ""):
-        print(r["id"])
-')
+d = json.load(open('/tmp/_rs_create.json'))
+if not d.get('success'):
+    print(json.dumps(d, indent=2), file=sys.stderr); sys.exit(1)
+print(d['result']['id'])
+")
+fi
+echo "rate-limit ruleset id=$RULESET_ID"
+
+# 既存 rules に同 desc があれば skip
+DESC="kabu-ai-anon-api: short burst block"
+cf_api GET "/zones/${ZONE_ID}/rulesets/${RULESET_ID}" > /tmp/_rl_rs.json
+EXIST=$(python3 -c "
+import json
+d = json.load(open('/tmp/_rl_rs.json'))
+rules = d.get('result', {}).get('rules', [])
+for r in rules:
+    if r.get('description') == '$DESC':
+        print(r.get('id'))
+        break
+" || echo "")
+
 if [ -n "$EXIST" ]; then
-  while IFS= read -r rid; do
-    [ -z "$rid" ] && continue
-    echo "   delete $rid"
-    cf_api DELETE "/zones/${ZONE_ID}/rate_limits/${rid}" > /dev/null
-  done <<< "$EXIST"
+  echo "  [skip] 既に存在 id=$EXIST"
+else
+  echo "==> Rate Limit rule 追加"
+  cf_api POST "/zones/${ZONE_ID}/rulesets/${RULESET_ID}/rules" --data "{
+    \"action\": \"block\",
+    \"ratelimit\": {
+      \"characteristics\": [\"ip.src\", \"cf.colo.id\"],
+      \"period\": 10,
+      \"requests_per_period\": 5,
+      \"mitigation_timeout\": 10
+    },
+    \"expression\": \"(starts_with(http.request.uri.path, \\\"/api/agent-portfolio\\\"))\",
+    \"description\": \"$DESC\",
+    \"enabled\": true
+  }" > /tmp/_rl_add.json
+  python3 -c "
+import json, sys
+d = json.load(open('/tmp/_rl_add.json'))
+if d.get('success'):
+    print('  ✓ created')
+else:
+    print('  ✗ failed:')
+    print(json.dumps(d.get('errors'), indent=2))
+    sys.exit(1)
+"
 fi
 
 echo
-echo '==> Rate Limit 追加: /api/agent-portfolio で 10s/5req 超 → 60s block'
-RES=$(cf_api POST "/zones/${ZONE_ID}/rate_limits" --data '{
-  "disabled": false,
-  "description": "kabu-ai-anon-api: short burst block",
-  "match": {
-    "request": {
-      "url": "kabu-ai.jp/api/agent-portfolio*",
-      "schemes": ["HTTP","HTTPS"],
-      "methods": ["POST","GET"]
-    }
-  },
-  "threshold": 5,
-  "period": 10,
-  "action": {
-    "mode": "ban",
-    "timeout": 60
-  }
-}')
-echo "$RES" | python3 -c '
-import json, sys
-d = json.load(sys.stdin)
-if d.get("success"):
-    r = d["result"]
-    print(f"  ✓ created id={r[\"id\"]}")
-    print(f"    threshold={r.get(\"threshold\")}, period={r.get(\"period\")}, action={r.get(\"action\")}")
-    print(f"    match url={r.get(\"match\",{}).get(\"request\",{}).get(\"url\")}")
-else:
-    print("  ✗ failed:")
-    print(json.dumps(d, ensure_ascii=False, indent=2))
-    sys.exit(1)
-'
+echo "==> 最終 rate-limit ルール一覧"
+cf_api GET "/zones/${ZONE_ID}/rulesets/${RULESET_ID}" > /tmp/_rl_final.json
+python3 -c "
+import json
+d = json.load(open('/tmp/_rl_final.json'))
+rules = d.get('result', {}).get('rules', [])
+print(f'rules total: {len(rules)} / 1 (Free 枠)')
+for i, r in enumerate(rules, 1):
+    rl = r.get('ratelimit', {})
+    print(f'  [{i}] {r.get(\"action\")}  desc={r.get(\"description\")}')
+    print(f'       {rl.get(\"requests_per_period\")} req / {rl.get(\"period\")}s, ban {rl.get(\"mitigation_timeout\")}s, by {rl.get(\"characteristics\")}')
+"
