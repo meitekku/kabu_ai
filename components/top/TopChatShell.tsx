@@ -1,11 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Crown, LogIn, MenuIcon, PlusIcon, SparklesIcon } from "lucide-react";
-import { PortfolioChatPanel } from "@/components/agent-portfolio/PortfolioChatPanel";
+import {
+  PortfolioChatPanel,
+  type PortfolioChatHandle,
+} from "@/components/agent-portfolio/PortfolioChatPanel";
 import { PortfolioSidebar } from "@/components/agent-portfolio/PortfolioSidebar";
+import { FavoritesPanel } from "@/components/agent-portfolio/FavoritesPanel";
+import type {
+  BuilderStock,
+  RiskLevel,
+} from "@/components/agent-portfolio/PortfolioBuilder";
 import { usePortfolioChatHistory } from "@/hooks/usePortfolioChatHistory";
+import { useFavoritesList } from "@/hooks/useFavoritesList";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getChat } from "@/lib/agent/chat-history-store";
@@ -15,6 +24,7 @@ import { useSession } from "@/lib/auth/auth-client";
 import { useSubscription } from "@/hooks/useSubscription";
 
 const FALLBACK_CHAT_ID = "portfolio-agent";
+const MAX_BUILDER_STOCKS = 5;
 
 export default function TopChatShell() {
   const {
@@ -30,6 +40,47 @@ export default function TopChatShell() {
   const { data: session, isPending: isSessionPending } = useSession();
   const { isPremium, isLoading: isSubLoading } = useSubscription();
   const user = session?.user ?? null;
+  const isLogin = !!user;
+
+  const {
+    favorites,
+    isLoading: favoritesLoading,
+  } = useFavoritesList(isLogin);
+
+  // ビルダー状態(リスク・含めたい銘柄)
+  const [builderRisk, setBuilderRiskState] = useState<RiskLevel | null>(null);
+  const [builderStocks, setBuilderStocks] = useState<BuilderStock[]>([]);
+  const [hasMessages, setHasMessages] = useState(false);
+
+  const setBuilderRisk = useCallback((r: RiskLevel) => {
+    setBuilderRiskState(r);
+  }, []);
+
+  const addBuilderStock = useCallback((s: BuilderStock) => {
+    setBuilderStocks((prev) => {
+      if (prev.some((p) => p.id === s.id)) return prev;
+      if (prev.length >= MAX_BUILDER_STOCKS) return prev;
+      return [...prev, s];
+    });
+  }, []);
+
+  const removeBuilderStock = useCallback((id: string) => {
+    setBuilderStocks((prev) => prev.filter((p) => p.id !== id));
+  }, []);
+
+  const clearBuilder = useCallback(() => {
+    setBuilderRiskState(null);
+    setBuilderStocks([]);
+  }, []);
+
+  // チャットへの imperative ハンドル(右パネルから "AI に質問" を発火させる)
+  const chatRef = useRef<PortfolioChatHandle>(null);
+
+  const handleAskAI = useCallback((s: BuilderStock) => {
+    chatRef.current?.sendMessage(
+      `${s.name}(${s.id}) を今のポートフォリオに加えて再提案してください`,
+    );
+  }, []);
 
   // WHY: when the selected chat changes, we must re-mount PortfolioChatPanel
   // so useChat re-initialises with the restored messages.
@@ -47,14 +98,16 @@ export default function TopChatShell() {
     (id: string) => {
       selectChat(id);
       setMobileSidebarOpen(false);
+      clearBuilder();
     },
-    [selectChat],
+    [selectChat, clearBuilder],
   );
 
   const handleNewChat = useCallback(() => {
     createNewChat();
     setMobileSidebarOpen(false);
-  }, [createNewChat]);
+    clearBuilder();
+  }, [createNewChat, clearBuilder]);
 
   // WHY: close drawer on viewport widening so it doesn't stick open after
   // a resize from mobile → desktop.
@@ -101,7 +154,7 @@ export default function TopChatShell() {
         </SheetContent>
       </Sheet>
 
-      {/* Right pane: header + chat */}
+      {/* Center pane: header + chat */}
       <div className="relative flex flex-1 min-w-0 flex-col">
         <header className="relative z-40 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <Button
@@ -176,13 +229,30 @@ export default function TopChatShell() {
         <div className="relative flex-1 min-h-0">
           {/* WHY: keying by chatId remounts the chat panel so stored messages load. */}
           <PortfolioChatPanel
+            ref={chatRef}
             key={activeChatId}
             chatId={activeChatId}
             initialMessages={initialMessages}
             onMessagesChange={persistCurrent}
+            onHasMessagesChange={setHasMessages}
+            builderRisk={builderRisk}
+            setBuilderRisk={setBuilderRisk}
+            builderStocks={builderStocks}
+            onAddBuilderStock={addBuilderStock}
+            onRemoveBuilderStock={removeBuilderStock}
+            onClearBuilder={clearBuilder}
           />
         </div>
       </div>
+
+      {/* Right: favorites panel (renders nothing if user has no favorites) */}
+      <FavoritesPanel
+        favorites={favorites}
+        isLoading={favoritesLoading}
+        isEmpty={!hasMessages}
+        onAddToBuilder={addBuilderStock}
+        onAskAI={handleAskAI}
+      />
     </div>
   );
 }

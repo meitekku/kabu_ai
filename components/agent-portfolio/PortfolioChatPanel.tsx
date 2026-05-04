@@ -1,9 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { AlertCircleIcon, SparklesIcon } from "lucide-react";
+import { AlertCircleIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -12,11 +20,18 @@ import { Message, MessageContent } from "./ai-elements/message";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { QuotaBadge } from "./QuotaBadge";
-import { PresetQuestionCards } from "./PresetQuestionCards";
 import { LockedOverlay } from "./LockedOverlay";
+import {
+  PortfolioBuilder,
+  type BuilderStock,
+  type RiskLevel,
+} from "./PortfolioBuilder";
 import { useAuth } from "@/components/auth";
-import { useFavoritesAccess } from "@/hooks/useFavoritesAccess";
 import { useAgentQuota } from "@/hooks/useAgentQuota";
+
+export interface PortfolioChatHandle {
+  sendMessage: (text: string) => void;
+}
 
 interface PortfolioChatPanelProps {
   className?: string;
@@ -26,17 +41,37 @@ interface PortfolioChatPanelProps {
   initialMessages?: UIMessage[];
   onMessagesChange?: (messages: UIMessage[]) => void;
   onLinkClick?: (text: string, href: string) => void;
+  onHasMessagesChange?: (hasMessages: boolean) => void;
+  // ビルダー状態(空状態のときだけ表示する)
+  builderRisk: RiskLevel | null;
+  setBuilderRisk: (r: RiskLevel) => void;
+  builderStocks: BuilderStock[];
+  onAddBuilderStock: (s: BuilderStock) => void;
+  onRemoveBuilderStock: (id: string) => void;
+  onClearBuilder: () => void;
 }
 
-export function PortfolioChatPanel({
-  className,
-  chatId,
-  initialMessages,
-  onMessagesChange,
-  onLinkClick,
-}: PortfolioChatPanelProps) {
+export const PortfolioChatPanel = forwardRef<
+  PortfolioChatHandle,
+  PortfolioChatPanelProps
+>(function PortfolioChatPanel(
+  {
+    className,
+    chatId,
+    initialMessages,
+    onMessagesChange,
+    onLinkClick,
+    onHasMessagesChange,
+    builderRisk,
+    setBuilderRisk,
+    builderStocks,
+    onAddBuilderStock,
+    onRemoveBuilderStock,
+    onClearBuilder,
+  },
+  ref,
+) {
   const { isLogin, isLoading: authLoading } = useAuth();
-  const favorites = useFavoritesAccess();
   const quota = useAgentQuota();
   const [stoppedFlag, setStoppedFlag] = useState(false);
 
@@ -81,6 +116,16 @@ export function PortfolioChatPanel({
     onMessagesChangeRef.current(messages);
   }, [messages, status]);
 
+  // WHY: 親(TopChatShell)に空状態かどうかを伝えて、右パネルのアクション
+  // (追加 vs 質問)を切り替える材料にする
+  const onHasMessagesChangeRef = useRef(onHasMessagesChange);
+  useEffect(() => {
+    onHasMessagesChangeRef.current = onHasMessagesChange;
+  }, [onHasMessagesChange]);
+  useEffect(() => {
+    onHasMessagesChangeRef.current?.(messages.length > 0);
+  }, [messages.length]);
+
   const handleSend = useCallback(
     (text: string) => {
       if (!text.trim()) return;
@@ -88,6 +133,14 @@ export function PortfolioChatPanel({
       sendMessage({ text });
     },
     [sendMessage],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      sendMessage: handleSend,
+    }),
+    [handleSend],
   );
 
   const handleStop = useCallback(() => {
@@ -120,7 +173,6 @@ export function PortfolioChatPanel({
     [onLinkClick, handleStockLinkClick],
   );
 
-  const showFavoritesPreset = isLogin && favorites.isAllowed;
   const remaining = quota.isUnlimited ? quota.total : quota.remaining;
   const inputDisabled =
     !isLogin || (!quota.isUnlimited && quota.remaining <= 0);
@@ -138,6 +190,14 @@ export function PortfolioChatPanel({
       ? "本日の利用上限に達しました"
       : "投資目標やリスク許容度を入力してください...";
 
+  const handleBuilderSubmit = useCallback(
+    (prompt: string) => {
+      handleSend(prompt);
+      onClearBuilder();
+    },
+    [handleSend, onClearBuilder],
+  );
+
   return (
     <div
       className={`relative flex h-full min-h-0 flex-1 flex-col overflow-hidden ${className ?? ""}`}
@@ -145,23 +205,14 @@ export function PortfolioChatPanel({
       <Conversation className="flex-1 min-w-0">
         <ConversationContent className="min-h-full !gap-0 !p-0">
           {messages.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-5 p-8 pb-32 text-center">
-              <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
-                <SparklesIcon className="size-6 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-base">
-                  ポートフォリオAIエージェント
-                </h3>
-                <p className="text-muted-foreground text-sm max-w-md">
-                  投資目標・期間・リスク許容度を入力すると、AIが日本株から
-                  最適な配分案を提案します。
-                </p>
-              </div>
-              <PresetQuestionCards
-                className="mt-2 w-full max-w-2xl"
-                onSelect={handleSend}
-                showFavorites={showFavoritesPreset}
+            <div className="flex flex-1 flex-col items-center justify-center gap-5 p-8 pb-32">
+              <PortfolioBuilder
+                risk={builderRisk}
+                setRisk={setBuilderRisk}
+                stocks={builderStocks}
+                onAddStock={onAddBuilderStock}
+                onRemoveStock={onRemoveBuilderStock}
+                onSubmit={handleBuilderSubmit}
                 disabled={inputDisabled || isLoading}
               />
             </div>
@@ -237,4 +288,4 @@ export function PortfolioChatPanel({
       {lockReason && <LockedOverlay reason={lockReason} />}
     </div>
   );
-}
+});
