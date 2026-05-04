@@ -7,85 +7,40 @@ test.describe("Top Page", () => {
 
   test("page loads successfully", async ({ page }) => {
     await expect(
-      page.getByRole("heading", { name: "新着ニュース" }).first()
+      page.getByRole("heading", { name: "AIポートフォリオエージェント" }).first(),
     ).toBeVisible({ timeout: 10000 });
   });
 
-  test("TrendingSection shows dynamic content headings", async ({ page }) => {
-    // One of the time-based section labels must be visible
-    const possibleLabels = [
-      "値上がり注目銘柄",
-      "売買代金上位銘柄",
-      "ストップ高銘柄",
-      "PTS変動注目銘柄",
-      "掲示板盛り上がり銘柄",
-      "最新AI分析記事",
-    ];
-    // Wait for loading skeletons to disappear or content to appear
-    await page.waitForFunction(
-      (labels) =>
-        labels.some((label) => document.body.innerText.includes(label)) ||
-        document.querySelectorAll(".animate-pulse").length === 0,
-      possibleLabels,
-      { timeout: 10000 }
-    );
-    // At least one label should appear (or skeleton was shown and data is empty)
-    const bodyText = await page.evaluate(() => document.body.innerText);
-    const hasLabel = possibleLabels.some((label) => bodyText.includes(label));
-    const hasEmptyState = bodyText.includes("現在データがありません");
-    // Also accept when TrendingSection didn't render (DB unavailable in CI)
-    const sectionNotRendered = !bodyText.includes("市場動向");
-    expect(hasLabel || hasEmptyState || sectionNotRendered).toBe(true);
-  });
-
-  test("TrendingSection displays cards or loading skeletons", async ({
+  test("welcome message types out and shows risk preset buttons", async ({
     page,
   }) => {
-    const hasCards = await page.locator(".rounded-xl.shadow").count();
-    const hasSkeletons = await page.locator(".animate-pulse").count();
-    expect(hasCards + hasSkeletons).toBeGreaterThan(0);
+    // WHY: typewriter animation reveals the buttons after ~3s. Allow generous timeout.
+    await expect(
+      page.getByRole("button", { name: "安定", exact: true }),
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByRole("button", { name: "バランス", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "成長", exact: true }),
+    ).toBeVisible();
   });
 
-  test("NewsListS section loads and shows content", async ({ page }) => {
-    await page.waitForSelector(".animate-spin", {
-      state: "hidden",
-      timeout: 15000,
-    });
-
-    const newsItems = await page.locator("div.space-y-2 div.rounded.shadow-sm").count();
-    const emptyState = await page.getByText("現在、ニュースはありません。").count();
-    const errorState = await page.locator('[class*="shikiho-negative"]').count();
-
-    expect(newsItems + emptyState + errorState).toBeGreaterThan(0);
-  });
-
-  test("news items have links", async ({ page }) => {
-    await page.waitForSelector(".animate-spin", {
-      state: "hidden",
-      timeout: 15000,
-    });
-
-    const newsLinks = page.locator('a[href*="/stocks/"]');
-    const count = await newsLinks.count();
-
-    if (count > 0) {
-      const href = await newsLinks.first().getAttribute("href");
-      expect(href).toMatch(/\/stocks\//);
+  test("chat input is present", async ({ page }) => {
+    const placeholderRegex = /投資目標|本日の/;
+    await expect(
+      page.locator(`textarea, input[type="text"]`).first(),
+    ).toBeVisible({ timeout: 10000 });
+    const inputs = await page.locator(`textarea, input`).all();
+    let matched = false;
+    for (const el of inputs) {
+      const ph = (await el.getAttribute("placeholder")) ?? "";
+      if (placeholderRegex.test(ph)) {
+        matched = true;
+        break;
+      }
     }
-  });
-
-  test("'もっと見る' link is present", async ({ page }) => {
-    await page.waitForSelector(".animate-spin", {
-      state: "hidden",
-      timeout: 15000,
-    });
-
-    const newsArticleLinks = await page
-      .locator('a[href*="/stocks/"][href*="/news/"]')
-      .count();
-    if (newsArticleLinks > 0) {
-      await expect(page.getByText("もっと見る ›")).toBeVisible();
-    }
+    expect(matched).toBe(true);
   });
 
   test("page has proper title or meta", async ({ page }) => {
