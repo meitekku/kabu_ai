@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default function Home() {
   return (
-    <section className="w-full h-[calc(100dvh-2rem)] md:h-[calc(100dvh-0px)]">
+    <section className="w-full h-full">
       <TopChatShell />
     </section>
   );

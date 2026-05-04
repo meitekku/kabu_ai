@@ -101,10 +101,10 @@ export default function LayoutClient({
     )
   }
 
-  // トップページもヘッダー・サイドバーなし（縦スクロール許容）
+  // トップページもヘッダー・サイドバーなし（チャット占有・縦スクロール禁止）
   if (isTopPage) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="h-screen flex flex-col overflow-hidden">
         <GlobalNavigation />
         <main className="flex-1 min-h-0">
           {children}
