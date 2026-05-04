@@ -388,6 +388,9 @@ jobs:
         env:
           NEXT_PUBLIC_APP_URL: https://kabu-ai.jp
           NEXT_TELEMETRY_DISABLED: 1
+          # Cloudflare Turnstile の sitekey はクライアントに露出する公開値。
+          # build 時に NEXT_PUBLIC_* として焼き込む必要があるため env で渡す。
+          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 0x4AAAAAADIxOf8pxC7mJikA
 
       - name: Setup SSH key
         env:
