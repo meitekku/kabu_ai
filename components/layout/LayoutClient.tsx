@@ -1,0 +1,158 @@
+"use client"
+
+import Header from '@/components/layout/Header'
+import Footer from '@/components/layout/Footer'
+import GlobalNavigation from '@/components/navigation/GlobalNavigation'
+import Sidebar from '@/components/layout/Sidebar'
+import { usePathname } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { BarChart3 } from 'lucide-react'
+import type { CompanyData } from '@/components/common/CurrentPriceInfo'
+import type { BaseRankingData, RankingTableName } from '@/components/common/RankingTableClient'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+
+interface LayoutSummaryResponse {
+  success: boolean
+  data?: {
+    market: CompanyData[]
+    rankings: Partial<Record<RankingTableName, BaseRankingData[]>>
+  }
+}
+
+export default function LayoutClient({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const pathname = usePathname()
+  const isAdminPage = pathname?.startsWith('/admin')
+  const isPremiumPage = pathname?.startsWith('/premium')
+  const isSettingsPage = pathname?.startsWith('/settings')
+  const isChatPage = pathname?.startsWith('/chat')
+  const isAgentChatPage = pathname?.startsWith('/agent-chat')
+  const isFavoritesPage = pathname?.startsWith('/favorites')
+  const isBbsPage = pathname?.startsWith('/bbs')
+  const isAnyChatPage = isChatPage || isAgentChatPage
+  const isTopPage = pathname === '/'
+  const isFullWidthPage = isAdminPage || isPremiumPage || isSettingsPage || isChatPage || isAgentChatPage || isFavoritesPage || isBbsPage || isTopPage
+  const mainClassName = isFullWidthPage ? 'w-full' : 'w-full md:flex-1'
+  const [layoutSummary, setLayoutSummary] = useState<LayoutSummaryResponse['data']>()
+  const [isLayoutSummaryLoading, setIsLayoutSummaryLoading] = useState(!isAdminPage)
+
+  useEffect(() => {
+    if (isAdminPage || isAnyChatPage) {
+      setIsLayoutSummaryLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    let isMounted = true
+    setIsLayoutSummaryLoading(true)
+
+    const fetchLayoutSummary = async () => {
+      try {
+        const response = await fetch('/api/layout/summary', {
+          method: 'GET',
+          signal: controller.signal,
+        })
+
+        if (!response.ok) return
+
+        const result = await response.json() as LayoutSummaryResponse
+        if (result.success && result.data && isMounted) {
+          setLayoutSummary(result.data)
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError' && isMounted) {
+          console.error('Failed to fetch layout summary:', error)
+        }
+      } finally {
+        if (isMounted) {
+          setIsLayoutSummaryLoading(false)
+        }
+      }
+    }
+
+    void fetchLayoutSummary()
+
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
+  }, [isAdminPage, isAnyChatPage])
+
+  const marketDataByCode = useMemo(() => {
+    if (!layoutSummary?.market) return undefined
+    return layoutSummary.market.reduce<Record<string, CompanyData>>((acc, item) => {
+      acc[item.code] = item
+      return acc
+    }, {})
+  }, [layoutSummary])
+
+  // チャットページは専用レイアウト（ヘッダー・サイドバーなし）
+  if (isAnyChatPage) {
+    return (
+      <div className="h-screen flex flex-col">
+        <GlobalNavigation />
+        <main className="flex-1 min-h-0">
+          {children}
+        </main>
+      </div>
+    )
+  }
+
+  // トップページもヘッダー・サイドバーなし（チャット占有・縦スクロール禁止）
+  if (isTopPage) {
+    return (
+      <div className="h-screen flex flex-col overflow-hidden">
+        <GlobalNavigation />
+        <main className="flex-1 min-h-0">
+          {children}
+        </main>
+      </div>
+    )
+  }
+
+  const showSidebar = !isFullWidthPage
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <GlobalNavigation />
+      <Header marketData={marketDataByCode} suspendFetch={isLayoutSummaryLoading} />
+      <div className={`flex-grow w-full mx-auto ${isPremiumPage ? '' : 'max-w-[1280px] px-4 sm:px-5 py-4 sm:py-5'} overflow-x-auto`}>
+        <div className="flex flex-col md:flex-row gap-5 md:gap-6 min-w-0">
+          <main className={`${mainClassName} min-w-0 overflow-x-auto bg-white`}>
+            {children}
+          </main>
+          {showSidebar && (
+            <>
+              {/* Desktop sidebar */}
+              <aside className="hidden md:block w-[300px] flex-shrink-0 bg-white dark:bg-[#1a1a1a]">
+                <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
+              </aside>
+              {/* Mobile sidebar drawer */}
+              <div className="md:hidden fixed bottom-5 right-5 z-40">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <button className="w-12 h-12 rounded-full bg-[#cc0000] text-white shadow-lg flex items-center justify-center hover:bg-[#990000] transition-all hover:scale-105">
+                      <BarChart3 className="w-5 h-5" />
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[300px] sm:w-[350px] overflow-y-auto p-4">
+                    <SheetHeader>
+                      <SheetTitle>ランキング</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4">
+                      <Sidebar rankingData={layoutSummary?.rankings} suspendFetch={isLayoutSummaryLoading} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      <Footer />
+    </div>
+  )
+}

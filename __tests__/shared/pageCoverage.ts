@@ -1,0 +1,53 @@
+export const PAGE_COVERAGE = [
+  { template: "/", systemPath: "/" },
+  { template: "/admin/accept_ai", systemPath: "/admin/accept_ai" },
+  { template: "/admin/accept_ai_us", systemPath: "/admin/accept_ai_us" },
+  { template: "/admin/accept_spike", systemPath: "/admin/accept_spike" },
+  { template: "/admin/all-article", systemPath: "/admin/all-article" },
+  { template: "/admin/comment", systemPath: "/admin/comment" },
+  { template: "/admin/line-test", systemPath: "/admin/line-test" },
+  { template: "/admin/news-summary", systemPath: "/admin/news-summary" },
+  { template: "/admin/post/[post_id]", systemPath: "/admin/post/1" },
+  { template: "/admin/prompt", systemPath: "/admin/prompt" },
+  {
+    template: "/admin/prompt/article-prompt",
+    systemPath: "/admin/prompt/article-prompt",
+  },
+  { template: "/agent-chat", systemPath: "/agent-chat" },
+  { template: "/bbs", systemPath: "/bbs" },
+  { template: "/chat", systemPath: "/chat?code=7203" },
+  { template: "/content/[id]", systemPath: "/content/1" },
+  {
+    template: "/commercial-transactions",
+    systemPath: "/commercial-transactions",
+  },
+  { template: "/contact", systemPath: "/contact" },
+  { template: "/disclaimer", systemPath: "/disclaimer" },
+  { template: "/favorites", systemPath: "/favorites" },
+  { template: "/login", systemPath: "/login" },
+  { template: "/news/latest", systemPath: "/news/latest" },
+  { template: "/premium", systemPath: "/premium" },
+  { template: "/premium/success", systemPath: "/premium/success" },
+  { template: "/privacy-policy", systemPath: "/privacy-policy" },
+  { template: "/settings/billing", systemPath: "/settings/billing" },
+  { template: "/signup", systemPath: "/signup?test=1" },
+  { template: "/stocks/[code]/news", systemPath: "/stocks/7203/news" },
+  {
+    template: "/stocks/[code]/news/[id]",
+    systemPath: "/stocks/7203/news/1",
+  },
+  {
+    template: "/stocks/[code]/news/list",
+    systemPath: "/stocks/7203/news/list?page=1",
+  },
+  { template: "/stocks/[code]/predict", systemPath: "/stocks/7203/predict" },
+  {
+    template: "/stocks/[code]/valuation",
+    systemPath: "/stocks/7203/valuation",
+  },
+  { template: "/terms", systemPath: "/terms" },
+  { template: "/test", systemPath: "/test" },
+  { template: "/ultrathink", systemPath: "/ultrathink" },
+] as const;
+
+export const PAGE_TEMPLATES = PAGE_COVERAGE.map((page) => page.template);

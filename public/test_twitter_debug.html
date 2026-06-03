@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter投稿テスト</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        button { padding: 10px 20px; margin: 10px; background: #1DA1F2; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1a8cd8; }
+        .log { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .chart { width: 400px; height: 300px; background: linear-gradient(45deg, #f0f0f0, #e0e0e0); display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Twitter投稿デバッグテスト 🔥 強化版</h1>
+        
+        <div style="background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #4caf50;">
+            <h3 style="margin: 0 0 10px 0; color: #2e7d32;">🔥 今回の主要修正ポイント</h3>
+            <ul style="margin: 0; color: #388e3c;">
+                <li><strong>メディアボタン検索の強化:</strong> 11種類のセレクタで確実に検出</li>
+                <li><strong>JavaScriptファイルアップロード強化:</strong> ステップ別デバッグとエラーハンドリング</li>
+                <li><strong>動的要素作成:</strong> ファイル入力要素がない場合の代替手段</li>
+                <li><strong>包括的イベント発火:</strong> React系 + カスタムイベント対応</li>
+            </ul>
+        </div>
+        
+        <div>
+            <h3>テストデータ:</h3>
+            <p><strong>タイトル:</strong> テスト株式記事タイトル</p>
+            <p><strong>内容:</strong> これはTwitter投稿のテストです。Chart.js画像添付機能とテキスト保持機能をテストしています。</p>
+            
+            <div class="chart">
+                [模擬チャート画像]<br>
+                400x300 PNG
+            </div>
+        </div>
+        
+        <div>
+            <h3>テスト実行:</h3>
+            <button onclick="testPlaywrightPost()" style="background: #ff5722; font-weight: bold;">🎭 Playwright版テスト 🔥 強化版</button>
+            <button onclick="testMobilePost()">📱 モバイル版テスト</button>
+            <button onclick="testPythonPost()">🐍 Python版テスト</button>
+            <button onclick="clearLog()">🧹 ログクリア</button>
+        </div>
+        
+        <div>
+            <h3>デバッグログ 🔥 強化版:</h3>
+            <div style="background: #fff3e0; padding: 8px; border-radius: 3px; margin: 5px 0; font-size: 12px; border-left: 3px solid #ff9800;">
+                <strong>💡 ヒント:</strong> Playwright版テストでは、JavaScriptコンソールログも確認してください。<br>
+                ブラウザの開発者ツール (F12) でコンソールタブを開いて、詳細なデバッグ情報を確認できます。
+            </div>
+            <div id="log" class="log">ログ出力エリア（強化版）...\n</div>
+        </div>
+    </div>
+
+    <script>
+        // ログ出力関数
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString('ja-JP');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = 'ログクリア完了...\n';
+        }
+
+        // テスト用のbase64チャート画像を生成
+        function generateTestChartImage() {
+            // 400x300のキャンバスを作成してチャート風画像を生成
+            const canvas = document.createElement('canvas');
+            canvas.width = 400;
+            canvas.height = 300;
+            const ctx = canvas.getContext('2d');
+            
+            // 背景
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, 400, 300);
+            
+            // グリッド
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 400; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 300);
+                ctx.stroke();
+            }
+            for (let i = 0; i < 300; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(400, i);
+                ctx.stroke();
+            }
+            
+            // チャートライン（株価風）
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const points = [];
+            for (let x = 0; x < 400; x += 10) {
+                const y = 150 + Math.sin(x * 0.02) * 50 + Math.random() * 40 - 20;
+                points.push({x, y});
+            }
+            
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+            
+            // タイトル
+            ctx.fillStyle = '#fff';
+            ctx.font = '16px Arial';
+            ctx.fillText('テスト株式チャート (7203)', 10, 25);
+            ctx.font = '12px Arial';
+            ctx.fillText('価格: ¥1,234 (+2.5%)', 10, 45);
+            
+            return canvas.toDataURL('image/png');
+        }
+
+        // Playwright版テスト（強化版）
+        async function testPlaywrightPost() {
+            log('🎭 Playwright版テスト開始（強化版）...');
+            log('🔧 強化ポイント:');
+            log('  - メディアボタン検索の強化');
+            log('  - JavaScript file upload simulationの大幅改善');
+            log('  - 動的ファイル入力要素作成');
+            log('  - 包括的イベント発火');
+            log('  - ステップ別詳細デバッグ');
+            log('');
+            
+            const testData = {
+                message: 'テスト株式記事タイトル\n\nこれはTwitter投稿のテストです。Chart.js画像添付機能とテキスト保持機能をテストしています。',
+                textOnly: false,
+                actuallyPost: false, // テストモード
+                imageBase64Data: [generateTestChartImage()]
+            };
+            
+            log(`📝 メッセージ長: ${testData.message.length}文字`);
+            log(`📷 画像データ長: ${testData.imageBase64Data[0].length}文字`);
+            log(`🔍 base64プレフィックス: ${testData.imageBase64Data[0].substring(0, 30)}...`);
+            
+            try {
+                log('🚀 APIリクエスト送信中...');
+                const response = await fetch('/api/twitter/post_playwright', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                log(`✅ レスポンス受信: ${response.status}`);
+                log('📊 APIレスポンス詳細:');
+                log(JSON.stringify(result, null, 2));
+                
+                if (result.success) {
+                    log('🎉 Playwright版テスト成功！');
+                    
+                    // 詳細情報を表示
+                    if (result.details) {
+                        log('📊 実行詳細:');
+                        log(`  - 最終結果: ${result.details.final_result}`);
+                        log(`  - 実行時間: ${result.details.execution_time_ms}ms`);
+                        log(`  - エラー数: ${result.details.summary?.total_errors || 0}`);
+                        log(`  - 成功ステップ数: ${result.details.summary?.total_success_steps || 0}`);
+                    }
+                } else {
+                    log(`❌ Playwright版テストエラー: ${result.error}`);
+                    
+                    // エラー詳細を表示
+                    if (result.details && result.details.errors) {
+                        log('❌ エラー詳細:');
+                        result.details.errors.forEach((error, i) => {
+                            log(`  ${i + 1}. [${error.step}] ${error.message}`);
+                        });
+                    }
+                }
+                
+            } catch (error) {
+                log(`❌ ネットワークエラー: ${error.message}`);
+            }
+        }
+
+        // モバイル版テスト
+        async function testMobilePost() {
+            log('📱 モバイル版テスト開始...');
+            
+            const testData = {
+                message: 'テスト株式記事タイトル\n\nこれはTwitter投稿のテストです。Chart.js画像添付機能とテキスト保持機能をテストしています。',
+                textOnly: false,
+                actuallyPost: false, // テストモード
+                imageBase64Data: [generateTestChartImage()]
+            };
+            
+            log(`📝 メッセージ長: ${testData.message.length}文字`);
+            log(`📷 画像データ長: ${testData.imageBase64Data[0].length}文字`);
+            
+            try {
+                const response = await fetch('/api/twitter/post_mobile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                log(`✅ レスポンス受信: ${response.status}`);
+                log(`📊 結果: ${JSON.stringify(result, null, 2)}`);
+                
+                if (result.success) {
+                    log('🎉 モバイル版テスト成功！');
+                } else {
+                    log(`❌ モバイル版テストエラー: ${result.error}`);
+                }
+                
+            } catch (error) {
+                log(`❌ ネットワークエラー: ${error.message}`);
+            }
+        }
+
+        // Python版テスト
+        async function testPythonPost() {
+            log('🐍 Python版テスト開始...');
+            
+            const testData = {
+                message: 'テスト株式記事タイトル\n\nこれはTwitter投稿のテストです。Chart.js画像添付機能とテキスト保持機能をテストしています。',
+                textOnly: false,
+                actuallyPost: false, // テストモード
+                imageBase64: generateTestChartImage()
+            };
+            
+            log(`📝 メッセージ長: ${testData.message.length}文字`);
+            log(`📷 画像データ長: ${testData.imageBase64.length}文字`);
+            
+            try {
+                const response = await fetch('/api/twitter/post_safe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = await response.json();
+                log(`✅ レスポンス受信: ${response.status}`);
+                log(`📊 結果: ${JSON.stringify(result, null, 2)}`);
+                
+                if (result.success) {
+                    log('🎉 Python版テスト成功！');
+                } else {
+                    log(`❌ Python版テストエラー: ${result.error}`);
+                }
+                
+            } catch (error) {
+                log(`❌ ネットワークエラー: ${error.message}`);
+            }
+        }
+
+        // 初期化
+        window.addEventListener('load', () => {
+            log('🧪 Twitter投稿デバッグテスト環境準備完了（強化版）');
+            log('');
+            log('🔥 今回の修正ポイント:');
+            log('  ✅ メディアボタン検索の強化 (11種類のセレクタ)');
+            log('  ✅ JavaScript file upload simulationの大幅改善');
+            log('  ✅ 動的ファイル入力要素作成機能');
+            log('  ✅ ステップ別詳細デバッグログ');
+            log('  ✅ 包括的イベント発火 (React対応含む)');
+            log('  ✅ エラーハンドリング強化');
+            log('');
+            log('📋 テスト項目:');
+            log('  1. Chart.js画像のbase64データ変換');
+            log('  2. API呼び出しの正常動作');
+            log('  3. Pythonスクリプトの実行');
+            log('  4. ファイル選択ダイアログの回避 ✅ 修正済み');
+            log('  5. テキスト保持機能 ✅ 修正済み');
+            log('  6. 画像アップロード機能 🔥 今回修正');
+            log('');
+            log('👆 上のボタンからテストを実行してください');
+            log('💪 特にPlaywright版で画像アップロード機能をテストしてください！');
+        });
+    </script>
+</body>
+</html>

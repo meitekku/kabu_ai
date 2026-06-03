@@ -1,0 +1,548 @@
+name: Deploy to Conoha
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      core: ${{ steps.filter.outputs.core }}
+      api: ${{ steps.filter.outputs.api }}
+      auth: ${{ steps.filter.outputs.auth }}
+      chat: ${{ steps.filter.outputs.chat }}
+      news: ${{ steps.filter.outputs.news }}
+      stocks: ${{ steps.filter.outputs.stocks }}
+      admin: ${{ steps.filter.outputs.admin }}
+      legal: ${{ steps.filter.outputs.legal }}
+      pages: ${{ steps.filter.outputs.pages }}
+      components: ${{ steps.filter.outputs.components }}
+      ui: ${{ steps.filter.outputs.ui }}
+      test-infra: ${{ steps.filter.outputs.test-infra }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - 'lib/**'
+              - 'hooks/**'
+              - 'utils/**'
+              - 'next.config.js'
+              - 'package.json'
+              - 'tsconfig.json'
+              - 'tailwind.config.js'
+              - 'middleware.ts'
+            api:
+              - 'app/api/**'
+            auth:
+              - 'lib/auth/**'
+              - 'components/auth/**'
+              - 'app/login/**'
+              - 'app/signup/**'
+              - 'app/api/auth/**'
+            chat:
+              - 'lib/agent/**'
+              - 'components/agent-chat/**'
+              - 'components/chat/**'
+              - 'components/common/ChatHistoryDrawer.tsx'
+              - 'app/api/chat/**'
+              - 'app/api/agent-chat/**'
+              - 'app/chat/**'
+              - 'app/agent-chat/**'
+            news:
+              - 'components/news/**'
+              - 'components/parts/chart/**'
+              - 'app/news/**'
+              - 'app/page.tsx'
+              - 'types/**'
+            stocks:
+              - 'app/stocks/**'
+              - 'app/api/stocks/**'
+              - 'components/prediction/**'
+              - 'components/stocks/**'
+            admin:
+              - 'app/admin/**'
+              - 'app/api/admin/**'
+              - 'components/admin/**'
+              - 'components/comment/**'
+            legal:
+              - 'app/terms/**'
+              - 'app/privacy-policy/**'
+              - 'app/contact/**'
+              - 'app/disclaimer/**'
+              - 'app/commercial-transactions/**'
+              - 'app/premium/**'
+            pages:
+              - 'app/**/page.tsx'
+              - 'app/**/layout.tsx'
+              - 'app/**/loading.tsx'
+              - 'app/globals.css'
+            components:
+              - 'components/**'
+            ui:
+              - 'components/ui/**'
+            test-infra:
+              - '__tests__/setup.ts'
+              - '__tests__/shared/**'
+              - 'vitest.config.ts'
+              - 'playwright.config.ts'
+              - 'tsconfig.test.json'
+
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: detect-changes
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      needs.detect-changes.outputs.core == 'true' ||
+      needs.detect-changes.outputs.api == 'true' ||
+      needs.detect-changes.outputs.auth == 'true' ||
+      needs.detect-changes.outputs.chat == 'true' ||
+      needs.detect-changes.outputs.news == 'true' ||
+      needs.detect-changes.outputs.stocks == 'true' ||
+      needs.detect-changes.outputs.admin == 'true' ||
+      needs.detect-changes.outputs.legal == 'true' ||
+      needs.detect-changes.outputs.pages == 'true' ||
+      needs.detect-changes.outputs.components == 'true' ||
+      needs.detect-changes.outputs.ui == 'true' ||
+      needs.detect-changes.outputs.test-infra == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript check
+        run: npx tsc --noEmit --skipLibCheck
+
+      - name: ESLint check
+        run: npm run lint
+
+  test-unit-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.api == 'true' ||
+        needs.detect-changes.outputs.auth == 'true' ||
+        needs.detect-changes.outputs.chat == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit API tests
+        run: npx vitest run __tests__/unit/api
+
+  test-unit-components:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.ui == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit component tests
+        run: npx vitest run __tests__/unit/components
+
+  test-unit-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.legal == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run unit page tests
+        run: npx vitest run __tests__/unit/pages
+
+  test-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.news == 'true' ||
+        needs.detect-changes.outputs.stocks == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run integration tests
+        run: npx vitest run __tests__/integration
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [detect-changes, lint-and-typecheck]
+    if: >-
+      always() &&
+      (needs.lint-and-typecheck.result == 'success' || needs.lint-and-typecheck.result == 'skipped') &&
+      needs.lint-and-typecheck.result != 'failure' &&
+      needs.lint-and-typecheck.result != 'cancelled' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.core == 'true' ||
+        needs.detect-changes.outputs.components == 'true' ||
+        needs.detect-changes.outputs.pages == 'true' ||
+        needs.detect-changes.outputs.news == 'true' ||
+        needs.detect-changes.outputs.stocks == 'true' ||
+        needs.detect-changes.outputs.auth == 'true' ||
+        needs.detect-changes.outputs.chat == 'true' ||
+        needs.detect-changes.outputs.test-infra == 'true'
+      )
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests (pages/layout)
+        if: >-
+          !cancelled() &&
+          (
+            github.event_name == 'workflow_dispatch' ||
+            needs.detect-changes.outputs.core == 'true' ||
+            needs.detect-changes.outputs.components == 'true' ||
+            needs.detect-changes.outputs.pages == 'true' ||
+            needs.detect-changes.outputs.news == 'true' ||
+            needs.detect-changes.outputs.stocks == 'true' ||
+            needs.detect-changes.outputs.test-infra == 'true'
+          )
+        run: npx playwright test __tests__/e2e/all-pages-smoke.spec.ts __tests__/e2e/top-page.spec.ts __tests__/e2e/stocks-news-loading-alignment.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run login system tests
+        if: >-
+          !cancelled() &&
+          (
+            github.event_name == 'workflow_dispatch' ||
+            needs.detect-changes.outputs.auth == 'true' ||
+            needs.detect-changes.outputs.core == 'true' ||
+            needs.detect-changes.outputs.test-infra == 'true'
+          )
+        run: npx playwright test __tests__/e2e/login.spec.ts __tests__/e2e/system-login.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run chat system tests
+        if: >-
+          !cancelled() &&
+          (
+            github.event_name == 'workflow_dispatch' ||
+            needs.detect-changes.outputs.chat == 'true' ||
+            needs.detect-changes.outputs.core == 'true' ||
+            needs.detect-changes.outputs.test-infra == 'true'
+          )
+        run: npx playwright test __tests__/e2e/system-chat.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Run valuation system tests
+        if: >-
+          !cancelled() &&
+          (
+            github.event_name == 'workflow_dispatch' ||
+            needs.detect-changes.outputs.stocks == 'true' ||
+            needs.detect-changes.outputs.core == 'true' ||
+            needs.detect-changes.outputs.test-infra == 'true'
+          )
+        run: npx playwright test __tests__/e2e/system-valuation.spec.ts
+        env:
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+  deploy:
+    if: >-
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - lint-and-typecheck
+      - test-unit-api
+      - test-unit-components
+      - test-unit-pages
+      - test-integration
+      - test-e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build application (on runner)
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: https://kabu-ai.jp
+          NEXT_TELEMETRY_DISABLED: 1
+          # Cloudflare Turnstile の sitekey はクライアントに露出する公開値。
+          # build 時に NEXT_PUBLIC_* として焼き込む必要があるため env で渡す。
+          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 0x4AAAAAADIxOf8pxC7mJikA
+
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 133.130.102.77 >> ~/.ssh/known_hosts
+
+      - name: Sync source files to staging directory
+        env:
+          SSH_USER: root
+          SSH_HOST: 133.130.102.77
+        run: |
+          echo "Syncing source files to staging directory..."
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            . \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.next' \
+            --exclude='.env*' \
+            --exclude='public/uploads' \
+            --exclude='venv' \
+            --exclude='__tests__' \
+            --exclude='playwright-report' \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging
+
+          echo "Creating .next directories on server..."
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST \
+            "mkdir -p /var/www/kabu_ai_staging/.next/standalone /var/www/kabu_ai_staging/.next/static"
+
+          echo "Syncing built standalone output..."
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            .next/standalone/ \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging/.next/standalone/
+
+          echo "Syncing static assets..."
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            .next/static/ \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_staging/.next/static/
+
+          echo "Syncing uploads to persistent directory..."
+          rsync -avz \
+            -e "ssh -i ~/.ssh/id_rsa" \
+            public/uploads/ \
+            $SSH_USER@$SSH_HOST:/var/www/kabu_ai_uploads/
+
+      - name: Zero-downtime swap on server
+        env:
+          SSH_USER: root
+          SSH_HOST: 133.130.102.77
+        run: |
+          ssh -i ~/.ssh/id_rsa $SSH_USER@$SSH_HOST << 'DEPLOY_EOF'
+            set -e
+
+            STAGING=/var/www/kabu_ai_staging
+            PRODUCTION=/var/www/kabu_ai
+            OLD=/var/www/kabu_ai_old
+            UPLOADS=/var/www/kabu_ai_uploads
+
+            echo "=== Zero-downtime deploy start ==="
+
+            # --- 永続uploadsディレクトリの初期化 ---
+            mkdir -p "$UPLOADS/post_images"
+
+            # 初回のみ: 既存uploadsを永続ディレクトリに移行
+            if [ -d "$PRODUCTION/public/uploads" ] && [ ! -L "$PRODUCTION/public/uploads" ]; then
+              echo "Migrating uploads to persistent directory..."
+              cp -a "$PRODUCTION/public/uploads/"* "$UPLOADS/" 2>/dev/null || true
+            fi
+
+            # --- ステージング環境の準備 ---
+            # .env.localをコピー
+            if [ -f "$PRODUCTION/.env.local" ]; then
+              cp "$PRODUCTION/.env.local" "$STAGING/.env.local"
+              cp "$PRODUCTION/.env.local" "$STAGING/.next/standalone/.env.local"
+            fi
+
+            # uploadsは永続ディレクトリへのシンボリックリンク（standaloneのみ）
+            rm -rf "$STAGING/.next/standalone/public/uploads"
+            ln -sf "$UPLOADS" "$STAGING/.next/standalone/public/uploads"
+
+            # uploadsのパーミッション設定
+            chown -R root:root "$UPLOADS"
+            find "$UPLOADS" -type d -exec chmod 755 {} \;
+            find "$UPLOADS" -type f -exec chmod 644 {} \;
+
+            # Python venvを再利用（コピー）
+            if [ -d "$PRODUCTION/venv" ] && [ ! -d "$STAGING/venv" ]; then
+              echo "Reusing Python venv..."
+              cp -a "$PRODUCTION/venv" "$STAGING/venv"
+            fi
+
+            # --- Python venv更新 ---
+            if [ -f "$STAGING/requirements.txt" ]; then
+              cd "$STAGING"
+              if [ ! -d "venv" ]; then
+                python3 -m venv venv --copies
+              fi
+              source venv/bin/activate
+              pip install --upgrade pip -q
+              pip install -r requirements.txt -q
+              deactivate
+            fi
+
+            # === アトミックスワップ ===
+            echo "Swapping directories..."
+            rm -rf "$OLD"
+
+            if [ -d "$PRODUCTION" ]; then
+              mv "$PRODUCTION" "$OLD"
+            fi
+            mv "$STAGING" "$PRODUCTION"
+
+            # === PM2グレースフルリロード（cluster mode） ===
+            cd "$PRODUCTION"
+
+            if pm2 describe kabu_ai > /dev/null 2>&1; then
+              echo "Reloading PM2 process in cluster mode..."
+              pm2 startOrReload ecosystem.config.cjs --only kabu_ai --update-env
+            else
+              echo "Starting PM2 process in cluster mode..."
+              pm2 start ecosystem.config.cjs --only kabu_ai --update-env
+            fi
+            pm2 save
+
+            echo "Waiting for local health check..."
+            for i in $(seq 1 30); do
+              if curl -fsS http://127.0.0.1:3000/favicon.ico > /dev/null; then
+                echo "Health check passed."
+                break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                echo "Health check failed after reload."
+                exit 1
+              fi
+
+              sleep 2
+            done
+
+            # --- クリーンアップ ---
+            rm -rf "$OLD"
+
+            # --- 確認 ---
+            echo "=== Deploy verification ==="
+            sleep 3
+            pm2 list
+            netstat -tulpn | grep :3000 || echo "Warning: Port 3000 not yet listening"
+            echo "=== Zero-downtime deploy complete ==="
+          DEPLOY_EOF

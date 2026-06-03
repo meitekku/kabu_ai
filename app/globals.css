@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 楽天証券風 黒ベース + 赤アクセント — ライトモード */
+    --background: 0 0% 96%;
+    --foreground: 0 0% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 41%;
+    --accent: 0 100% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 85%;
+    --input: 0 0% 82%;
+    --ring: 0 0% 10%;
+    --radius: 0.25rem;
+    --chart-1: 0 0% 10%;
+    --chart-2: 0 100% 40%;
+    --chart-3: 160 84% 39%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 0% 50%;
+  }
+
+  .dark {
+    /* 楽天証券風 黒ベース + 赤アクセント — ダークモード */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 0 0% 92%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 90% 55%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 80%;
+    --chart-1: 0 0% 85%;
+    --chart-2: 0 90% 55%;
+    --chart-3: 160 70% 50%;
+    --chart-4: 38 80% 55%;
+    --chart-5: 0 0% 55%;
+  }
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.72;
+  }
+  a:not([class]) {
+    color: #cc0000;
+  }
+  a:not([class]):hover {
+    color: #990000;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: 2px;
+  }
+
+  /* セクション見出しの共通スタイル */
+  .section-header-black {
+    background-color: #1a1a1a;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 0.25rem 0.25rem 0 0;
+  }
+
+  /* 楽天風テーブルの共通スタイル */
+  .rakuten-table {
+    border: 1px solid #e5e5e5;
+    border-radius: 0 0 0.25rem 0.25rem;
+    overflow: hidden;
+  }
+
+  .rakuten-table tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  .rakuten-table tr:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* 赤アクセントリンク */
+  .accent-link {
+    color: #cc0000;
+    transition: color 0.2s;
+  }
+  .accent-link:hover {
+    color: #990000;
+    text-decoration: underline;
+  }
+}
+
+/* スリムスクロールバー（楽天風） */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* テキスト選択色 */
+::selection {
+  background: rgba(204, 0, 0, 0.15);
+  color: #1a1a1a;
+}
+
+/* フローティングボタンアニメーション */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+.animate-float-delay-1 {
+  animation: float 3s ease-in-out 0.5s infinite;
+}
+.animate-float-delay-2 {
+  animation: float 3s ease-in-out 1s infinite;
+}
+.animate-float-delay-3 {
+  animation: float 3s ease-in-out 1.5s infinite;
+}
+
+/* Portfolio AI agent — message fade-in & step-indicator shimmer */
+@keyframes portfolio-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-portfolio-fade-in {
+  animation: portfolio-fade-in 0.3s ease-out both;
+}
+@keyframes portfolio-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.animate-portfolio-shimmer {
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.08) 40%,
+    hsl(var(--primary) / 0.15) 50%,
+    hsl(var(--primary) / 0.08) 60%,
+    transparent 100%
+  );
+  animation: portfolio-shimmer 2s ease-in-out infinite;
+}

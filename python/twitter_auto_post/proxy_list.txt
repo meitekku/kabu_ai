@@ -1,0 +1,24 @@
+# プロキシリスト設定ファイル
+# 形式: host:port:username:password:protocol
+# 例: proxy.example.com:8080:user:pass:http
+
+# Torプロキシ（Torがインストールされている場合）
+127.0.0.1:9050:::socks5
+
+# 無料プロキシの例（実際のサービスでは有料プロキシの使用を推奨）
+# 注意: 以下は例であり、実際には動作しない可能性があります
+# 本番環境では信頼できる有料プロキシサービスを使用してください
+
+# 例: ProxyRack (実際の認証情報に置き換えてください)
+# proxy.proxyrack.com:1000:username:password:http
+
+# 例: Luminati/Bright Data (実際の認証情報に置き換えてください)  
+# zproxy.lum-superproxy.io:22225:username:password:http
+
+# 例: ProxyMesh (実際の認証情報に置き換えてください)
+# open.proxymesh.com:31280:::http
+
+# ローカルテスト用（デバッグ）
+# 注意: これらは実際には機能しません
+# 127.0.0.1:8080:::http
+# 192.168.1.100:3128:::http
