@@ -1,10 +1,85 @@
 // app/api/twitter/post/route.ts
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import winston from 'winston';
 
 // Twitter API エンドポイント
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
 const TWITTER_MEDIA_UPLOAD_URL = 'https://upload.twitter.com/1.1/media/upload.json';
+
+// サーバーログ（コンソール + ファイル twitter-post.log に永続化）
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} [${level.toUpperCase()}] [twitter/post] ${message}`;
+    })
+  ),
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: 'twitter-post.log' }),
+  ],
+});
+
+// status を保持するエラー（API レスポンスのステータスを呼び出し元へ伝える）
+class TwitterApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'TwitterApiError';
+    this.status = status;
+  }
+}
+
+// Unix秒を日本時間の文字列に変換（レート制限の解除時刻表示用）
+function formatUnixToJST(unixTimestamp: number): string {
+  const jstDate = new Date(unixTimestamp * 1000 + 9 * 60 * 60 * 1000);
+  const month = jstDate.getUTCMonth() + 1;
+  const day = jstDate.getUTCDate();
+  const hours = jstDate.getUTCHours().toString().padStart(2, '0');
+  const minutes = jstDate.getUTCMinutes().toString().padStart(2, '0');
+  return `${month}月${day}日 ${hours}:${minutes}`;
+}
+
+// Twitter/X API のエラーレスポンスを日本語メッセージに変換
+function translateTwitterError(status: number, rawBody: string, resetTime?: string | null): string {
+  let detail = '';
+  try {
+    const parsed = JSON.parse(rawBody);
+    detail = (parsed.detail as string) || (parsed.title as string) || '';
+  } catch {
+    detail = rawBody;
+  }
+
+  switch (status) {
+    case 400:
+      return `リクエスト内容が不正です（文字数超過・無効な値など）。${detail ? `詳細: ${detail}` : ''}`.trim();
+    case 401:
+      return 'X APIの認証に失敗しました。APIキー／アクセストークンが正しいか、有効期限切れでないかを確認してください。';
+    case 402:
+      // CreditsDepleted
+      return 'X APIの投稿枠（クレジット）を使い切りました。契約プランの月間投稿上限に達しています。次回の請求更新日に枠がリセットされるまで投稿できません。X Developer Portal の Usage / Billing で更新日（Renews on）をご確認ください。';
+    case 403:
+      if (detail.toLowerCase().includes('duplicate')) {
+        return '同じ内容のツイートは連続して投稿できません（重複投稿エラー）。本文を変更して再試行してください。';
+      }
+      return 'X APIにこの操作の権限がありません。アプリの権限設定（Read and Write）やアカウントの凍結状態をご確認ください。';
+    case 404:
+      return '投稿先が見つかりませんでした。返信先のツイートが削除された可能性があります。';
+    case 429: {
+      const when = resetTime ? `${formatUnixToJST(parseInt(resetTime, 10))}頃` : 'しばらく時間をおいてから';
+      return `X APIのレート制限に達しました。${when}に再試行してください。`;
+    }
+    default:
+      if (status >= 500) {
+        return `X API側で一時的なエラーが発生しました（HTTP ${status}）。時間をおいて再試行してください。`;
+      }
+      return `ツイートの投稿に失敗しました（HTTP ${status}）${detail ? `: ${detail}` : ''}`;
+  }
+}
 
 // リクエストボディの型定義
 interface TweetRequest {
@@ -182,7 +257,7 @@ async function downloadImage(imageUrl: string): Promise<{ buffer: Buffer; mimeTy
   if (imageUrl.startsWith('data:')) {
     const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!matches) {
-      throw new Error('Invalid data URL format');
+      throw new Error('画像のデータURL形式が不正です。');
     }
     
     const mimeType = matches[1];
@@ -197,7 +272,7 @@ async function downloadImage(imageUrl: string): Promise<{ buffer: Buffer; mimeTy
   const response = await fetch(imageUrl);
   
   if (!response.ok) {
-    throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    throw new Error(`画像のダウンロードに失敗しました（HTTP ${response.status} ${response.statusText}）。`);
   }
   
   const contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -294,7 +369,7 @@ async function simpleMediaUpload(imageBuffer: Buffer, mimeType: string): Promise
 
   if (!response.ok) {
     const errorData = await response.text();
-    throw new Error(`Simple upload failed: ${errorData}`);
+    throw new Error(`画像のアップロード（単純）に失敗しました: ${errorData}`);
   }
 
   const data: MediaUploadResponse = await response.json();
@@ -343,7 +418,7 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
 
   if (!initResponse.ok) {
     const errorData = await initResponse.text();
-    throw new Error(`Failed to initialize media upload: ${errorData}`);
+    throw new Error(`画像アップロードの初期化に失敗しました: ${errorData}`);
   }
 
   const initData: MediaUploadResponse = await initResponse.json();
@@ -383,7 +458,7 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
 
     if (!appendResponse.ok) {
       const errorData = await appendResponse.text();
-      throw new Error(`Failed to append media chunk ${segmentIndex}: ${errorData}`);
+      throw new Error(`画像チャンク ${segmentIndex} のアップロードに失敗しました: ${errorData}`);
     }
 
     segmentIndex++;
@@ -418,7 +493,7 @@ async function chunkedMediaUpload(imageBuffer: Buffer, mimeType: string): Promis
 
   if (!finalizeResponse.ok) {
     const errorData = await finalizeResponse.text();
-    throw new Error(`Failed to finalize media upload: ${errorData}`);
+    throw new Error(`画像アップロードの確定に失敗しました: ${errorData}`);
   }
 
   return mediaId;
@@ -482,18 +557,18 @@ async function postTweet(
   const remaining = response.headers.get('x-rate-limit-remaining');
   const resetTime = response.headers.get('x-rate-limit-reset');
 
-  if (response.status === 429) {
-    throw new Error(`Rate limit exceeded. Remaining: ${remaining}, Reset time: ${resetTime}`);
-  }
-
   if (!response.ok) {
     const errorData = await response.text();
-    throw new Error(`Failed to post tweet: ${response.status} ${errorData}`);
+    logger.error(
+      `ツイート投稿失敗 status=${response.status} remaining=${remaining ?? '-'} reset=${resetTime ?? '-'} body=${errorData}`
+    );
+    throw new TwitterApiError(translateTwitterError(response.status, errorData, resetTime), response.status);
   }
 
   const responseData = await response.json();
   if (!responseData.data?.id) {
-    throw new Error('Invalid response from Twitter API');
+    logger.error(`ツイート投稿: X APIから不正なレスポンス body=${JSON.stringify(responseData)}`);
+    throw new TwitterApiError('X APIから不正なレスポンスが返されました。', 502);
   }
   return responseData.data as TweetData;
 }
@@ -503,9 +578,10 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
     // 環境変数の検証
     const envCheck = validateEnvironmentVariables();
     if (!envCheck.valid) {
+      logger.error(`環境変数が未設定: ${envCheck.missing.join(', ')}`);
       return NextResponse.json({
         success: false,
-        message: `Missing environment variables: ${envCheck.missing.join(', ')}`
+        message: `X APIの認証情報（環境変数）が設定されていません: ${envCheck.missing.join(', ')}`
       }, { status: 500 });
     }
 
@@ -527,7 +603,9 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
         
         mediaId = await uploadMedia(imageBuffer, mimeType);
       } catch (error) {
-        
+        const detail = error instanceof Error ? error.message : String(error);
+        logger.error(`画像アップロード失敗 imageUrl=${imageUrl} detail=${detail}`);
+
         // 画像アップロードのエラーは詳細なメッセージを返す
         if (error instanceof Error && error.message.includes('ファイルサイズ')) {
           return NextResponse.json({
@@ -535,9 +613,9 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
             message: `画像のアップロードに失敗しました: ${error.message}`
           }, { status: 400 });
         }
-        
-        
-        // その他のエラーの場合はツイートのみ投稿
+
+        // その他のエラーの場合は画像なしでツイートのみ投稿
+        logger.warn('画像なしでツイート投稿を続行します');
       }
     }
 
@@ -553,27 +631,30 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
     // ツイートのURLを生成
     const tweetUrl = `https://twitter.com/i/web/status/${tweetData.id}`;
 
+    logger.info(`ツイート投稿成功 id=${tweetData.id} hasImage=${Boolean(mediaId)}`);
+
     return NextResponse.json({
       success: true,
-      message: 'Tweet posted successfully',
+      message: 'ツイートを投稿しました',
       data: tweetData,
       tweetUrl
     });
 
   } catch (error) {
-    
-    let errorMessage = 'Failed to post tweet';
-    const errorDetails: unknown = error;
-    
+    const status = error instanceof TwitterApiError ? error.status : 500;
+    let errorMessage = 'ツイートの投稿に失敗しました';
+
     if (error instanceof Error) {
       errorMessage = error.message;
     }
 
+    logger.error(`POST /api/twitter/post 失敗 status=${status} message=${errorMessage}`);
+
     return NextResponse.json({
       success: false,
       message: errorMessage,
-      error: errorDetails
-    }, { status: 500 });
+      error: errorMessage
+    }, { status });
   }
 }
 
