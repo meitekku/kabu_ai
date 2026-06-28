@@ -4,6 +4,10 @@ export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import winston from 'winston';
+import { spawn } from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
 // Twitter API エンドポイント
 const TWITTER_API_URL = 'https://api.twitter.com/2/tweets';
@@ -573,6 +577,51 @@ async function postTweet(
   return responseData.data as TweetData;
 }
 
+// ブラウザセッション経由の投稿（API失敗時のフォールバック）
+// サーバー上で保存済みのログインセッション(twitter_mobile_profile)を使い、
+// Playwright + system chrome でヘッドレス投稿する。
+function postViaBrowserSession(
+  message: string,
+  imagePath?: string
+): Promise<{ success: boolean; message: string; tweetUrl?: string }> {
+  const pythonDir = path.join(process.cwd(), 'python', 'twitter_auto_post');
+  const pythonBin = process.env.TWITTER_PY || path.join(process.cwd(), 'venv', 'bin', 'python');
+
+  return new Promise((resolve) => {
+    const child = spawn(pythonBin, ['post_via_session.py'], {
+      cwd: pythonDir,
+      env: { ...process.env },
+    });
+
+    let stdout = '';
+    let stderr = '';
+    const timer = setTimeout(() => child.kill('SIGKILL'), 120000);
+
+    child.stdout.on('data', (d) => (stdout += d.toString()));
+    child.stderr.on('data', (d) => (stderr += d.toString()));
+
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      resolve({ success: false, message: `ブラウザ投稿プロセスの起動に失敗しました: ${err.message}` });
+    });
+
+    child.on('close', () => {
+      clearTimeout(timer);
+      const lastLine = stdout.trim().split('\n').filter(Boolean).pop() || '';
+      try {
+        const r = JSON.parse(lastLine);
+        resolve({ success: Boolean(r.success), message: r.message || '', tweetUrl: r.tweetUrl || undefined });
+      } catch {
+        logger.error(`ブラウザ投稿の出力解析に失敗 stdout=${stdout.slice(-500)} stderr=${stderr.slice(-500)}`);
+        resolve({ success: false, message: 'ブラウザ投稿の応答を解析できませんでした' });
+      }
+    });
+
+    child.stdin.write(JSON.stringify({ message, imagePath: imagePath || null }));
+    child.stdin.end();
+  });
+}
+
 export async function POST(request: Request): Promise<NextResponse<TweetResponse>> {
   try {
     // 環境変数の検証
@@ -592,15 +641,20 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
     const tweetText = composeTweetText(tweetContent, url, hashtags);
 
     let mediaId: string | undefined;
+    // ブラウザ投稿フォールバック用に検証済み画像を保持
+    let fallbackBuffer: Buffer | undefined;
+    let fallbackMime: string | undefined;
 
     // 画像がある場合の処理
     if (imageUrl) {
       try {
         const { buffer: downloadedBuffer, mimeType: originalMimeType } = await downloadImage(imageUrl);
-        
+
         // 画像フォーマットの検証と必要に応じた変換
         const { buffer: imageBuffer, mimeType } = await validateAndConvertImage(downloadedBuffer, originalMimeType);
-        
+        fallbackBuffer = imageBuffer;
+        fallbackMime = mimeType;
+
         mediaId = await uploadMedia(imageBuffer, mimeType);
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
@@ -619,14 +673,53 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
       }
     }
 
-    // ツイートを投稿
-    
-    const tweetData = await postTweet(
-      tweetText,
-      mediaId ? [mediaId] : undefined,
-      replyToId
-    ) as TweetData;
-    
+    // ツイートを投稿（APIで失敗したらブラウザセッション投稿へフォールバック）
+    let tweetData: TweetData;
+    try {
+      tweetData = await postTweet(
+        tweetText,
+        mediaId ? [mediaId] : undefined,
+        replyToId
+      ) as TweetData;
+    } catch (apiError) {
+      const apiStatus = apiError instanceof TwitterApiError ? apiError.status : 0;
+      // 402(クレジット枯渇)/429(レート制限)/401(認証)/5xx はブラウザ投稿で救済を試みる
+      const FALLBACK_STATUSES = [401, 402, 429, 500, 502, 503];
+      if (!FALLBACK_STATUSES.includes(apiStatus)) {
+        throw apiError;
+      }
+
+      const apiMessage = apiError instanceof Error ? apiError.message : 'API投稿に失敗しました';
+      logger.warn(`API投稿失敗(status=${apiStatus})。ブラウザセッション投稿にフォールバックします: ${apiMessage}`);
+      if (replyToId) {
+        logger.warn('replyToId はブラウザ投稿では未対応のため、通常投稿として送信します');
+      }
+
+      // フォールバック用に画像を一時ファイルへ保存
+      let tmpImagePath: string | undefined;
+      if (fallbackBuffer) {
+        const ext = (fallbackMime || '').includes('png') ? 'png' : (fallbackMime || '').includes('gif') ? 'gif' : 'jpg';
+        tmpImagePath = path.join(os.tmpdir(), `tw_fallback_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`);
+        await fs.promises.writeFile(tmpImagePath, fallbackBuffer);
+      }
+
+      const fb = await postViaBrowserSession(tweetText, tmpImagePath);
+      if (tmpImagePath) {
+        fs.promises.unlink(tmpImagePath).catch(() => {});
+      }
+
+      if (fb.success) {
+        logger.info('ブラウザセッション投稿に成功しました（APIフォールバック）');
+        return NextResponse.json({
+          success: true,
+          message: `API投稿に失敗したためブラウザ経由で投稿しました（${fb.message}）`,
+          tweetUrl: fb.tweetUrl,
+        });
+      }
+
+      logger.error(`ブラウザフォールバックも失敗: ${fb.message}`);
+      throw new TwitterApiError(`${apiMessage} / ブラウザ投稿も失敗: ${fb.message}`, apiStatus || 500);
+    }
 
     // ツイートのURLを生成
     const tweetUrl = `https://twitter.com/i/web/status/${tweetData.id}`;
