@@ -1,5 +1,7 @@
 // --- インメモリキャッシュ ユーティリティ ---
 
+import { isJPMarketHours, isUSMarketHours, isUSStockCode } from './marketHours';
+
 interface CacheEntry {
   data: unknown;
   timestamp: number;
@@ -45,6 +47,16 @@ const TTL_CONFIGS: Record<TTLProfile, () => number> = {
 
 export function getCacheTTL(profile: TTLProfile): number {
   return TTL_CONFIGS[profile]();
+}
+
+// 現在値TTL: バックエンドが優先銘柄をWebSocketで数秒鮮度に更新するため、市場時間中は15秒
+// 米国株コード(英字のみ)は米国市場時間(平日9:30-16:00 ET)基準、
+// それ以外は日本市場時間(平日9:00-11:30/12:30-15:30 JST)基準
+// （lib/marketHours.tsの共通判定＝クライアント側ポーリングゲートと同一。
+//  土日・昼休みを含む閉場中は従来のmarketプロファイルにフォールバック）
+export function getPriceTTL(code?: string): number {
+  const isOpen = isUSStockCode(code) ? isUSMarketHours() : isJPMarketHours();
+  return isOpen ? 15 : getCacheTTL('market');
 }
 
 export function cacheGet(key: string, ttl: number): unknown | null {

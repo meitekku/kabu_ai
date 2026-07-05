@@ -1,14 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-
-const isJPMarketHours = (): boolean => {
-  const now = new Date();
-  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-  const day = jst.getDay();
-  if (day === 0 || day === 6) return false;
-  const minutes = jst.getHours() * 60 + jst.getMinutes();
-  return (minutes >= 540 && minutes <= 690) || (minutes >= 750 && minutes <= 930);
-};
+import { isMarketHoursForCode } from '@/lib/marketHours';
 
 interface CurrentPriceInfoProps {
   code: string;
@@ -79,15 +71,16 @@ export const CurrentPriceInfo: React.FC<CurrentPriceInfoProps> = ({ code, initia
 
   useEffect(() => {
     if (initialData !== undefined || suspendFetch) return;
-    if (!isJPMarketHours()) return;
+    // US銘柄（英字コード）は米国市場時間、それ以外は日本市場時間でポーリングをゲート
+    if (!isMarketHoursForCode(code)) return;
 
     const interval = setInterval(() => {
-      if (!isJPMarketHours()) return;
+      if (!isMarketHoursForCode(code)) return;
       fetchData();
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [fetchData, initialData, suspendFetch]);
+  }, [code, fetchData, initialData, suspendFetch]);
 
   if (loading) {
     return <CurrentPriceInfoSkeleton isDark={isDark} />;

@@ -2,15 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { CompanyBasicInfoSkeleton } from '@/components/stocks/news/NewsPageSkeleton';
 import { FavoriteButton } from '@/components/stocks/FavoriteButton';
-
-const isJPMarketHours = (): boolean => {
-  const now = new Date();
-  const jst = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
-  const day = jst.getDay();
-  if (day === 0 || day === 6) return false;
-  const minutes = jst.getHours() * 60 + jst.getMinutes();
-  return (minutes >= 540 && minutes <= 690) || (minutes >= 750 && minutes <= 930);
-};
+import { isJPMarketHours, isMarketHoursForCode } from '@/lib/marketHours';
 
 const getRelativeTime = (dateStr: string | null): string | null => {
   if (!dateStr) return null;
@@ -66,15 +58,16 @@ const CompanyBasicInfo = ({ code }: { code: string }) => {
   }, [fetchCompanyInfo]);
 
   useEffect(() => {
-    if (!isJPMarketHours()) return;
+    // US銘柄（英字コード）は米国市場時間、それ以外は日本市場時間でポーリングをゲート
+    if (!isMarketHoursForCode(code)) return;
 
     const interval = setInterval(() => {
-      if (!isJPMarketHours()) return;
+      if (!isMarketHoursForCode(code)) return;
       fetchCompanyInfo();
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [fetchCompanyInfo]);
+  }, [code, fetchCompanyInfo]);
 
   if (loading) {
     return <CompanyBasicInfoSkeleton />;

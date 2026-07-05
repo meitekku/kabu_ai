@@ -3,7 +3,7 @@ export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/database/Mysql';
 import winston from 'winston';
-import { getCacheTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
+import { getPriceTTL, cacheGet, cacheSet, makeCacheKey } from '@/lib/cache';
 
 // ロガーの設定
 const logger = winston.createLogger({
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
   try {
     const { code } = await request.json();
 
-    // キャッシュチェック（株価は市場時間帯に頻繁に変わる）
+    // キャッシュチェック（現在値は市場時間中15秒鮮度、閉場中はmarketプロファイル）
     const cacheKey = makeCacheKey('company-info', { code });
-    const ttl = getCacheTTL('market');
+    const ttl = getPriceTTL(typeof code === 'string' ? code : undefined);
     const cached = cacheGet(cacheKey, ttl);
     if (cached) {
       return NextResponse.json(cached, {
