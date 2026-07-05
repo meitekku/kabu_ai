@@ -100,6 +100,7 @@ describe('ApprovalList batch posting', () => {
       content: '2件目本文',
       imageUrl: undefined,
       siteNumber: 71,
+      viaBrowser: true,
     });
     expect(submitTwitterAndWebPost).toHaveBeenCalledTimes(1);
 
@@ -113,6 +114,7 @@ describe('ApprovalList batch posting', () => {
       content: '1件目本文',
       imageUrl: undefined,
       siteNumber: 71,
+      viaBrowser: true,
     });
 
     expect(fetchData).toHaveBeenCalledTimes(2);

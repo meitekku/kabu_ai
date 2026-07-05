@@ -424,6 +424,8 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
           content: entry.content,
           imageUrl: entry.chartImageUrl,
           siteNumber: batchPostSiteNumber,
+          // 連続投稿は X API を使わず、ローカルセッションの Playwright で投稿する
+          viaBrowser: true,
         });
 
         handleTwitterPostComplete(entry.id);

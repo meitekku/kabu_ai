@@ -16,8 +16,39 @@ import sys
 import json
 import time
 
-DEFAULT_PROFILE_DIR = "/var/lib/kabu_twitter/twitter_mobile_profile"
-PROFILE_DIR = os.environ.get("TWITTER_PROFILE_DIR", DEFAULT_PROFILE_DIR)
+# セッション候補（先頭から順に探す）: サーバー配置 → ローカルPC(session_login_local.py の出力)
+STATE_FILE_CANDIDATES = [
+    "/var/lib/kabu_twitter/x_state.json",
+    os.path.expanduser("~/.cache/x_state.json"),
+]
+PROFILE_DIR_CANDIDATES = [
+    "/var/lib/kabu_twitter/twitter_mobile_profile",
+    os.path.expanduser("~/.cache/x_login_profile"),
+]
+
+
+def resolve_state_file():
+    env = os.environ.get("X_STATE_FILE")
+    for c in ([env] if env else []) + STATE_FILE_CANDIDATES:
+        if c and os.path.isfile(c):
+            return c
+    return None
+
+
+def _profile_has_session(profile_dir):
+    # ログイン済みプロファイルには Cookies ファイルが存在する（空プロファイルを除外）
+    return any(
+        os.path.isfile(os.path.join(profile_dir, *rel))
+        for rel in (("Default", "Cookies"), ("Cookies",))
+    )
+
+
+def resolve_profile_dir():
+    env = os.environ.get("TWITTER_PROFILE_DIR")
+    for c in ([env] if env else []) + PROFILE_DIR_CANDIDATES:
+        if c and os.path.isdir(c) and _profile_has_session(c):
+            return c
+    return None
 
 
 def out(success: bool, message: str, tweet_url=None, code: int = 0):
@@ -40,26 +71,60 @@ def main():
         # 画像が見つからなければテキストのみで続行
         image_path = None
 
-    if not os.path.isdir(PROFILE_DIR):
-        out(False, f"ログインセッションがありません({PROFILE_DIR})。session_login.py で一度ログインしてください。", code=2)
+    state_file = resolve_state_file()
+    profile_dir = None if state_file else resolve_profile_dir()
+    if not state_file and not profile_dir:
+        out(
+            False,
+            f"ログインセッションがありません(state={STATE_FILE_CANDIDATES} / profile={PROFILE_DIR_CANDIDATES})。"
+            "先に session_login_local.py または session_login.py でログインしてください。",
+            code=2,
+        )
 
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         out(False, "playwright 未インストール", code=3)
 
-    with sync_playwright() as p:
-        context = p.chromium.launch_persistent_context(
-            user_data_dir=PROFILE_DIR,
-            channel="chrome",
+    launch_args = [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+    ]
+
+    def launch(p):
+        # system Chrome を優先し、無ければ Playwright 同梱 Chromium にフォールバック
+        try:
+            return p.chromium.launch(headless=True, channel="chrome", args=launch_args)
+        except Exception:
+            return p.chromium.launch(headless=True, args=launch_args)
+
+    def launch_persistent(p):
+        kwargs = dict(
+            user_data_dir=profile_dir,
             headless=True,
             viewport={"width": 1280, "height": 900},
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-            ],
+            args=launch_args,
         )
+        try:
+            return p.chromium.launch_persistent_context(channel="chrome", **kwargs)
+        except Exception:
+            return p.chromium.launch_persistent_context(**kwargs)
+
+    with sync_playwright() as p:
+        browser = None
+        if state_file:
+            # storage_state(Cookie) を使う（ローカル住宅IPで取得したセッション）
+            browser = launch(p)
+            context = browser.new_context(
+                storage_state=state_file,
+                locale="ja-JP",
+                timezone_id="Asia/Tokyo",
+                viewport={"width": 1280, "height": 900},
+            )
+        else:
+            # 直接ログインした永続プロファイルを使う
+            context = launch_persistent(p)
         page = context.pages[0] if context.pages else context.new_page()
         try:
             page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=45000)
@@ -149,6 +214,11 @@ def main():
                 context.close()
             except Exception:
                 pass
+            if browser is not None:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
 
 
 if __name__ == "__main__":

@@ -92,6 +92,8 @@ interface TweetRequest {
   imageUrl?: string;
   hashtags?: string[];
   replyToId?: string;
+  // true の場合、X API を使わず最初からブラウザセッション(Playwright)で投稿する
+  viaBrowser?: boolean;
 }
 
 // ツイートデータの型定義
@@ -585,7 +587,9 @@ function postViaBrowserSession(
   imagePath?: string
 ): Promise<{ success: boolean; message: string; tweetUrl?: string }> {
   const pythonDir = path.join(process.cwd(), 'python', 'twitter_auto_post');
-  const pythonBin = process.env.TWITTER_PY || path.join(process.cwd(), 'venv', 'bin', 'python');
+  const venvPython = path.join(process.cwd(), 'venv', 'bin', 'python');
+  // venv が無いローカル環境ではシステム python3 を使う
+  const pythonBin = process.env.TWITTER_PY || (fs.existsSync(venvPython) ? venvPython : 'python3');
 
   return new Promise((resolve) => {
     const child = spawn(pythonBin, ['post_via_session.py'], {
@@ -622,9 +626,58 @@ function postViaBrowserSession(
   });
 }
 
+// ブラウザセッション直行投稿（X APIを一切使わない。連続投稿用）
+async function postTweetViaBrowser(tweetText: string, imageUrl?: string): Promise<NextResponse<TweetResponse>> {
+  let tmpImagePath: string | undefined;
+  if (imageUrl) {
+    try {
+      const { buffer, mimeType } = await downloadImage(imageUrl);
+      const { buffer: imageBuffer, mimeType: finalMime } = await validateAndConvertImage(buffer, mimeType);
+      const ext = finalMime.includes('png') ? 'png' : finalMime.includes('gif') ? 'gif' : 'jpg';
+      tmpImagePath = path.join(os.tmpdir(), `tw_browser_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`);
+      await fs.promises.writeFile(tmpImagePath, imageBuffer);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      logger.warn(`ブラウザ投稿: 画像の準備に失敗したためテキストのみで投稿します: ${detail}`);
+      tmpImagePath = undefined;
+    }
+  }
+
+  const result = await postViaBrowserSession(tweetText, tmpImagePath);
+  if (tmpImagePath) {
+    fs.promises.unlink(tmpImagePath).catch(() => {});
+  }
+
+  if (result.success) {
+    logger.info('ブラウザセッション投稿に成功しました（viaBrowser指定）');
+    return NextResponse.json({
+      success: true,
+      message: result.message || 'ブラウザ経由で投稿しました',
+      tweetUrl: result.tweetUrl,
+    });
+  }
+
+  logger.error(`ブラウザセッション投稿に失敗（viaBrowser指定）: ${result.message}`);
+  return NextResponse.json({
+    success: false,
+    message: result.message || 'ブラウザ投稿に失敗しました',
+  }, { status: 500 });
+}
+
 export async function POST(request: Request): Promise<NextResponse<TweetResponse>> {
   try {
-    // 環境変数の検証
+    // リクエストボディの解析
+    const { tweetContent, url, imageUrl, hashtags, replyToId, viaBrowser } = await request.json() as TweetRequest;
+
+    // ツイートテキストの作成
+    const tweetText = composeTweetText(tweetContent, url, hashtags);
+
+    // ブラウザセッション直行モード：X APIの認証情報・投稿枠を一切使わない
+    if (viaBrowser) {
+      return await postTweetViaBrowser(tweetText, imageUrl);
+    }
+
+    // 環境変数の検証（API投稿時のみ必要）
     const envCheck = validateEnvironmentVariables();
     if (!envCheck.valid) {
       logger.error(`環境変数が未設定: ${envCheck.missing.join(', ')}`);
@@ -633,12 +686,6 @@ export async function POST(request: Request): Promise<NextResponse<TweetResponse
         message: `X APIの認証情報（環境変数）が設定されていません: ${envCheck.missing.join(', ')}`
       }, { status: 500 });
     }
-
-    // リクエストボディの解析
-    const { tweetContent, url, imageUrl, hashtags, replyToId } = await request.json() as TweetRequest;
-
-    // ツイートテキストの作成
-    const tweetText = composeTweetText(tweetContent, url, hashtags);
 
     let mediaId: string | undefined;
     // ブラウザ投稿フォールバック用に検証済み画像を保持

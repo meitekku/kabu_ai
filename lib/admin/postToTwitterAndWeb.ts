@@ -3,6 +3,8 @@ interface SubmitTwitterAndWebPostParams {
   content: string;
   imageUrl?: string;
   siteNumber?: number;
+  // true の場合、X API ではなくブラウザセッション(Playwright)で投稿する
+  viaBrowser?: boolean;
 }
 
 interface SubmitTwitterAndWebPostResult {
@@ -29,6 +31,7 @@ export async function submitTwitterAndWebPost({
   content,
   imageUrl,
   siteNumber = 72,
+  viaBrowser = false,
 }: SubmitTwitterAndWebPostParams): Promise<SubmitTwitterAndWebPostResult> {
   const tweetContent = `${title}\n${content}`;
 
@@ -59,6 +62,7 @@ export async function submitTwitterAndWebPost({
     body: JSON.stringify({
       tweetContent,
       imageUrl: imageUrl || undefined,
+      viaBrowser: viaBrowser || undefined,
     }),
   });
 
