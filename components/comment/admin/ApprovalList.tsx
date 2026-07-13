@@ -5,7 +5,7 @@ import { ServerToDate } from '@/utils/format/ServerToDate';
 import TwitterPostButton from './TwitterPostButton';
 import TwitterPythonButton from './TwitterPythonButton';
 import StockChart, { StockChartRef } from '@/components/parts/chart/StockChart';
-import { submitTwitterAndWebPost } from '@/lib/admin/postToTwitterAndWeb';
+import { submitTwitterAndWebPost, TwitterLoginRequiredError } from '@/lib/admin/postToTwitterAndWeb';
 
 interface ApprovalItem {
   id: number;
@@ -379,9 +379,34 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
     scheduleStatusClear();
   };
 
+  // X(Twitter) 投稿用に、ログイン済みChromeをデバッグ接続モードで起動する
+  const openTwitterLogin = async (): Promise<string> => {
+    try {
+      const res = await fetch('/api/twitter/login', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      return data.message || 'ログイン済みChromeをデバッグ接続モードで起動しました。もう一度投稿してください。';
+    } catch {
+      return 'Chromeの起動に失敗しました。ローカル環境で実行しているか確認してください。';
+    }
+  };
+
   const handleBatchPost = async () => {
     if (!enableBatchPosting || selectedIds.length === 0 || isBatchPosting) {
       return;
+    }
+
+    // 投稿前に、デバッグ接続可能なChrome(=投稿可能)かを確認。未起動ならChromeを起動して中断する。
+    try {
+      const loginRes = await fetch('/api/twitter/login', { method: 'GET' });
+      const loginState = await loginRes.json().catch(() => ({}));
+      if (!loginState.loggedIn) {
+        const message = await openTwitterLogin();
+        setBatchError(null);
+        setBatchStatus(`X投稿用のChromeを準備しました。${message}`);
+        return;
+      }
+    } catch {
+      // ログイン状態チェックに失敗しても投稿は続行（投稿時に needsLogin で再検知される）
     }
 
     const safeIntervalMinutes = normalizeBatchIntervalMinutes(Number(batchIntervalMinutes));
@@ -449,8 +474,15 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
         return;
       }
 
-      setBatchError(postError instanceof Error ? postError.message : '一括投稿に失敗しました');
-      setBatchStatus(null);
+      // セッション失効などで投稿中にログインが必要になった場合はログイン画面を開いて中断
+      if (postError instanceof TwitterLoginRequiredError) {
+        const message = await openTwitterLogin();
+        setBatchError(null);
+        setBatchStatus(`X(Twitter)へのログインが必要です。${message}`);
+      } else {
+        setBatchError(postError instanceof Error ? postError.message : '一括投稿に失敗しました');
+        setBatchStatus(null);
+      }
     } finally {
       if (runId === batchRunIdRef.current) {
         clearCountdown();

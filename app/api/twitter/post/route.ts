@@ -110,6 +110,8 @@ interface TweetResponse {
   data?: TweetData;
   error?: unknown;
   tweetUrl?: string;
+  // ブラウザセッション投稿で X 未ログイン／セッション失効のとき true
+  needsLogin?: boolean;
   rateLimit?: {
     remaining: number;
     resetTime: number | null;
@@ -585,7 +587,7 @@ async function postTweet(
 function postViaBrowserSession(
   message: string,
   imagePath?: string
-): Promise<{ success: boolean; message: string; tweetUrl?: string }> {
+): Promise<{ success: boolean; message: string; tweetUrl?: string; needsLogin?: boolean }> {
   const pythonDir = path.join(process.cwd(), 'python', 'twitter_auto_post');
   const venvPython = path.join(process.cwd(), 'venv', 'bin', 'python');
   // venv が無いローカル環境ではシステム python3 を使う
@@ -614,7 +616,12 @@ function postViaBrowserSession(
       const lastLine = stdout.trim().split('\n').filter(Boolean).pop() || '';
       try {
         const r = JSON.parse(lastLine);
-        resolve({ success: Boolean(r.success), message: r.message || '', tweetUrl: r.tweetUrl || undefined });
+        resolve({
+          success: Boolean(r.success),
+          message: r.message || '',
+          tweetUrl: r.tweetUrl || undefined,
+          needsLogin: Boolean(r.needsLogin),
+        });
       } catch {
         logger.error(`ブラウザ投稿の出力解析に失敗 stdout=${stdout.slice(-500)} stderr=${stderr.slice(-500)}`);
         resolve({ success: false, message: 'ブラウザ投稿の応答を解析できませんでした' });
@@ -655,6 +662,15 @@ async function postTweetViaBrowser(tweetText: string, imageUrl?: string): Promis
       message: result.message || 'ブラウザ経由で投稿しました',
       tweetUrl: result.tweetUrl,
     });
+  }
+
+  if (result.needsLogin) {
+    logger.warn('ブラウザセッション投稿: X 未ログイン／セッション失効のためログインが必要');
+    return NextResponse.json({
+      success: false,
+      needsLogin: true,
+      message: result.message || 'X(Twitter)へのログインが必要です',
+    }, { status: 409 });
   }
 
   logger.error(`ブラウザセッション投稿に失敗（viaBrowser指定）: ${result.message}`);

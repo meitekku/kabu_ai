@@ -15,8 +15,11 @@ try:
 except ImportError:
     print("playwright 未インストール"); sys.exit(1)
 
-PROFILE_DIR = os.environ.get("X_LOCAL_PROFILE", "/home/meiteko/.cache/x_login_profile")
-STATE_OUT = os.environ.get("X_STATE_OUT", "/home/meiteko/.cache/x_state.json")
+# 保存先はローカルPCの ~/.cache 配下（post_via_session.py の候補パスと一致させる）
+PROFILE_DIR = os.environ.get("X_LOCAL_PROFILE", os.path.expanduser("~/.cache/x_login_profile"))
+STATE_OUT = os.environ.get("X_STATE_OUT", os.path.expanduser("~/.cache/x_state.json"))
+# ログイン画面の多重起動を防ぐためのロックファイル
+LOCK_FILE = os.environ.get("X_LOGIN_LOCK", os.path.expanduser("~/.cache/x_login.lock"))
 TIMEOUT = int(os.environ.get("TWITTER_LOGIN_TIMEOUT", "1800"))
 
 STEALTH = r"""
@@ -38,8 +41,20 @@ def logged_in(page):
     return False
 
 
+def _release_lock():
+    try:
+        os.remove(LOCK_FILE)
+    except OSError:
+        pass
+
+
 def main():
     os.makedirs(PROFILE_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(STATE_OUT) or ".", exist_ok=True)
+    # ロック取得（既にログイン画面が開いていれば何もしない）
+    os.makedirs(os.path.dirname(LOCK_FILE) or ".", exist_ok=True)
+    with open(LOCK_FILE, "w") as f:
+        f.write(str(os.getpid()))
     print(f"📂 プロファイル: {PROFILE_DIR}")
     print(f"💾 セッション書き出し先: {STATE_OUT}")
     with sync_playwright() as p:
@@ -90,4 +105,8 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        code = main()
+    finally:
+        _release_lock()
+    sys.exit(code)

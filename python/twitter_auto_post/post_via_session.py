@@ -1,20 +1,29 @@
 #!/usr/bin/env python3
 """
-X(Twitter) セッション投稿スクリプト（ヘッドレス）
+X(Twitter) セッション投稿スクリプト
 
-session_login.py で保存したログインセッションを再利用し、APIを使わずブラウザ経由で投稿する。
-無料APIクレジット枯渇（HTTP 402）後の自動投稿フォールバックとして使用。
+投稿に使うログインセッションを、以下の優先順で解決してブラウザ経由で投稿する
+（APIを一切使わない。無料APIクレジット枯渇のフォールバック兼、ローカル連続投稿用）。
+
+  1. CDP 接続（最優先） … 既にXにログイン済みの「普段使いのChrome」に
+     --remote-debugging-port で接続し、そのプロファイルのまま投稿する。
+     追加ログイン不要。ローカル自動投稿の本命パス。
+     エンドポイント: 環境変数 X_CDP_ENDPOINT（既定 http://127.0.0.1:9222）
+  2. storage_state(JSON)  … session_login_local.py 等で書き出した Cookie
+  3. 永続プロファイル       … 直接ログインした専用プロファイル
 
 入力: 標準入力に JSON  {"message": "本文", "imagePath": "/abs/path.jpg"(任意)}
-出力: 標準出力に JSON  {"success": bool, "message": str, "tweetUrl": str|None}
-
-プロファイル保存先は環境変数 TWITTER_PROFILE_DIR で指定（session_login.py と一致させること）。
+出力: 標準出力に JSON  {"success": bool, "message": str, "tweetUrl": str|None, "needsLogin": bool}
 """
 
 import os
 import sys
 import json
 import time
+import urllib.request
+
+# CDP（普段使いChrome への接続先）
+CDP_ENDPOINT = os.environ.get("X_CDP_ENDPOINT", "http://127.0.0.1:9222")
 
 # セッション候補（先頭から順に探す）: サーバー配置 → ローカルPC(session_login_local.py の出力)
 STATE_FILE_CANDIDATES = [
@@ -25,6 +34,15 @@ PROFILE_DIR_CANDIDATES = [
     "/var/lib/kabu_twitter/twitter_mobile_profile",
     os.path.expanduser("~/.cache/x_login_profile"),
 ]
+
+
+def cdp_reachable(endpoint: str = CDP_ENDPOINT, timeout: float = 1.5) -> bool:
+    # デバッグポートが応答するか（/json/version）を軽量チェック
+    try:
+        with urllib.request.urlopen(endpoint.rstrip("/") + "/json/version", timeout=timeout):
+            return True
+    except Exception:
+        return False
 
 
 def resolve_state_file():
@@ -51,9 +69,148 @@ def resolve_profile_dir():
     return None
 
 
-def out(success: bool, message: str, tweet_url=None, code: int = 0):
-    print(json.dumps({"success": success, "message": message, "tweetUrl": tweet_url}, ensure_ascii=False))
+def out(success: bool, message: str, tweet_url=None, code: int = 0, needs_login: bool = False):
+    print(json.dumps(
+        {"success": success, "message": message, "tweetUrl": tweet_url, "needsLogin": needs_login},
+        ensure_ascii=False,
+    ))
     sys.exit(code)
+
+
+def is_logged_out(page) -> bool:
+    """X にログインしていない状態か判定する（URL＋ログアウト時のみ出る要素）。"""
+    url = page.url or ""
+    if "/login" in url or "/i/flow/login" in url or "/i/flow/signup" in url:
+        return True
+    for sel in (
+        '[data-testid="loginButton"]',
+        '[data-testid="signupButton"]',
+        'a[href="/login"]',
+        'a[href="/i/flow/login"]',
+    ):
+        try:
+            if page.locator(sel).first.is_visible(timeout=1200):
+                return True
+        except Exception:
+            pass
+    return False
+
+
+def click_enabled_tweet_button(page) -> bool:
+    """有効な（aria-disabled でない）投稿ボタンを探してクリックする。"""
+    for sel in ('[data-testid="tweetButton"]', '[data-testid="tweetButtonInline"]'):
+        btn = page.locator(sel).first
+        try:
+            if not btn.is_visible(timeout=2000):
+                continue
+            # ボタンが有効になるまで最大5秒待つ（本文入力直後は一瞬 disabled のことがある）
+            for _ in range(10):
+                if btn.get_attribute("aria-disabled") != "true":
+                    break
+                time.sleep(0.5)
+            if btn.get_attribute("aria-disabled") == "true":
+                continue
+            btn.click(timeout=5000)
+            return True
+        except Exception:
+            continue
+    return False
+
+
+def do_post(page, message: str, image_path):
+    """開いた page に対してツイートを投稿する。成功可否を out() で確定させる。"""
+    # 投稿は /compose/post のモーダルで行う（ホームのインライン欄より安定）
+    page.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=45000)
+    time.sleep(2)
+
+    if is_logged_out(page):
+        out(False, "X(Twitter)にログインしていません。Chromeでログインしてから再度投稿してください。",
+            code=4, needs_login=True)
+
+    textarea = page.locator('[data-testid="tweetTextarea_0"]').first
+    try:
+        textarea.wait_for(state="visible", timeout=15000)
+    except Exception:
+        if is_logged_out(page):
+            out(False, "X(Twitter)にログインしていません。Chromeでログインしてから再度投稿してください。",
+                code=4, needs_login=True)
+        out(False, "投稿画面の入力欄が見つかりませんでした（未ログインまたはUI変更の可能性）",
+            code=5, needs_login=True)
+
+    # 本文入力: fill() は Draft.js エディタの内部状態を更新せず投稿ボタンが有効化されない。
+    # キーボード入力で確実に入力し、投稿ボタンを有効化させる。
+    textarea.click()
+    page.keyboard.type(message, delay=10)
+    time.sleep(1)
+    # 入力が反映されなかった場合のフォールバック
+    try:
+        if (textarea.inner_text(timeout=2000) or "").strip() == "":
+            textarea.fill(message)
+            time.sleep(1)
+    except Exception:
+        pass
+
+    # 画像添付
+    if image_path:
+        try:
+            file_input = page.locator('input[data-testid="fileInput"]').first
+            file_input.set_input_files(image_path)
+            page.locator('[data-testid="attachments"]').first.wait_for(state="visible", timeout=30000)
+            time.sleep(2)
+        except Exception as e:
+            print(f"[warn] 画像添付に失敗: {e}", file=sys.stderr)
+
+    posted = click_enabled_tweet_button(page)
+    if not posted:
+        # キーボードショートカット（Ctrl+Enter / Meta+Enter）でフォールバック
+        for combo in ("Control+Enter", "Meta+Enter"):
+            try:
+                textarea.press(combo)
+                posted = True
+                break
+            except Exception:
+                continue
+
+    if not posted:
+        out(False, "投稿ボタンが有効になりませんでした（本文が空、または未ログイン／UI変更の可能性）",
+            code=5, needs_login=True)
+
+    # 投稿完了の確認：トースト「送信しました」を最優先で確認する。
+    # （fill 誤検知を防ぐため、本文欄が空になっただけでは成功扱いにしない）
+    success = False
+    deadline = time.time() + 25
+    while time.time() < deadline:
+        time.sleep(1.0)
+        try:
+            toast = page.locator('[data-testid="toast"]')
+            if toast.count() > 0 and toast.first.is_visible():
+                txt = ""
+                try:
+                    txt = toast.first.inner_text(timeout=1500)
+                except Exception:
+                    pass
+                # 送信成功トースト（"ポストを送信しました" / "your post was sent"）
+                if ("送信" in txt) or ("sent" in txt.lower()) or ("post" in txt.lower()):
+                    success = True
+                    break
+                # エラートースト
+                if ("問題" in txt) or ("error" in txt.lower()) or ("失敗" in txt):
+                    out(False, f"投稿エラー: {txt.strip()[:120]}", code=6)
+        except Exception:
+            pass
+        # compose モーダルが閉じてホームへ遷移＝送信完了のサイン
+        try:
+            if "/compose/post" not in page.url and \
+               page.locator('[data-testid="tweetTextarea_0"]').count() == 0:
+                success = True
+                break
+        except Exception:
+            pass
+
+    if success:
+        out(True, "ブラウザセッション経由で投稿しました")
+    else:
+        out(False, "投稿の完了を確認できませんでした", code=6)
 
 
 def main():
@@ -71,14 +228,16 @@ def main():
         # 画像が見つからなければテキストのみで続行
         image_path = None
 
-    state_file = resolve_state_file()
-    profile_dir = None if state_file else resolve_profile_dir()
-    if not state_file and not profile_dir:
+    use_cdp = cdp_reachable()
+    state_file = None if use_cdp else resolve_state_file()
+    profile_dir = None if (use_cdp or state_file) else resolve_profile_dir()
+
+    if not use_cdp and not state_file and not profile_dir:
         out(
             False,
-            f"ログインセッションがありません(state={STATE_FILE_CANDIDATES} / profile={PROFILE_DIR_CANDIDATES})。"
-            "先に session_login_local.py または session_login.py でログインしてください。",
+            "X(Twitter)にログイン済みのChromeが見つかりません。ログイン画面からChromeを起動してください。",
             code=2,
+            needs_login=True,
         )
 
     try:
@@ -106,117 +265,70 @@ def main():
             viewport={"width": 1280, "height": 900},
             args=launch_args,
         )
+        # macOS の Cookie は Keychain "Chrome Safe Storage" で暗号化されている。
+        # Playwright 既定の --use-mock-keychain を無効化し、システムChromeで開くことで
+        # コピー元プロファイルのログインCookieを復号できる（=ログイン状態を引き継ぐ）。
         try:
-            return p.chromium.launch_persistent_context(channel="chrome", **kwargs)
+            return p.chromium.launch_persistent_context(
+                channel="chrome",
+                ignore_default_args=["--use-mock-keychain"],
+                **kwargs,
+            )
         except Exception:
+            # システムChromeが無い環境では同梱Chromiumにフォールバック（Cookie復号は不可）
             return p.chromium.launch_persistent_context(**kwargs)
 
     with sync_playwright() as p:
-        browser = None
-        if state_file:
-            # storage_state(Cookie) を使う（ローカル住宅IPで取得したセッション）
-            browser = launch(p)
-            context = browser.new_context(
-                storage_state=state_file,
-                locale="ja-JP",
-                timezone_id="Asia/Tokyo",
-                viewport={"width": 1280, "height": 900},
-            )
-        else:
-            # 直接ログインした永続プロファイルを使う
-            context = launch_persistent(p)
-        page = context.pages[0] if context.pages else context.new_page()
+        browser = None          # launch した(=閉じてよい)ブラウザ
+        cdp_page = None         # CDP接続で新規に開いたタブ(終了時に閉じる)
         try:
-            page.goto("https://x.com/home", wait_until="domcontentloaded", timeout=45000)
-            time.sleep(2)
-
-            if "/login" in page.url or "/i/flow/login" in page.url:
-                out(False, "セッション失効：再ログインが必要です（session_login.py を再実行）", code=4)
-
-            # 本文入力欄
-            textarea = page.locator('[data-testid="tweetTextarea_0"]').first
-            try:
-                textarea.wait_for(state="visible", timeout=15000)
-            except Exception:
-                # ホームのインライン作成欄が見えない場合は /compose/post へ
-                page.goto("https://x.com/compose/post", wait_until="domcontentloaded", timeout=30000)
-                textarea = page.locator('[data-testid="tweetTextarea_0"]').first
-                textarea.wait_for(state="visible", timeout=15000)
-
-            textarea.click()
-            textarea.fill(message)
-            time.sleep(1)
-
-            # 画像添付
-            if image_path:
+            if use_cdp:
+                # 普段使いのChromeに接続。ブラウザ自体は絶対に閉じない（ユーザーのChromeのため）
                 try:
-                    file_input = page.locator('input[data-testid="fileInput"]').first
-                    file_input.set_input_files(image_path)
-                    # アップロード完了（プレビュー表示）を待つ
-                    page.locator('[data-testid="attachments"]').first.wait_for(state="visible", timeout=30000)
-                    time.sleep(2)
+                    cdp_browser = p.chromium.connect_over_cdp(CDP_ENDPOINT)
                 except Exception as e:
-                    # 画像失敗時はテキストのみで続行
-                    print(f"[warn] 画像添付に失敗: {e}", file=sys.stderr)
-
-            # 投稿ボタン（インライン優先、なければ通常）
-            posted = False
-            for sel in ('[data-testid="tweetButtonInline"]', '[data-testid="tweetButton"]'):
-                btn = page.locator(sel).first
-                try:
-                    if btn.is_visible(timeout=3000):
-                        btn.wait_for(state="visible", timeout=5000)
-                        btn.click()
-                        posted = True
-                        break
-                except Exception:
-                    continue
-
-            if not posted:
-                # キーボードショートカット（Ctrl+Enter）でフォールバック
-                try:
-                    textarea.press("Control+Enter")
-                    posted = True
-                except Exception:
-                    pass
-
-            if not posted:
-                out(False, "投稿ボタンが見つかりませんでした（UI変更の可能性）", code=5)
-
-            # 投稿完了の確認：本文欄が空に戻る or トースト表示
-            success = False
-            deadline = time.time() + 20
-            while time.time() < deadline:
-                time.sleep(1.5)
-                try:
-                    toast = page.locator('[data-testid="toast"]')
-                    if toast.count() > 0 and toast.first.is_visible():
-                        success = True
-                        break
-                except Exception:
-                    pass
-                try:
-                    val = textarea.inner_text(timeout=2000)
-                    if val.strip() == "":
-                        success = True
-                        break
-                except Exception:
-                    success = True  # 要素が消えた＝送信された可能性
-                    break
-
-            if success:
-                out(True, "ブラウザセッション経由で投稿しました")
+                    out(False, f"デバッグ用Chromeへの接続に失敗しました: {e}", code=7, needs_login=True)
+                context = cdp_browser.contexts[0] if cdp_browser.contexts else cdp_browser.new_context()
+                cdp_page = context.new_page()
+                page = cdp_page
+            elif state_file:
+                # storage_state(Cookie) を使う（ローカル住宅IPで取得したセッション）
+                browser = launch(p)
+                context = browser.new_context(
+                    storage_state=state_file,
+                    locale="ja-JP",
+                    timezone_id="Asia/Tokyo",
+                    viewport={"width": 1280, "height": 900},
+                )
+                page = context.pages[0] if context.pages else context.new_page()
             else:
-                out(False, "投稿の完了を確認できませんでした", code=6)
+                # 直接ログインした永続プロファイルを使う
+                context = launch_persistent(p)
+                page = context.pages[0] if context.pages else context.new_page()
+
+            try:
+                do_post(page, message, image_path)
+            except SystemExit:
+                raise
+            except Exception as e:
+                out(False, f"投稿処理でエラーが発生しました: {e}", code=8)
 
         finally:
-            try:
-                context.close()
-            except Exception:
-                pass
+            # CDP接続時はユーザーのChromeを閉じない。開いたタブだけ後始末する。
+            if cdp_page is not None:
+                try:
+                    cdp_page.close()
+                except Exception:
+                    pass
             if browser is not None:
                 try:
                     browser.close()
+                except Exception:
+                    pass
+            elif not use_cdp:
+                # 永続プロファイルの context を閉じる（browser を launch していないケース）
+                try:
+                    context.close()
                 except Exception:
                     pass
 

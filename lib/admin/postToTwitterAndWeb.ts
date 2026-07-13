@@ -11,6 +11,17 @@ interface SubmitTwitterAndWebPostResult {
   success: boolean;
   message: string;
   tweetUrl?: string;
+  needsLogin?: boolean;
+}
+
+// X(Twitter) 未ログイン／セッション失効を表すエラー。
+// 呼び出し側はこれを捕捉してログイン画面を開く。
+export class TwitterLoginRequiredError extends Error {
+  readonly needsLogin = true as const;
+  constructor(message = 'X(Twitter)へのログインが必要です') {
+    super(message);
+    this.name = 'TwitterLoginRequiredError';
+  }
 }
 
 const formatUnixTimestampToJST = (unixTimestamp: number): string => {
@@ -77,6 +88,11 @@ export async function submitTwitterAndWebPost({
   }
 
   const twitterResult = await twitterResponse.json() as SubmitTwitterAndWebPostResult;
+
+  // ブラウザセッション投稿で未ログイン／セッション失効の場合（HTTP 409）
+  if (twitterResponse.status === 409 && twitterResult.needsLogin) {
+    throw new TwitterLoginRequiredError(twitterResult.message || undefined);
+  }
 
   if (!twitterResponse.ok || !twitterResult.success) {
     throw new Error(twitterResult.message || 'Twitter投稿に失敗しました');
