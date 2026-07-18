@@ -176,7 +176,11 @@ def do_post(page, message: str, image_path):
             code=5, needs_login=True)
 
     # 投稿完了の確認：トースト「送信しました」を最優先で確認する。
-    # （fill 誤検知を防ぐため、本文欄が空になっただけでは成功扱いにしない）
+    # /compose/post モーダルは投稿後も閉じず、本文欄だけが空になって留まる場合がある
+    # （ホームのインライン欄のようにホームへ遷移するとは限らない）。
+    # そのため「モーダルが閉じてホームへ遷移」だけでなく「本文欄が入力済みの状態から
+    # 空になった」ことも完了のサインとして扱う（.type() ベースの現行実装では
+    # fill() 誤検知の問題は当てはまらない）。
     success = False
     deadline = time.time() + 25
     while time.time() < deadline:
@@ -198,12 +202,19 @@ def do_post(page, message: str, image_path):
                     out(False, f"投稿エラー: {txt.strip()[:120]}", code=6)
         except Exception:
             pass
-        # compose モーダルが閉じてホームへ遷移＝送信完了のサイン
         try:
-            if "/compose/post" not in page.url and \
-               page.locator('[data-testid="tweetTextarea_0"]').count() == 0:
+            ta = page.locator('[data-testid="tweetTextarea_0"]')
+            ta_count = ta.count()
+            # compose モーダルが閉じてホームへ遷移＝送信完了のサイン
+            if "/compose/post" not in page.url and ta_count == 0:
                 success = True
                 break
+            # モーダルは開いたままでも、本文欄が空になっていれば送信完了とみなす
+            if ta_count > 0:
+                remaining = (ta.first.inner_text(timeout=1500) or "").strip()
+                if remaining == "":
+                    success = True
+                    break
         except Exception:
             pass
 
