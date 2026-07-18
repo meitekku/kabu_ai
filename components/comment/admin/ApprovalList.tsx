@@ -117,8 +117,15 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
     });
     setEditedContents(initialContents);
     setEditedTitles(initialTitles);
-    setSelectedIds(prev => prev.filter(id => items.some(item => item.id === id)));
-  }, [items]);
+    // 一括投稿中でなければ、表示された投稿を初期状態からすべて選択済みにする。
+    // 投稿中に items が更新された場合（投稿完了ごとの再取得）は選択状態を崩さない。
+    setSelectedIds(prev => {
+      if (isBatchPosting) {
+        return prev.filter(id => items.some(item => item.id === id));
+      }
+      return items.map(item => item.id);
+    });
+  }, [items, isBatchPosting]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
