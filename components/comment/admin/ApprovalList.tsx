@@ -329,6 +329,16 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
     });
   };
 
+  const handleSelectAllChange = (checked: boolean) => {
+    if (isBatchPosting) {
+      return;
+    }
+
+    setBatchError(null);
+    setBatchStatus(null);
+    setSelectedIds(checked ? items.map(item => item.id) : []);
+  };
+
   const formatCountdown = (seconds: number | null) => {
     if (seconds === null) {
       return '--:--';
@@ -497,6 +507,17 @@ const ApprovalList: React.FC<ApprovalListProps> = ({
   return (
     <div className={`max-w-4xl ${showBatchBar ? 'pb-44' : ''}`}>
       {error && <div className="mb-4 text-red-500">{error}</div>}
+      {enableBatchPosting && items.length > 0 && (
+        <label className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={items.length > 0 && selectedIds.length === items.length}
+            disabled={isBatchPosting}
+            onChange={e => handleSelectAllChange(e.target.checked)}
+          />
+          すべて選択（{items.length}件）
+        </label>
+      )}
       <ul className="space-y-4">
         {items.map(item => {
           const selectedOrder = selectedIds.indexOf(item.id);

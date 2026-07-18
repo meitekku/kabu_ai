@@ -150,6 +150,16 @@ def do_post(page, message: str, image_path):
     except Exception:
         pass
 
+    # 本文にハッシュタグ(#...)を含むと、候補サジェストのドロップダウンが
+    # 画面全体を覆う透明なポータル要素を残し、投稿ボタンのクリックを
+    # ブロックし続けることがある（ドロップダウンが無ければ Escape は無害）。
+    # 投稿ボタン操作の前に Escape で必ず閉じておく。
+    try:
+        page.keyboard.press("Escape")
+        time.sleep(0.5)
+    except Exception:
+        pass
+
     # 画像添付
     if image_path:
         try:
