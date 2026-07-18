@@ -18,7 +18,10 @@ function createAuth() {
 
   return betterAuth({
     database: pool,
-    trustedOrigins: ["https://kabu-ai.jp"],
+    trustedOrigins:
+      process.env.NODE_ENV === "production"
+        ? ["https://kabu-ai.jp"]
+        : ["https://kabu-ai.jp", "http://localhost:3000", "http://localhost:3001"],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
