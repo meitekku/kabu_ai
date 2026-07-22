@@ -22,6 +22,7 @@ vi.mock('@/utils/format/ServerToDate', () => ({
 
 vi.mock('@/lib/admin/postToTwitterAndWeb', () => ({
   submitTwitterAndWebPost: vi.fn(),
+  TwitterLoginRequiredError: class TwitterLoginRequiredError extends Error {},
 }));
 
 const mockItems = [
@@ -43,6 +44,12 @@ const mockItems = [
   },
 ];
 
+const flushAsync = async () => {
+  for (let i = 0; i < 10; i += 1) {
+    await Promise.resolve();
+  }
+};
+
 describe('ApprovalList batch posting', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -51,8 +58,9 @@ describe('ApprovalList batch posting', () => {
       success: true,
       message: 'ok',
     });
+    // /api/twitter/login の事前チェック（loggedIn）と承認・更新API（success）を両方満たす
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ success: true }),
+      json: () => Promise.resolve({ success: true, loggedIn: true }),
     }) as unknown as typeof fetch;
     window.alert = vi.fn();
 
@@ -70,6 +78,25 @@ describe('ApprovalList batch posting', () => {
     vi.unstubAllGlobals();
   });
 
+  it('selects all items by default', () => {
+    const fetchData = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <ApprovalList
+        items={mockItems}
+        fetchData={fetchData}
+        enableBatchPosting={true}
+        batchPostSiteNumber={71}
+      />
+    );
+
+    // 表示された投稿は初期状態からすべて選択済み
+    expect(screen.getByText('2 件')).toBeInTheDocument();
+    expect(screen.getByLabelText('投稿候補に追加 1')).toBeChecked();
+    expect(screen.getByLabelText('投稿候補に追加 2')).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /すべて選択/ })).toBeChecked();
+  });
+
   it('posts selected items in checkbox order with default 5 minute interval', async () => {
     const fetchData = vi.fn().mockResolvedValue(undefined);
 
@@ -82,6 +109,10 @@ describe('ApprovalList batch posting', () => {
       />
     );
 
+    // 全件デフォルト選択のため、一旦すべて解除してからチェック順（2→1）で選択し直す
+    fireEvent.click(screen.getByRole('checkbox', { name: /すべて選択/ }));
+    expect(screen.queryByText('2 件')).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByLabelText('投稿候補に追加 2'));
     fireEvent.click(screen.getByLabelText('投稿候補に追加 1'));
 
@@ -92,7 +123,7 @@ describe('ApprovalList batch posting', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: '選択順で投稿する' }));
-      await Promise.resolve();
+      await flushAsync();
     });
 
     expect(submitTwitterAndWebPost).toHaveBeenCalledWith({
@@ -106,7 +137,7 @@ describe('ApprovalList batch posting', () => {
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
-      await Promise.resolve();
+      await flushAsync();
     });
 
     expect(submitTwitterAndWebPost).toHaveBeenNthCalledWith(2, {
