@@ -26,8 +26,9 @@ jobs:
       components: ${{ steps.filter.outputs.components }}
       ui: ${{ steps.filter.outputs.ui }}
       test-infra: ${{ steps.filter.outputs.test-infra }}
+      workflows: ${{ steps.filter.outputs.workflows }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dorny/paths-filter@v3
         id: filter
@@ -97,13 +98,18 @@ jobs:
               - 'vitest.config.ts'
               - 'playwright.config.ts'
               - 'tsconfig.test.json'
+            workflows:
+              - '.github/workflows/**'
 
   lint-and-typecheck:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: detect-changes
+    # main への push では常時実行（deploy の品質ゲート）。PR は変更領域があるときのみ。
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      needs.detect-changes.outputs.workflows == 'true' ||
       needs.detect-changes.outputs.core == 'true' ||
       needs.detect-changes.outputs.api == 'true' ||
       needs.detect-changes.outputs.auth == 'true' ||
@@ -117,10 +123,10 @@ jobs:
       needs.detect-changes.outputs.ui == 'true' ||
       needs.detect-changes.outputs.test-infra == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -145,6 +151,7 @@ jobs:
       needs.lint-and-typecheck.result != 'cancelled' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.workflows == 'true' ||
         needs.detect-changes.outputs.core == 'true' ||
         needs.detect-changes.outputs.api == 'true' ||
         needs.detect-changes.outputs.auth == 'true' ||
@@ -152,10 +159,10 @@ jobs:
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -177,16 +184,17 @@ jobs:
       needs.lint-and-typecheck.result != 'cancelled' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.workflows == 'true' ||
         needs.detect-changes.outputs.core == 'true' ||
         needs.detect-changes.outputs.components == 'true' ||
         needs.detect-changes.outputs.ui == 'true' ||
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -208,16 +216,17 @@ jobs:
       needs.lint-and-typecheck.result != 'cancelled' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.workflows == 'true' ||
         needs.detect-changes.outputs.core == 'true' ||
         needs.detect-changes.outputs.pages == 'true' ||
         needs.detect-changes.outputs.legal == 'true' ||
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -239,6 +248,7 @@ jobs:
       needs.lint-and-typecheck.result != 'cancelled' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.workflows == 'true' ||
         needs.detect-changes.outputs.core == 'true' ||
         needs.detect-changes.outputs.components == 'true' ||
         needs.detect-changes.outputs.pages == 'true' ||
@@ -247,10 +257,10 @@ jobs:
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -272,6 +282,7 @@ jobs:
       needs.lint-and-typecheck.result != 'cancelled' &&
       (
         github.event_name == 'workflow_dispatch' ||
+        needs.detect-changes.outputs.workflows == 'true' ||
         needs.detect-changes.outputs.core == 'true' ||
         needs.detect-changes.outputs.components == 'true' ||
         needs.detect-changes.outputs.pages == 'true' ||
@@ -282,10 +293,10 @@ jobs:
         needs.detect-changes.outputs.test-infra == 'true'
       )
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -306,6 +317,7 @@ jobs:
           !cancelled() &&
           (
             github.event_name == 'workflow_dispatch' ||
+            needs.detect-changes.outputs.workflows == 'true' ||
             needs.detect-changes.outputs.core == 'true' ||
             needs.detect-changes.outputs.components == 'true' ||
             needs.detect-changes.outputs.pages == 'true' ||
@@ -357,9 +369,11 @@ jobs:
           NEXT_PUBLIC_APP_URL: http://localhost:3000
 
   deploy:
+    # lint-and-typecheck の success を必須化: 全テストskip時でも品質ゲートを通過しない限りdeployしない
     if: >-
       always() &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.lint-and-typecheck.result == 'success' &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
@@ -372,10 +386,10 @@ jobs:
       - test-integration
       - test-e2e
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -534,6 +548,24 @@ jobs:
               fi
 
               sleep 2
+            done
+
+            # アプリ実体の死活確認: SSRトップページと DB を経由する代表APIが 200 を返すこと
+            echo "Verifying application health (SSR page + API)..."
+            for path in "/" "/api/top/trending"; do
+              ok=0
+              for i in $(seq 1 15); do
+                if curl -fsS "http://127.0.0.1:3000${path}" > /dev/null; then
+                  echo "App health check passed: ${path}"
+                  ok=1
+                  break
+                fi
+                sleep 2
+              done
+              if [ "$ok" -ne 1 ]; then
+                echo "App health check failed: ${path}"
+                exit 1
+              fi
             done
 
             # --- クリーンアップ ---
