@@ -18,7 +18,11 @@ export class Database {
       timezone: '+09:00',
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      // プール内の接続がアイドル状態のままファイアウォール/OS側に切断され、
+      // 再利用時に ECONNRESET になるのを防ぐ（TCP keep-aliveで接続を維持する）。
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 10000
     });
   }
 

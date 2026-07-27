@@ -14,6 +14,10 @@ function createAuth() {
     waitForConnections: true,
     connectionLimit: 10,
     timezone: "Z",
+    // プール内の接続がアイドル状態のままファイアウォール/OS側に切断され、
+    // セッション検証時にECONNRESETになるのを防ぐ（TCP keep-aliveで接続を維持する）。
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
   });
 
   return betterAuth({

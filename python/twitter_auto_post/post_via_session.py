@@ -152,11 +152,16 @@ def do_post(page, message: str, image_path):
 
     # 本文にハッシュタグ(#...)を含むと、候補サジェストのドロップダウンが
     # 画面全体を覆う透明なポータル要素を残し、投稿ボタンのクリックを
-    # ブロックし続けることがある（ドロップダウンが無ければ Escape は無害）。
-    # 投稿ボタン操作の前に Escape で必ず閉じておく。
+    # ブロックし続けることがある。ただし無条件に Escape を送ると、
+    # ドロップダウンが無い場合に X 側の「ポストを保存しますか？」ダイアログを
+    # 誤って開いてしまい、そのマスクが投稿ボタンのクリックを逆にブロックする
+    # （現行のXでは Escape は「無害」ではない）。
+    # そのため、候補ドロップダウン（listbox）が実際に表示されている場合のみ Escape で閉じる。
     try:
-        page.keyboard.press("Escape")
-        time.sleep(0.5)
+        suggestion = page.locator('[role="listbox"]').first
+        if suggestion.is_visible(timeout=500):
+            page.keyboard.press("Escape")
+            time.sleep(0.5)
     except Exception:
         pass
 
