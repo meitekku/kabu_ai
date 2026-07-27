@@ -584,52 +584,191 @@ async function postTweet(
 // ブラウザセッション経由の投稿（API失敗時のフォールバック）
 // サーバー上で保存済みのログインセッション(twitter_mobile_profile)を使い、
 // Playwright + system chrome でヘッドレス投稿する。
-function postViaBrowserSession(
-  message: string,
-  imagePath?: string
-): Promise<{ success: boolean; message: string; tweetUrl?: string; needsLogin?: boolean }> {
+//
+// 一括投稿では毎回ヘッドレスChromeを起動し直すと1件あたり数十秒かかるため、
+// post_via_session.py --worker をプロセスとして起動したまま使い回し、
+// 一定時間リクエストが無ければ自動的に閉じる（ログイン済みプロファイルを
+// 開いたまま放置しないため）。
+
+type BrowserResult = { success: boolean; message: string; tweetUrl?: string; needsLogin?: boolean };
+
+interface BrowserWorker {
+  child: ReturnType<typeof spawn>;
+  ready: boolean;
+  buffer: string;
+  pending: { resolve: (r: BrowserResult) => void } | null;
+  idleTimer: ReturnType<typeof setTimeout> | null;
+}
+
+// 一括投稿の投稿間隔(既定5分〜)より長く生かしておく。無操作が続けば自動終了する。
+const WORKER_IDLE_MS = Number(process.env.TWITTER_WORKER_IDLE_MS) || 15 * 60 * 1000;
+const WORKER_START_TIMEOUT_MS = 60000;
+const WORKER_POST_TIMEOUT_MS = 120000;
+
+let worker: BrowserWorker | null = null;
+
+function stopWorker() {
+  const w = worker;
+  worker = null;
+  if (!w) return;
+  if (w.idleTimer) clearTimeout(w.idleTimer);
+  try {
+    w.child.stdin?.write(JSON.stringify({ cmd: 'exit' }) + '\n');
+  } catch {
+    // ignore
+  }
+  setTimeout(() => {
+    try {
+      w.child.kill('SIGKILL');
+    } catch {
+      // ignore
+    }
+  }, 3000);
+}
+
+function resetWorkerIdleTimer() {
+  if (!worker) return;
+  if (worker.idleTimer) clearTimeout(worker.idleTimer);
+  worker.idleTimer = setTimeout(() => {
+    logger.info('ブラウザワーカー: 無操作のため終了します');
+    stopWorker();
+  }, WORKER_IDLE_MS);
+}
+
+function startWorker(): Promise<BrowserWorker> {
   const pythonDir = path.join(process.cwd(), 'python', 'twitter_auto_post');
   const venvPython = path.join(process.cwd(), 'venv', 'bin', 'python');
-  // venv が無いローカル環境ではシステム python3 を使う
   const pythonBin = process.env.TWITTER_PY || (fs.existsSync(venvPython) ? venvPython : 'python3');
 
-  return new Promise((resolve) => {
-    const child = spawn(pythonBin, ['post_via_session.py'], {
+  return new Promise((resolve, reject) => {
+    const child = spawn(pythonBin, ['post_via_session.py', '--worker'], {
       cwd: pythonDir,
       env: { ...process.env },
     });
 
-    let stdout = '';
-    let stderr = '';
-    const timer = setTimeout(() => child.kill('SIGKILL'), 120000);
+    const w: BrowserWorker = { child, ready: false, buffer: '', pending: null, idleTimer: null };
+    worker = w;
 
-    child.stdout.on('data', (d) => (stdout += d.toString()));
-    child.stderr.on('data', (d) => (stderr += d.toString()));
+    let settled = false;
+    const startTimer = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        stopWorker();
+        reject(new Error('ブラウザワーカーの起動がタイムアウトしました'));
+      }
+    }, WORKER_START_TIMEOUT_MS);
 
-    child.on('error', (err) => {
-      clearTimeout(timer);
-      resolve({ success: false, message: `ブラウザ投稿プロセスの起動に失敗しました: ${err.message}` });
-    });
+    child.stdout.on('data', (d) => {
+      w.buffer += d.toString();
+      let idx: number;
+      while ((idx = w.buffer.indexOf('\n')) >= 0) {
+        const line = w.buffer.slice(0, idx).trim();
+        w.buffer = w.buffer.slice(idx + 1);
+        if (!line) continue;
 
-    child.on('close', () => {
-      clearTimeout(timer);
-      const lastLine = stdout.trim().split('\n').filter(Boolean).pop() || '';
-      try {
-        const r = JSON.parse(lastLine);
-        resolve({
-          success: Boolean(r.success),
-          message: r.message || '',
-          tweetUrl: r.tweetUrl || undefined,
-          needsLogin: Boolean(r.needsLogin),
-        });
-      } catch {
-        logger.error(`ブラウザ投稿の出力解析に失敗 stdout=${stdout.slice(-500)} stderr=${stderr.slice(-500)}`);
-        resolve({ success: false, message: 'ブラウザ投稿の応答を解析できませんでした' });
+        if (!w.ready) {
+          w.ready = true;
+          if (!settled) {
+            settled = true;
+            clearTimeout(startTimer);
+            resolve(w);
+          }
+          continue;
+        }
+
+        if (w.pending) {
+          const pending = w.pending;
+          w.pending = null;
+          try {
+            const r = JSON.parse(line);
+            pending.resolve({
+              success: Boolean(r.success),
+              message: r.message || '',
+              tweetUrl: r.tweetUrl || undefined,
+              needsLogin: Boolean(r.needsLogin),
+            });
+          } catch {
+            pending.resolve({ success: false, message: 'ブラウザ投稿の応答を解析できませんでした' });
+          }
+        }
       }
     });
 
-    child.stdin.write(JSON.stringify({ message, imagePath: imagePath || null }));
-    child.stdin.end();
+    child.stderr.on('data', () => {
+      // Playwrightの警告等。必要になれば logger.warn へ接続する。
+    });
+
+    child.on('error', (err) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(startTimer);
+        reject(err);
+      }
+      if (worker === w) worker = null;
+    });
+
+    child.on('close', () => {
+      clearTimeout(startTimer);
+      if (!settled) {
+        settled = true;
+        reject(new Error('ブラウザワーカーが起動前に終了しました'));
+      }
+      if (w.pending) {
+        w.pending.resolve({ success: false, message: 'ブラウザワーカーが終了しました' });
+        w.pending = null;
+      }
+      if (worker === w) worker = null;
+    });
+  });
+}
+
+function getOrStartWorker(): Promise<BrowserWorker> {
+  if (worker && worker.ready && worker.child.exitCode === null) {
+    return Promise.resolve(worker);
+  }
+  return startWorker();
+}
+
+async function postViaBrowserSession(message: string, imagePath?: string): Promise<BrowserResult> {
+  let w: BrowserWorker;
+  try {
+    w = await getOrStartWorker();
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    logger.error(`ブラウザワーカーの起動に失敗しました: ${detail}`);
+    return { success: false, message: `ブラウザ投稿プロセスの起動に失敗しました: ${detail}` };
+  }
+
+  resetWorkerIdleTimer();
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (r: BrowserResult) => {
+      if (settled) return;
+      settled = true;
+      resolve(r);
+    };
+
+    const timer = setTimeout(() => {
+      if (w.pending) w.pending = null;
+      finish({ success: false, message: '投稿がタイムアウトしました' });
+    }, WORKER_POST_TIMEOUT_MS);
+
+    w.pending = {
+      resolve: (r) => {
+        clearTimeout(timer);
+        finish(r);
+      },
+    };
+
+    try {
+      w.child.stdin?.write(JSON.stringify({ message, imagePath: imagePath || null }) + '\n');
+    } catch (err) {
+      clearTimeout(timer);
+      w.pending = null;
+      const detail = err instanceof Error ? err.message : String(err);
+      finish({ success: false, message: `ブラウザワーカーへの送信に失敗しました: ${detail}` });
+    }
   });
 }
 

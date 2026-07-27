@@ -2,6 +2,31 @@
 import mysql from 'mysql2/promise';
 import { RowDataPacket, ResultSetHeader, FieldPacket } from 'mysql2';
 
+// リモートDBの wait_timeout でプール内の接続がアイドル切断されていた場合、
+// 次のクエリは EPIPE/ECONNRESET/PROTOCOL_CONNECTION_LOST で失敗する
+// （enableKeepAliveはOS/ファイアウォール側の切断は防げても、DBサーバー自身が
+// 能動的に閉じる接続までは防げないため）。1回だけ新しい接続で再試行する。
+function isTransientConnectionError(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  return (
+    code === 'PROTOCOL_CONNECTION_LOST' ||
+    code === 'ECONNRESET' ||
+    code === 'EPIPE' ||
+    code === 'ETIMEDOUT'
+  );
+}
+
+async function withConnectionRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (isTransientConnectionError(error)) {
+      return await fn();
+    }
+    throw error;
+  }
+}
+
 export class Database {
   private static instance: Database;
   private pool: mysql.Pool;
@@ -39,7 +64,7 @@ export class Database {
     params?: Array<string | number | boolean | null>
   ): Promise<T[]> {
     try {
-      const [rows] = await this.pool.execute<RowDataPacket[]>(query, params);
+      const [rows] = await withConnectionRetry(() => this.pool.execute<RowDataPacket[]>(query, params));
       return rows as T[];
     } catch (error) {
       console.error('Select error:', error);
@@ -53,7 +78,7 @@ export class Database {
     params?: Array<string | number | boolean | null>
   ): Promise<number> {
     try {
-      const [result] = await this.pool.execute<ResultSetHeader>(query, params);
+      const [result] = await withConnectionRetry(() => this.pool.execute<ResultSetHeader>(query, params));
       return result.insertId;
     } catch (error) {
       console.error('Insert error:', error);
@@ -67,7 +92,7 @@ export class Database {
     params?: Array<string | number | boolean | null>
   ): Promise<number> {
     try {
-      const [result] = await this.pool.execute<ResultSetHeader>(query, params);
+      const [result] = await withConnectionRetry(() => this.pool.execute<ResultSetHeader>(query, params));
       return result.affectedRows;
     } catch (error) {
       console.error('Update error:', error);
@@ -81,7 +106,7 @@ export class Database {
     params?: Array<string | number | boolean | null>
   ): Promise<number> {
     try {
-      const [result] = await this.pool.execute<ResultSetHeader>(query, params);
+      const [result] = await withConnectionRetry(() => this.pool.execute<ResultSetHeader>(query, params));
       return result.affectedRows;
     } catch (error) {
       console.error('Delete error:', error);
@@ -95,7 +120,7 @@ export class Database {
     params?: Array<string | number | boolean | null>
   ): Promise<[T[], FieldPacket[]]> {
     try {
-      const [rows, fields] = await this.pool.execute<RowDataPacket[]>(query, params);
+      const [rows, fields] = await withConnectionRetry(() => this.pool.execute<RowDataPacket[]>(query, params));
       return [rows as T[], fields];
     } catch (error) {
       console.error('Query error:', error);

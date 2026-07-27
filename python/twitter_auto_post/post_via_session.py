@@ -22,6 +22,12 @@ import json
 import time
 import urllib.request
 
+# ワーカーモード: ブラウザを起動したまま標準入力から複数件を順に処理する
+# （一括投稿で毎回ブラウザを起動し直す分の待ち時間をなくすため）。
+# 1行目に {"ready": true} を出力した後、リクエスト1件につき1行のJSONを読み、
+# 結果を1行のJSONで返す。{"cmd": "exit"} または EOF で終了する。
+WORKER_MODE = "--worker" in sys.argv[1:]
+
 # CDP（普段使いChrome への接続先）
 CDP_ENDPOINT = os.environ.get("X_CDP_ENDPOINT", "http://127.0.0.1:9222")
 
@@ -73,7 +79,7 @@ def out(success: bool, message: str, tweet_url=None, code: int = 0, needs_login:
     print(json.dumps(
         {"success": success, "message": message, "tweetUrl": tweet_url, "needsLogin": needs_login},
         ensure_ascii=False,
-    ))
+    ), flush=True)
     sys.exit(code)
 
 
@@ -239,20 +245,49 @@ def do_post(page, message: str, image_path):
         out(False, "投稿の完了を確認できませんでした", code=6)
 
 
-def main():
-    raw = sys.stdin.read()
+def read_one_request():
+    """標準入力から1件分のJSONを読む（ワーカーモードでは1行、通常モードでは全量）。"""
+    raw = sys.stdin.readline() if WORKER_MODE else sys.stdin.read()
+    if not raw or not raw.strip():
+        return None
     try:
-        data = json.loads(raw) if raw.strip() else {}
+        return json.loads(raw)
     except json.JSONDecodeError:
-        out(False, "入力JSONの解析に失敗しました", code=1)
+        return {"__parse_error__": True}
 
-    message = (data.get("message") or "").strip()
-    image_path = data.get("imagePath") or None
-    if not message:
-        out(False, "本文(message)が空です", code=1)
-    if image_path and not os.path.isfile(image_path):
-        # 画像が見つからなければテキストのみで続行
-        image_path = None
+
+def run_one_post(page, message, image_path):
+    """do_post()を実行し、out()由来のSystemExitを飲み込んで結果だけ標準出力に残す。
+    ワーカーモードでプロセスを終了させずに次のリクエストへ進むために使う。"""
+    try:
+        do_post(page, message, image_path)
+    except SystemExit:
+        pass
+    except Exception as e:
+        try:
+            out(False, f"投稿処理でエラーが発生しました: {e}", code=8)
+        except SystemExit:
+            pass
+
+
+def main():
+    first_message = None
+    first_image_path = None
+
+    if not WORKER_MODE:
+        data = read_one_request()
+        if data is None:
+            return
+        if data.get("__parse_error__"):
+            out(False, "入力JSONの解析に失敗しました", code=1)
+
+        first_message = (data.get("message") or "").strip()
+        first_image_path = data.get("imagePath") or None
+        if not first_message:
+            out(False, "本文(message)が空です", code=1)
+        if first_image_path and not os.path.isfile(first_image_path):
+            # 画像が見つからなければテキストのみで続行
+            first_image_path = None
 
     use_cdp = cdp_reachable()
     state_file = None if use_cdp else resolve_state_file()
@@ -332,12 +367,43 @@ def main():
                 context = launch_persistent(p)
                 page = context.pages[0] if context.pages else context.new_page()
 
-            try:
-                do_post(page, message, image_path)
-            except SystemExit:
-                raise
-            except Exception as e:
-                out(False, f"投稿処理でエラーが発生しました: {e}", code=8)
+            if WORKER_MODE:
+                # ブラウザ起動完了をNode側へ通知。以降は1行1リクエストで使い回す。
+                print(json.dumps({"ready": True}), flush=True)
+                while True:
+                    req = read_one_request()
+                    if req is None or req.get("cmd") == "exit":
+                        break
+                    if req.get("__parse_error__"):
+                        print(json.dumps({
+                            "success": False,
+                            "message": "入力JSONの解析に失敗しました",
+                            "tweetUrl": None,
+                            "needsLogin": False,
+                        }), flush=True)
+                        continue
+
+                    msg = (req.get("message") or "").strip()
+                    img = req.get("imagePath") or None
+                    if not msg:
+                        print(json.dumps({
+                            "success": False,
+                            "message": "本文(message)が空です",
+                            "tweetUrl": None,
+                            "needsLogin": False,
+                        }), flush=True)
+                        continue
+                    if img and not os.path.isfile(img):
+                        img = None
+
+                    run_one_post(page, msg, img)
+            else:
+                try:
+                    do_post(page, first_message, first_image_path)
+                except SystemExit:
+                    raise
+                except Exception as e:
+                    out(False, f"投稿処理でエラーが発生しました: {e}", code=8)
 
         finally:
             # CDP接続時はユーザーのChromeを閉じない。開いたタブだけ後始末する。
